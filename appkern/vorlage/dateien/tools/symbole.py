@@ -5,7 +5,10 @@ Einzige Quelle ist symbol.svg: ein Rechteck über die ganze Fläche als Grund, d
 der App kommt aus site.webmanifest (background_color). Erzeugt in frontend/public:
   favicon.svg                                   Kopie der Quelle für moderne Browser
   favicon.ico                                   16, 32 und 48 in einer Datei
-  favicon-32.png, icon-192.png, icon-512.png    wie die Quelle, mit durchsichtigen Ecken (purpose any)
+  favicon-32.png                                wie die Quelle, mit durchsichtigen Ecken (Tab im Browser)
+  icon-192.png, icon-512.png                    deckend auf der Hintergrundfarbe (purpose any; iOS 18 nimmt für den
+                                                Startbildschirm diese aus dem Manifest, nicht das apple-touch-icon,
+                                                und zeigt mit durchsichtigen Ecken kein Symbol)
   icon-maskable-192.png, icon-maskable-512.png  Grund randlos, Motiv in der sicheren Zone (purpose maskable)
   apple-touch-icon.png                          180, ohne Durchsichtigkeit auf der Hintergrundfarbe der App
 
@@ -70,8 +73,9 @@ def main() -> None:
 
     ico = [rastern(quelle, g) for g in (48, 32, 16)]
     ico[0].save(OEFFENTLICH / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)], append_images=ico[1:])
-    for name, groesse in (("favicon-32.png", 32), ("icon-192.png", 192), ("icon-512.png", 512)):
-        rastern(quelle, groesse).save(OEFFENTLICH / name, optimize=True)
+    rastern(quelle, 32).save(OEFFENTLICH / "favicon-32.png", optimize=True)
+    for groesse in (192, 512):
+        flach(rastern(quelle, groesse), farbe).save(OEFFENTLICH / f"icon-{groesse}.png", optimize=True)
     rand = maskierbar(quelle)
     for groesse in (192, 512):
         rastern(rand, groesse).save(OEFFENTLICH / f"icon-maskable-{groesse}.png", optimize=True)
