@@ -53,6 +53,9 @@ async def test_begleiter_im_eigenen_zweig(verbund):
         neu = await kw.begleiter_schreiben(ton.id, "transkript", ".transkript.json", b'{"v":2}', stand=b.etag)
         assert neu.id == b.id
         assert [x.name for x in await kw.begleiter(ton.id)] == ["Runde.transkript.json"]
+        archiv = await kw.ordner(pfad_aus(lauf.pfad, "Archiv"))
+        await kw.umziehen(b.id, archiv.id)                       # ein Mitglied verschiebt die Gruppe
+        assert sorted(k.name for k in await kw.kinder(archiv.id)) == ["Runde.transkript.json", "Runde.wav"]
     finally:
         await kw.loeschen(lauf.id)
 

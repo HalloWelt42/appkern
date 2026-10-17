@@ -235,6 +235,13 @@ class Kellerwolke:
         antwort = await self._anfrage("PUT", f"/knoten/{knoten_id}/inhalt", content=koerper, kopf=kopf)
         return Knoten.model_validate(antwort.json())
 
+    async def umziehen(self, knoten_id: UUID | str, ordner_id: UUID | str, name: str | None = None) -> Knoten:
+        """Verschieben und auf Wunsch umbenennen (Kellerwolke ab 0.82); Begleitdateien ziehen mit, ein belegter Name
+        ändert nichts (`Konflikt`)."""
+        antwort = await self._anfrage("POST", f"/knoten/{knoten_id}/ort",
+                                      json={"ordner_id": str(ordner_id), **({"name": name} if name else {})})
+        return Knoten.model_validate(antwort.json())
+
     async def loeschen(self, knoten_id: UUID | str) -> None:
         """In den Papierkorb des Kontos (wiederherstellbar). Freigegebene Ordner selbst und von anderen Apps gesperrte
         Dateien bleiben (`KeinRecht`, `Gesperrt`)."""
