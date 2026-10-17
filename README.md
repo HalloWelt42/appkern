@@ -14,7 +14,7 @@ Stelle nachgezogen.
 | Leitstelle | verteilt Aufträge an die KI-Dienste |
 | [Maschinenraum](https://github.com/HalloWelt42/maschinenraum) | regelt die KI-Dienste eines Rechners |
 | [Stellwerk](https://github.com/HalloWelt42/stellwerk) | startet die Apps |
-| Appkern | die Bausteine, aus denen jede App ihren Zugang zu all dem baut |
+| Appkern | die Bausteine, aus denen jede App ihren Zugang zu all dem baut: Kellerwolke, Leitstelle, Aufträge, Einstellungen, Protokoll, App-Verzeichnis |
 
 ## Kellerwolke-Zugang
 
@@ -170,6 +170,19 @@ Was in der App geschah, mit Ereignis (`auftrag.fertig`, `datei.hochgeladen`), St
 Bezug und Text; seitenweise, nach Ereignisanfang, Stufe, Bezug, Tag und Text filterbar. Eintragen wirft nie.
 `Auftraege(..., protokoll=protokoll)` trägt jedes Ende eines Auftrags ein. Schnittstelle: `protokoll_router`
 (`GET /api/v1/protokoll`).
+
+## App-Verzeichnis
+
+Wo die Schnittstelle einer anderen App liegt, ohne fest verdrahtete Adresse: eine in den Einstellungen eingetragene
+Adresse geht vor, sonst fragt `Verzeichnis` das Stellwerk dieses Rechners (Teil `backend` der App, Antwort 30 s
+gemerkt; ist das Stellwerk kurz weg, gilt der letzte Stand).
+
+```python
+from appkern.verzeichnis import Verzeichnis
+
+verzeichnis = Verzeichnis(eingetragen={"stimmenausgabe": "http://studio:8611"})
+adresse = await verzeichnis.adresse("transkription")      # etwa http://127.0.0.1:8601
+```
 
 ## Einbinden
 
