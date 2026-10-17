@@ -25,6 +25,7 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from appkern.datenbank import Datenbank
+from appkern.protokoll import Protokoll
 
 from .modelle import OFFEN, WIEDERHOLBAR, Auftrag, Phase, Seite, Zustand
 
@@ -133,8 +134,11 @@ class Kontext:
 
 
 class Auftraege:
-    def __init__(self, db: Datenbank, arten: Sequence[Art], *, gleichzeitig: int = 1, aufbewahren_tage: int = 30) -> None:
+    def __init__(self, db: Datenbank, arten: Sequence[Art], *, gleichzeitig: int = 1, aufbewahren_tage: int = 30,
+                 protokoll: Protokoll | None = None) -> None:
+        """`protokoll`: jedes Ende eines Auftrags (fertig, Fehler, abgebrochen, unterbrochen) wird eingetragen."""
         self.db = db
+        self.protokoll = protokoll
         self.arten = {a.name: a for a in arten}
         self.gleichzeitig = max(1, gleichzeitig)
         self.aufbewahren_tage = aufbewahren_tage
@@ -156,6 +160,7 @@ class Auftraege:
             else:
                 await self.db.ausfuehren("UPDATE auftrag SET zustand='unterbrochen', fehler=?, beendet_am=? WHERE id=?",
                                          ("Durch einen Neustart unterbrochen", _jetzt(), zeile["id"]))
+                await self._eintragen(await self.holen(zeile["id"]))
         self._schleife = asyncio.create_task(self._takt(), name="auftraege")
 
     async def stoppen(self) -> None:
@@ -234,8 +239,11 @@ class Auftraege:
                 laufend[1].set()
         else:
             raise FalscherZustand(f"Ein Auftrag im Zustand {auftrag.zustand} lässt sich nicht abbrechen")
+        vorher = auftrag.zustand
         auftrag = await self.holen(auftrag_id)
         self._melden(auftrag)
+        if vorher == "wartet":
+            await self._eintragen(auftrag)
         return auftrag
 
     async def wiederholen(self, auftrag_id: str) -> Auftrag:
@@ -384,4 +392,14 @@ class Auftraege:
             "fortschritt=CASE WHEN ? THEN 1.0 ELSE fortschritt END, schritt=CASE WHEN ? THEN '' ELSE schritt END WHERE id=?",
             (zustand, json.dumps(ergebnis, ensure_ascii=False) if ergebnis is not None else None, fehler, spur, _jetzt(),
              fertig, fertig, auftrag_id))
-        self._melden(await self.holen(auftrag_id))
+        auftrag = await self.holen(auftrag_id)
+        self._melden(auftrag)
+        await self._eintragen(auftrag)
+
+    async def _eintragen(self, auftrag: Auftrag) -> None:
+        if self.protokoll is None:
+            return
+        await self.protokoll.eintragen(
+            f"auftrag.{auftrag.zustand}", auftrag.fehler or "",
+            stufe="fehler" if auftrag.zustand == "fehler" else ("warnung" if auftrag.zustand != "fertig" else "info"),
+            bezug_art="auftrag", bezug_id=auftrag.id, bezug_name=auftrag.titel, daten={"art": auftrag.art})

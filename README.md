@@ -137,6 +137,40 @@ Abgebrochen wird gemeinsam an Haltepunkten, nie mit einer Uhr. Wie viele Aufträ
 `gleichzeitig` (Vorgabe 1); beendete Aufträge räumt `aufraeumen` nach `aufbewahren_tage` aus der Liste. Die
 Schnittstelle braucht den Zusatz `appkern[web]` (FastAPI).
 
+## Einstellungen
+
+Jede App beschreibt ihre Einstellungen als Pydantic-Modell; die Oberfläche baut ihre Seite aus `felder()`, alles ist
+dort änderbar. Ein Wert kommt aus der Datenbank der App (in der Oberfläche gesetzt), sonst aus der Umgebung
+(`<PRAEFIX><FELD>`, etwa für den ersten Start), sonst aus der Vorgabe.
+
+```python
+from typing import Literal
+from pydantic import BaseModel, Field, SecretStr
+from appkern.einstellungen import Einstellungen
+from appkern.einstellungen.api import einstellungs_router
+
+class AppEinstellungen(BaseModel):
+    leitstelle_adresse: str = Field("http://192.168.178.49:8530", title="Leitstelle", json_schema_extra={"gruppe": "Verbindungen"})
+    leitstelle_schluessel: SecretStr = Field(SecretStr(""), title="Schlüssel der Leitstelle")
+    sprache: Literal["de", "en"] = Field("de", title="Sprache")
+
+einstellungen = Einstellungen(db, AppEinstellungen, umgebung_praefix="TRANSKRIPTION_")
+await einstellungen.starten()
+einstellungen.bei_aenderung(lambda stand, geaendert: ...)   # etwa den Leitstellen-Zugang neu aufbauen
+app.include_router(einstellungs_router(einstellungen, abhaengigkeiten=[Depends(anmeldung)]))
+```
+
+Geändert wird alles oder nichts (`aendern` prüft die Werte zusammen; `None` setzt zurück, ein leeres Geheimnis bleibt
+unverändert). Geheimnisse (`SecretStr`) gehen nur verdeckt hinaus, bis auf die letzten vier Zeichen;
+`GET /api/v1/einstellungen/geheimnis/{name}` deckt eines auf (das Auge in der Oberfläche).
+
+## Protokoll
+
+Was in der App geschah, mit Ereignis (`auftrag.fertig`, `datei.hochgeladen`), Stufe (`info`, `warnung`, `fehler`),
+Bezug und Text; seitenweise, nach Ereignisanfang, Stufe, Bezug, Tag und Text filterbar. Eintragen wirft nie.
+`Auftraege(..., protokoll=protokoll)` trägt jedes Ende eines Auftrags ein. Schnittstelle: `protokoll_router`
+(`GET /api/v1/protokoll`).
+
 ## Einbinden
 
 In der `pyproject.toml` einer App:
