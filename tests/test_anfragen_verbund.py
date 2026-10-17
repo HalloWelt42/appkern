@@ -101,6 +101,19 @@ async def test_anfrage_aus_der_kellerwolke_wird_zum_begleiter(verbund, tmp_path)
         # danach kommt die App nicht mehr an die Datei
         with pytest.raises(Exception):
             await kw.mit_anfrage(neu["id"]).knoten(ton["id"])
+        # ein Auftrag, der nur das Recht einer Anfrage nutzt, schließt sie nicht (etwa Arbeit in einer geöffneten Datei)
+        await kw.aktionen_melden([PROBE, Aktion(kennung="ansehen", titel="Ansehen", symbol="fa-eye", typen=("audio/*",),
+                                                art="oeffnen")], "http://127.0.0.1:1")
+        offen = (await client.post("/api/v1/anfragen", json={"zugang_id": aktion["zugang_id"], "aktion": "ansehen",
+                                                             "knoten_id": ton["id"]}, headers=sitzung)).json()["anfrage"]
+        await kw.anfrage_annehmen(offen["id"])
+        fremd = await auftraege.einreihen("probe", AnfrageEingabe(anfrage_id=offen["id"], knoten_id=ton["id"], aktion="probe"))
+        for _ in range(100):
+            if (await auftraege.holen(fremd.id)).zustand in ("fertig", "fehler"):
+                break
+            await asyncio.sleep(0.1)
+        await asyncio.sleep(0.3)
+        assert (await kw.anfrage(offen["id"])).zustand == "laeuft"
     finally:
         await abholer.stoppen()
         await auftraege.stoppen()

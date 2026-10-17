@@ -6,7 +6,9 @@ anderen App weitergegeben. Jede Anfrage im Hintergrund wird ein Auftrag mit `Anf
 Ende gehen an die Kellerwolke zurück. Die Arbeit liest und schreibt über `kellerwolke.mit_anfrage(eingabe.anfrage_id)`:
 genau die angefragte Datei und ihre Begleiter, solange die Anfrage offen ist.
 
-Bricht der Mensch die Anfrage in der Kellerwolke ab, bricht der Abholer den Auftrag ab. Ist die App aus, wartet die
+Zurückgemeldet werden nur Aufträge, die der Abholer selbst für eine Anfrage übernommen hat (dauerhaft vermerkt). Ein
+Auftrag, der nur das Recht einer Anfrage nutzt (etwa eine Arbeit in einer aus der Kellerwolke geöffneten Datei),
+schließt sie nie. Bricht der Mensch die Anfrage in der Kellerwolke ab, bricht der Abholer den Auftrag ab. Ist die App aus, wartet die
 Anfrage in der Kellerwolke, bis sie wieder läuft; nichts geht verloren. Das Ergebnis eines Auftrags nennt den
 geschriebenen Begleiter in `ergebnis_id`.
 """
@@ -24,6 +26,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from appkern.auftraege import Auftraege, Auftrag, FalscherZustand
+from appkern.datenbank import Datenbank
 from appkern.kellerwolke import (
     Aktion, Anfrage, Kellerwolke, KellerwolkeFehler, Konflikt, NichtErreichbar, SchluesselUngueltig,
 )
@@ -33,6 +36,14 @@ logger = logging.getLogger("appkern.anfragen")
 WARTEN_S = 25.0       # so lange wartet die Kellerwolke beim Abholen auf eine neue Anfrage
 MELDEN_S = 2.0        # Fortschritt höchstens so oft an die Kellerwolke
 PAUSE_MAX_S = 60.0
+SCHEMA = [
+    """
+    CREATE TABLE anfrage_auftrag (
+        anfrage_id TEXT PRIMARY KEY,
+        auftrag_id TEXT NOT NULL UNIQUE
+    );
+    """,
+]
 
 
 class AnfrageEingabe(BaseModel):
@@ -57,11 +68,6 @@ class Angebot:
             raise ValueError(f"Aktion {self.aktion.kennung}: im Hintergrund braucht sie eine Art von Auftrag")
 
 
-def anfrage_von(auftrag: Auftrag) -> str | None:
-    wert = auftrag.eingabe.get("anfrage_id") if isinstance(auftrag.eingabe, dict) else None
-    return str(wert) if wert else None
-
-
 class Abholer:
     """Begleiter des Gerüsts (starten, verbunden, stoppen): meldet die Aktionen, holt Anfragen ab, führt sie als
     Aufträge aus und meldet den Stand zurück."""
@@ -70,6 +76,7 @@ class Abholer:
                  adresse: Callable[[], str | None] = lambda: None) -> None:
         self.angebote = {a.aktion.kennung: a for a in angebote}
         self.auftraege = auftraege
+        self.db: Datenbank = auftraege.db
         self._kellerwolke = kellerwolke
         self._adresse = adresse
         self._laufend: dict[str, str] = {}          # Anfrage -> Auftrag
@@ -81,6 +88,7 @@ class Abholer:
     # --- Lebenszyklus (Begleiter) ---------------------------------------------------------------------------------
 
     async def starten(self) -> None:
+        await self.db.einrichten("anfragen", SCHEMA)
         self._rueckmeldung = asyncio.create_task(self._rueckmelden(), name="anfragen-rueckmeldung")
 
     async def verbunden(self) -> None:
@@ -89,10 +97,9 @@ class Abholer:
         kw = self._kellerwolke()
         if kw is None or not self.angebote:
             return
-        for auftrag in (await self.auftraege.liste(zustand=("wartet", "laeuft"))).eintraege:
-            anfrage = anfrage_von(auftrag)
-            if anfrage:
-                self._laufend[anfrage] = auftrag.id
+        for zeile in await self.db.zeilen("SELECT a.anfrage_id, a.auftrag_id FROM anfrage_auftrag a "
+                                          "JOIN auftrag t ON t.id = a.auftrag_id WHERE t.zustand IN ('wartet','laeuft')"):
+            self._laufend[zeile["anfrage_id"]] = zeile["auftrag_id"]
         self._schleife = asyncio.create_task(self._abholen(kw), name="anfragen-abholen")
 
     async def stoppen(self) -> None:
@@ -160,6 +167,8 @@ class Abholer:
             if str(daten.get("anfrage_id")) != schluessel:
                 raise ValueError("Die Eingabe muss die Anfrage nennen (anfrage_id)")
             neu = await self.auftraege.einreihen(art, daten, titel=titel or f"{angebot.aktion.titel}: {anfrage.knoten_name}")
+            await self.db.ausfuehren("INSERT OR REPLACE INTO anfrage_auftrag (anfrage_id, auftrag_id) VALUES (?,?)",
+                                     (schluessel, neu.id))
             self._laufend[schluessel] = neu.id
             return neu.id
 
@@ -169,18 +178,25 @@ class Abholer:
         while True:
             try:
                 async for auftrag in self.auftraege.ereignisse():
-                    if auftrag is not None and anfrage_von(auftrag):
-                        await self._melden(auftrag)
+                    if auftrag is not None and (anfrage := await self._anfrage_von(auftrag)):
+                        await self._melden(anfrage, auftrag)
             except asyncio.CancelledError:
                 raise
             except Exception:  # noqa: BLE001 - die Rückmeldung darf nie enden
                 logger.exception("Anfragen: Rückmeldung")
                 await asyncio.sleep(1.0)
 
-    async def _melden(self, auftrag: Auftrag) -> None:
-        anfrage = anfrage_von(auftrag)
+    async def _anfrage_von(self, auftrag: Auftrag) -> str | None:
+        """Die Anfrage, die dieser Auftrag ausführt; nur wenn der Abholer ihn dafür übernommen hat."""
+        for anfrage, auftrag_id in self._laufend.items():
+            if auftrag_id == auftrag.id:
+                return anfrage
+        zeile = await self.db.zeile("SELECT anfrage_id FROM anfrage_auftrag WHERE auftrag_id=?", (auftrag.id,))
+        return zeile["anfrage_id"] if zeile else None
+
+    async def _melden(self, anfrage: str, auftrag: Auftrag) -> None:
         kw = self._kellerwolke()
-        if kw is None or anfrage is None:
+        if kw is None:
             return
         daten: dict[str, Any]
         if auftrag.zustand == "laeuft":
