@@ -131,9 +131,11 @@ class Abholer:
                 await asyncio.sleep(pause)
                 pause = min(pause * 2, PAUSE_MAX_S)
 
-    async def uebernehmen(self, anfrage: Anfrage, kw: Kellerwolke | None = None) -> str | None:
+    async def uebernehmen(self, anfrage: Anfrage, kw: Kellerwolke | None = None, *, auftrag: str | None = None,
+                          eingabe: dict[str, Any] | None = None, titel: str | None = None) -> str | None:
         """Nimmt eine Anfrage im Hintergrund an und reiht ihren Auftrag ein; liefert dessen Kennung. Doppelt
-        übernommen (Abholen und Dateiwahl zugleich) wird nie."""
+        übernommen (Abholen und Dateiwahl zugleich) wird nie. Aus der Dateiwahl kann die App Art, Eingabe (mit
+        `anfrage_id`) und Titel selbst bestimmen, etwa um Optionen des Menschen mitzugeben."""
         kw = kw or self._kellerwolke()
         if kw is None:
             return None
@@ -142,7 +144,8 @@ class Abholer:
             if schluessel in self._laufend:
                 return self._laufend[schluessel]
             angebot = self.angebote.get(anfrage.aktion)
-            if angebot is None or not angebot.auftrag:
+            art = auftrag or (angebot.auftrag if angebot else None)
+            if angebot is None or not art:
                 await self._still(kw.anfrage_melden(anfrage.id, zustand="fehler",
                                                     meldung="Diese App kennt die Aktion nicht (mehr)"))
                 return None
@@ -151,12 +154,14 @@ class Abholer:
             except Konflikt:
                 return None                     # inzwischen abgebrochen oder abgelaufen
             # Als dict: die Art darf ein eigenes Eingabemodell haben, das AnfrageEingabe erweitert.
-            eingabe = AnfrageEingabe(anfrage_id=anfrage.id, knoten_id=anfrage.knoten_id, aktion=anfrage.aktion,
-                                     knoten_name=anfrage.knoten_name).model_dump(mode="json")
-            auftrag = await self.auftraege.einreihen(angebot.auftrag, eingabe,
-                                                     titel=f"{angebot.aktion.titel}: {anfrage.knoten_name}")
-            self._laufend[schluessel] = auftrag.id
-            return auftrag.id
+            daten = eingabe if eingabe is not None else AnfrageEingabe(
+                anfrage_id=anfrage.id, knoten_id=anfrage.knoten_id, aktion=anfrage.aktion,
+                knoten_name=anfrage.knoten_name).model_dump(mode="json")
+            if str(daten.get("anfrage_id")) != schluessel:
+                raise ValueError("Die Eingabe muss die Anfrage nennen (anfrage_id)")
+            neu = await self.auftraege.einreihen(art, daten, titel=titel or f"{angebot.aktion.titel}: {anfrage.knoten_name}")
+            self._laufend[schluessel] = neu.id
+            return neu.id
 
     # --- Rückmeldung ----------------------------------------------------------------------------------------------
 
