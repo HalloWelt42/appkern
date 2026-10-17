@@ -24,6 +24,8 @@ class Wolke:
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         pfad = request.url.path
+        if request.url.host == "weg.test":
+            raise httpx.ConnectError("All connection attempts failed")
         if request.url.host == "kw.test":
             if pfad == "/api/v1/ablage/ich":
                 if request.headers.get("authorization") != "Bearer kw_app_gut":
@@ -78,7 +80,9 @@ async def test_einrichtung_anmeldung_verbindungen_protokoll(umgebung):
         r = await fremd.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
         assert r.status_code == 403
     r = await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test/", "kellerwolke_schluessel": "kw_app_falsch"})
-    assert r.status_code == 422 and "nimmt den Schlüssel nicht" in r.json()["detail"]
+    assert r.status_code == 422 and "kennt diesen App-Schlüssel nicht" in r.json()["detail"]
+    r = await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://weg.test", "kellerwolke_schluessel": "kw_app_gut"})
+    assert r.status_code == 422 and "nicht erreichbar" in r.json()["detail"]
     r = await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test/", "kellerwolke_schluessel": "kw_app_gut"})
     assert r.status_code == 200 and r.json()["besitzer"] == "chef" and not r.json()["einrichtung_noetig"]
     assert r.json()["kellerwolke"] == "http://kw.test" and "kw_app" not in r.text

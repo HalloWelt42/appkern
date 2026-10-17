@@ -38,7 +38,7 @@ from appkern.auftraege.api import auftrags_router
 from appkern.datenbank import Datenbank
 from appkern.einstellungen import Einstellungen
 from appkern.einstellungen.api import einstellungs_router
-from appkern.kellerwolke import Kellerwolke, KellerwolkeFehler
+from appkern.kellerwolke import Kellerwolke, KellerwolkeFehler, NichtErreichbar, SchluesselUngueltig
 from appkern.leitstelle import Leitstelle, LeitstellenFehler
 from appkern.leitstelle.zugang import ARBEIT
 from appkern.protokoll import Protokoll
@@ -256,8 +256,15 @@ class Geruest(Generic[E]):
                 probe = Kellerwolke(eingabe.kellerwolke_adresse, eingabe.kellerwolke_schluessel, client=client)
                 try:
                     ich = await probe.ich()
+                except NichtErreichbar as f:
+                    raise HTTPException(status_code=422, detail=f"Die Kellerwolke unter {eingabe.kellerwolke_adresse} ist von "
+                                                                f"diesem Rechner aus nicht erreichbar ({f.meldung}).")
+                except SchluesselUngueltig:
+                    raise HTTPException(status_code=422, detail="Die Kellerwolke kennt diesen App-Schlüssel nicht, oder er "
+                                                                "ist gesperrt. In der Kellerwolke unter Einstellungen, Zugänge "
+                                                                "prüfen oder neu ausstellen.")
                 except KellerwolkeFehler as f:
-                    raise HTTPException(status_code=422, detail=f"Die Kellerwolke nimmt den Schlüssel nicht: {f.meldung}")
+                    raise HTTPException(status_code=422, detail=f"Die Kellerwolke antwortet unerwartet: {f.meldung}")
             await self.einstellungen.aendern({"kellerwolke_adresse": eingabe.kellerwolke_adresse.rstrip("/"),
                                               "kellerwolke_schluessel": eingabe.kellerwolke_schluessel})
             await self.protokoll.eintragen("app.eingerichtet", f"Kellerwolke, Zweig {ich.zweig}", bezug_name=ich.konto)
