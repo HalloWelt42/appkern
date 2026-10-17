@@ -1,0 +1,42 @@
+/* Gemeinsame Bausteine der Apps: Spieler und Wellenform (Rechner und Telefon), Sprecherfarben, Rückfrage, Hochladen,
+   Hinweisband. Kommen mit `appkern-oberflaeche/stil.css`; die Apps ergänzen nur, was ihnen eigen ist. */
+
+:root {
+  --s1: #12938a; --s2: #c2410c; --s3: #7c3aed; --s4: #2f7ce0; --s5: #b45309; --s6: #db2777;
+}
+.spieler { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; gap: 14px; align-items: center;
+           padding: 10px 22px 12px; background: var(--flaeche); box-shadow: 0 1px 0 var(--rand); }
+.spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent); color: #fff; font-size: 18px; }
+.spieler .zeitangabe { font-family: ui-monospace, monospace; font-size: var(--klein); color: var(--text-2); white-space: nowrap; }
+.welle { position: relative; height: 54px; }
+.welle .saeulen { position: absolute; inset: 8px 0 8px 0; display: flex; align-items: center; gap: 1px; }
+.welle .saeulen span { flex: 1; min-width: 1px; border-radius: 1px; background: var(--rand); }
+.welle .saeulen span.gespielt { background: var(--akzent); }
+.welle .abspielkopf { position: absolute; top: 2px; bottom: 2px; width: 2px; background: var(--text); }
+.welle .fahne { position: absolute; top: -2px; transform: translateX(-50%); font-size: 12px; color: var(--warn); }
+.welle .sprecherspur { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; display: flex; border-radius: 2px; overflow: hidden; }
+.knopfreihe { display: flex; flex-wrap: wrap; gap: 6px; }
+.mobil .t-spieler { flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 16px;
+                    background: var(--flaeche); box-shadow: 0 -1px 0 var(--rand); }
+.mobil .t-spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent); color: #fff; font-size: 18px; }
+.mobil .t-spieler .welle { height: 40px; }
+.mobil .t-spieler .zeitangabe { font-family: ui-monospace, monospace; font-size: var(--marke); color: var(--text-2); }
+.upload { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px;
+          background: var(--flaeche); border-radius: var(--r2); margin-bottom: 6px; font-size: var(--klein); }
+.upload .balken { grid-column: 2 / -1; }
+.welle .leinwand { position: absolute; inset: 6px 0 8px 0; width: 100%; height: calc(100% - 14px); cursor: pointer; touch-action: none; }
+.welle .sprecherspur { position: absolute; }
+.welle .fahne { pointer-events: none; }
+.welle .abspielkopf { pointer-events: none; }
+.mobil .t-spieler { position: sticky; bottom: -16px; margin: 8px -16px -16px; z-index: 2; }
+.rund.aktiv { background: var(--akzent-weich); color: var(--akzent); }
+.rueckfrage { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 14px; margin: 4px 0 10px;
+  background: var(--flaeche-2); border-radius: var(--r2); box-shadow: 0 0 0 1px var(--rand); font-size: var(--klein); }
+.rueckfrage .frage { font-weight: 600; color: var(--text); }
+.rueckfrage .aktionen { display: flex; gap: 8px; margin-left: auto; }
+.hinweis-band { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin-bottom: 12px; border-radius: var(--r2, 10px);
+  background: var(--akzent-weich); color: var(--text); font-size: var(--klein); }
+.hinweis-band > i { color: var(--akzent); }
+.hinweis-band b { font-weight: 600; }
+.hinweis-band .knopfzeile { margin-left: auto; flex: none; }
+.mobil .t-spieler.t-wahlleiste { display: flex; justify-content: space-between; }

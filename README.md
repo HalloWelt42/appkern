@@ -353,6 +353,13 @@ Oberfläche steht als Meta `app-fassung` in ihrer Startseite (eingesetzt in `vit
 `/api/v1/app` (`oberflaeche`), und ein Tab vergleicht sich mit ihr. Ist die Oberfläche nach einer neuen Fassung nicht
 neu gebaut, steht das als Warnung im Protokoll.
 
+Gemeinsame Bausteine (Stile in `stil/bausteine.css`, kommen mit `stil.css`): `Spieler` (Wellenform, Sprecherspur,
+Marker, Tempo, Tasten; `kompakt` für das Telefon), `Rueckfrage` (vor dem Löschen, im Ablauf statt als Fenster),
+`AnfrageBand` (Herkunft und Frist einer aus der Kellerwolke geöffneten Datei), `hochladen` mit Fortschritt (`uploads`),
+`arbeit` (Wiedergabe, Aufnahme, Hochladen, ungespeichert: die Schale lädt dann nicht neu), Zeit und Größe zum Lesen
+(`marke`, `genau`, `lesen`, `groesse`, `SPRACHEN`, Sprecherfarben `farbe`), Adressen in die Kellerwolke
+(`inKellerwolke`, `zurueckZurKellerwolke`) und die Namen der Begleiter-Rollen (`ROLLEN`, `daneben`).
+
 ## Neue App aus der Vorlage
 
 ```bash

@@ -5,6 +5,7 @@
 // abbräche (sie meldet das über `ruhig`). Dazwischen steht ein Band mit Knopf. Je Fassung nur ein selbsttätiger
 // Versuch (Merker in der Sitzung), damit ein hängender Zwischenspeicher keine Schleife auslöst.
 import { hole } from "./api.svelte";
+import { arbeitsfrei } from "./arbeit.svelte";
 import type { AppInfo } from "./typen";
 
 const START_FENSTER_MS = 10_000;
@@ -18,7 +19,7 @@ let ruhigFrage: () => boolean = () => true;
 let merker = "app_neu_geladen";
 
 export function ruhig(): boolean {
-  return ruhigFrage();
+  return arbeitsfrei() && ruhigFrage();
 }
 
 function erlaubt(neu: string): boolean {
