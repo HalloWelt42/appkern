@@ -223,10 +223,14 @@ geruest = Geruest(..., arten=[Art("aus_anfrage", "Transkribieren", transkribiere
                                            typen=("audio/*", "video/*"), art="oeffnen", rolle="transkript"))])
 ```
 
-Mit Angeboten bekommt die App `GET` und `POST /api/v1/kellerwolke/wahl` (Dateiwahl) und
-`POST /api/v1/kellerwolke/anfragen/{id}/oeffnen` (die Kellerwolke führt den Browser zu `<adresse>/anfrage/<id>`; die
-Adresse der App steht in den Einstellungen und wird beim ersten Öffnen nach der Anmeldung eingetragen). Bricht der
-Mensch die Anfrage in der Kellerwolke ab, bricht der Auftrag ab; ist die App aus, wartet die Anfrage.
+Mit Angeboten bekommt die App `GET` und `POST /api/v1/kellerwolke/wahl` (Dateiwahl), `GET
+/api/v1/kellerwolke/anfragen/{id}` (Stand und Frist) und `POST /api/v1/kellerwolke/anfragen/{id}/oeffnen` (die
+Kellerwolke führt den Browser zu `<adresse>/anfrage/<id>`; die Adresse der App steht in den Einstellungen und wird beim
+ersten Öffnen nach der Anmeldung eingetragen). Die Schale nimmt eine solche Anfrage auf dem Weg `/anfrage/<id>` an und
+fragt die App über `oeffnen`, welche ihrer Ansichten die Datei zeigt (`<Schale {bereiche} {oeffnen} />`, etwa
+`` (a) => `aufnahmen/${a.knoten_id}/anfrage/${a.id}` ``). In der Oberfläche stehen dafür `wahl`, `waehlen`, `anfrage`
+und `istMedium` bereit. Bricht der Mensch die Anfrage in der Kellerwolke ab, bricht der Auftrag ab; ist die App aus,
+wartet die Anfrage.
 
 ## Anmeldung
 
@@ -320,7 +324,8 @@ während einer Aufnahme), wartet es. Kein Nutzer muss nach dem Ausrollen selbst 
 Die Adresse im Browser ist ein echter Pfad: der erste Teil wählt den Bereich (`/transkripte`), weitere Teile liest die
 Seite aus `navigation.teile` (`/transkripte/<kennung>`); Zurück und Vor im Browser funktionieren, das Backend liefert
 für jeden Pfad außerhalb von `/api` die Oberfläche aus. Eine Seite, die einen Teil zeigt, setzt `navigation.titel`;
-am Telefon steht er im Kopf, mit einem Knopf zurück zum Bereich. Für eigene Seiten stehen `hole`, `json`, `gehe`,
+am Telefon steht er im Kopf, mit einem Knopf zurück zum Bereich, und daneben auf Wunsch `navigation.kennzeichen`
+(`{ symbol, text }`, etwa woher das Gezeigte kommt). Für eigene Seiten stehen `hole`, `json`, `gehe`,
 `adresse`, `navigation`, `sitzung`, `geraet`, `auftraege`, `beiAuftrag` (Ereignisse der Aufträge mithören),
 `AuftragZeile`, `Schritte`, `Auswahl` (Aufklappliste statt nativer Auswahlfelder), `Leiste` mit `leisteOeffnen` und
 `ereignisseBenennen` (lesbare Namen eigener Protokollereignisse) bereit.

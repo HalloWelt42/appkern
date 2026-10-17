@@ -7,7 +7,7 @@
   import { geraet, geraetStarten } from "../lib/geraet.svelte";
   import { navigationStarten } from "../lib/navigation.svelte";
   import { sitzung, starten } from "../lib/sitzung.svelte";
-  import type { Bereich } from "../lib/typen";
+  import type { Anfrage, Bereich } from "../lib/typen";
   import Anmeldung from "./Anmeldung.svelte";
   import Einrichtung from "./Einrichtung.svelte";
   import Rechner from "./Rechner.svelte";
@@ -15,7 +15,9 @@
 
   // `fassung`: mit welcher Fassung die Oberfläche gebaut wurde (aus version.json der App); weicht die des Servers ab,
   // lädt die Seite von selbst neu. `ruhig`: ob die App gerade neu laden darf (etwa nicht während einer Aufnahme).
-  let { bereiche = [], fassung, ruhig }: { bereiche?: Bereich[]; fassung: string; ruhig?: () => boolean } = $props();
+  // `oeffnen`: wohin eine Anfrage zum Öffnen aus der Kellerwolke führt (Weg /anfrage/<id>), etwa die Ansicht der Datei.
+  let { bereiche = [], fassung, ruhig, oeffnen }: { bereiche?: Bereich[]; fassung: string; ruhig?: () => boolean;
+                                                   oeffnen?: (a: Anfrage) => Promise<string> | string } = $props();
 
   anzeigeStarten();
   geraetStarten();
@@ -39,7 +41,7 @@
 {:else if !sitzung.angemeldet}
   <Anmeldung />
 {:else if geraet.mobil}
-  <MobilSchale {bereiche} />
+  <MobilSchale {bereiche} {oeffnen} />
 {:else}
-  <Rechner {bereiche} />
+  <Rechner {bereiche} {oeffnen} />
 {/if}

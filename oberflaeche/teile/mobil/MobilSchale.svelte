@@ -1,17 +1,18 @@
 <script lang="ts">
   // Eigene Ansicht fürs Telefon: Reiter unten (Bereiche der App, Aufträge, Mehr), Band bei fehlender Verbindung.
   import { onMount } from "svelte";
+  import AnfrageOeffnen from "../AnfrageOeffnen.svelte";
   import { auftraege, verfolgen } from "../../lib/auftraege.svelte";
   import { fassung } from "../../lib/fassung.svelte";
   import { gehe, navigation } from "../../lib/navigation.svelte";
-  import type { Bereich } from "../../lib/typen";
+  import type { Anfrage, Bereich } from "../../lib/typen";
   import { verbindungen, verbindungenVerfolgen } from "../../lib/verbindungen.svelte";
   import Einstellungen from "../Einstellungen.svelte";
   import Protokoll from "../Protokoll.svelte";
   import MobilAuftraege from "./MobilAuftraege.svelte";
   import MobilMehr from "./MobilMehr.svelte";
 
-  let { bereiche }: { bereiche: Bereich[] } = $props();
+  let { bereiche, oeffnen }: { bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string } = $props();
 
   onMount(() => {
     const a = verfolgen();
@@ -38,6 +39,7 @@
       <button class="rund" aria-label="Zurück" onclick={() => gehe(seite)}><i class="fa-solid fa-chevron-left"></i></button>
     {:else if unterMehr}<button class="rund" aria-label="Zurück" onclick={() => gehe("mehr")}><i class="fa-solid fa-chevron-left"></i></button>{/if}
     <h1>{navigation.titel || titel}</h1>
+    {#if navigation.kennzeichen}<span class="pille"><i class="fa-solid {navigation.kennzeichen.symbol}"></i>{navigation.kennzeichen.text}</span>{/if}
     {#if offen && seite !== "auftraege"}<button class="pille aktiv" style="border:0" onclick={() => gehe("auftraege")}><i class="fa-solid fa-gears"></i>{offen}</button>{/if}
   </div>
   {#if fassung.neu}
@@ -54,6 +56,8 @@
   <div class="t-inhalt">
     {#if bereich}
       <bereich.seite />
+    {:else if seite === "anfrage" && oeffnen}
+      <AnfrageOeffnen {oeffnen} />
     {:else if seite === "protokoll"}
       <Protokoll kompakt />
     {:else if seite === "einstellungen"}

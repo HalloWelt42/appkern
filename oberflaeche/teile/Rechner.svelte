@@ -1,10 +1,11 @@
 <script lang="ts">
   // Ansicht am Rechner: Kopf, Band bei fehlender Verbindung, Navigation, Seite (Aufträge mit Leiste).
   import { onMount } from "svelte";
+  import AnfrageOeffnen from "./AnfrageOeffnen.svelte";
   import { verfolgen } from "../lib/auftraege.svelte";
   import { fassung, ruhig } from "../lib/fassung.svelte";
   import { navigation } from "../lib/navigation.svelte";
-  import type { Bereich } from "../lib/typen";
+  import type { Anfrage, Bereich } from "../lib/typen";
   import { verbindungen, verbindungenVerfolgen } from "../lib/verbindungen.svelte";
   import Auftraege from "./Auftraege.svelte";
   import Band from "./Band.svelte";
@@ -13,7 +14,7 @@
   import Navigation from "./Navigation.svelte";
   import Protokoll from "./Protokoll.svelte";
 
-  let { bereiche }: { bereiche: Bereich[] } = $props();
+  let { bereiche, oeffnen }: { bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string } = $props();
 
   onMount(() => {
     const auftraegeStoppen = verfolgen();
@@ -43,6 +44,8 @@
     <Navigation {bereiche} {seite} />
     {#if bereich}
       <section class="seite"><bereich.seite /></section>
+    {:else if seite === "anfrage" && oeffnen}
+      <section class="seite"><AnfrageOeffnen {oeffnen} /></section>
     {:else if seite === "protokoll"}
       <Protokoll />
     {:else if seite === "einstellungen"}

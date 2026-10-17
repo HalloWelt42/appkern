@@ -13,5 +13,5 @@ export { fassung, ruhig } from "./lib/fassung.svelte";
 export { adresse, gehe, navigation } from "./lib/navigation.svelte";
 export { wann, seit, dauer } from "./lib/format";
 export { ereignisseBenennen } from "./lib/ereignisse";
-export { anfrageOeffnen, istMedium, waehlen, wahl } from "./lib/kellerwolke";
+export { anfrage, anfrageOeffnen, istMedium, waehlen, wahl } from "./lib/kellerwolke";
 export type * from "./lib/typen";

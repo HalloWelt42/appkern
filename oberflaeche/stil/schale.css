@@ -213,6 +213,12 @@ button { font: inherit; color: inherit; }
 .eingabe .auge { cursor: pointer; border: 0; background: transparent; padding: 4px; }
 .fehlerzeile { color: var(--gefahr); font-size: var(--klein); }
 .leer { color: var(--text-3); font-size: var(--klein); padding: 30px 4px; text-align: center; }
+/* Öffnen aus der Kellerwolke (/anfrage/<id>): mittig, mit Erklärung, wenn es nicht mehr geht */
+.laden-mitte { display: grid; place-items: center; min-height: 60vh; padding: 24px; }
+.leer-gross { max-width: 520px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.leer-gross > i { font-size: 40px; color: var(--text-3); }
+.leer-gross h2 { margin: 0; font-size: 20px; }
+.leer-gross p { margin: 0 0 6px; color: var(--text-2); }
 .laden { display: grid; place-items: center; height: 100vh; color: var(--text-3); }
 .segment button { border: 0; background: transparent; font: inherit; padding: 6px 14px; border-radius: 8px; font-size: var(--klein); color: var(--text-2); cursor: pointer; white-space: nowrap; }
 .segment button.aktiv { background: var(--flaeche); color: var(--text); font-weight: 600; box-shadow: var(--schatten); }

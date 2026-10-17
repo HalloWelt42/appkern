@@ -13,6 +13,11 @@ export function waehlen(knotenId: string, aktion: string): Promise<{ anfrage: An
   return hole(`/kellerwolke/wahl`, { method: "POST", body: JSON.stringify({ knoten_id: knotenId, aktion }) });
 }
 
+// Stand einer Anfrage (etwa die Frist einer aus der Kellerwolke geöffneten Datei).
+export function anfrage(anfrageId: string): Promise<Anfrage> {
+  return hole<Anfrage>(`/kellerwolke/anfragen/${encodeURIComponent(anfrageId)}`);
+}
+
 // Die Kellerwolke hat den Browser mit dieser Anfrage geschickt (Adresse /anfrage/<id>): annehmen.
 export function anfrageOeffnen(anfrageId: string): Promise<Anfrage> {
   return hole<Anfrage>(`/kellerwolke/anfragen/${encodeURIComponent(anfrageId)}/oeffnen`, { method: "POST" });

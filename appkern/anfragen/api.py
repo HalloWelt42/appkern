@@ -64,6 +64,14 @@ def anfragen_router(abholer: Abholer, kellerwolke: Callable[[], Kellerwolke | No
         except KellerwolkeFehler as f:
             raise _fehler(f) from None
 
+    @router.get("/anfragen/{anfrage_id}", response_model=Anfrage, dependencies=[mensch])
+    async def anfrage(anfrage_id: UUID) -> Anfrage:
+        """Stand einer Anfrage an diese App (etwa die Frist einer geöffneten Datei)."""
+        try:
+            return await zugang().anfrage(anfrage_id)
+        except KellerwolkeFehler as f:
+            raise _fehler(f) from None
+
     @router.post("/anfragen/{anfrage_id}/oeffnen", response_model=Anfrage, dependencies=[mensch])
     async def oeffnen(anfrage_id: UUID) -> Anfrage:
         """Die Kellerwolke hat den Browser mit dieser Anfrage geschickt: annehmen, dann zeigt die App die Datei."""

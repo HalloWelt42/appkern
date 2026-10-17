@@ -5,9 +5,10 @@
 import { vielleichtNeuLaden } from "./fassung.svelte";
 import { leisteSchliessen } from "./leiste.svelte";
 
-// `titel`: setzt eine Seite, die einen Teil zeigt (etwa ein Transkript), für den Kopf am Telefon; jeder Ortswechsel
-// leert ihn wieder.
-export const navigation = $state<{ seite: string; teile: string[]; titel: string }>({ seite: "", teile: [], titel: "" });
+// `titel`: setzt eine Seite, die einen Teil zeigt (etwa ein Transkript), für den Kopf am Telefon; `kennzeichen` daneben
+// sagt, woher das Gezeigte kommt (etwa "Kellerwolke"). Jeder Ortswechsel leert beides wieder.
+export const navigation = $state<{ seite: string; teile: string[]; titel: string; kennzeichen: { symbol: string; text: string } | null }>(
+  { seite: "", teile: [], titel: "", kennzeichen: null });
 
 function zerlegen(pfad: string): string[] {
   return pfad
@@ -26,6 +27,7 @@ function lesen(): void {
   const [seite = "", ...teile] = zerlegen(location.pathname);
   if (seite !== navigation.seite || teile.join("/") !== navigation.teile.join("/")) {
     navigation.titel = "";
+    navigation.kennzeichen = null;
     leisteSchliessen();
   }
   navigation.seite = seite;
