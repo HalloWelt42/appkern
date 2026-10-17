@@ -81,6 +81,7 @@ async def test_einrichtung_anmeldung_verbindungen_protokoll(umgebung):
     assert r.status_code == 422 and "nimmt den Schlüssel nicht" in r.json()["detail"]
     r = await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test/", "kellerwolke_schluessel": "kw_app_gut"})
     assert r.status_code == 200 and r.json()["besitzer"] == "chef" and not r.json()["einrichtung_noetig"]
+    assert r.json()["kellerwolke"] == "http://kw.test" and "kw_app" not in r.text
     assert (await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "x", "kellerwolke_schluessel": "y"})).status_code == 409
 
     assert (await c.post("/api/v1/anmeldung", json={"kennung": "gast", "passwort": "geheim"})).status_code == 403

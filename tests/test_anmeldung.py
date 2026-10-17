@@ -92,8 +92,9 @@ async def test_koppeln_und_fehler():
     a = anmeldung(s)
     schluessel, konto = await a.koppeln("CHEF0001", "Telefon", "webapp")
     assert konto.geraet and schluessel.startswith("kw_geraet_")
-    with pytest.raises(Abgelehnt):
+    with pytest.raises(Abgelehnt) as f:
         await a.koppeln("FALSCH", "Telefon", "webapp")
+    assert "http://kw.test" in f.value.meldung                     # sagt, welche Kellerwolke gefragt wurde
     with pytest.raises(ZuVieleVersuche) as f:
         await a.koppeln("BREMSE", "Telefon", "webapp")
     assert f.value.nochmal_in == 120

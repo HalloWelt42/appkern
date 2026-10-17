@@ -35,7 +35,8 @@
       <div class="rolle"><i class="fa-solid fa-wave-square"></i>{app.rolle}</div>
       <div class="hinweis-kw">
         <i class="fa-solid fa-cloud"></i>
-        <span>Anmelden mit deinem Konto der Kellerwolke.{#if app.besitzer} Diese App gehört dem Konto <b>{app.besitzer}</b>.{/if}</span>
+        <span>Anmelden mit deinem Konto der Kellerwolke unter <b>{app.kellerwolke}</b>.{#if app.besitzer} Diese App gehört
+          dem Konto <b>{app.besitzer}</b>.{/if}</span>
       </div>
       <label>Name oder Kürzel<span class="eingabe"><input bind:value={kennung} autocomplete="username" /></span></label>
       <label>Passwort<span class="eingabe"><input type="password" bind:value={passwort} autocomplete="current-password" /></span></label>
@@ -45,7 +46,7 @@
       <button class="knopf zweit breit" type="button" onclick={() => ((modus = "code"), (fehler = ""))}>
         <i class="fa-solid fa-link"></i> Mit Code koppeln
       </button>
-      <p class="fassung" style="text-align:center; margin:0">Den Code zeigt die Kellerwolke unter Einstellungen, Geräte.</p>
+      <p class="fassung" style="text-align:center; margin:0">Den Code zeigt diese Kellerwolke unter Einstellungen, Geräte.</p>
     </form>
   {:else}
     <form class="anmelde-karte" onsubmit={(e) => los(e, () => koppeln(code, name.trim(), geraeteArt()))}>
@@ -56,8 +57,9 @@
         <h1>Gerät koppeln</h1>
       </div>
       <p class="fassung" style="margin:0; font-size:var(--klein); color:var(--text-2)">
-        Tipp den Code aus der Kellerwolke ein (Einstellungen, Geräte). Danach bleibt dieses Gerät bei {app.name}
-        angemeldet, bis du es trennst; ein Passwort wird hier nicht gespeichert.
+        Tipp den Code aus der Kellerwolke unter <b>{app.kellerwolke}</b> ein (dort Einstellungen, Geräte); ein Code aus
+        einer anderen Kellerwolke gilt hier nicht. Danach bleibt dieses Gerät bei {app.name} angemeldet, bis du es
+        trennst; ein Passwort wird hier nicht gespeichert.
       </p>
       {#if fehler}<div class="fehlertext">{fehler}</div>{/if}
       <label class="code-feld">

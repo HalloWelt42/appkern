@@ -60,6 +60,7 @@ class AppInfo(BaseModel):
     appkern: str
     einrichtung_noetig: bool
     besitzer: str | None = None
+    kellerwolke: str = ""       # Adresse, gegen die angemeldet und gekoppelt wird (nie der Schlüssel)
 
 
 class Verbindung(BaseModel):
@@ -216,7 +217,8 @@ class Geruest(Generic[E]):
 
     def info(self) -> AppInfo:
         return AppInfo(name=self.name, kennung=self.kennung, rolle=self.rolle, symbol=self.symbol, fassung=self.fassung,
-                       appkern=appkern.__version__, einrichtung_noetig=self.einrichtung_noetig, besitzer=self.besitzer)
+                       appkern=appkern.__version__, einrichtung_noetig=self.einrichtung_noetig, besitzer=self.besitzer,
+                       kellerwolke=self.einstellungen.stand.kellerwolke_adresse.rstrip("/"))
 
     def _grund_router(self) -> APIRouter:
         router = APIRouter(prefix="/api/v1", tags=["app"])

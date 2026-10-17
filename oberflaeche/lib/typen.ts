@@ -10,6 +10,7 @@ export interface AppInfo {
   appkern: string;
   einrichtung_noetig: boolean;
   besitzer: string | null;
+  kellerwolke: string;
 }
 
 export interface Konto {

@@ -146,7 +146,9 @@ class Anmeldung:
             nochmal = antwort.headers.get("retry-after", "")
             raise ZuVieleVersuche(_meldung(antwort, "Zu viele falsche Codes"), int(nochmal) if nochmal.isdigit() else None)
         if antwort.status_code in (404, 422):
-            raise Abgelehnt(_meldung(antwort, "Dieser Code gilt nicht (mehr)"))
+            # Häufigster Grund außer Ablauf: der Code stammt aus einer anderen Kellerwolke als der dieser App.
+            raise Abgelehnt(f"{_meldung(antwort, 'Dieser Code gilt nicht (mehr).')} Er muss aus der Kellerwolke unter "
+                            f"{self.adresse} stammen, mit der diese App verbunden ist.")
         if antwort.status_code >= 400:
             raise AnmeldungsFehler(_meldung(antwort, "Koppeln fehlgeschlagen"))
         daten = antwort.json()
