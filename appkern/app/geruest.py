@@ -109,6 +109,11 @@ class Einrichtung(BaseModel):
     kellerwolke_schluessel: str = Field(min_length=1)
 
 
+class AdresseEingabe(BaseModel):
+    adresse: str = Field(pattern=r"^https?://[^/\s?#]+$", max_length=200,
+                         description="Herkunft der Seite im Browser (location.origin), ohne Pfad")
+
+
 class Geruest(Generic[E]):
     def __init__(self, *, name: str, kennung: str, rolle: str, fassung: str, daten: Path, einstellungen: type[E],
                  arten: Sequence[Art] = (), symbol: str = "fa-cube", oberflaeche: Path | None = None,
@@ -415,11 +420,17 @@ class Geruest(Generic[E]):
             return await self.verbindungen()
 
         @router.get("/ich", response_model=Konto)
-        async def ich(request: Request, konto: Konto = self.pflicht) -> Konto:
-            if konto.mensch and not self.einstellungen.stand.adresse:
-                # Die Adresse, unter der Menschen die App öffnen: einmal eintragen (für Öffnen aus der Kellerwolke).
-                await self.einstellungen.aendern({"adresse": str(request.base_url).rstrip("/")})
+        async def ich(konto: Konto = self.pflicht) -> Konto:
             return konto
+
+        @router.post("/adresse", response_model=AdresseEingabe, dependencies=[self.mensch])
+        async def adresse_melden(eingabe: AdresseEingabe) -> AdresseEingabe:
+            """Die Oberfläche meldet nach der Anmeldung, unter welcher Adresse Menschen die App öffnen (so, wie der
+            Browser sie sieht, auch hinter einem Proxy). Eingetragen wird sie einmal, danach gilt die Einstellung;
+            dorthin führt Öffnen aus der Kellerwolke."""
+            if not self.einstellungen.stand.adresse:
+                await self.einstellungen.aendern({"adresse": eingabe.adresse})
+            return AdresseEingabe(adresse=self.einstellungen.stand.adresse)
 
         return router
 

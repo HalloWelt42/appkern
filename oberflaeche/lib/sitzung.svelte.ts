@@ -15,6 +15,15 @@ function vorbei(): void {
   sitzung.konto = null;
 }
 
+// Wo Menschen die App öffnen, so wie der Browser es sieht; der Server trägt es einmal ein (Öffnen aus der Kellerwolke).
+async function adresseMelden(): Promise<void> {
+  try {
+    await hole("/adresse", { method: "POST", ...json({ adresse: location.origin }) });
+  } catch {
+    // ohne Adresse fehlt nur das Öffnen aus der Kellerwolke; die Einstellung lässt sich auch von Hand setzen
+  }
+}
+
 async function lesezugang(): Promise<void> {
   try {
     await hole("/anmeldung/zugang", { method: "POST" });
@@ -30,7 +39,10 @@ export async function starten(): Promise<void> {
     fassungVergleichen(sitzung.app, "start");
     if (!sitzung.app.einrichtung_noetig) {
       const stand = await hole<{ angemeldet: boolean; konto: Konto | null }>("/anmeldung");
-      if (stand.angemeldet) await lesezugang();
+      if (stand.angemeldet) {
+        await lesezugang();
+        void adresseMelden();
+      }
       sitzung.konto = stand.konto;
       sitzung.angemeldet = stand.angemeldet;
     }
@@ -44,6 +56,7 @@ export async function starten(): Promise<void> {
 async function angemeldet(daten: { token: string; konto: Konto }): Promise<void> {
   setzeToken(daten.token);
   await lesezugang();
+  void adresseMelden();
   sitzung.konto = daten.konto;
   sitzung.angemeldet = true;
 }
