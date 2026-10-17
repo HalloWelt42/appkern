@@ -29,6 +29,7 @@ class Ich(_Modell):
 
     app: str
     konto: str
+    konto_id: UUID | None = None  # ältere Kellerwolken nennen nur den Namen
     rechte: list[Rechtseintrag]
 
     @property
@@ -63,6 +64,15 @@ class Knoten(_Modell):
     @property
     def ist_ordner(self) -> bool:
         return self.typ == "ordner"
+
+
+class Version(_Modell):
+    """Eine Fassung einer Datei; ändert sich nie. Zurückholen: Inhalt lesen und als neue Version schreiben."""
+
+    id: UUID
+    groesse: int
+    erstellt_am: datetime
+    aktuell: bool = False
 
 
 class Herkunft(_Modell):

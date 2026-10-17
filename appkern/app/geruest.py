@@ -4,7 +4,7 @@
                       daten=Path("daten"), einstellungen=TranskriptionEinstellungen, arten=[...],
                       oberflaeche=Path("../frontend/dist"))
     app = geruest.fastapi()
-    app.include_router(eigener_router)          # mit Depends(geruest.pflicht)
+    app.include_router(eigener_router)          # mit Depends(geruest.pflicht), Oberflächen-Eigenes mit geruest.mensch
 
 Was das Gerüst übernimmt: Datenbank, Einstellungen (Grundeinstellungen plus die der App), Protokoll, Aufträge,
 Anmeldung mit dem Kellerwolke-Konto (Besitzer ist das Konto des App-Schlüssels), Zugänge zu Kellerwolke und Leitstelle
@@ -105,7 +105,8 @@ class Geruest(Generic[E]):
         self.leitstelle: Leitstelle | None = None
         self._clients: list[httpx.AsyncClient] = []
         self.anmeldung = Anmeldung("", self._erlaubt)
-        self.pflicht = Depends(angemeldet(self.anmeldung))
+        self.pflicht = Depends(angemeldet(self.anmeldung))                          # Menschen und andere Apps
+        self.mensch = Depends(angemeldet(self.anmeldung, nur_menschen=True))        # nur Menschen
         self.lesen = Depends(angemeldet(self.anmeldung, cookie=True))
         self._pflege: asyncio.Task | None = None
 
@@ -293,7 +294,7 @@ class Geruest(Generic[E]):
         app.include_router(self._grund_router())
         app.include_router(anmeldungs_router(self.anmeldung, protokoll=self.protokoll))
         for router in (auftrags_router(self.auftraege, abhaengigkeiten=[self.pflicht]),
-                       einstellungs_router(self.einstellungen, abhaengigkeiten=[self.pflicht]),
+                       einstellungs_router(self.einstellungen, abhaengigkeiten=[self.mensch]),
                        protokoll_router(self.protokoll, abhaengigkeiten=[self.pflicht])):
             app.include_router(router)
         return app

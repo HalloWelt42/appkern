@@ -1,7 +1,8 @@
 """Schnittstelle der Anmeldung für ein FastAPI-Backend (Zusatz `appkern[web]`) und die Abhängigkeiten, mit denen die
 App ihre Endpunkte schützt.
 
-Der Token der Kellerwolke kommt im Kopf `X-Kellerwolke-Sitzung`. Für Inhaltsadressen (Ton, Bild, Download in `<audio>`
+Der Token der Kellerwolke kommt im Kopf `X-Kellerwolke-Sitzung`, der App-Schlüssel einer anderen App als
+`Authorization: Bearer kw_app_...`. Für Inhaltsadressen (Ton, Bild, Download in `<audio>`
 oder `<img>`, die keinen Kopf senden können) richtet `POST .../zugang` ein Cookie ein, das nur für `inhalt_pfad` gilt
 (HttpOnly, SameSite strict).
 """
@@ -53,17 +54,26 @@ def _http(f: AnmeldungsFehler) -> HTTPException:
     return HTTPException(status_code=f.status, detail=f.meldung, headers=kopf)
 
 
-def angemeldet(anmeldung: Anmeldung, *, cookie: bool = False) -> Callable[[Request], Awaitable[Konto]]:
-    """Abhängigkeit für geschützte Endpunkte; mit `cookie=True` auch für Inhaltsadressen."""
+def _bearer(request: Request) -> str:
+    art, _, wert = request.headers.get("authorization", "").partition(" ")
+    return wert.strip() if art.lower() == "bearer" else ""
+
+
+def angemeldet(anmeldung: Anmeldung, *, cookie: bool = False,
+               nur_menschen: bool = False) -> Callable[[Request], Awaitable[Konto]]:
+    """Abhängigkeit für geschützte Endpunkte; mit `cookie=True` auch für Inhaltsadressen, mit `nur_menschen=True` ohne
+    andere Apps (etwa Einstellungen mit Geheimnissen)."""
 
     async def pruefen(request: Request) -> Konto:
-        token = request.headers.get(KOPF) or (request.cookies.get(COOKIE, "") if cookie else "")
+        token = request.headers.get(KOPF) or _bearer(request) or (request.cookies.get(COOKIE, "") if cookie else "")
         try:
             konto = await anmeldung.pruefen(token)
         except AnmeldungsFehler as f:
             raise _http(f)
         if konto is None:
             raise HTTPException(status_code=401, detail="Anmeldung erforderlich")
+        if nur_menschen and not konto.mensch:
+            raise HTTPException(status_code=403, detail="Nur in der Oberfläche, nicht für andere Apps")
         return konto
 
     return pruefen
@@ -73,7 +83,7 @@ def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung"
                       inhalt_pfad: str = "/api/v1/inhalt", protokoll: Protokoll | None = None) -> APIRouter:
     """Mit `protokoll` werden Anmelden, Koppeln, Abweisungen und Abmelden eingetragen (nie Passwörter oder Token)."""
     router = APIRouter(prefix=prefix, tags=["anmeldung"])
-    pflicht = angemeldet(anmeldung)
+    mensch = angemeldet(anmeldung, nur_menschen=True)
 
     async def eintragen(ereignis: str, text: str, name: str | None = None, stufe: str = "info") -> None:
         if protokoll is not None:
@@ -123,7 +133,7 @@ def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung"
         return response
 
     @router.post("/zugang", status_code=204)
-    async def zugang(request: Request, response: Response, konto: Konto = Depends(pflicht)) -> Response:
+    async def zugang(request: Request, response: Response, konto: Konto = Depends(mensch)) -> Response:
         response.set_cookie(COOKIE, request.headers[KOPF], max_age=_ZUGANG_DAUER, path=inhalt_pfad, httponly=True,
                             samesite="strict", secure=_https(request))
         response.status_code = 204

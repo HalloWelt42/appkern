@@ -11,6 +11,11 @@ Kopplung beendet die App sofort wieder.
 
 Auf dem iPhone hat jede Web-App vom Home-Bildschirm ihren eigenen Speicher: ein Telefon wird je App einmal gekoppelt
 (mit einem Code aus der Kellerwolke, Einstellungen, Geräte).
+
+Andere Apps (App zu App, Entscheidung des Nutzers, 17.10.2026) melden sich mit ihrem App-Schlüssel der Kellerwolke an
+(`kw_app_...`). Die App fragt die Kellerwolke, wem der Schlüssel gehört (`/api/v1/ablage/ich`), und lässt dieselben
+Konten zu wie in der Oberfläche; das Konto trägt dann den Namen der rufenden App. Abmelden beendet einen App-Schlüssel
+nie (er gehört der anderen App).
 """
 
 from __future__ import annotations
@@ -26,6 +31,7 @@ import httpx
 from pydantic import BaseModel
 
 GERAET_PRAEFIX = "kw_geraet_"
+APP_PRAEFIX = "kw_app_"
 _HOECHSTENS = 2000
 
 
@@ -35,6 +41,11 @@ class Konto(BaseModel):
     kuerzel: str | None = None
     rolle: str = "mitglied"
     geraet: bool = False             # mit einem gekoppelten Gerät angemeldet
+    app: str | None = None           # eine andere App, angemeldet mit ihrem App-Schlüssel der Kellerwolke
+
+    @property
+    def mensch(self) -> bool:
+        return self.app is None
 
 
 class AnmeldungsFehler(Exception):
@@ -165,6 +176,22 @@ class Anmeldung:
         if gemerkt and gemerkt[1] > time.monotonic():
             return gemerkt[0] if self._darf(gemerkt[0]) else None
         self._gemerkt.pop(schluessel, None)
+        konto = await (self._app_pruefen(token) if token.startswith(APP_PRAEFIX) else self._sitzung_pruefen(token))
+        if konto is None or not self._darf(konto):
+            return None
+        self._merken(token, konto)
+        return konto
+
+    async def _app_pruefen(self, schluessel: str) -> Konto | None:
+        antwort = await self._senden("GET", "/api/v1/ablage/ich", headers={"Authorization": f"Bearer {schluessel}"})
+        if antwort.status_code in (401, 403):
+            return None
+        if antwort.status_code >= 400:
+            raise KellerwolkeWeg(f"Die Kellerwolke antwortet mit {antwort.status_code}")
+        ich = antwort.json()
+        return Konto(id=str(ich.get("konto_id") or ich["konto"]), name=ich["konto"], app=ich["app"])
+
+    async def _sitzung_pruefen(self, token: str) -> Konto | None:
         antwort = await self._senden("GET", "/api/v1/auth/status", headers={"X-Kellerwolke-Sitzung": token})
         if antwort.status_code >= 400:
             raise KellerwolkeWeg(f"Die Kellerwolke antwortet mit {antwort.status_code}")
@@ -172,15 +199,11 @@ class Anmeldung:
         if not daten.get("angemeldet") or not daten.get("benutzer"):
             return None
         b = daten["benutzer"]
-        konto = Konto(**{**b, "id": str(b["id"])}, geraet=token.startswith(GERAET_PRAEFIX))
-        if not self._darf(konto):
-            return None
-        self._merken(token, konto)
-        return konto
+        return Konto(**{**b, "id": str(b["id"])}, geraet=token.startswith(GERAET_PRAEFIX))
 
     async def abmelden(self, token: str) -> None:
         self._gemerkt.pop(self._schluessel(token), None)
-        if token:
+        if token and not token.startswith(APP_PRAEFIX):
             try:
                 await self._senden("POST", "/api/v1/auth/logout", headers={"X-Kellerwolke-Sitzung": token})
             except KellerwolkeWeg:

@@ -143,3 +143,33 @@ async def test_fremdes_bleibt_fremd(wolke):
     anker = await kw.pfad(ich.zweig)
     with pytest.raises(KeinRecht):
         await kw.loeschen(anker.id)
+
+
+async def test_versionen_lesen_und_zurueckholen(wolke):
+    kw, ich, lauf = wolke
+    erst = await kw.schreiben(pfad_aus(lauf.pfad, "stand.json"), b'{"v": 1}', nur_neu=True)
+    zweit = await kw.neue_version(erst.id, b'{"v": 2}', stand=erst.etag)
+    versionen = await kw.versionen(erst.id)
+    assert [v.aktuell for v in versionen] == [True, False] and versionen[1].groesse == 8
+    alt = await kw.version_ganz(erst.id, versionen[1].id)
+    assert alt == b'{"v": 1}'
+    assert b"".join([d async for d in kw.version_lesen(erst.id, versionen[1].id, start=1, ende=3)]) == b'"v"'
+    await kw.neue_version(erst.id, alt, stand=zweit.etag)                    # zurückholen = neue Version
+    assert await kw.lesen_ganz(erst.id) == b'{"v": 1}' and len(await kw.versionen(erst.id)) == 3
+    assert ich.konto_id is not None
+
+
+async def test_app_schluessel_meldet_sich_bei_einer_anderen_app_an(wolke):
+    """Eine andere App (hier dieser Testzugang) meldet sich mit ihrem App-Schlüssel an; die Kellerwolke sagt, wem er
+    gehört."""
+    from appkern.anmeldung import Anmeldung
+
+    kw, ich, _ = wolke
+    a = Anmeldung(ZUGANG[0], lambda: {ich.konto}, merken_s=0.0)
+    konto = await a.pruefen(ZUGANG[1])
+    assert konto is not None and konto.app == ich.app and konto.name == ich.konto and konto.id == str(ich.konto_id)
+    fremd = Anmeldung(ZUGANG[0], lambda: {"niemand-sonst"})
+    assert await fremd.pruefen(ZUGANG[1]) is None
+    assert await a.pruefen("kw_app_gibt_es_nicht") is None
+    await a.schliessen()
+    await fremd.schliessen()

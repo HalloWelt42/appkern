@@ -22,7 +22,7 @@ from uuid import UUID
 import httpx
 
 from .fehler import KellerwolkeFehler, NichtErreichbar, NichtGefunden, fehler_aus
-from .modelle import Aenderungen, Herkunft, Ich, Knoten, Sperre
+from .modelle import Aenderungen, Herkunft, Ich, Knoten, Sperre, Version
 
 # Was als Inhalt geschrieben werden kann.
 Inhalt = bytes | Path | AsyncIterable[bytes]
@@ -145,11 +145,15 @@ class Kellerwolke:
     async def lesen(self, knoten_id: UUID | str, *, start: int | None = None,
                     ende: int | None = None) -> AsyncIterator[bytes]:
         """Inhalt stückweise; mit start (und ende, einschließlich) nur ein Bereich."""
+        async for daten in self._stroemen(f"/knoten/{knoten_id}/inhalt", start, ende):
+            yield daten
+
+    async def _stroemen(self, pfad: str, start: int | None, ende: int | None) -> AsyncIterator[bytes]:
         kopf = dict(self._kopf)
         if start is not None:
             kopf["Range"] = f"bytes={start}-{'' if ende is None else ende}"
         try:
-            async with self._client.stream("GET", f"{self._basis}/knoten/{knoten_id}/inhalt", headers=kopf) as antwort:
+            async with self._client.stream("GET", f"{self._basis}{pfad}", headers=kopf) as antwort:
                 if antwort.status_code >= 400:
                     await antwort.aread()
                     raise fehler_aus(antwort.status_code, _meldung(antwort))
@@ -161,6 +165,21 @@ class Kellerwolke:
     async def lesen_ganz(self, knoten_id: UUID | str) -> bytes:
         """Nur für kleine Inhalte (Texte, Einstellungen); Großes mit `lesen` oder `herunterladen`."""
         return b"".join([d async for d in self.lesen(knoten_id)])
+
+    async def versionen(self, knoten_id: UUID | str) -> list[Version]:
+        """Versionen einer Datei, neueste zuerst; die aktuelle ist markiert."""
+        antwort = await self._anfrage("GET", f"/knoten/{knoten_id}/versionen")
+        return [Version.model_validate(v) for v in antwort.json()]
+
+    async def version_lesen(self, knoten_id: UUID | str, version_id: UUID | str, *, start: int | None = None,
+                            ende: int | None = None) -> AsyncIterator[bytes]:
+        """Inhalt einer bestimmten Version stückweise (auch in Bereichen)."""
+        async for daten in self._stroemen(f"/knoten/{knoten_id}/versionen/{version_id}/inhalt", start, ende):
+            yield daten
+
+    async def version_ganz(self, knoten_id: UUID | str, version_id: UUID | str) -> bytes:
+        """Nur für kleine Inhalte."""
+        return b"".join([d async for d in self.version_lesen(knoten_id, version_id)])
 
     async def herunterladen(self, knoten_id: UUID | str, ziel: Path) -> Path:
         """In eine Datei: erst vollständig unter vorläufigem Namen, dann an ihren Platz - nie halb."""

@@ -11,6 +11,7 @@ from appkern.anmeldung import Abgelehnt, Anmeldung, KellerwolkeWeg, NichtErlaubt
 from appkern.anmeldung.api import COOKIE, angemeldet, anmeldungs_router
 
 KONTEN = {"chef": "1", "gast": "2"}
+APPS = {"kw_app_vertonung": ("Vertonung", "chef"), "kw_app_fremd": ("Fremd", "gast")}
 
 
 class Schein:
@@ -19,6 +20,8 @@ class Schein:
     def __init__(self):
         self.sitzungen: dict[str, str] = {}
         self.statusabrufe = 0
+        self.ich_abrufe = 0
+        self.abmeldungen: list[str] = []
         self.weg = False
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
@@ -46,7 +49,14 @@ class Schein:
             self.statusabrufe += 1
             name = self.sitzungen.get(request.headers.get("x-kellerwolke-sitzung", ""))
             return httpx.Response(200, json={"angemeldet": bool(name), "benutzer": self._b(name) if name else None})
+        if pfad == "/api/v1/ablage/ich":
+            self.ich_abrufe += 1
+            app = APPS.get(request.headers.get("authorization", "").removeprefix("Bearer "))
+            if not app:
+                return httpx.Response(401, json={"detail": "Ungültiger Schlüssel"})
+            return httpx.Response(200, json={"app": app[0], "konto": app[1], "konto_id": KONTEN[app[1]], "rechte": []})
         if pfad == "/api/v1/auth/logout":
+            self.abmeldungen.append(request.headers.get("x-kellerwolke-sitzung", ""))
             self.sitzungen.pop(request.headers.get("x-kellerwolke-sitzung", ""), None)
             return httpx.Response(204)
         return httpx.Response(404)
@@ -144,3 +154,39 @@ async def test_schnittstelle_mit_schutz_und_cookie():
         assert (await c.get("/api/v1/geheim", headers=h)).status_code == 401
         s.weg = True
         assert (await c.get("/api/v1/geheim", headers={"X-Kellerwolke-Sitzung": "x"})).status_code == 503
+
+
+async def test_andere_app_mit_ihrem_app_schluessel():
+    s = Schein()
+    a = anmeldung(s)
+    konto = await a.pruefen("kw_app_vertonung")
+    assert konto.name == "chef" and konto.app == "Vertonung" and not konto.mensch and konto.id == "1"
+    assert (await a.pruefen("kw_app_vertonung")).app == "Vertonung" and s.ich_abrufe == 1      # gemerkt
+    assert await a.pruefen("kw_app_fremd") is None                     # gehört einem Konto, das nicht darf
+    assert await a.pruefen("kw_app_unbekannt") is None
+    await a.abmelden("kw_app_vertonung")                                # beendet den fremden Schlüssel nie
+    assert s.abmeldungen == [] and (await a.pruefen("kw_app_vertonung")).app == "Vertonung"
+
+
+async def test_schnittstelle_fuer_andere_apps_ohne_oberflaechen_eigenes():
+    s = Schein()
+    a = anmeldung(s)
+    app = FastAPI()
+    app.include_router(anmeldungs_router(a))
+
+    @app.get("/api/v1/arbeit")
+    async def arbeit(konto=Depends(angemeldet(a))):
+        return {"konto": konto.name, "app": konto.app}
+
+    @app.get("/api/v1/einstellungen")
+    async def einstellungen(konto=Depends(angemeldet(a, nur_menschen=True))):
+        return {"konto": konto.name}
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        h = {"Authorization": "Bearer kw_app_vertonung"}
+        assert (await c.get("/api/v1/arbeit", headers=h)).json() == {"konto": "chef", "app": "Vertonung"}
+        assert (await c.get("/api/v1/einstellungen", headers=h)).status_code == 403
+        assert (await c.post("/api/v1/anmeldung/zugang", headers=h)).status_code == 403
+        assert (await c.get("/api/v1/arbeit", headers={"Authorization": "Bearer kw_app_fremd"})).status_code == 401
+        r = await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})
+        assert (await c.get("/api/v1/einstellungen", headers={"X-Kellerwolke-Sitzung": r.json()["token"]})).status_code == 200
