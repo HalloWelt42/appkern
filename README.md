@@ -360,6 +360,14 @@ Marker, Tempo, Tasten; `kompakt` für das Telefon), `Rueckfrage` (vor dem Lösch
 (`marke`, `genau`, `lesen`, `groesse`, `SPRACHEN`, Sprecherfarben `farbe`), Adressen in die Kellerwolke
 (`inKellerwolke`, `zurueckZurKellerwolke`) und die Namen der Begleiter-Rollen (`ROLLEN`, `daneben`).
 
+`Dateiwahl` blättert durch die Kellerwolke und lässt Dateien für Aufträge der App wählen; was wählbar ist, woran ein
+laufender Auftrag und ein fertiges Ergebnis zu erkennen sind, die Wörter und das Starten beschreibt die App als
+`WahlZweck`, ihre Einstellungen reicht sie als Snippet `optionen` herein. `Rekorder` nimmt im Browser auf (Pegel, Marker,
+Mikrofon wechseln, Live-Mitschrift, jedes Stück sofort im Gerätespeicher); die App richtet das Aufnehmen einmal mit
+`aufnahmeEinrichten({ app, hoeren, name })` ein, legt eine fertige Aufnahme über `ablegen` ab und bietet im Snippet
+`danach` an, was damit geschehen soll. Liegengebliebene Aufnahmen holt `gespeicherteAufnahmen` und `aufnahmeAlsDatei`.
+Dazu die Listenstile (`.zeile`, `.stand-pille`, `.optionen`, `.knopfzeile`).
+
 ## Neue App aus der Vorlage
 
 ```bash

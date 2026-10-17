@@ -30,6 +30,16 @@ export function istMedium(inhaltstyp: string | null): boolean {
   return !!inhaltstyp && (inhaltstyp.startsWith("audio/") || inhaltstyp.startsWith("video/"));
 }
 
+// Symbol einer Zeile der Dateiwahl nach Art und Inhaltstyp.
+export function dateiSymbol(typ: "ordner" | "datei", inhaltstyp: string | null): string {
+  const t = inhaltstyp ?? "";
+  if (typ === "ordner") return "fa-folder";
+  if (t.startsWith("video/")) return "fa-file-video";
+  if (t.startsWith("audio/")) return "fa-file-audio";
+  if (t.startsWith("image/")) return "fa-file-image";
+  return t.startsWith("text/") ? "fa-file-lines" : "fa-file";
+}
+
 // --- Herkunft: Dateien aus der Kellerwolke (einzige Stelle für Adressen dorthin) ------------------------------------
 
 // Die Datei in der Kellerwolke: ihr Ordner, die Datei darin gezeigt; leer, solange die App die Adresse nicht kennt.

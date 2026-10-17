@@ -139,6 +139,32 @@ export interface WahlSeite {
   eintraege: WahlEintrag[];
 }
 
+// Wozu eine App Dateien der Kellerwolke wählen lässt (Baustein Dateiwahl): welche Dateien gehen, woran ein laufender
+// Auftrag und ein fertiges Ergebnis zu erkennen sind, die Wörter der Oberfläche und das Starten.
+export interface WahlZweck {
+  auftrag: string;                         // Art der Aufträge, die eine gewählte Datei bearbeiten
+  quelle: (a: Auftrag) => string;          // welche Datei (Knoten) ein solcher Auftrag bearbeitet
+  ergebnis: string[];                      // Rollen der Begleiter, die das Ergebnis halten: dann "fertig", Zeile öffnet
+  waehlbar?: (e: WahlEintrag) => boolean;  // Vorgabe: Ton und Video
+  ordnerAdresse: (ordnerId: string) => string;   // Ort der App für einen Unterordner
+  woerter: WahlWoerter;
+  starten: (ids: string[]) => Promise<string>;   // stellt die Aufträge; zurück kommt die Meldung danach
+}
+
+export interface WahlWoerter {
+  tun: string;           // Knopf zum Starten ("Transkribieren")
+  symbol: string;        // Symbol der Optionsleiste
+  fertig: string;        // Stand mit Ergebnis ("transkribiert")
+  offen: string;         // Stand ohne Ergebnis ("ohne Transkript")
+  gruppe: string;        // Überschrift der wählbaren Dateien am Telefon ("Ton und Video")
+  leer: string;          // keine wählbare Datei im Ordner (Telefon)
+  andere: string;        // Kennzeichen nicht wählbarer Dateien in ihrer Zeile ("kein Ton")
+  nichtWaehlbar: string; // Erklärung an nicht wählbaren Dateien
+  hinweis: string;       // Band oben am Rechner: was die App sieht und darf
+  hinweisKurz: string;   // dasselbe am Telefon
+  anleitung: string;     // unter der Liste, solange etwas wählbar ist
+}
+
 export type AnfrageZustand = "wartet" | "laeuft" | "fertig" | "fehler" | "abgebrochen";
 
 // Eine Anfrage der Kellerwolke an diese App: Aktion auf einer Datei; solange sie offen ist, darf die App genau diese
