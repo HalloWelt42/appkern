@@ -197,6 +197,22 @@ verzeichnis = Verzeichnis(eingetragen={"stimmenausgabe": "http://studio:8611"})
 adresse = await verzeichnis.adresse("transkription")      # etwa http://127.0.0.1:8601
 ```
 
+## Ton
+
+`appkern.ton` (Zusatz `appkern[ton]`, ffmpeg und ffprobe vom System) für alle Apps, die mit Ton arbeiten:
+
+- `Tonformat(rate, kanaele, kodierung, bitrate)`: ein Ziel als Modell statt verstreuter Schalter; feste Formate
+  `HOEREN` (16 kHz mono PCM16, für die Spracherkennung) und `ABSPIELEN` (44,1 kHz mono PCM16, samplegenau springbar).
+- `Ton.eigenschaften(datei)`: gemessen mit ffprobe (Dauer, Rate, Kanäle, Kodierung, Bittiefe, Bitrate, Behälter, ob
+  Video); `als_format()` liefert das Format der Quelle zum Zurückwandeln.
+- `Ton.wandeln(quelle, ziel, format, beginn=, ende=)`: Tonspur (auch aus Video) genau in das Format; Resampling mit
+  soxr, wenn ffmpeg es hat (Pi, Container), sonst mit dem eingebauten in hoher Qualität (`Ton.resampler()` sagt,
+  welcher). Ausgaben entstehen unter einem Zwischennamen und rücken erst vollständig an ihren Platz.
+- `dauer`, `pausen`, `ausschneiden`, `wellenform` (Dezibel mit festem Maßstab), `flac`; `Abspielfassungen` als
+  Zwischenspeicher je Quelle und Stand mit Obergrenze.
+
+Die Tests wandeln echte Töne hin und zurück und messen Frequenz, Dauer und Format.
+
 ## Anfragen aus der Kellerwolke
 
 Was eine App mit Dateien kann, meldet sie der Kellerwolke als Aktion; das Dateimenü der Kellerwolke bietet es an, das
