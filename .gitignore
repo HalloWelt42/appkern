@@ -9,3 +9,4 @@ build/
 appkern/VERSION
 .env.test
 node_modules/
+.probe/

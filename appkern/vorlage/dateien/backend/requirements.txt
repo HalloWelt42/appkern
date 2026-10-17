@@ -1,0 +1,4 @@
+__APPKERN_PY__
+uvicorn[standard]>=0.30
+pytest>=8
+pytest-asyncio>=0.24

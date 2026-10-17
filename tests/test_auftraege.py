@@ -198,6 +198,7 @@ async def test_liste_seitenweise_und_aufraeumen(dienst):
     seite = await dienst.liste(grenze=2, versatz=1, stapel="s1")
     assert seite.gesamt == 5 and len(seite.eintraege) == 2
     assert (await dienst.liste(zustand=["wartet"])).gesamt == 0
+    assert (await dienst.liste(suche="Zeichen")).gesamt == 5 and (await dienst.liste(suche="%")).gesamt == 0
     await dienst.db.ausfuehren("UPDATE auftrag SET beendet_am='2020-01-01T00:00:00+00:00' WHERE id=?", (ids[0],))
     assert await dienst.aufraeumen() == 1
     assert (await dienst.liste()).gesamt == 4

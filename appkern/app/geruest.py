@@ -195,7 +195,10 @@ class Geruest(Generic[E]):
         await self.db.schliessen()
 
     async def _nach_aenderung(self, stand: E, geaendert: set[str]) -> None:
-        await self.protokoll.eintragen("einstellung.geaendert", ", ".join(sorted(geaendert)), bezug_art="einstellungen")
+        felder = self.einstellungen.modell.model_fields
+        titel = sorted(felder[n].title or n for n in geaendert)
+        await self.protokoll.eintragen("einstellung.geaendert", ", ".join(titel), bezug_art="einstellungen",
+                                       daten={"felder": sorted(geaendert)})
         if geaendert & {"kellerwolke_adresse", "kellerwolke_schluessel", "leitstelle_adresse", "leitstelle_schluessel",
                         "ca_datei"}:
             await self._zugaenge_bauen()

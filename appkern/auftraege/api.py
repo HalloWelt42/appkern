@@ -32,8 +32,10 @@ def auftrags_router(auftraege: Auftraege, *, prefix: str = "/api/v1/auftraege",
 
     @router.get("", response_model=Seite)
     async def liste(zustand: list[Zustand] = Query(default=[]), art: str | None = None, stapel: str | None = None,
-                    grenze: int = Query(50, ge=1, le=500), versatz: int = Query(0, ge=0)) -> Seite:
-        return await auftraege.liste(zustand=zustand, art=art, stapel=stapel, grenze=grenze, versatz=versatz)
+                    suche: str | None = None, grenze: int = Query(50, ge=1, le=500),
+                    versatz: int = Query(0, ge=0)) -> Seite:
+        return await auftraege.liste(zustand=zustand, art=art, stapel=stapel, suche=suche, grenze=grenze,
+                                     versatz=versatz)
 
     @router.get("/ereignisse")
     async def ereignisse() -> StreamingResponse:

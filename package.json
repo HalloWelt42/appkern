@@ -4,9 +4,25 @@
   "version": "0.0.0",
   "description": "Gemeinsame Schale und Gestaltung der Oberflächen der eigenen Apps",
   "type": "module",
-  "files": ["oberflaeche/"],
+  "files": [
+    "oberflaeche/index.ts",
+    "oberflaeche/lib/",
+    "oberflaeche/teile/",
+    "oberflaeche/stil/"
+  ],
   "dependencies": {
     "@fontsource/barlow": "^5.2.8",
     "@fortawesome/fontawesome-free": "^6.6.0"
+  },
+  "exports": {
+    ".": {
+      "svelte": "./oberflaeche/index.ts",
+      "default": "./oberflaeche/index.ts"
+    },
+    "./stil.css": "./oberflaeche/stil/alles.css"
+  },
+  "svelte": "./oberflaeche/index.ts",
+  "peerDependencies": {
+    "svelte": "^5.1.0"
   }
 }

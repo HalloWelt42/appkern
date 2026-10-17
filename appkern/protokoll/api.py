@@ -17,9 +17,10 @@ def protokoll_router(protokoll: Protokoll, *, prefix: str = "/api/v1/protokoll",
 
     @router.get("", response_model=Seite)
     async def liste(ereignis: str | None = None, stufe: Stufe | None = None, bezug_id: str | None = None,
-                    tag: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"), suche: str | None = None,
+                    tag: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+                    ab: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"), suche: str | None = None,
                     grenze: int = Query(100, ge=1, le=500), versatz: int = Query(0, ge=0)) -> Seite:
-        return await protokoll.liste(ereignis=ereignis, stufe=stufe, bezug_id=bezug_id, tag=tag, suche=suche,
+        return await protokoll.liste(ereignis=ereignis, stufe=stufe, bezug_id=bezug_id, tag=tag, ab=ab, suche=suche,
                                      grenze=grenze, versatz=versatz)
 
     return router

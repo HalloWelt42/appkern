@@ -10,7 +10,7 @@ ZUGANG = {"gruppe": "Zugang"}
 
 class Grundeinstellungen(BaseModel):
     kellerwolke_adresse: str = Field("", title="Kellerwolke", json_schema_extra=VERBINDUNGEN,
-                                     description="Adresse der Kellerwolke; die Dateien der App liegen in ihrem Zweig Apps/<App>.")
+                                     description="Adresse der Kellerwolke; die Dateien der App liegen dort in ihrem eigenen Zweig unter Apps.")
     kellerwolke_schluessel: SecretStr = Field(SecretStr(""), title="App-Schlüssel der Kellerwolke", json_schema_extra=VERBINDUNGEN,
                                               description="In der Kellerwolke unter Einstellungen, Zugänge ausgestellt. Dem Konto des "
                                                           "Schlüssels gehört die App.")

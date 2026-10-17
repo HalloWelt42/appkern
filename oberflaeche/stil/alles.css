@@ -1,0 +1,5 @@
+/* Einstieg der Gestaltung: Schrift und Symbole aus npm, dann die Schale. */
+@import "@fontsource/barlow/400.css";
+@import "@fontsource/barlow/600.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+@import "./schale.css";

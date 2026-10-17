@@ -236,6 +236,41 @@ geruest.oberflaeche_ausliefern(app)                         # zuletzt
 Im Gerüst stehen `geruest.kellerwolke`, `geruest.leitstelle`, `geruest.auftraege`, `geruest.protokoll`,
 `geruest.einstellungen.stand` und `geruest.verzeichnis` bereit.
 
+## Oberfläche
+
+Die Oberflächen der Apps teilen Gestaltung und Schale aus einer Quelle, dem npm-Paket `appkern-oberflaeche` in diesem
+Repo (Ordner `oberflaeche`, Entwurf in `oberflaeche/mockups`, freigegeben am 17.10.2026). Die Schale bringt mit:
+erste Einrichtung, Anmeldung mit dem Kellerwolke-Konto (Passwort oder Code), Kopf mit Rolle, Verbindungen und
+laufenden Aufträgen, Band bei fehlender Verbindung, Navigation, Aufträge mit Schritten und Leiste, erzeugte
+Einstellungen (Geheimnisse verdeckt mit Auge), Protokoll, Schriftgröße und Thema je Gerät, eine eigene Ansicht fürs
+Telefon mit Reitern. Barlow und die Symbole kommen über npm.
+
+```svelte
+<script lang="ts">
+  import { Schale, type Bereich } from "appkern-oberflaeche";
+  import Aufnahmen from "./seiten/Aufnahmen.svelte";
+  const bereiche: Bereich[] = [{ schluessel: "aufnahmen", titel: "Aufnahmen", symbol: "fa-microphone-lines", seite: Aufnahmen, reiter: true }];
+</script>
+
+<Schale {bereiche} />
+```
+
+In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`; im Einstieg
+`import "appkern-oberflaeche/stil.css"`. Für eigene Seiten stehen `hole`, `json`, `gehe`, `sitzung`, `auftraege`,
+`AuftragZeile` und `Schritte` bereit.
+
+## Neue App aus der Vorlage
+
+```bash
+.venv/bin/python -m appkern.vorlage --name Transkription --kennung transkription --rolle "macht aus Ton Text" \
+    --symbol fa-closed-captioning --port 8601 --ziel ~/Entwicklung/Apps
+```
+
+Es entsteht eine lauffähige App: Backend auf dem Gerüst mit einem Probeauftrag, Oberfläche in der Schale,
+Symbolsatz für alle Geräte (aus dem Font-Awesome-Symbol auf der App-Farbe, auch für den iPhone-Startbildschirm),
+`stellwerk.toml`, `einrichten.sh`, Test und Verbundtest. `--appkern-lokal .` lässt Backend und Oberfläche auf diese
+Arbeitskopie zeigen statt auf GitHub.
+
 ## Einbinden
 
 In der `pyproject.toml` einer App:

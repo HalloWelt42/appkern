@@ -28,7 +28,7 @@ asyncio_default_fixture_loop_scope = "function"
 include = ["appkern*"]
 
 [tool.setuptools.package-data]
-"appkern" = ["VERSION"]
+"appkern" = ["VERSION", "vorlage/dateien/**/*", "vorlage/dateien/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "appkern.__version__"}

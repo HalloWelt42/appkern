@@ -59,10 +59,14 @@ class Protokoll:
             logger.exception("Protokolleintrag %s ging nicht", ereignis)
 
     async def liste(self, *, ereignis: str | None = None, stufe: Stufe | None = None, bezug_id: str | None = None,
-                    tag: str | None = None, suche: str | None = None, grenze: int = 100, versatz: int = 0) -> Seite:
+                    tag: str | None = None, ab: str | None = None, suche: str | None = None, grenze: int = 100,
+                    versatz: int = 0) -> Seite:
         """Neueste zuerst, seitenweise. `ereignis` als Anfang (`auftrag.` trifft alle Auftragsereignisse), `tag` als
-        JJJJ-MM-TT (UTC), `suche` in Name und Text."""
+        JJJJ-MM-TT (UTC) für genau diesen Tag, `ab` für alles ab diesem Tag, `suche` in Name und Text."""
         bedingungen, werte = [], []
+        if ab:
+            bedingungen.append("substr(zeit, 1, 10) >= ?")
+            werte.append(ab)
         if ereignis:
             bedingungen.append("ereignis LIKE ? ESCAPE '\\'")
             werte.append(_like(ereignis) + "%")

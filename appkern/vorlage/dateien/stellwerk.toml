@@ -1,0 +1,11 @@
+name = "__NAME__"
+beschreibung = "__ROLLE__"
+oberflaeche = "http://127.0.0.1:__PORT__"
+
+[[teile]]
+kennung = "backend"
+name = "Backend"
+ordner = "__ORDNER__/backend"
+befehl = [".venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "__PORT__", "--log-level", "warning"]
+port = __PORT__
+speicher_gb = 0.3

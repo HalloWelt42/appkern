@@ -147,6 +147,11 @@ class Auftraege:
         self._schleife: asyncio.Task | None = None
         self._hoerer: set[asyncio.Queue[Auftrag]] = set()
 
+    def anmelden(self, *arten: Art) -> None:
+        """Arten nachträglich anmelden (vor `starten`), etwa wenn ihre Arbeit das fertige Gerüst der App braucht."""
+        for a in arten:
+            self.arten[a.name] = a
+
     # --- Lebenszyklus ------------------------------------------------------------------------------------------
 
     async def starten(self) -> None:
@@ -208,9 +213,12 @@ class Auftraege:
         return self._als_auftrag(zeile)
 
     async def liste(self, *, zustand: Sequence[Zustand] = (), art: str | None = None, stapel: str | None = None,
-                    grenze: int = 50, versatz: int = 0) -> Seite:
-        """Neueste zuerst, seitenweise."""
+                    suche: str | None = None, grenze: int = 50, versatz: int = 0) -> Seite:
+        """Neueste zuerst, seitenweise; `suche` im Titel."""
         bedingungen, werte = [], []
+        if suche:
+            bedingungen.append("titel LIKE ? ESCAPE '\\'")
+            werte.append("%" + suche.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%")
         if zustand:
             bedingungen.append(f"zustand IN ({','.join('?' * len(zustand))})")
             werte += list(zustand)

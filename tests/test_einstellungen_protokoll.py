@@ -130,6 +130,8 @@ async def test_protokoll_filter_seiten_aufraeumen(db):
     assert (await p.liste(stufe="fehler")).eintraege[0].text == "Dienst weg"
     assert (await p.liste(bezug_id="d1")).eintraege[0].bezug_name == "Termin.wav"
     assert (await p.liste(suche="_13 100%")).gesamt == 1 and (await p.liste(suche="%")).gesamt == 1   # Platzhalter wörtlich
+    heute = (await p.liste()).eintraege[0].zeit.date().isoformat()
+    assert (await p.liste(ab=heute)).gesamt == 3 and (await p.liste(ab="2999-01-01")).gesamt == 0
     assert len((await p.liste(grenze=2)).eintraege) == 2 and len((await p.liste(grenze=2, versatz=2)).eintraege) == 1
     await db.ausfuehren("UPDATE protokoll SET zeit='2020-01-01T00:00:00+00:00' WHERE bezug_id='d1'")
     assert await p.aufraeumen() == 1
