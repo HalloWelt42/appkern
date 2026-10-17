@@ -252,8 +252,8 @@ button { font: inherit; color: inherit; }
 .mobil .t-zeile + .t-zeile { border-top: 1px solid var(--rand); }
 .mobil .t-zeile > i { width: 26px; text-align: center; font-size: 20px; color: var(--text-3); }
 .mobil .t-text { flex: 1; min-width: 0; }
-.mobil .t-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mobil .t-meta { font-size: var(--klein); color: var(--text-3); margin-top: 2px; }
+.mobil .t-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mobil .t-meta { display: block; font-size: var(--klein); color: var(--text-3); margin-top: 2px; }
 .mobil .t-zeile.gefahr, .mobil .t-zeile.gefahr > i { color: var(--gefahr); }
 .mobil .t-band { margin: 0 16px 10px; padding: 10px 14px; border-radius: 12px; background: var(--warn-weich); color: var(--warn); font-size: var(--klein); display: flex; gap: 10px; }
 .mobil .segment { display: flex; }
