@@ -367,7 +367,9 @@ button:focus:not(:focus-visible), [tabindex]:focus:not(:focus-visible) { outline
 .auswahl-liste button { display: flex; flex-direction: column; gap: 1px; }
 .auswahl-hinweis { font-size: var(--marke); color: var(--text-3); }
 .auswahl-liste button.aktiv .auswahl-hinweis { color: var(--akzent); opacity: .8; }
-.stand { display: flex; gap: 8px; align-items: baseline; font-size: var(--klein); color: var(--text-2); }
+.stand { display: flex; gap: 8px; align-items: baseline; font-size: var(--klein); color: var(--text-2); min-width: 0; }
+/* lange Stände (Pfade, Fehlermeldungen) brechen um statt über den Rand zu laufen */
+.stand > span { min-width: 0; overflow-wrap: anywhere; }
 .stand i { color: var(--text-3); }
 .stand.gut i { color: var(--gut); }
 .zahl-feld { display: inline-flex; align-items: center; gap: 10px; justify-self: start; }

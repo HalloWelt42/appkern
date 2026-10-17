@@ -190,7 +190,7 @@
                 {#if angebote[f.name]?.stand}
                   <div class="stand" class:gut={angebote[f.name].stand.startsWith("verbunden") || angebote[f.name].stand.startsWith("gefunden")}>
                     <i class="fa-solid {angebote[f.name].stand.startsWith('verbunden') || angebote[f.name].stand.startsWith('gefunden') ? 'fa-circle-check' : 'fa-circle-info'}"></i>
-                    {angebote[f.name].stand}</div>
+                    <span>{angebote[f.name].stand}</span></div>
                 {/if}
               </div>
             {:else if f.art === "auswahl" && alsUmschalter(f)}
