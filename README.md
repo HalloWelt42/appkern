@@ -50,6 +50,9 @@ async with Kellerwolke("http://192.168.178.49:39277", schluessel) as kw:
 | Zusammenarbeit | `sperren` und `entsperren` für lange Arbeiten, `herkunft_setzen`, `herkunft`, `herkunft_entfernen`, `suchen` nach Feldern |
 | Änderungen | `aenderungen` (seit einem Stand), `ereignisse` (eine Verbindung), `beobachten` (verbindet sich nach einem Abbruch neu und setzt am letzten Stand fort) |
 | Versionen | `versionen` (neueste zuerst, aktuelle markiert), `version_lesen` (Strom, auch Bereiche), `version_ganz`; zurückholen heißt: alten Inhalt als `neue_version` schreiben |
+| Begleitdateien | `begleiter` (einer Hauptdatei), `begleiter_schreiben` (je Rolle; den Namen aus Stamm und Zusatz vergibt die Kellerwolke: `Runde.wav` mit `.transkript.json` ergibt `Runde.transkript.json`), `begleiter_anhaengen` (vorhandene Datei kommt neben die Hauptdatei) |
+| Anfragen | `aktionen_melden`, `anfragen_holen` (lange Abfrage), `anfrage`, `anfrage_annehmen`, `anfrage_melden`, `weitergeben`; `mit_anfrage(id)` ist derselbe Zugang mit dem Recht genau dieser Anfrage (die angefragte Datei lesen, ihre Begleiter schreiben) |
+| Dateiwahl | `wahl` und `waehlen` mit der Anmeldung des Menschen an dieser App: blättern zeigt nur Namen, die Wahl stellt eine Anfrage |
 
 Überschreiben geht nur mit dem zuletzt gelesenen Stand (`stand=knoten.etag`); so gewinnt von zwei gleichzeitigen
 Schreibern genau einer. Fehler kommen als eigene Arten: `NichtErreichbar` (später erneut versuchen),
@@ -194,12 +197,48 @@ verzeichnis = Verzeichnis(eingetragen={"stimmenausgabe": "http://studio:8611"})
 adresse = await verzeichnis.adresse("transkription")      # etwa http://127.0.0.1:8601
 ```
 
+## Anfragen aus der Kellerwolke
+
+Was eine App mit Dateien kann, meldet sie der Kellerwolke als Aktion; das Dateimenü der Kellerwolke bietet es an, das
+Ergebnis landet als Begleitdatei neben der Datei. Jedes Angebot nennt die Art des Auftrags, die es ausführt; das
+Gerüst meldet die Aktionen beim Start, holt Anfragen ab (auch aus der Dateiwahl in der App), reiht sie als Aufträge ein
+und meldet Fortschritt und Ende zurück. Die Arbeit liest und schreibt nur mit dem Recht ihrer Anfrage:
+
+```python
+from appkern.anfragen import Angebot, AnfrageEingabe
+from appkern.kellerwolke import Aktion
+
+async def transkribieren(k: Kontext):
+    zugang = geruest.kellerwolke.mit_anfrage(k.eingabe.anfrage_id)   # nur diese Datei und ihre Begleiter
+    ...
+    b = await zugang.begleiter_schreiben(k.eingabe.knoten_id, "transkript", ".transkript.json", daten)
+    return {"ergebnis_id": str(b.id)}                                # die Kellerwolke zeigt den Begleiter als Ergebnis
+
+geruest = Geruest(..., arten=[Art("aus_anfrage", "Transkribieren", transkribieren, eingabe=AnfrageEingabe,
+                                  nach_neustart="fortsetzen")],
+                  angebote=[Angebot(Aktion(kennung="transkribieren", titel="Transkribieren", titel_erneut="Neu transkribieren",
+                                           symbol="fa-closed-captioning", typen=("audio/*", "video/*"), rolle="transkript"),
+                                    auftrag="aus_anfrage"),
+                            Angebot(Aktion(kennung="oeffnen", titel="In Transkription öffnen", symbol="fa-up-right-from-square",
+                                           typen=("audio/*", "video/*"), art="oeffnen", rolle="transkript"))])
+```
+
+Mit Angeboten bekommt die App `GET` und `POST /api/v1/kellerwolke/wahl` (Dateiwahl) und
+`POST /api/v1/kellerwolke/anfragen/{id}/oeffnen` (die Kellerwolke führt den Browser zu `<adresse>/anfrage/<id>`; die
+Adresse der App steht in den Einstellungen und wird beim ersten Öffnen nach der Anmeldung eingetragen). Bricht der
+Mensch die Anfrage in der Kellerwolke ab, bricht der Auftrag ab; ist die App aus, wartet die Anfrage.
+
 ## Anmeldung
 
 Die Apps haben keine eigenen Konten: man meldet sich mit dem Kellerwolke-Konto an, mit Passwort oder als gekoppeltes
 Gerät (Code aus der Kellerwolke, Einstellungen, Geräte). Die App reicht beides an die Kellerwolke weiter und prüft
 jede Anfrage mit deren Token (kurz gemerkt). Nutzen darf die App das Konto, dem ihr App-Schlüssel gehört, dazu weitere
 aus den Einstellungen; ein anderes Konto wird abgewiesen und seine eben entstandene Sitzung sofort beendet.
+
+Die Anmeldung gilt nur für diese App (Kellerwolke ab 0.81): das Gerüst nennt beim Anmelden und Koppeln den Namen ihres
+Zugangs, und die Kellerwolke gibt mit einer solchen Sitzung keine Dateien heraus. An Dateien kommt die App nur über
+ihren App-Schlüssel und offene Anfragen. Eine Sitzung, die nicht für diese App gilt (etwa eine ältere volle), beendet
+die App sofort; dann meldet man sich einmal neu an.
 
 ```python
 from appkern.anmeldung import Anmeldung
