@@ -1,7 +1,7 @@
 // Neue Fassung auf dem Server: nie ein hartes Neuladen verlangen (Muster aus Orbit und Kellerwolke).
 // Die Startseite kommt ohne Zwischenspeicher, Skripte und Gestaltung tragen Prüfsummen im Namen. Meldet die App eine
 // andere Fassung als die eingebaute, lädt die Seite von selbst neu: beim Start sofort, später beim nächsten
-// Seitenwechsel oder wenn das Fenster wieder nach vorn kommt; nie, solange die App etwas tut, das ein Neuladen
+// Seitenwechsel (die Navigation meldet ihn) oder wenn das Fenster wieder nach vorn kommt; nie, solange die App etwas tut, das ein Neuladen
 // abbräche (sie meldet das über `ruhig`). Dazwischen steht ein Band mit Knopf. Je Fassung nur ein selbsttätiger
 // Versuch (Merker in der Sitzung), damit ein hängender Zwischenspeicher keine Schleife auslöst.
 import { hole } from "./api.svelte";
@@ -63,12 +63,9 @@ export function fassungVerfolgen(eingebaut: string, frage?: () => boolean): () =
   fassung.eingebaut = eingebaut;
   if (frage) ruhigFrage = frage;
   const takt = setInterval(() => pruefen("takt"), PRUEFEN_MS);
-  const wechsel = () => vielleichtNeuLaden("seitenwechsel");
   document.addEventListener("visibilitychange", sichtbar);
-  addEventListener("hashchange", wechsel);
   return () => {
     clearInterval(takt);
     document.removeEventListener("visibilitychange", sichtbar);
-    removeEventListener("hashchange", wechsel);
   };
 }

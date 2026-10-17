@@ -270,7 +270,13 @@ In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`
 (`<Schale {bereiche} fassung={__APP_FASSUNG__} />`, eingebaut über `define` in `vite.config.ts` aus `version.json`).
 Meldet der Server eine andere, lädt die Seite von selbst neu: beim Start sofort, sonst beim nächsten Seitenwechsel
 oder wenn das Fenster wieder nach vorn kommt, je Fassung nur einmal; solange `ruhig()` der App nein sagt (etwa
-während einer Aufnahme), wartet es. Kein Nutzer muss nach dem Ausrollen selbst neu laden. Für eigene Seiten stehen `hole`, `json`, `gehe`, `sitzung`, `auftraege`,
+während einer Aufnahme), wartet es. Kein Nutzer muss nach dem Ausrollen selbst neu laden.
+
+Die Adresse im Browser ist ein echter Pfad: der erste Teil wählt den Bereich (`/transkripte`), weitere Teile liest die
+Seite aus `navigation.teile` (`/transkripte/<kennung>`); Zurück und Vor im Browser funktionieren, das Backend liefert
+für jeden Pfad außerhalb von `/api` die Oberfläche aus. Eine Seite, die einen Teil zeigt, setzt `navigation.titel`;
+am Telefon steht er im Kopf, mit einem Knopf zurück zum Bereich. Für eigene Seiten stehen `hole`, `json`, `gehe`,
+`adresse`, `navigation`, `sitzung`, `geraet`, `auftraege`, `beiAuftrag` (Ereignisse der Aufträge mithören),
 `AuftragZeile` und `Schritte` bereit.
 
 ## Neue App aus der Vorlage

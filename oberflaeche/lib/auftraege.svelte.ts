@@ -61,7 +61,22 @@ function spaeterZaehlen(): void {
   zaehlTakt = setTimeout(() => zaehlen().catch(() => {}), 400);
 }
 
+// Seiten der App hören mit, um ihren eigenen Stand nachzuführen (etwa eine Aufnahme als "transkribiert").
+const hoerer = new Set<(a: Auftrag) => void>();
+
+export function beiAuftrag(fn: (a: Auftrag) => void): () => void {
+  hoerer.add(fn);
+  return () => hoerer.delete(fn);
+}
+
 function einpflegen(a: Auftrag): void {
+  for (const fn of hoerer) {
+    try {
+      fn(a);
+    } catch {
+      // ein Hörer darf den Strom nie anhalten
+    }
+  }
   const passt = ZUSTAENDE[auftraege.filter].length === 0 || ZUSTAENDE[auftraege.filter].includes(a.zustand);
   const i = auftraege.liste.findIndex((b) => b.id === a.id);
   if (i >= 0) auftraege.liste[i] = a;
