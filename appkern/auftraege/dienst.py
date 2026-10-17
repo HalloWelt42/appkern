@@ -146,6 +146,7 @@ class Auftraege:
         self._wecker = asyncio.Event()
         self._schleife: asyncio.Task | None = None
         self._hoerer: set[asyncio.Queue[Auftrag]] = set()
+        self.gestartet = asyncio.Event()   # Schema steht, Neustart aufgeräumt (Begleiter starten früher und warten darauf)
 
     def anmelden(self, *arten: Art) -> None:
         """Arten nachträglich anmelden (vor `starten`), etwa wenn ihre Arbeit das fertige Gerüst der App braucht."""
@@ -167,10 +168,12 @@ class Auftraege:
                                          ("Durch einen Neustart unterbrochen", _jetzt(), zeile["id"]))
                 await self._eintragen(await self.holen(zeile["id"]))
         self._schleife = asyncio.create_task(self._takt(), name="auftraege")
+        self.gestartet.set()
 
     async def stoppen(self) -> None:
         """Beim Herunterfahren: die Schleife endet; laufende Arbeit wird beendet und gilt beim nächsten Start als
         unterbrochen (oder wird fortgesetzt)."""
+        self.gestartet.clear()
         if self._schleife:
             self._schleife.cancel()
             await asyncio.gather(self._schleife, return_exceptions=True)

@@ -97,9 +97,6 @@ class Abholer:
         kw = self._kellerwolke()
         if kw is None or not self.angebote:
             return
-        for zeile in await self.db.zeilen("SELECT a.anfrage_id, a.auftrag_id FROM anfrage_auftrag a "
-                                          "JOIN auftrag t ON t.id = a.auftrag_id WHERE t.zustand IN ('wartet','laeuft')"):
-            self._laufend[zeile["anfrage_id"]] = zeile["auftrag_id"]
         self._schleife = asyncio.create_task(self._abholen(kw), name="anfragen-abholen")
 
     async def stoppen(self) -> None:
@@ -117,6 +114,10 @@ class Abholer:
     # --- Abholen --------------------------------------------------------------------------------------------------
 
     async def _abholen(self, kw: Kellerwolke) -> None:
+        await self.auftraege.gestartet.wait()          # das Gerüst startet die Aufträge nach den Begleitern
+        for zeile in await self.db.zeilen("SELECT a.anfrage_id, a.auftrag_id FROM anfrage_auftrag a "
+                                          "JOIN auftrag t ON t.id = a.auftrag_id WHERE t.zustand IN ('wartet','laeuft')"):
+            self._laufend[zeile["anfrage_id"]] = zeile["auftrag_id"]
         pause = 1.0
         gemeldet = False
         while True:
@@ -175,6 +176,7 @@ class Abholer:
     # --- Rückmeldung ----------------------------------------------------------------------------------------------
 
     async def _rueckmelden(self) -> None:
+        await self.auftraege.gestartet.wait()
         while True:
             try:
                 async for auftrag in self.auftraege.ereignisse():
