@@ -121,3 +121,20 @@ async def test_oberflaeche_ausliefern(umgebung):
     assert (await c.get("/api/v1/gibtsnicht")).status_code == 404
     assert (await c.get("/../../etc/passwd")).status_code in (200, 404)        # nie außerhalb der Oberfläche
     assert "root:" not in (await c.get("/%2e%2e/%2e%2e/etc/passwd")).text
+
+
+async def test_hausstelle_wird_gefunden_und_geladen(tmp_path: Path, monkeypatch):
+    import certifi
+
+    from appkern.app.geruest import hausstelle
+    (tmp_path / "rootCA.pem").write_text(Path(certifi.where()).read_text())
+    monkeypatch.setenv("CAROOT", str(tmp_path))
+    assert hausstelle() == tmp_path / "rootCA.pem"
+    geruest = Geruest(name="P", kennung="p", rolle="r", fassung="0", daten=tmp_path / "d", einstellungen=ProbeEinstellungen)
+    await geruest.db.oeffnen()
+    await geruest.einstellungen.starten()
+    assert geruest._pruefung().cert_store_stats()["x509_ca"] > 0
+    await geruest.einstellungen.aendern({"ca_datei": str(tmp_path / "gibtsnicht.pem")})
+    with pytest.raises(OSError):
+        geruest._pruefung()
+    await geruest.db.schliessen()

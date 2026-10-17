@@ -19,8 +19,9 @@ class Grundeinstellungen(BaseModel):
     leitstelle_schluessel: SecretStr = Field(SecretStr(""), title="Schlüssel der Leitstelle", json_schema_extra=VERBINDUNGEN,
                                              description="In der Leitstelle unter Anwendungen erzeugt.")
     ca_datei: str = Field("", title="Zertifikatsstelle", json_schema_extra=VERBINDUNGEN,
-                          description="Pfad zur Datei der Hausstelle (rootCA.pem), wenn Kellerwolke oder Leitstelle über "
-                                      "HTTPS mit eigenem Zertifikat laufen. Leer: die üblichen Stellen.")
+                          description="Pfad zur Datei einer eigenen Zertifikatsstelle (rootCA.pem) für Kellerwolke und "
+                                      "Leitstelle über HTTPS. Leer: die üblichen Stellen und die Hausstelle dieses "
+                                      "Rechners, wenn es eine gibt.")
     weitere_konten: list[str] = Field(default_factory=list, title="Weitere Konten", json_schema_extra=ZUGANG,
                                       description="Wer außer dem Konto des App-Schlüssels diese App nutzen darf "
                                                   "(Namen von Konten der Kellerwolke).")

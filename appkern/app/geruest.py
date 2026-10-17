@@ -17,12 +17,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import ssl
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Generic, TypeVar
 
+import certifi
 import httpx
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -49,6 +51,15 @@ logger = logging.getLogger("appkern.app")
 E = TypeVar("E", bound=Grundeinstellungen)
 LOKAL = {"127.0.0.1", "::1", "localhost"}
 TAG_S = 24 * 3600
+
+
+def hausstelle() -> Path | None:
+    """Wurzelzertifikat der Hausstelle dieses Rechners (die lokale Zertifikatsstelle, von der Kellerwolke und Leitstelle
+    im Heimnetz ihre HTTPS-Zertifikate haben), wenn es eines gibt: `$CAROOT`, sonst der übliche Ort auf Mac und Linux."""
+    orte = [Path(os.environ["CAROOT"]) / "rootCA.pem"] if os.environ.get("CAROOT") else []
+    orte += [Path.home() / "Library" / "Application Support" / "mkcert" / "rootCA.pem",
+             Path.home() / ".local" / "share" / "mkcert" / "rootCA.pem"]
+    return next((o for o in orte if o.is_file()), None)
 
 
 class AppInfo(BaseModel):
@@ -105,12 +116,14 @@ class Geruest(Generic[E]):
             return set()
         return {self.besitzer, *self.einstellungen.stand.weitere_konten}
 
-    def _pruefung(self) -> ssl.SSLContext | bool:
+    def _pruefung(self) -> ssl.SSLContext:
+        """Vertraut den üblichen Stellen und dazu der eingestellten Zertifikatsstelle, sonst der Hausstelle dieses
+        Rechners. So geht HTTPS zu Kellerwolke und Leitstelle im Heimnetz ohne weitere Einstellung."""
+        kontext = ssl.create_default_context(cafile=certifi.where())
         ca = self.einstellungen.stand.ca_datei.strip()
-        if not ca:
-            return True
-        kontext = ssl.create_default_context()
-        kontext.load_verify_locations(Path(ca).expanduser())
+        zusatz = Path(ca).expanduser() if ca else hausstelle()
+        if zusatz is not None:
+            kontext.load_verify_locations(zusatz)
         return kontext
 
     async def _zugaenge_bauen(self) -> None:
@@ -118,8 +131,8 @@ class Geruest(Generic[E]):
         alte = self._clients
         stand = self.einstellungen.stand
         try:
-            pruefung = self._pruefung()
-        except OSError as f:
+            pruefung: ssl.SSLContext | bool = self._pruefung()
+        except (OSError, ssl.SSLError) as f:
             logger.warning("Zertifikatsstelle nicht lesbar: %s", f)
             pruefung = True
         kurz = httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=300.0), verify=pruefung, transport=self._transport)
@@ -234,7 +247,11 @@ class Geruest(Generic[E]):
                 raise HTTPException(status_code=409, detail="Die App ist schon eingerichtet; Änderungen unter Einstellungen")
             if (request.client.host if request.client else "") not in LOKAL:
                 raise HTTPException(status_code=403, detail="Die erste Einrichtung geht nur am Rechner der App selbst")
-            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0), verify=self._pruefung(),
+            try:
+                pruefung = self._pruefung()
+            except (OSError, ssl.SSLError) as f:
+                raise HTTPException(status_code=422, detail=f"Zertifikatsstelle nicht lesbar: {f}")
+            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0), verify=pruefung,
                                          transport=self._transport) as client:
                 probe = Kellerwolke(eingabe.kellerwolke_adresse, eingabe.kellerwolke_schluessel, client=client)
                 try:
