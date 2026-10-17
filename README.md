@@ -55,6 +55,42 @@ Schreibern genau einer. Fehler kommen als eigene Arten: `NichtErreichbar` (spät
 `SchluesselUngueltig`, `KeinRecht`, `NichtGefunden`, `Konflikt`, `StandVeraltet`, `StandFehlt`, `Gesperrt`,
 `ZuGross`, `Ungueltig`. Der Schlüssel erscheint in keiner Ausgabe.
 
+## Leitstellen-Zugang
+
+Eine App bekommt in der Leitstelle unter Anwendungen einen Schlüssel. Sprachmodelle gehen über die Fassade im
+OpenAI-Format, Dienste mit eigener Schnittstelle (Sprechen, Hören, Bild) über `/v1/dienste/<name>/...`; die Leitstelle
+wählt Dienst, Modell und Rechner. Jeder Auftrag trägt den Namen der App und einen Titel.
+
+```python
+from pathlib import Path
+from appkern.leitstelle import Ende, Halt, Leitstelle, Nachricht, Stueck, Wartet
+
+async with Leitstelle("http://192.168.178.49:8530", schluessel, "Transkription") as ls:
+    antwort = await ls.chat([Nachricht.system("Korrigiere nur Rechtschreibung."), text], titel="Korrektur")
+
+    async for e in ls.chat_strom([frage], titel="Zusammenfassung", prioritaet="hintergrund"):
+        if isinstance(e, Wartet): ...                    # "Modell wird geladen, etwa 40 s" zeigen
+        if isinstance(e, Stueck): ...                    # Text anhängen
+        if isinstance(e, Ende) and e.abgebrochen: ...    # in der Leitstelle abgebrochen: Teiltext behalten
+
+    hoeren = ls.dienst("klangwerk-hoeren")
+    with open("termin.wav", "rb") as datei:
+        ergebnis = await hoeren.json("POST", "/stt", titel="Folge 12", data={"language": "de"},
+                                     files={"file": ("termin.wav", datei, "audio/wav")})
+```
+
+| Bereich | Inhalt |
+|---|---|
+| Sprachmodelle | `chat` (am Stück), `chat_strom` (`Stueck`, `Wartet`, `Ende`), `einbetten`, `modelle` (lädt nichts, auch als Gesundheitsprüfung) |
+| Dienste | `dienst(name)` mit `anfrage`, `json`, `strom`, `herunterladen` (nie halb) |
+| Aufträge | Titel `"<App>: <Titel>"`, Priorität `hintergrund`, `normal`, `hoch`, `dringend` (senkt die Vorgabe der App, hebt sie nie) |
+
+Was der Zugang bewusst nicht tut: keine Lese-Zeitgrenze für Arbeit (nur 10 s für den Verbindungsaufbau), keine
+Wiederholung von selbst, kein Laden oder Entladen von Modellen. Fehler kommen nach dem Grundwort der Leitstelle als
+eigene Arten: `SchluesselUngueltig`, `NichtErlaubt`, `KeinModell`, `Gesperrt` und `Halt` (mit `nochmal_in` aus
+`Retry-After`), `DienstWeg`, `DienstFehler`, `Abgebrochen`, `Ungueltig`, `NichtGefunden`, `NichtErreichbar`. Die Tests
+laufen gegen eine nachgestellte Fassade, nie gegen die echte Leitstelle.
+
 ## Einbinden
 
 In der `pyproject.toml` einer App:
