@@ -22,6 +22,10 @@ class Grundeinstellungen(BaseModel):
                           description="Pfad zur Datei einer eigenen Zertifikatsstelle (rootCA.pem) für Kellerwolke und "
                                       "Leitstelle über HTTPS. Leer: die üblichen Stellen und die Hausstelle dieses "
                                       "Rechners, wenn es eine gibt.")
+    adresse: str = Field("", title="Adresse dieser App", json_schema_extra=VERBINDUNGEN,
+                         description="Unter dieser Adresse öffnet man die App im Browser; dorthin führt die Kellerwolke, "
+                                     "wenn man eine Datei aus ihrem Dateimenü in dieser App öffnet. Wird beim ersten "
+                                     "Öffnen nach der Anmeldung eingetragen.")
     weitere_konten: list[str] = Field(default_factory=list, title="Weitere Konten", json_schema_extra=ZUGANG,
                                       description="Wer außer dem Konto des App-Schlüssels diese App nutzen darf "
                                                   "(Namen von Konten der Kellerwolke).")

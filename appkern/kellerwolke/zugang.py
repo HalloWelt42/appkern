@@ -12,6 +12,7 @@ Der Schlüssel erscheint nie in Ausgaben (auch nicht in `repr`).
 from __future__ import annotations
 
 import asyncio
+import copy
 import json
 import os
 from collections.abc import AsyncIterable, AsyncIterator
@@ -22,7 +23,9 @@ from uuid import UUID
 import httpx
 
 from .fehler import KellerwolkeFehler, NichtErreichbar, NichtGefunden, fehler_aus
-from .modelle import Aenderungen, Herkunft, Ich, Knoten, Sperre, Version
+from .modelle import (
+    Aenderungen, Aktion, Anfrage, AnfrageNeu, Herkunft, Ich, Knoten, Sperre, Version, WahlSeite,
+)
 
 # Was als Inhalt geschrieben werden kann.
 Inhalt = bytes | Path | AsyncIterable[bytes]
@@ -78,6 +81,14 @@ class Kellerwolke:
 
     def __repr__(self) -> str:
         return f"Kellerwolke({self.adresse!r})"
+
+    def mit_anfrage(self, anfrage_id: UUID | str) -> Kellerwolke:
+        """Derselbe Zugang, der sich bei jedem Aufruf auf eine offene Anfrage beruft: er darf dann auch die angefragte
+        Datei lesen und ihre Begleiter schreiben, solange die Anfrage offen ist. Teilt sich die Verbindung."""
+        zugang = copy.copy(self)
+        zugang._kopf = {**self._kopf, "X-Kellerwolke-Anfrage": str(anfrage_id)}
+        zugang._eigener_client = False
+        return zugang
 
     async def __aenter__(self) -> Kellerwolke:
         return self
@@ -238,6 +249,84 @@ class Kellerwolke:
         """Dateien des Kontos, deren Felder diese Werte enthalten, neueste zuerst."""
         antwort = await self._anfrage("POST", "/suche", json={"felder": felder, "anzahl": anzahl})
         return [Knoten.model_validate(k) for k in antwort.json()]
+
+    # --- Begleitdateien (Kellerwolke ab 0.78) -----------------------------------------------------------------------
+    # Ergebnisse liegen neben ihrer Quelle: `Runde.wav` mit Zusatz `.transkript.json` ergibt `Runde.transkript.json`.
+    # Den Namen vergibt die Kellerwolke; Verschieben, Umbenennen und Papierkorb nehmen die Begleiter mit.
+
+    async def begleiter(self, haupt_id: UUID | str) -> list[Knoten]:
+        antwort = await self._anfrage("GET", f"/knoten/{haupt_id}/begleiter")
+        return [Knoten.model_validate(k) for k in antwort.json()]
+
+    async def begleiter_schreiben(self, haupt_id: UUID | str, rolle: str, zusatz: str, inhalt: Inhalt, *,
+                                  stand: str | None = None, nur_neu: bool = False,
+                                  inhaltstyp: str | None = None) -> Knoten:
+        """Begleiter einer Rolle neben die Hauptdatei schreiben: neu, oder eine neue Version mit `stand`."""
+        koerper, kopf = self._koerper(inhalt)
+        if stand is not None:
+            kopf["If-Match"] = f'"{stand}"'
+        if nur_neu:
+            kopf["If-None-Match"] = "*"
+        if inhaltstyp:
+            kopf["Content-Type"] = inhaltstyp
+        antwort = await self._anfrage("PUT", f"/knoten/{haupt_id}/begleiter/{rolle}", params={"zusatz": zusatz},
+                                      content=koerper, kopf=kopf)
+        return Knoten.model_validate(antwort.json())
+
+    async def begleiter_anhaengen(self, haupt_id: UUID | str, rolle: str, knoten_id: UUID | str, zusatz: str) -> Knoten:
+        """Eine vorhandene Datei der App wird Begleiter und kommt neben die Hauptdatei (Umzug auf einen Baum)."""
+        antwort = await self._anfrage("POST", f"/knoten/{haupt_id}/begleiter/{rolle}",
+                                      json={"knoten_id": str(knoten_id), "zusatz": zusatz})
+        return Knoten.model_validate(antwort.json())
+
+    # --- Aktionen und Anfragen (Kellerwolke ab 0.79) ----------------------------------------------------------------
+
+    async def aktionen_melden(self, aktionen: list[Aktion], adresse: str | None = None) -> None:
+        """Ersetzt die Aktionen der App in der Kellerwolke; `adresse` ist die Oberfläche (für Aktionen zum Öffnen)."""
+        await self._anfrage("PUT", "/aktionen", json={"adresse": adresse or None,
+                                                      "aktionen": [a.model_dump() for a in aktionen]})
+
+    async def anfragen_holen(self, warten: float = 25.0) -> list[Anfrage]:
+        """Wartende Anfragen, älteste zuerst; ohne Anfrage wartet die Kellerwolke bis zu `warten` Sekunden auf eine."""
+        antwort = await self._anfrage("GET", "/anfragen", params={"warten": warten},
+                                      timeout=httpx.Timeout(30.0, read=warten + 15.0))
+        return [Anfrage.model_validate(a) for a in antwort.json()]
+
+    async def anfrage(self, anfrage_id: UUID | str) -> Anfrage:
+        return Anfrage.model_validate((await self._anfrage("GET", f"/anfragen/{anfrage_id}")).json())
+
+    async def anfrage_annehmen(self, anfrage_id: UUID | str) -> Anfrage:
+        """Ab jetzt läuft sie; `Konflikt`, wenn sie abgebrochen oder abgelaufen ist."""
+        return Anfrage.model_validate((await self._anfrage("POST", f"/anfragen/{anfrage_id}/annehmen")).json())
+
+    async def anfrage_melden(self, anfrage_id: UUID | str, *, zustand: str | None = None,
+                             fortschritt: float | None = None, meldung: str | None = None,
+                             ergebnis_id: UUID | str | None = None) -> Anfrage:
+        """Fortschritt (0 bis 1) und Ende melden; `Konflikt` heißt: abgebrochen oder abgelaufen, aufhören."""
+        daten = {"zustand": zustand, "fortschritt": fortschritt, "meldung": meldung,
+                 "ergebnis_id": str(ergebnis_id) if ergebnis_id else None}
+        antwort = await self._anfrage("PATCH", f"/anfragen/{anfrage_id}",
+                                      json={k: v for k, v in daten.items() if v is not None})
+        return Anfrage.model_validate(antwort.json())
+
+    async def weitergeben(self, app: str, aktion: str, knoten_id: UUID | str) -> AnfrageNeu:
+        """Anfrage an eine andere App desselben Kontos; die App muss die Datei lesen und neben ihr schreiben dürfen."""
+        antwort = await self._anfrage("POST", "/anfragen", json={"app": app, "aktion": aktion, "knoten_id": str(knoten_id)})
+        return AnfrageNeu.model_validate(antwort.json())
+
+    # --- Dateiwahl mit der Anmeldung des Menschen an dieser App (Kellerwolke ab 0.81) -------------------------------
+
+    async def wahl(self, sitzung: str, ordner: UUID | str | None = None) -> WahlSeite:
+        """Was der Mensch in seinem Konto sieht (nur Namen und Eckdaten); `sitzung` ist seine Anmeldung an dieser App."""
+        antwort = await self._anfrage("GET", "/wahl", params={"ordner": str(ordner)} if ordner else None,
+                                      kopf={"X-Kellerwolke-Sitzung": sitzung})
+        return WahlSeite.model_validate(antwort.json())
+
+    async def waehlen(self, sitzung: str, knoten_id: UUID | str, aktion: str) -> AnfrageNeu:
+        """Der Mensch hat eine Datei gewählt: Anfrage an diese App für die Aktion."""
+        antwort = await self._anfrage("POST", "/wahl", json={"knoten_id": str(knoten_id), "aktion": aktion},
+                                      kopf={"X-Kellerwolke-Sitzung": sitzung})
+        return AnfrageNeu.model_validate(antwort.json())
 
     # --- Herkunft ---------------------------------------------------------------------------------------------------
 

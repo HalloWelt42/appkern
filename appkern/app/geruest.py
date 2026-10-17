@@ -32,6 +32,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 import appkern
+from appkern.anfragen import Abholer, Angebot as AppAngebot
+from appkern.anfragen.api import anfragen_router
 from appkern.anmeldung import Anmeldung, Konto
 from appkern.anmeldung.api import angemeldet, anmeldungs_router
 from appkern.auftraege import Art, Auftraege
@@ -110,8 +112,10 @@ class Einrichtung(BaseModel):
 class Geruest(Generic[E]):
     def __init__(self, *, name: str, kennung: str, rolle: str, fassung: str, daten: Path, einstellungen: type[E],
                  arten: Sequence[Art] = (), symbol: str = "fa-cube", oberflaeche: Path | None = None,
-                 gleichzeitig: int = 1, transport: httpx.AsyncBaseTransport | None = None) -> None:
-        """`transport` nur für Tests: alle Verbindungen nach außen gehen dann über ihn."""
+                 gleichzeitig: int = 1, angebote: Sequence[AppAngebot] = (),
+                 transport: httpx.AsyncBaseTransport | None = None) -> None:
+        """`angebote`: was die App mit Dateien der Kellerwolke kann (Aktionen im Dateimenü, Dateiwahl in der App).
+        `transport` nur für Tests: alle Verbindungen nach außen gehen dann über ihn."""
         self.name, self.kennung, self.rolle, self.symbol, self.fassung = name, kennung, rolle, symbol, fassung
         self.daten = Path(daten)
         self.oberflaeche = oberflaeche
@@ -122,16 +126,19 @@ class Geruest(Generic[E]):
         self.auftraege = Auftraege(self.db, arten, gleichzeitig=gleichzeitig, protokoll=self.protokoll)
         self.verzeichnis = Verzeichnis()
         self.besitzer: str | None = None
+        self.app_name: str | None = None          # Name des Zugangs in der Kellerwolke (Anmeldungen gelten nur hier)
         self.kellerwolke: Kellerwolke | None = None
         self.leitstelle: Leitstelle | None = None
         self._clients: list[httpx.AsyncClient] = []
-        self.anmeldung = Anmeldung("", self._erlaubt)
+        self.anmeldung = Anmeldung("", self._erlaubt, app_name=self._eigener_name)
         self._grundangebote()
         self.pflicht = Depends(angemeldet(self.anmeldung))                          # Menschen und andere Apps
         self.mensch = Depends(angemeldet(self.anmeldung, nur_menschen=True))        # nur Menschen
         self.lesen = Depends(angemeldet(self.anmeldung, cookie=True))
         self._pflege: asyncio.Task | None = None
-        self._begleiter: list[Begleiter] = []
+        self.abholer = Abholer(angebote, self.auftraege, lambda: self.kellerwolke,
+                               lambda: self.einstellungen.stand.adresse or None)
+        self._begleiter: list[Begleiter] = [self.abholer] if angebote else []
         self._oberflaeche_gemerkt: tuple[float, str | None] | None = None
         self._laeuft = False
 
@@ -245,15 +252,22 @@ class Geruest(Generic[E]):
         for c in alte:
             await c.aclose()
 
+    async def _eigener_name(self) -> str | None:
+        """Name des Zugangs in der Kellerwolke; fehlt er noch (Kellerwolke beim Start nicht erreichbar), neu fragen."""
+        if self.app_name is None:
+            await self._besitzer_bestimmen()
+        return self.app_name
+
     async def _besitzer_bestimmen(self) -> None:
         if self.kellerwolke is None:
-            self.besitzer = None
+            self.besitzer = self.app_name = None
             return
         try:
-            self.besitzer = (await self.kellerwolke.ich()).konto
+            ich = await self.kellerwolke.ich()
+            self.besitzer, self.app_name = ich.konto, ich.app
         except KellerwolkeFehler as f:
             logger.warning("Kellerwolke: Besitzer nicht bestimmbar (%s)", f)
-            self.besitzer = None
+            self.besitzer = self.app_name = None
 
     @property
     def einrichtung_noetig(self) -> bool:
@@ -268,7 +282,7 @@ class Geruest(Generic[E]):
         else:
             try:
                 ich = await self.kellerwolke.ich()
-                self.besitzer = ich.konto
+                self.besitzer, self.app_name = ich.konto, ich.app
                 ergebnis.append(Verbindung(name="Kellerwolke", ok=True, adresse=stand.kellerwolke_adresse, meldung=ich.zweig))
             except KellerwolkeFehler as f:
                 ergebnis.append(Verbindung(name="Kellerwolke", ok=False, adresse=stand.kellerwolke_adresse, meldung=f.meldung))
@@ -320,7 +334,7 @@ class Geruest(Generic[E]):
         await self.protokoll.eintragen("einstellung.geaendert", ", ".join(titel), bezug_art="einstellungen",
                                        daten={"felder": sorted(geaendert)})
         if geaendert & {"kellerwolke_adresse", "kellerwolke_schluessel", "leitstelle_adresse", "leitstelle_schluessel",
-                        "ca_datei"}:
+                        "ca_datei", "adresse"}:
             await self._zugaenge_bauen()
             await self._begleiter_rufen("verbunden")
 
@@ -401,7 +415,10 @@ class Geruest(Generic[E]):
             return await self.verbindungen()
 
         @router.get("/ich", response_model=Konto)
-        async def ich(konto: Konto = self.pflicht) -> Konto:
+        async def ich(request: Request, konto: Konto = self.pflicht) -> Konto:
+            if konto.mensch and not self.einstellungen.stand.adresse:
+                # Die Adresse, unter der Menschen die App öffnen: einmal eintragen (für Öffnen aus der Kellerwolke).
+                await self.einstellungen.aendern({"adresse": str(request.base_url).rstrip("/")})
             return konto
 
         return router
@@ -418,6 +435,8 @@ class Geruest(Generic[E]):
         app = FastAPI(title=self.name, version=self.fassung, lifespan=lebenszyklus)
         app.include_router(self._grund_router())
         app.include_router(anmeldungs_router(self.anmeldung, protokoll=self.protokoll))
+        if self.abholer.angebote:
+            app.include_router(anfragen_router(self.abholer, lambda: self.kellerwolke, self.mensch))
         for router in (auftrags_router(self.auftraege, abhaengigkeiten=[self.pflicht]),
                        einstellungs_router(self.einstellungen, abhaengigkeiten=[self.mensch]),
                        protokoll_router(self.protokoll, abhaengigkeiten=[self.pflicht])):

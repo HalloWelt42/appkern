@@ -12,6 +12,11 @@ Kopplung beendet die App sofort wieder.
 Auf dem iPhone hat jede Web-App vom Home-Bildschirm ihren eigenen Speicher: ein Telefon wird je App einmal gekoppelt
 (mit einem Code aus der Kellerwolke, Einstellungen, Geräte).
 
+Die Sitzung oder der Geräteschlüssel, die eine App so erhält, gilt nur für diese App (Entscheidung 17.10.2026, kein
+Dauerrecht über das Konto; Kellerwolke ab 0.81): die App nennt beim Anmelden und Koppeln ihren Namen, und die
+Kellerwolke gibt mit einer solchen Anmeldung keine Dateien heraus. Eine Anmeldung, die nicht für diese App gilt (etwa
+eine ältere volle Sitzung), beendet die App sofort; dann meldet man sich einmal neu an.
+
 Andere Apps (App zu App, Entscheidung des Nutzers, 17.10.2026) melden sich mit ihrem App-Schlüssel der Kellerwolke an
 (`kw_app_...`). Die App fragt die Kellerwolke, wem der Schlüssel gehört (`/api/v1/ablage/ich`), und lässt dieselben
 Konten zu wie in der Oberfläche; das Konto trägt dann den Namen der rufenden App. Abmelden beendet einen App-Schlüssel
@@ -24,7 +29,7 @@ import hashlib
 import hmac
 import secrets
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Literal
 
 import httpx
@@ -87,11 +92,14 @@ def _meldung(antwort: httpx.Response, sonst: str) -> str:
 
 class Anmeldung:
     def __init__(self, adresse: str, erlaubt: Callable[[], set[str]] | None = None, *,
-                 client: httpx.AsyncClient | None = None, merken_s: float = 60.0) -> None:
+                 client: httpx.AsyncClient | None = None, merken_s: float = 60.0,
+                 app_name: Callable[[], Awaitable[str | None]] | None = None) -> None:
         """`erlaubt()` liefert die Namen der Konten, die die App nutzen dürfen (klein geschrieben verglichen);
-        None heißt: jedes aktive Konto der Kellerwolke."""
+        None heißt: jedes aktive Konto der Kellerwolke. `app_name()` ist der Name der App in der Kellerwolke (der ihres
+        Zugangs); Anmeldungen gelten dann nur für sie, und ohne bekannten Namen gibt es keine Anmeldung."""
         self.adresse = adresse.rstrip("/")
         self.erlaubt = erlaubt
+        self._app_name = app_name
         self.merken_s = merken_s
         self._eigener_client = client is None and bool(self.adresse)
         self._client = client or (httpx.AsyncClient(timeout=httpx.Timeout(10.0)) if self.adresse else None)
@@ -124,6 +132,19 @@ class Anmeldung:
         except httpx.TransportError as f:
             raise KellerwolkeWeg("Die Kellerwolke ist gerade nicht erreichbar") from f
 
+    async def _eigener_name(self) -> str | None:
+        """Name der App in der Kellerwolke; None ohne Namensquelle (Anmeldung ohne App-Bindung, etwa in Tests)."""
+        if self._app_name is None:
+            return None
+        name = await self._app_name()
+        if not name:
+            raise KellerwolkeWeg("Die App kennt ihren Zugang in der Kellerwolke gerade nicht (Einstellungen, Verbindungen)")
+        return name
+
+    async def _fuer_app(self) -> dict[str, str]:
+        name = await self._eigener_name()
+        return {"fuer_app": name} if name else {}
+
     def _darf(self, konto: Konto) -> bool:
         if self.erlaubt is None:
             return True
@@ -142,7 +163,8 @@ class Anmeldung:
         self._gemerkt[self._schluessel(token)] = (konto, time.monotonic() + self.merken_s)
 
     async def anmelden(self, kennung: str, passwort: str) -> tuple[str, Konto]:
-        antwort = await self._senden("POST", "/api/v1/auth/login", json={"kennung": kennung, "passwort": passwort})
+        antwort = await self._senden("POST", "/api/v1/auth/login",
+                                     json={"kennung": kennung, "passwort": passwort, **await self._fuer_app()})
         if antwort.status_code == 401:
             raise Abgelehnt("Anmeldung fehlgeschlagen")
         if antwort.status_code >= 400:
@@ -152,7 +174,8 @@ class Anmeldung:
         return token, await self._nur_erlaubt(token, Konto(**{**daten["benutzer"], "id": str(daten["benutzer"]["id"])}))
 
     async def koppeln(self, code: str, name: str, art: Literal["webapp", "browser"]) -> tuple[str, Konto]:
-        antwort = await self._senden("POST", "/api/v1/geraete/koppeln", json={"code": code, "name": name, "art": art})
+        antwort = await self._senden("POST", "/api/v1/geraete/koppeln",
+                                     json={"code": code, "name": name, "art": art, **await self._fuer_app()})
         if antwort.status_code == 429:
             nochmal = antwort.headers.get("retry-after", "")
             raise ZuVieleVersuche(_meldung(antwort, "Zu viele falsche Codes"), int(nochmal) if nochmal.isdigit() else None)
@@ -197,6 +220,11 @@ class Anmeldung:
             raise KellerwolkeWeg(f"Die Kellerwolke antwortet mit {antwort.status_code}")
         daten = antwort.json()
         if not daten.get("angemeldet") or not daten.get("benutzer"):
+            return None
+        eigene = await self._eigener_name()
+        if eigene and "app" in daten and (daten.get("app") or "").lower() != eigene.lower():
+            # Gilt nicht für diese App (eine volle Sitzung der Kellerwolke oder die einer anderen App): beenden.
+            await self.abmelden(token)
             return None
         b = daten["benutzer"]
         return Konto(**{**b, "id": str(b["id"])}, geraet=token.startswith(GERAET_PRAEFIX))
