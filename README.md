@@ -91,13 +91,61 @@ eigene Arten: `SchluesselUngueltig`, `NichtErlaubt`, `KeinModell`, `Gesperrt` un
 `Retry-After`), `DienstWeg`, `DienstFehler`, `Abgebrochen`, `Ungueltig`, `NichtGefunden`, `NichtErreichbar`. Die Tests
 laufen gegen eine nachgestellte Fassade, nie gegen die echte Leitstelle.
 
+## Aufträge
+
+Lange Arbeit einer App (Transkribieren, Vertonen, Stapel) läuft als Auftrag: persistent in der eigenen Datenbank der
+App (`appkern.datenbank`, eine SQLite-Datei), mit Phasen für die Schrittanzeige, Fortschritt als Ereignisstrom,
+Abbruch, Wiederholen und Fortsetzen nach einem Neustart.
+
+```python
+from pydantic import BaseModel
+from appkern.auftraege import Art, Auftraege, Kontext, Phase
+from appkern.auftraege.api import auftrags_router
+from appkern.datenbank import Datenbank
+
+class Eingabe(BaseModel):
+    datei: str
+
+async def transkribieren(k: Kontext):
+    await k.fortschritt(0.0, "Hören", phase="hoeren")
+    for n, abschnitt in enumerate(abschnitte(k.eingabe.datei)):
+        if n < k.zwischenstand.get("fertig", 0):
+            continue                                   # nach Fehler oder Neustart: schon erledigt
+        await k.pruefen()                              # Haltepunkt für den Abbruch
+        ...
+        await k.merken(fertig=n + 1)
+        await k.fortschritt((n + 1) / gesamt, f"Abschnitt {n + 1}")
+    return {"woerter": 1234}
+
+db = await Datenbank("daten/app.sqlite").oeffnen()
+auftraege = Auftraege(db, [Art("transkribieren", "Transkribieren", transkribieren, eingabe=Eingabe,
+                                phasen=[Phase(schluessel="hoeren", titel="Hören", symbol="ear-listen")],
+                                fortsetzbar=True, nach_neustart="fortsetzen")])
+await auftraege.starten()                              # im Lebenszyklus; beim Beenden auftraege.stoppen()
+app.include_router(auftrags_router(auftraege, abhaengigkeiten=[Depends(anmeldung)]))
+await auftraege.einreihen("transkribieren", {"datei": "Apps/Transkription/Folge 12.wav"}, titel="Folge 12")
+```
+
+| Teil | Inhalt |
+|---|---|
+| Zustände | `wartet`, `laeuft`, `fertig`, `fehler` (mit Ursache, nie leer), `abgebrochen`, `unterbrochen` |
+| Kontext | `eingabe` (Modell der Art), `fortschritt` (gedrosselt, Phasenwechsel immer), `merken` (Zwischenstand), `pruefen` (Abbruch) |
+| Neustart | je Art `nach_neustart="fortsetzen"` (wieder einreihen, Zwischenstand bleibt) oder `"anhalten"` (unterbrochen, Wiederholen ist ein Klick) |
+| Schnittstelle | `GET /api/v1/auftraege` (seitenweise, Filter), `GET .../{id}`, `POST .../{id}/abbrechen`, `POST .../{id}/wiederholen`, `DELETE .../{id}`, `GET .../ereignisse` (Server-Sent Events) |
+
+Abgebrochen wird gemeinsam an Haltepunkten, nie mit einer Uhr. Wie viele Aufträge gleichzeitig laufen, sagt
+`gleichzeitig` (Vorgabe 1); beendete Aufträge räumt `aufraeumen` nach `aufbewahren_tage` aus der Liste. Die
+Schnittstelle braucht den Zusatz `appkern[web]` (FastAPI).
+
 ## Einbinden
 
 In der `pyproject.toml` einer App:
 
 ```toml
-dependencies = ["appkern @ https://github.com/HalloWelt42/appkern/archive/refs/heads/main.tar.gz"]
+dependencies = ["appkern[web] @ https://github.com/HalloWelt42/appkern/archive/refs/heads/main.tar.gz"]
 ```
+
+Ohne `[web]` fehlen nur die FastAPI-Schnittstellen; die Zugänge und die Aufträge selbst gehen auch ohne.
 
 ## Tests
 
