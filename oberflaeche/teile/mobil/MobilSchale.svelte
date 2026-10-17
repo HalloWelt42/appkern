@@ -2,6 +2,7 @@
   // Eigene Ansicht fürs Telefon: Reiter unten (Bereiche der App, Aufträge, Mehr), Band bei fehlender Verbindung.
   import { onMount } from "svelte";
   import { auftraege, verfolgen } from "../../lib/auftraege.svelte";
+  import { fassung } from "../../lib/fassung.svelte";
   import { gehe, navigation } from "../../lib/navigation.svelte";
   import type { Bereich } from "../../lib/typen";
   import { verbindungen, verbindungenVerfolgen } from "../../lib/verbindungen.svelte";
@@ -37,6 +38,11 @@
     <h1>{titel}</h1>
     {#if offen && seite !== "auftraege"}<button class="pille aktiv" style="border:0" onclick={() => gehe("auftraege")}><i class="fa-solid fa-gears"></i>{offen}</button>{/if}
   </div>
+  {#if fassung.neu}
+    <div class="t-band"><i class="fa-solid fa-rotate" style="margin-top:3px"></i>
+      <span style="flex:1">Neue Fassung {fassung.neu}; lädt beim nächsten Wechsel von selbst.</span>
+      <button class="rund" aria-label="Jetzt neu laden" onclick={() => location.reload()}><i class="fa-solid fa-rotate"></i></button></div>
+  {/if}
   {#if fehlend.length}
     <div class="t-band"><i class="fa-solid fa-triangle-exclamation" style="margin-top:3px"></i>
       <span>{#each fehlend as v, i (v.name)}{i ? " " : ""}{v.meldung === "nicht eingerichtet"

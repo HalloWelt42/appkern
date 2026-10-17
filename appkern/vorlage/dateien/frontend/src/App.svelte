@@ -6,4 +6,4 @@
   const bereiche: Bereich[] = [{ schluessel: "start", titel: "Start", symbol: "fa-house", seite: Start, reiter: true }];
 </script>
 
-<Schale {bereiche} />
+<Schale {bereiche} fassung={__APP_FASSUNG__} />

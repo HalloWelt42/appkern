@@ -3,6 +3,7 @@
   // Entwurf (freigegeben 17.10.2026): oberflaeche/mockups/schale.html und schale-mobil.html.
   import { onMount } from "svelte";
   import { anzeigeStarten } from "../lib/anzeige.svelte";
+  import { fassungVerfolgen } from "../lib/fassung.svelte";
   import { geraet, geraetStarten } from "../lib/geraet.svelte";
   import { navigationStarten } from "../lib/navigation.svelte";
   import { sitzung, starten } from "../lib/sitzung.svelte";
@@ -12,13 +13,20 @@
   import Rechner from "./Rechner.svelte";
   import MobilSchale from "./mobil/MobilSchale.svelte";
 
-  let { bereiche = [] }: { bereiche?: Bereich[] } = $props();
+  // `fassung`: mit welcher Fassung die Oberfläche gebaut wurde (aus version.json der App); weicht die des Servers ab,
+  // lädt die Seite von selbst neu. `ruhig`: ob die App gerade neu laden darf (etwa nicht während einer Aufnahme).
+  let { bereiche = [], fassung, ruhig }: { bereiche?: Bereich[]; fassung: string; ruhig?: () => boolean } = $props();
 
   anzeigeStarten();
   geraetStarten();
   onMount(() => {
+    const fassungStoppen = fassungVerfolgen(fassung, ruhig);
     starten();
-    return navigationStarten();
+    const navigationStoppen = navigationStarten();
+    return () => {
+      fassungStoppen();
+      navigationStoppen();
+    };
   });
 </script>
 

@@ -1,5 +1,6 @@
 // Wer gerade da ist: App-Angaben, Anmeldung (Kellerwolke-Konto), erste Einrichtung.
 import { ApiFehler, einrichten, hole, json, setzeToken } from "./api.svelte";
+import { fassungVergleichen } from "./fassung.svelte";
 import type { AppInfo, Konto } from "./typen";
 
 export const sitzung = $state<{ geladen: boolean; app: AppInfo | null; angemeldet: boolean; konto: Konto | null }>({
@@ -26,6 +27,7 @@ export async function starten(): Promise<void> {
   try {
     sitzung.app = await hole<AppInfo>("/app");
     einrichten(sitzung.app.kennung, vorbei);
+    fassungVergleichen(sitzung.app, "start");
     if (!sitzung.app.einrichtung_noetig) {
       const stand = await hole<{ angemeldet: boolean; konto: Konto | null }>("/anmeldung");
       if (stand.angemeldet) await lesezugang();

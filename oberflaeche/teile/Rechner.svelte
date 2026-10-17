@@ -2,6 +2,7 @@
   // Ansicht am Rechner: Kopf, Band bei fehlender Verbindung, Navigation, Seite (Aufträge mit Leiste).
   import { onMount } from "svelte";
   import { verfolgen } from "../lib/auftraege.svelte";
+  import { fassung, ruhig } from "../lib/fassung.svelte";
   import { navigation } from "../lib/navigation.svelte";
   import type { Bereich } from "../lib/typen";
   import { verbindungen, verbindungenVerfolgen } from "../lib/verbindungen.svelte";
@@ -30,7 +31,14 @@
 
 <div class="fenster-voll">
   <Kopf />
-  {#if fehlend.length}<Band verbindungen={fehlend} />{:else}<div></div>{/if}
+  {#if fassung.neu}
+    <div class="band">
+      <i class="fa-solid fa-rotate"></i>
+      <span><b>Neue Fassung {fassung.neu} ist da.</b>
+        {ruhig() ? "Beim nächsten Seitenwechsel lädt die App sie von selbst." : "Sie lädt von selbst, sobald die laufende Arbeit hier fertig ist."}</span>
+      <button class="knopf" onclick={() => location.reload()}><i class="fa-solid fa-rotate"></i> Jetzt neu laden</button>
+    </div>
+  {:else if fehlend.length}<Band verbindungen={fehlend} />{:else}<div></div>{/if}
   <div class="geruest" class:mit-leiste={!bereich && seite === "auftraege"}>
     <Navigation {bereiche} {seite} />
     {#if bereich}

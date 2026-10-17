@@ -256,7 +256,11 @@ Telefon mit Reitern. Barlow und die Symbole kommen über npm.
 ```
 
 In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`; im Einstieg
-`import "appkern-oberflaeche/stil.css"`. Für eigene Seiten stehen `hole`, `json`, `gehe`, `sitzung`, `auftraege`,
+`import "appkern-oberflaeche/stil.css"`. Die Schale bekommt die Fassung, mit der die Oberfläche gebaut wurde
+(`<Schale {bereiche} fassung={__APP_FASSUNG__} />`, eingebaut über `define` in `vite.config.ts` aus `version.json`).
+Meldet der Server eine andere, lädt die Seite von selbst neu: beim Start sofort, sonst beim nächsten Seitenwechsel
+oder wenn das Fenster wieder nach vorn kommt, je Fassung nur einmal; solange `ruhig()` der App nein sagt (etwa
+während einer Aufnahme), wartet es. Kein Nutzer muss nach dem Ausrollen selbst neu laden. Für eigene Seiten stehen `hole`, `json`, `gehe`, `sitzung`, `auftraege`,
 `AuftragZeile` und `Schritte` bereit.
 
 ## Neue App aus der Vorlage
