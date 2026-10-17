@@ -26,6 +26,9 @@ _KENNUNG = re.compile(r"^[a-z][a-z0-9-]{1,40}$")
 _SYMBOL = re.compile(r"^fa-[a-z0-9-]+$")
 _FARBE = re.compile(r"^#[0-9a-fA-F]{6}$")
 SVG = "http://www.w3.org/2000/svg"
+# Platzhalter der Vorlage; andere Namen mit doppelten Unterstrichen (etwa __APP_FASSUNG__ beim Bauen) bleiben stehen.
+PLATZHALTER = ("__NAME__", "__KENNUNG__", "__ROLLE__", "__SYMBOL__", "__PORT__", "__DEVPORT__", "__FARBE__", "__ORDNER__",
+               "__APPKERN_PY__", "__APPKERN_NPM__")
 
 
 class VorlagenFehler(ValueError):
@@ -107,6 +110,7 @@ def erzeugen(*, name: str, kennung: str, rolle: str, symbol: str, port: int, zie
         "__APPKERN_PY__": f"-e {lokal}[web]" if lokal else GITHUB_PY,
         "__APPKERN_NPM__": f"file:{lokal}" if lokal else GITHUB_NPM,
     }
+    assert set(ersetzen) == set(PLATZHALTER)
     for datei in ordner.rglob("*"):
         if not datei.is_file():
             continue

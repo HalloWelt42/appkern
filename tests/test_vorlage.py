@@ -2,14 +2,13 @@
 Abhängigkeiten auf GitHub oder lokal), falsche Angaben werden abgewiesen."""
 
 import json
-import re
 import tomllib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
 
-from appkern.vorlage import GITHUB_NPM, GITHUB_PY, VorlagenFehler, erzeugen, symbol_svg
+from appkern.vorlage import GITHUB_NPM, GITHUB_PY, PLATZHALTER, VorlagenFehler, erzeugen, symbol_svg
 
 
 def neu(tmp_path: Path, **art) -> Path:
@@ -22,13 +21,16 @@ def test_neue_app_vollstaendig(tmp_path: Path):
     ordner = neu(tmp_path)
     for datei in ordner.rglob("*"):
         if datei.is_file() and datei.suffix not in (".png", ".ico"):
-            assert not re.search(r"__[A-Z_]+__", datei.read_text(encoding="utf-8")), datei
+            inhalt = datei.read_text(encoding="utf-8")
+            assert not any(p in inhalt for p in PLATZHALTER), datei
     assert (ordner / ".gitignore").is_file() and not (ordner / "gitignore").exists()
     eintrag = tomllib.loads((ordner / "stellwerk.toml").read_text(encoding="utf-8"))
     assert eintrag["teile"][0]["port"] == 8601 and eintrag["teile"][0]["ordner"] == f"{ordner}/backend"
     assert GITHUB_PY in (ordner / "backend" / "requirements.txt").read_text(encoding="utf-8")
     assert json.loads((ordner / "frontend" / "package.json").read_text())["dependencies"]["appkern-oberflaeche"] == GITHUB_NPM
-    assert "port: 9601" in (ordner / "frontend" / "vite.config.ts").read_text(encoding="utf-8")
+    vite = (ordner / "frontend" / "vite.config.ts").read_text(encoding="utf-8")
+    assert "port: 9601" in vite and "__APP_FASSUNG__" in vite and "fassung={__APP_FASSUNG__}" in \
+        (ordner / "frontend" / "src" / "App.svelte").read_text(encoding="utf-8")
     assert json.loads((ordner / "frontend" / "public" / "site.webmanifest").read_text())["name"] == "Transkription"
     svg = ET.fromstring((ordner / "frontend" / "public" / "symbol.svg").read_text(encoding="utf-8"))
     assert any(k.tag.endswith("path") for k in svg) and any(k.tag.endswith("rect") for k in svg)
