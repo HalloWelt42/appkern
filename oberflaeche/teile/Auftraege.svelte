@@ -4,6 +4,7 @@
   import { dauer, wann } from "../lib/format";
   import { gehe } from "../lib/navigation.svelte";
   import AuftragZeile from "./AuftragZeile.svelte";
+  import Leiste from "./Leiste.svelte";
 
   let { mitLeiste = true }: { mitLeiste?: boolean } = $props();
   let fehler = $state("");
@@ -63,7 +64,7 @@
 </section>
 
 {#if mitLeiste}
-  <aside class="leiste">
+  <Leiste>
     {#if gewaehlt}
       <div class="leiste-kopf">
         <h2>{gewaehlt.titel}</h2>
@@ -108,5 +109,5 @@
     {:else}
       <div class="leer">Einen Auftrag wählen</div>
     {/if}
-  </aside>
+  </Leiste>
 {/if}

@@ -11,6 +11,7 @@ export interface AppInfo {
   einrichtung_noetig: boolean;
   besitzer: string | null;
   kellerwolke: string;
+  oberflaeche: string | null;
 }
 
 export interface Konto {
@@ -74,11 +75,25 @@ export interface Feld {
   schritt: number | null;
   kleinste: number | null;
   groesste: number | null;
+  einheit: string;
+  angebot: boolean;
   wert: unknown;
   gesetzt: boolean;
   vorgabe: unknown;
   herkunft: "gespeichert" | "umgebung" | "vorgabe";
   gruppe: string | null;
+}
+
+export interface Option {
+  wert: string;
+  titel: string;
+  hinweis: string;
+}
+
+export interface Angebot {
+  optionen: Option[];
+  eigener_wert: boolean;
+  stand: string;
 }
 
 export type Stufe = "info" | "warnung" | "fehler";

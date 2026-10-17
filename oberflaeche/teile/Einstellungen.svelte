@@ -1,11 +1,15 @@
 <script lang="ts">
-  // Einstellungen, erzeugt aus der Beschreibung der App: Gruppen als Karten, Herkunft je Wert, Geheimnisse verdeckt
-  // (das Auge deckt auf, kopieren geht immer), Speichern in einer Leiste; dazu die Anzeige auf diesem Gerät.
+  // Einstellungen, erzeugt aus der Beschreibung der App: je Gruppe ein Reiter mit eigener Adresse
+  // (/einstellungen/<gruppe>), Herkunft je Wert, Geheimnisse verdeckt (das Auge deckt auf, kopieren geht immer),
+  // Speichern in einer Leiste über alle Reiter; dazu die Anzeige auf diesem Gerät. Volle Breite; schmal stehen
+  // Beschreibung und Eingabe untereinander. Auswahlen mit vielen oder langen Optionen klappen auf.
   import { anzeige, anzeigeSetzen, type Schrift, type Thema } from "../lib/anzeige.svelte";
   import { hole, json } from "../lib/api.svelte";
+  import { gehe, navigation } from "../lib/navigation.svelte";
   import { sitzung } from "../lib/sitzung.svelte";
-  import type { Feld } from "../lib/typen";
+  import type { Angebot, Feld } from "../lib/typen";
   import { kopieren, markieren } from "../lib/zwischenablage";
+  import Auswahl from "./Auswahl.svelte";
 
   let felder = $state<Feld[]>([]);
   let aenderungen = $state<Record<string, unknown>>({});
@@ -13,7 +17,6 @@
   let neuerEintrag = $state<Record<string, string>>({});
   let fehler = $state("");
   let laeuft = $state(false);
-  let karten: Record<string, HTMLElement> = {};
   let wertFelder: Record<string, HTMLElement> = $state({});
 
   async function laden() {
@@ -27,6 +30,51 @@
 
   const ANZEIGE = "Anzeige auf diesem Gerät";
   const gruppen = $derived([...new Set(felder.map((f) => f.gruppe ?? sitzung.app!.name)), ANZEIGE]);
+  // Adresse eines Reiters: technischer Bezeichner aus dem Namen der Gruppe
+  const schluessel = (g: string) => (g === ANZEIGE ? "anzeige" : g.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe")
+    .replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
+  const aktiv = $derived(gruppen.find((g) => schluessel(g) === navigation.teile[0]) ?? gruppen[0]);
+  const geaendertIn = (g: string) => felder.some((f) => (f.gruppe ?? sitzung.app!.name) === g && f.name in aenderungen);
+  // Angebote: Auswahl aus dem System (Dienste der Leitstelle, bekannte Adressen) und was gerade gilt; geholt, sobald
+  // ein Reiter sie zeigt. "Eigener Wert" öffnet das Textfeld.
+  const EIGEN = "\u0000eigen";
+  let angebote = $state<Record<string, Angebot>>({});
+  let eigen = $state<Record<string, boolean>>({});
+
+  async function angeboteLaden(g: string) {
+    for (const f of felder.filter((x) => x.angebot && (x.gruppe ?? sitzung.app!.name) === g)) {
+      try {
+        angebote[f.name] = await hole<Angebot>(`/einstellungen/angebot/${f.name}`);
+      } catch {
+        angebote[f.name] = { optionen: [], eigener_wert: true, stand: "" };
+      }
+    }
+  }
+
+  $effect(() => {
+    if (aktiv && felder.length) void angeboteLaden(aktiv);
+  });
+
+  function angebotOptionen(f: Feld) {
+    const a = angebote[f.name];
+    const jetzt = String(wert(f) ?? "");
+    const optionen = (a?.optionen ?? []).map((o) => ({ wert: o.wert, titel: o.titel, hinweis: o.hinweis }));
+    if (jetzt && !optionen.some((o) => o.wert === jetzt)) optionen.unshift({ wert: jetzt, titel: jetzt, hinweis: "eingetragen" });
+    if (!a || a.eigener_wert) optionen.push({ wert: EIGEN, titel: "Eigener Wert ...", hinweis: "" });
+    return optionen;
+  }
+
+  function angebotWaehlen(f: Feld, w: string) {
+    if (w === EIGEN) {
+      eigen[f.name] = true;
+      return;
+    }
+    eigen[f.name] = false;
+    setzen(f, w);
+  }
+
+  // Als Umschalter nur, wenn es wenige und kurze Optionen sind; sonst als Aufklappliste.
+  const alsUmschalter = (f: Feld) => f.optionen.length <= 4 && f.optionen.reduce((n, o) => n + (f.beschriftungen?.[o] ?? o).length, 0) <= 36;
   const geaendert = $derived(Object.keys(aenderungen));
   const titel = (name: string) => felder.find((f) => f.name === name)?.titel ?? name;
   const wert = (f: Feld) => (f.name in aenderungen ? aenderungen[f.name] : f.wert);
@@ -102,18 +150,20 @@
   const THEMA: [Thema, string][] = [["hell", "Hell"], ["dunkel", "Dunkel"], ["system", "wie das System"]];
 </script>
 
-<section class="seite">
-  <div class="seiten-kopf">
-    <h1>Einstellungen</h1>
-    <span class="segment">
-      {#each gruppen as g (g)}<button onclick={() => karten[g]?.scrollIntoView({ behavior: "smooth", block: "start" })}>{g === ANZEIGE ? "Anzeige" : g}</button>{/each}
-    </span>
-  </div>
+<section class="seite einstellungen">
+  <div class="seiten-kopf"><h1>Einstellungen</h1></div>
+  <nav class="reiterleiste" aria-label="Gruppen der Einstellungen">
+    {#each gruppen as g (g)}
+      <button class:aktiv={g === aktiv} aria-current={g === aktiv ? "page" : undefined}
+              onclick={() => gehe(`einstellungen/${schluessel(g)}`, true)}>
+        {g === ANZEIGE ? "Anzeige" : g}{#if geaendertIn(g)}<span class="reiter-punkt" title="ungespeicherte Änderung"></span>{/if}
+      </button>
+    {/each}
+  </nav>
   <div class="rollfeld">
-    {#each gruppen.filter((g) => g !== ANZEIGE) as g (g)}
-      <div class="karte" bind:this={karten[g]}>
-        <h2>{g}</h2>
-        {#each felder.filter((f) => (f.gruppe ?? sitzung.app!.name) === g) as f (f.name)}
+    {#if aktiv && aktiv !== ANZEIGE}
+      <div class="karte breit">
+        {#each felder.filter((f) => (f.gruppe ?? sitzung.app!.name) === aktiv) as f (f.name)}
           <div class="feld">
             <div class="was">
               <div class="name">
@@ -129,15 +179,35 @@
             {#if f.art === "schalter"}
               <button class="schalter" class:an={Boolean(wert(f))} aria-label={f.titel} aria-pressed={Boolean(wert(f))}
                       onclick={() => setzen(f, !wert(f))}></button>
-            {:else if f.art === "auswahl"}
+            {:else if f.angebot}
+              <div class="angebot">
+                <Auswahl wert={eigen[f.name] ? EIGEN : String(wert(f) ?? "")} optionen={angebotOptionen(f)} onwahl={(w) => angebotWaehlen(f, w)} />
+                {#if eigen[f.name]}
+                  <span class="eingabe" class:geaendert={f.name in aenderungen}>
+                    <input value={String(wert(f) ?? "")} spellcheck="false" placeholder="eigener Wert" oninput={(e) => setzen(f, e.currentTarget.value)} />
+                  </span>
+                {/if}
+                {#if angebote[f.name]?.stand}
+                  <div class="stand" class:gut={angebote[f.name].stand.startsWith("verbunden") || angebote[f.name].stand.startsWith("gefunden")}>
+                    <i class="fa-solid {angebote[f.name].stand.startsWith('verbunden') || angebote[f.name].stand.startsWith('gefunden') ? 'fa-circle-check' : 'fa-circle-info'}"></i>
+                    {angebote[f.name].stand}</div>
+                {/if}
+              </div>
+            {:else if f.art === "auswahl" && alsUmschalter(f)}
               <span class="segment">
                 {#each f.optionen as o (o)}<button class:aktiv={wert(f) === o} onclick={() => setzen(f, o)}>{f.beschriftungen?.[o] ?? o}</button>{/each}
               </span>
+            {:else if f.art === "auswahl"}
+              <span><Auswahl wert={wert(f) as string} optionen={f.optionen.map((o) => ({ wert: o, titel: f.beschriftungen?.[o] ?? o }))}
+                             onwahl={(o) => setzen(f, o)} /></span>
             {:else if f.art === "zahl"}
-              <span class="zaehler">
-                <button onclick={() => zahlSetzen(f, Number(wert(f) ?? 0) - (f.schritt ?? 1))} aria-label="weniger">-</button>
-                <input inputmode="decimal" value={zahlZeigen(f)} onchange={(e) => zahlSetzen(f, Number(e.currentTarget.value.replace(",", ".")))} />
-                <button onclick={() => zahlSetzen(f, Number(wert(f) ?? 0) + (f.schritt ?? 1))} aria-label="mehr">+</button>
+              <span class="zahl-feld">
+                <span class="zaehler">
+                  <button onclick={() => zahlSetzen(f, Number(wert(f) ?? 0) - (f.schritt ?? 1))} aria-label="weniger">-</button>
+                  <input inputmode="decimal" value={zahlZeigen(f)} onchange={(e) => zahlSetzen(f, Number(e.currentTarget.value.replace(",", ".")))} />
+                  <button onclick={() => zahlSetzen(f, Number(wert(f) ?? 0) + (f.schritt ?? 1))} aria-label="mehr">+</button>
+                </span>
+                {#if f.einheit}<span class="einheit">{f.einheit}</span>{/if}
               </span>
             {:else if f.art === "liste"}
               <span class="chips">
@@ -175,11 +245,9 @@
           </div>
         {/each}
       </div>
-    {/each}
-
-    <div class="karte" bind:this={karten[ANZEIGE]}>
-      <h2>{ANZEIGE}</h2>
-      <p class="karte-unter">Gilt nur für diesen Browser.</p>
+    {:else if aktiv === ANZEIGE}
+    <div class="karte breit">
+      <p class="karte-unter" style="margin-top:14px">Gilt nur für diesen Browser.</p>
       <div class="feld">
         <div class="was"><div class="name">Schriftgröße</div></div>
         <span class="segment">{#each SCHRIFT as [s, t] (s)}<button class:aktiv={anzeige.schrift === s} onclick={() => anzeigeSetzen({ schrift: s })}>{t}</button>{/each}</span>
@@ -189,6 +257,7 @@
         <span class="segment">{#each THEMA as [s, t] (s)}<button class:aktiv={anzeige.thema === s} onclick={() => anzeigeSetzen({ thema: s })}>{t}</button>{/each}</span>
       </div>
     </div>
+    {/if}
 
     {#if geaendert.length || fehler}
       <div class="speicherleiste">

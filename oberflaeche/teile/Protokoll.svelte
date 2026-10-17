@@ -1,6 +1,8 @@
 <script lang="ts">
-  // Protokoll: Stufe, Zeitraum und Suche fest oben, Einträge seitenweise; am Telefon als Liste statt Tabelle.
+  // Protokoll: Stufe, Zeitraum und Suche fest oben, Einträge seitenweise. Breit als Tabelle, schmal (und am Telefon)
+  // als Liste; Ereignisse stehen mit Namen da, nie als Schlüssel.
   import { hole } from "../lib/api.svelte";
+  import { ereignisName } from "../lib/ereignisse";
   import { isoTag, tagAusText, wann } from "../lib/format";
   import type { ProtokollEintrag, Seite, Stufe } from "../lib/typen";
 
@@ -16,6 +18,8 @@
   let seite = $state<Seite<ProtokollEintrag>>({ eintraege: [], gesamt: 0 });
   let fehler = $state("");
   let takt: ReturnType<typeof setTimeout> | null = null;
+  let breite = $state(0);
+  const alsListe = $derived(kompakt || (breite > 0 && breite < 980));
 
   async function laden() {
     const p = new URLSearchParams({ grenze: String(GROESSE), versatz: String(versatz) });
@@ -56,7 +60,7 @@
   const ZEICHEN = { info: "fa-circle-info", warnung: "fa-triangle-exclamation", fehler: "fa-circle-xmark" } as const;
 </script>
 
-<section class="seite">
+<section class="seite" bind:clientWidth={breite}>
   <div class="seiten-kopf">
     <h1>Protokoll</h1>
     <span class="segment">{#each STUFEN as [s, t] (s)}<button class:aktiv={stufe === s} onclick={() => ((stufe = s), neu())}>{t}</button>{/each}</span>
@@ -70,24 +74,28 @@
   </div>
   <div class="rollfeld">
     {#if fehler}<div class="fehlertext">{fehler}</div>{/if}
-    {#if kompakt}
-      <div class="t-liste">
+    {#if alsListe}
+      <div class="protokoll-liste">
         {#each seite.eintraege as e (e.id)}
-          <div class="t-zeile">
-            <i class="fa-solid {ZEICHEN[e.stufe]} stufe {e.stufe}" style="font-size:18px"></i>
-            <div class="t-text"><div class="t-name">{e.bezug_name ?? e.ereignis}</div><div class="t-meta">{wann(e.zeit)} · {e.text || e.ereignis}</div></div>
+          <div class="protokoll-zeile">
+            <i class="fa-solid {ZEICHEN[e.stufe]} stufe {e.stufe}" title={e.stufe}></i>
+            <div class="protokoll-inhalt">
+              <div class="protokoll-oben"><b>{ereignisName(e.ereignis)}</b><span class="protokoll-zeit">{wann(e.zeit)}</span></div>
+              {#if e.bezug_name}<div class="protokoll-bezug">{e.bezug_name}</div>{/if}
+              {#if e.text}<div class="protokoll-text">{e.text}</div>{/if}
+            </div>
           </div>
         {:else}<div class="leer">Nichts im gewählten Zeitraum</div>{/each}
       </div>
     {:else}
       <table class="tabelle">
-        <thead><tr><th style="width:160px">Zeit</th><th style="width:44px"></th><th style="width:220px">Ereignis</th><th style="width:280px">Bezug</th><th>Text</th></tr></thead>
+        <thead><tr><th style="width:150px">Zeit</th><th style="width:44px"></th><th style="width:220px">Ereignis</th><th style="width:28%">Bezug</th><th>Text</th></tr></thead>
         <tbody>
           {#each seite.eintraege as e (e.id)}
             <tr>
               <td class="zeit">{wann(e.zeit)}</td>
               <td class="stufe {e.stufe}"><i class="fa-solid {ZEICHEN[e.stufe]}" title={e.stufe}></i></td>
-              <td class="ereignis"><code>{e.ereignis}</code></td>
+              <td class="ereignis">{ereignisName(e.ereignis)}</td>
               <td>{e.bezug_name ?? ""}</td>
               <td>{e.text}</td>
             </tr>

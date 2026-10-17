@@ -23,7 +23,7 @@ from pydantic import BaseModel, SecretStr, ValidationError
 
 from appkern.datenbank import Datenbank
 
-from .modelle import Feld, FeldArt
+from .modelle import Angebot, Feld, FeldArt
 
 M = TypeVar("M", bound=BaseModel)
 SCHEMA = [
@@ -86,6 +86,7 @@ class Einstellungen(Generic[M]):
         self._gespeichert: dict[str, Any] = {}
         self._stand: M | None = None
         self._beobachter: list[Callable[[M, set[str]], Awaitable[None] | None]] = []
+        self._anbieter: dict[str, Callable[[], Awaitable[Angebot]]] = {}
 
     async def starten(self) -> M:
         await self.db.einrichten("einstellungen", SCHEMA)
@@ -120,6 +121,19 @@ class Einstellungen(Generic[M]):
         if self._stand is None:
             raise RuntimeError("Einstellungen sind nicht gestartet")
         return self._stand
+
+    def anbieten(self, name: str, anbieter: Callable[[], Awaitable[Angebot]]) -> None:
+        """Für ein Feld eine Auswahl aus dem System anbieten (siehe `Angebot`); die Oberfläche zeigt sie statt eines
+        bloßen Textfelds."""
+        if name not in self.modell.model_fields:
+            raise UnbekanntesFeld(name)
+        self._anbieter[name] = anbieter
+
+    async def angebot(self, name: str) -> Angebot:
+        anbieter = self._anbieter.get(name)
+        if anbieter is None:
+            raise UnbekanntesFeld(name)
+        return await anbieter()
 
     def bei_aenderung(self, beobachter: Callable[[M, set[str]], Awaitable[None] | None]) -> None:
         """`beobachter(neuer_stand, geaenderte_felder)` nach jeder Änderung, etwa um einen Zugang neu aufzubauen."""
@@ -179,7 +193,8 @@ class Einstellungen(Generic[M]):
             felder.append(Feld(
                 name=name, titel=info.title or name, beschreibung=info.description or "", art=art, optionen=optionen,
                 beschriftungen={str(k): str(v) for k, v in (extra.get("beschriftungen") or {}).items()},
-                schritt=extra.get("schritt"), kleinste=kleinste, groesste=groesste,
+                schritt=extra.get("schritt"), kleinste=kleinste, groesste=groesste, einheit=str(extra.get("einheit", "")),
+                angebot=name in self._anbieter,
                 wert=verdeckt(wert) if art == "geheimnis" else _json(wert), gesetzt=bool(wert) if art == "geheimnis" else True,
                 vorgabe=None if art == "geheimnis" else _json(_klartext(getattr(vorgabe, name))), herkunft=herkunft,
                 gruppe=str(extra.get("gruppe", "")) or None))

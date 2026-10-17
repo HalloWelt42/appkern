@@ -10,7 +10,7 @@ from fastapi.params import Depends
 from pydantic import BaseModel, ValidationError
 
 from .dienst import Einstellungen, UnbekanntesFeld
-from .modelle import Feld
+from .modelle import Angebot, Feld
 
 
 class Aenderung(BaseModel):
@@ -48,6 +48,14 @@ def einstellungs_router(einstellungen: Einstellungen, *, prefix: str = "/api/v1/
             return Geheimnis(name=name, wert=einstellungen.geheimnis(name))
         except UnbekanntesFeld:
             raise HTTPException(status_code=404, detail="Kein Geheimnis dieses Namens")
+
+    @router.get("/angebot/{name}", response_model=Angebot)
+    async def angebot(name: str) -> Angebot:
+        """Was für ein Feld zur Wahl steht und was gerade gilt (live aus dem System)."""
+        try:
+            return await einstellungen.angebot(name)
+        except UnbekanntesFeld:
+            raise HTTPException(status_code=404, detail="Für dieses Feld gibt es kein Angebot")
 
     return router
 

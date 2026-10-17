@@ -45,7 +45,9 @@ class Wolke:
                 self.sitzungen.pop(request.headers.get("x-kellerwolke-sitzung", ""), None)
                 return httpx.Response(204)
         if request.url.host == "ls.test" and pfad == "/v1/models":
-            return httpx.Response(200, json={"data": [{"id": "gross"}, {"id": "klangwerk-hoeren"}]})
+            return httpx.Response(200, json={"data": [
+                {"id": "gross", "x-leitstelle": {"name": "Groß", "faehigkeiten": ["text"], "geladen": True, "knoten": "studio"}},
+                {"id": "klangwerk-hoeren", "x-leitstelle": {"name": "Klangwerk Hören", "faehigkeiten": ["hoeren"]}}]})
         return httpx.Response(404, json={"detail": "nicht da"})
 
     @staticmethod
@@ -57,7 +59,7 @@ class Wolke:
 async def umgebung(tmp_path: Path):
     dist = tmp_path / "dist"
     (dist / "assets").mkdir(parents=True)
-    (dist / "index.html").write_text("<!doctype html><title>Probe</title>")
+    (dist / "index.html").write_text('<!doctype html><head><title>Probe</title><meta name="app-fassung" content="0.0.9" /></head>')
     (dist / "assets" / "a.js").write_text("1")
     geruest = Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
                       einstellungen=ProbeEinstellungen, oberflaeche=dist, transport=httpx.MockTransport(Wolke()))
@@ -176,3 +178,36 @@ async def test_begleiter_leben_mit_dem_geruest(tmp_path: Path):
     await geruest.stoppen()
     assert ablauf == ["a.starten", "b.starten", "a.verbunden:False", "b.verbunden:False",
                       "a.verbunden:True", "b.verbunden:True", "b.stoppen", "a.stoppen"]
+
+
+async def test_angebote_fuer_verbindungen_und_leitstelle(umgebung):
+    geruest, app, c = umgebung
+    await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
+    h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
+    felder = {f["name"]: f for f in (await c.get("/api/v1/einstellungen", headers=h)).json()}
+    assert felder["kellerwolke_adresse"]["angebot"] and felder["ca_datei"]["angebot"]
+    kw = (await c.get("/api/v1/einstellungen/angebot/kellerwolke_adresse", headers=h)).json()
+    assert kw["optionen"][0] == {"wert": "http://kw.test", "titel": "http://kw.test", "hinweis": "eingetragen"}
+    assert kw["stand"] == "verbunden: Apps/Probe"
+    hoeren = geruest.leitstelle_angebot("hoeren")
+    assert (await hoeren()).stand.startswith("Leitstelle noch nicht eingerichtet")
+    await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"leitstelle_adresse": "http://ls.test", "leitstelle_schluessel": "ls_x"}})
+    angebot = await hoeren()
+    assert [(o.wert, o.titel) for o in angebot.optionen] == [("klangwerk-hoeren", "Klangwerk Hören")] and angebot.stand == ""
+    text = await geruest.leitstelle_angebot("text", leer="Kette der App")()
+    assert [(o.wert, o.titel, o.hinweis) for o in text.optionen] == [("", "Kette der App", "die Leitstelle wählt"),
+                                                                     ("gross", "Groß", "geladen auf studio")]
+    assert (await geruest.leitstelle_angebot("musik")()).stand == "Die Leitstelle bietet dieser App dafür nichts an"
+
+
+async def test_oberflaeche_meldet_ihre_gebaute_fassung(umgebung):
+    geruest, app, c = umgebung
+    assert (await c.get("/api/v1/app")).json()["oberflaeche"] == "0.0.9"     # gebaut für eine ältere Fassung als 0.1.0
+    eintraege = (await c.get("/api/v1/protokoll")).status_code
+    assert eintraege == 401                                                  # Protokoll bleibt geschützt
+    ereignisse = [e.ereignis for e in (await geruest.protokoll.liste()).eintraege]
+    assert "app.oberflaeche_veraltet" in ereignisse
+    (geruest.oberflaeche / "index.html").write_text('<head><meta name="app-fassung" content="0.1.0" /></head>')
+    import os
+    os.utime(geruest.oberflaeche / "index.html", (1, 1))
+    assert (await c.get("/api/v1/app")).json()["oberflaeche"] == "0.1.0"

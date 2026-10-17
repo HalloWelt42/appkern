@@ -2,6 +2,7 @@
   // Ein Auftrag in der Liste: Titel, Zeit, Schritte, Fortschritt, Fehler, Abbrechen oder Wiederholen.
   import { abbrechen, auftraege, wiederholen } from "../lib/auftraege.svelte";
   import { seit, wann } from "../lib/format";
+  import { leisteOeffnen } from "../lib/leiste.svelte";
   import type { Auftrag } from "../lib/typen";
   import Schritte from "./Schritte.svelte";
 
@@ -23,10 +24,16 @@
       fehler = (f as Error).message;
     }
   }
+
+  // Wählen zeigt den Auftrag in der Leiste; ist sie eine Tafel (schmale Fenster), fährt sie auf.
+  function waehlen() {
+    auftraege.gewaehlt = a.id;
+    leisteOeffnen();
+  }
 </script>
 
 <div class="auftrag" class:gewaehlt={auftraege.gewaehlt === a.id} role="button" tabindex="0"
-     onclick={() => (auftraege.gewaehlt = a.id)} onkeydown={(e) => e.key === "Enter" && (auftraege.gewaehlt = a.id)}>
+     onclick={() => waehlen()} onkeydown={(e) => e.key === "Enter" && waehlen()}>
   <span class="art"><i class="fa-solid fa-gears"></i></span>
   <div style="min-width:0">
     <div class="titel"><span class="name">{a.titel}</span><span class="wann">{zeit}</span></div>

@@ -122,6 +122,29 @@ async def test_einstellungen_schnittstelle(db):
         r = await c.patch("/api/v1/einstellungen", json={"werte": {"gleichzeitig": 0}})
         assert r.status_code == 422 and "gleichzeitig" in r.json()["detail"]
         assert (await c.patch("/api/v1/einstellungen", json={"werte": {"x": 1}})).status_code == 422
+        assert (await c.get("/api/v1/einstellungen/angebot/sprache")).status_code == 404
+
+
+async def test_angebot_aus_dem_system(db):
+    from appkern.einstellungen import Angebot, Option
+
+    e = Einstellungen(db, AppEinstellungen)
+    await e.starten()
+
+    async def adressen() -> Angebot:
+        return Angebot(optionen=[Option(wert="http://pi:8530", titel="Pi", hinweis="im Heimnetz")], stand="verbunden")
+
+    e.anbieten("leitstelle_adresse", adressen)
+    with pytest.raises(UnbekanntesFeld):
+        e.anbieten("gibt_es_nicht", adressen)
+    felder = {f.name: f for f in e.felder()}
+    assert felder["leitstelle_adresse"].angebot and not felder["sprache"].angebot
+    app = FastAPI()
+    app.include_router(einstellungs_router(e))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        r = (await c.get("/api/v1/einstellungen/angebot/leitstelle_adresse")).json()
+        assert r == {"optionen": [{"wert": "http://pi:8530", "titel": "Pi", "hinweis": "im Heimnetz"}], "eigener_wert": True,
+                     "stand": "verbunden"}
 
 
 async def test_protokoll_filter_seiten_aufraeumen(db):

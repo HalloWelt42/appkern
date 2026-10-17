@@ -3,6 +3,7 @@
 // Seiten selbst. Das Backend liefert für jeden Pfad außerhalb von /api die Oberfläche aus. Alte Anker (#/seite)
 // werden beim Start in Pfade umgeschrieben.
 import { vielleichtNeuLaden } from "./fassung.svelte";
+import { leisteSchliessen } from "./leiste.svelte";
 
 // `titel`: setzt eine Seite, die einen Teil zeigt (etwa ein Transkript), für den Kopf am Telefon; jeder Ortswechsel
 // leert ihn wieder.
@@ -23,7 +24,10 @@ function zerlegen(pfad: string): string[] {
 
 function lesen(): void {
   const [seite = "", ...teile] = zerlegen(location.pathname);
-  if (seite !== navigation.seite || teile.join("/") !== navigation.teile.join("/")) navigation.titel = "";
+  if (seite !== navigation.seite || teile.join("/") !== navigation.teile.join("/")) {
+    navigation.titel = "";
+    leisteSchliessen();
+  }
   navigation.seite = seite;
   navigation.teile = teile;
 }

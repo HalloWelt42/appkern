@@ -2,6 +2,6 @@
 Die Schnittstelle für FastAPI liegt in `appkern.einstellungen.api` (Zusatz `appkern[web]`)."""
 
 from .dienst import Einstellungen, UnbekanntesFeld, verdeckt
-from .modelle import Feld, FeldArt
+from .modelle import Angebot, Feld, FeldArt, Option
 
-__all__ = ["Einstellungen", "Feld", "FeldArt", "UnbekanntesFeld", "verdeckt"]
+__all__ = ["Angebot", "Einstellungen", "Feld", "FeldArt", "Option", "UnbekanntesFeld", "verdeckt"]

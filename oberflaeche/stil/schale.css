@@ -271,3 +271,106 @@ button { font: inherit; color: inherit; }
 .mobil .leiste { display: none; }
 .mobil .suche { min-width: 0; flex: 1; }
 .eingabe .wert.markierbar { user-select: all; -webkit-user-select: all; }
+
+/* ----- Aufklappliste (Auswahl) ----- */
+.auswahl { position: relative; display: inline-flex; max-width: 100%; }
+.auswahl-knopf { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: var(--r2); max-width: 100%;
+                 background: var(--flaeche); border: 1px solid var(--rand); font: inherit; font-size: var(--klein); color: var(--text); cursor: pointer; }
+.auswahl-knopf.klein { height: 32px; padding: 0 10px; }
+.auswahl-knopf .auswahl-pfeil { font-size: 12px; color: var(--text-3); }
+.auswahl-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auswahl-liste { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; min-width: 100%; max-height: 340px; overflow-y: auto;
+                 background: var(--flaeche); border-radius: var(--r2); box-shadow: var(--schatten), 0 10px 30px rgba(20, 30, 45, .2);
+                 display: flex; flex-direction: column; padding: 4px; }
+.auswahl-liste button { border: 0; background: transparent; font: inherit; font-size: var(--klein); text-align: left; padding: 9px 12px;
+                        border-radius: var(--r1); cursor: pointer; color: var(--text); white-space: nowrap; }
+.auswahl-liste button:hover, .auswahl-liste button.aktiv { background: var(--akzent-weich); color: var(--akzent); }
+
+/* ----- Reiter ----- */
+.reiterleiste { display: flex; flex-wrap: wrap; gap: 2px 6px; padding: 0 22px; border-bottom: 1px solid var(--rand); flex: none; }
+.reiterleiste button { position: relative; border: 0; background: transparent; font: inherit; font-size: var(--klein); color: var(--text-2);
+                       padding: 12px 10px 11px; margin-bottom: -1px; border-bottom: 3px solid transparent; cursor: pointer; }
+.reiterleiste button:hover { color: var(--text); }
+.reiterleiste button.aktiv { color: var(--akzent); border-bottom-color: var(--akzent); font-weight: 600; }
+.reiter-punkt { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--akzent); margin-left: 6px; vertical-align: 2px; }
+
+/* ----- Einstellungen in voller Breite ----- */
+.einstellungen .rollfeld { padding-top: 18px; }
+.karte.breit { max-width: none; }
+.einstellungen .feld { grid-template-columns: minmax(0, 1fr) minmax(300px, 44%); }
+.einstellungen .speicherleiste { max-width: none; }
+.feld .segment { flex-wrap: wrap; justify-self: start; }
+
+/* ----- Protokoll als Liste (schmal) ----- */
+.protokoll-liste { background: var(--flaeche); border-radius: var(--r3); box-shadow: var(--schatten); overflow: hidden; }
+.protokoll-zeile { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; padding: 12px 16px; align-items: start; }
+.protokoll-zeile + .protokoll-zeile { border-top: 1px solid var(--rand); }
+.protokoll-zeile > i { margin-top: 4px; }
+.protokoll-zeile > i.stufe.info { color: var(--akzent); }
+.protokoll-zeile > i.stufe.warnung { color: var(--warn); }
+.protokoll-zeile > i.stufe.fehler { color: var(--gefahr); }
+.protokoll-oben { display: flex; gap: 12px; align-items: baseline; }
+.protokoll-oben b { font-weight: 600; }
+.protokoll-zeit { margin-left: auto; font-size: var(--klein); color: var(--text-3); white-space: nowrap; }
+.protokoll-bezug { font-size: var(--klein); color: var(--text-2); margin-top: 2px; overflow-wrap: anywhere; }
+.protokoll-text { font-size: var(--klein); color: var(--text-3); margin-top: 2px; overflow-wrap: anywhere; }
+.tabelle td { overflow-wrap: anywhere; }
+.tabelle td.ereignis { color: var(--text); }
+
+/* ----- Leiste: Knopf zum Schließen und Schleier nur, wenn sie eine Tafel ist ----- */
+.leiste { position: relative; }
+.leiste-zu { display: none; }
+.leiste-schleier { display: none; }
+
+/* ----- Fokus nur bei Tastatur sichtbar, in der Farbe der Schale ----- */
+:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+button:focus:not(:focus-visible), [tabindex]:focus:not(:focus-visible) { outline: none; }
+
+/* ----- Breiten -----
+   ab 1280 px: wie im Entwurf (Navigation mit Text, Leiste daneben)
+   unter 1280 px: Leiste als einschiebbare Tafel über dem Inhalt
+   unter 1000 px: Navigation als Symbolleiste, Rolle im Kopf ausgeblendet
+   bis 760 px: eigene Telefonansicht (MobilSchale) */
+@media (max-width: 1279px) {
+  .geruest.mit-leiste { grid-template-columns: 240px minmax(0, 1fr); }
+  .leiste { position: fixed; top: 60px; right: 0; bottom: 0; width: min(420px, 92vw); z-index: 30;
+            transform: translateX(105%); transition: transform .2s ease; box-shadow: -8px 0 30px rgba(10, 20, 30, .25); }
+  .leiste.offen { transform: none; }
+  .leiste-zu { display: grid; position: absolute; top: 12px; right: 12px; z-index: 2; }
+  .leiste .leiste-kopf { padding-right: 60px; }
+  .leiste-schleier { display: block; position: fixed; inset: 60px 0 0 0; z-index: 29; border: 0; background: rgba(10, 18, 28, .35); cursor: pointer; }
+  .einstellungen .feld { grid-template-columns: minmax(0, 1fr) minmax(260px, 50%); }
+}
+@media (max-width: 999px) {
+  .geruest, .geruest.mit-leiste { grid-template-columns: 76px minmax(0, 1fr); }
+  .nav { padding: 12px 8px; align-items: stretch; }
+  .nav-gruppe { font-size: 0; padding: 8px 0 4px; border-top: 1px solid var(--rand); margin: 6px 6px 0; }
+  .nav-gruppe:first-child { border-top: 0; margin-top: 0; }
+  .nav-eintrag { justify-content: center; padding: 0; position: relative; gap: 0; }
+  .nav-eintrag i { width: auto; font-size: 19px; }
+  .nav-eintrag .nav-text { display: none; }
+  .nav-eintrag .zahl { position: absolute; top: 4px; right: 6px; margin: 0; padding: 0 6px; font-size: 11px; }
+  .nav-fuss { padding: 10px 0 2px; align-items: center; }
+  .konto { flex-direction: column; gap: 8px; }
+  .konto .konto-text, .nav-fuss .fassung { display: none; }
+  .konto .rund { margin-left: 0; }
+  .kopf .rolle { display: none; }
+  .marke { min-width: 0; }
+  .einstellungen .feld { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+}
+
+/* ----- Angebote in den Einstellungen ----- */
+.angebot { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.angebot .auswahl, .angebot .auswahl-knopf { width: 100%; }
+.angebot .auswahl-knopf { height: 42px; justify-content: space-between; }
+.angebot .auswahl-liste { width: 100%; }
+.auswahl-liste button { display: flex; flex-direction: column; gap: 1px; }
+.auswahl-hinweis { font-size: var(--marke); color: var(--text-3); }
+.auswahl-liste button.aktiv .auswahl-hinweis { color: var(--akzent); opacity: .8; }
+.stand { display: flex; gap: 8px; align-items: baseline; font-size: var(--klein); color: var(--text-2); }
+.stand i { color: var(--text-3); }
+.stand.gut i { color: var(--gut); }
+.zahl-feld { display: inline-flex; align-items: center; gap: 10px; justify-self: start; }
+.einheit { font-size: var(--klein); color: var(--text-2); }
+a.knopf { text-decoration: none; color: inherit; }
+a.knopf.primaer { color: #fff; }

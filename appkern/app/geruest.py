@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import ssl
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
@@ -36,7 +37,7 @@ from appkern.anmeldung.api import angemeldet, anmeldungs_router
 from appkern.auftraege import Art, Auftraege
 from appkern.auftraege.api import auftrags_router
 from appkern.datenbank import Datenbank
-from appkern.einstellungen import Einstellungen
+from appkern.einstellungen import Angebot, Einstellungen, Option
 from appkern.einstellungen.api import einstellungs_router
 from appkern.kellerwolke import Kellerwolke, KellerwolkeFehler, NichtErreichbar, SchluesselUngueltig
 from appkern.leitstelle import Leitstelle, LeitstellenFehler
@@ -91,6 +92,7 @@ class AppInfo(BaseModel):
     einrichtung_noetig: bool
     besitzer: str | None = None
     kellerwolke: str = ""       # Adresse, gegen die angemeldet und gekoppelt wird (nie der Schlüssel)
+    oberflaeche: str | None = None  # Fassung der gebauten Oberfläche, die der Server gerade ausliefert
 
 
 class Verbindung(BaseModel):
@@ -124,12 +126,71 @@ class Geruest(Generic[E]):
         self.leitstelle: Leitstelle | None = None
         self._clients: list[httpx.AsyncClient] = []
         self.anmeldung = Anmeldung("", self._erlaubt)
+        self._grundangebote()
         self.pflicht = Depends(angemeldet(self.anmeldung))                          # Menschen und andere Apps
         self.mensch = Depends(angemeldet(self.anmeldung, nur_menschen=True))        # nur Menschen
         self.lesen = Depends(angemeldet(self.anmeldung, cookie=True))
         self._pflege: asyncio.Task | None = None
         self._begleiter: list[Begleiter] = []
+        self._oberflaeche_gemerkt: tuple[float, str | None] | None = None
         self._laeuft = False
+
+    # --- Angebote für die Einstellungen: Auswahl aus dem System statt bloßer Textfelder ----------------------------
+
+    def _grundangebote(self) -> None:
+        async def verbindung(name: str) -> str:
+            v = next((x for x in await self.verbindungen() if x.name == name), None)
+            if v is None:
+                return ""
+            return f"verbunden: {v.meldung}" if v.ok else f"nicht verbunden: {v.meldung}"
+
+        async def adressen(teil: str, aktuell: str) -> list[Option]:
+            optionen = [Option(wert=aktuell, titel=aktuell, hinweis="eingetragen")] if aktuell else []
+            for e in await self.verzeichnis.alle():
+                if teil in e.kennung and e.adresse != aktuell:
+                    optionen.append(Option(wert=e.adresse, titel=e.adresse, hinweis=f"{e.name} ({e.quelle})"))
+            return optionen
+
+        async def kellerwolke() -> Angebot:
+            stand = self.einstellungen.stand
+            return Angebot(optionen=await adressen("kellerwolke", stand.kellerwolke_adresse),
+                           stand=await verbindung("Kellerwolke"))
+
+        async def leitstelle() -> Angebot:
+            stand = self.einstellungen.stand
+            return Angebot(optionen=await adressen("leitstelle", stand.leitstelle_adresse), stand=await verbindung("Leitstelle"))
+
+        async def zertifikate() -> Angebot:
+            haus = hausstelle()
+            optionen = [Option(wert="", titel="Automatisch", hinweis="übliche Stellen und die Hausstelle dieses Rechners")]
+            if haus is not None:
+                optionen.append(Option(wert=str(haus), titel=str(haus), hinweis="Hausstelle dieses Rechners"))
+            gilt = self.einstellungen.stand.ca_datei or (f"Hausstelle {haus}" if haus else "nur die üblichen Stellen")
+            return Angebot(optionen=optionen, stand=f"es gilt: {gilt}")
+
+        self.einstellungen.anbieten("kellerwolke_adresse", kellerwolke)
+        self.einstellungen.anbieten("leitstelle_adresse", leitstelle)
+        self.einstellungen.anbieten("ca_datei", zertifikate)
+
+    def leitstelle_angebot(self, faehigkeit: str, *, leer: str | None = None):
+        """Anbieter für ein Feld, das einen Dienst oder ein Modell der Leitstelle nennt: die Auswahl sind die Modelle und
+        Dienste mit dieser Fähigkeit, die die App nutzen darf. `leer` bietet zusätzlich den leeren Wert mit diesem
+        Namen an (etwa "Kette der App")."""
+
+        async def anbieter() -> Angebot:
+            optionen = [Option(wert="", titel=leer, hinweis="die Leitstelle wählt")] if leer else []
+            if self.leitstelle is None:
+                return Angebot(optionen=optionen, stand="Leitstelle noch nicht eingerichtet (Reiter Verbindungen)")
+            try:
+                modelle = await self.leitstelle.modelle()
+            except LeitstellenFehler as f:
+                return Angebot(optionen=optionen, stand=f"Leitstelle antwortet nicht: {f.meldung}")
+            passend = [m for m in modelle if faehigkeit in m.faehigkeiten]
+            optionen += [Option(wert=m.id, titel=m.name or m.id, hinweis=("geladen" if m.geladen else "")
+                                + (f" auf {m.knoten}" if m.knoten else "")) for m in passend]
+            return Angebot(optionen=optionen, stand="" if passend else "Die Leitstelle bietet dieser App dafür nichts an")
+
+        return anbieter
 
     def begleiter_anmelden(self, *begleiter: Begleiter) -> None:
         """Vor dem Start anmelden (siehe `Begleiter`)."""
@@ -231,6 +292,11 @@ class Geruest(Generic[E]):
         await self._zugaenge_bauen()
         self.einstellungen.bei_aenderung(self._nach_aenderung)
         self._laeuft = True
+        gebaut = self.oberflaeche_fassung()
+        if gebaut and gebaut != self.fassung:
+            await self.protokoll.eintragen("app.oberflaeche_veraltet", f"Die Oberfläche ist für {gebaut} gebaut, die App ist "
+                                           f"{self.fassung}: die Oberfläche neu bauen (einrichten.sh oder Ausrollen)", stufe="warnung")
+            logger.warning("Oberfläche für %s gebaut, App ist %s", gebaut, self.fassung)
         await self._begleiter_rufen("starten")
         await self._begleiter_rufen("verbunden")
         await self.auftraege.starten()
@@ -272,7 +338,26 @@ class Geruest(Generic[E]):
     def info(self) -> AppInfo:
         return AppInfo(name=self.name, kennung=self.kennung, rolle=self.rolle, symbol=self.symbol, fassung=self.fassung,
                        appkern=appkern.__version__, einrichtung_noetig=self.einrichtung_noetig, besitzer=self.besitzer,
-                       kellerwolke=self.einstellungen.stand.kellerwolke_adresse.rstrip("/"))
+                       kellerwolke=self.einstellungen.stand.kellerwolke_adresse.rstrip("/"),
+                       oberflaeche=self.oberflaeche_fassung())
+
+    def oberflaeche_fassung(self) -> str | None:
+        """Fassung der gebauten Oberfläche (Meta `app-fassung` in index.html, beim Bau eingesetzt). Gegen sie vergleicht
+        ein offener Tab seine eigene: so lädt er genau dann neu, wenn es wirklich eine neuere Oberfläche gibt, und
+        ein vergessener Bau nach einer neuen Fassung führt nicht zu einem Band, das nie verschwindet."""
+        datei = self.oberflaeche / "index.html" if self.oberflaeche else None
+        try:
+            stand = datei.stat().st_mtime if datei else None
+        except OSError:
+            return None
+        if stand is None:
+            return None
+        if self._oberflaeche_gemerkt and self._oberflaeche_gemerkt[0] == stand:
+            return self._oberflaeche_gemerkt[1]
+        treffer = re.search(r'<meta name="app-fassung" content="([^"]+)"', datei.read_text(encoding="utf-8", errors="replace"))
+        fassung = treffer.group(1) if treffer else None
+        self._oberflaeche_gemerkt = (stand, fassung)
+        return fassung
 
     def _grund_router(self) -> APIRouter:
         router = APIRouter(prefix="/api/v1", tags=["app"])

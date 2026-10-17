@@ -166,7 +166,13 @@ app.include_router(einstellungs_router(einstellungen, abhaengigkeiten=[Depends(a
 Geändert wird alles oder nichts (`aendern` prüft die Werte zusammen; `None` setzt zurück, ein leeres Geheimnis bleibt
 unverändert). Geheimnisse (`SecretStr`) gehen nur verdeckt hinaus, bis auf die letzten vier Zeichen;
 `GET /api/v1/einstellungen/geheimnis/{name}` deckt eines auf (das Auge in der Oberfläche). Auswahlfelder zeigen ihre
-`beschriftungen` (nie den Schlüssel), Zahlen gehen in `schritt` und bleiben in den Grenzen aus `ge` und `le`.
+`beschriftungen` (nie den Schlüssel), Zahlen gehen in `schritt` und bleiben in den Grenzen aus `ge` und `le`, mit
+`einheit` hinter dem Wert. Was das System selbst kennt, ist kein Textfeld: `einstellungen.anbieten(name, anbieter)`
+liefert live eine Auswahl (`Angebot` mit `Option`en aus Wert, Name und Hinweis) und was gerade gilt (`stand`), etwa
+"verbunden: Apps/Transkription" oder "gefunden: /opt/homebrew/bin/ffmpeg"; "Eigener Wert" bleibt möglich. Das Gerüst
+bietet Adressen und Zertifikatsstelle selbst an und hilft mit `geruest.leitstelle_angebot("hoeren")` (Dienste und
+Modelle der Leitstelle mit dieser Fähigkeit, lesbar benannt). In der Oberfläche ist jede Gruppe ein Reiter mit eigener
+Adresse (`/einstellungen/<gruppe>`), in voller Breite.
 
 ## Protokoll
 
@@ -277,7 +283,15 @@ Seite aus `navigation.teile` (`/transkripte/<kennung>`); Zurück und Vor im Brow
 für jeden Pfad außerhalb von `/api` die Oberfläche aus. Eine Seite, die einen Teil zeigt, setzt `navigation.titel`;
 am Telefon steht er im Kopf, mit einem Knopf zurück zum Bereich. Für eigene Seiten stehen `hole`, `json`, `gehe`,
 `adresse`, `navigation`, `sitzung`, `geraet`, `auftraege`, `beiAuftrag` (Ereignisse der Aufträge mithören),
-`AuftragZeile` und `Schritte` bereit.
+`AuftragZeile`, `Schritte`, `Auswahl` (Aufklappliste statt nativer Auswahlfelder), `Leiste` mit `leisteOeffnen` und
+`ereignisseBenennen` (lesbare Namen eigener Protokollereignisse) bereit.
+
+Breiten: ab 1280 Pixel wie im Entwurf (Navigation mit Text, Leiste daneben); darunter wird die Leiste eine Tafel, die
+über den Inhalt fährt (Schleier, Knopf zum Schließen, Escape); unter 1000 Pixel wird die Navigation eine Symbolleiste;
+bis 760 Pixel gilt die eigene Telefonansicht. Das Protokoll wird bei wenig Platz eine Liste. Die Fassung der gebauten
+Oberfläche steht als Meta `app-fassung` in ihrer Startseite (eingesetzt in `vite.config.ts`); der Server meldet sie in
+`/api/v1/app` (`oberflaeche`), und ein Tab vergleicht sich mit ihr. Ist die Oberfläche nach einer neuen Fassung nicht
+neu gebaut, steht das als Warnung im Protokoll.
 
 ## Neue App aus der Vorlage
 

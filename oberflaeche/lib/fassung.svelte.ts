@@ -42,7 +42,9 @@ export function vielleichtNeuLaden(anlass: Anlass): void {
 export function fassungVergleichen(app: AppInfo | null, anlass: Anlass): void {
   if (!app || !fassung.eingebaut) return;
   merker = `${app.kennung}_neu_geladen`;
-  fassung.neu = app.fassung !== fassung.eingebaut ? app.fassung : null;
+  // verglichen wird mit der Oberfläche, die der Server ausliefert (ältere Apps melden nur ihre eigene Fassung)
+  const server = app.oberflaeche ?? app.fassung;
+  fassung.neu = server !== fassung.eingebaut ? server : null;
   vielleichtNeuLaden(anlass);
 }
 
