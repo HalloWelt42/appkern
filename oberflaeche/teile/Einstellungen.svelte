@@ -5,6 +5,7 @@
   import { hole, json } from "../lib/api.svelte";
   import { sitzung } from "../lib/sitzung.svelte";
   import type { Feld } from "../lib/typen";
+  import { kopieren, markieren } from "../lib/zwischenablage";
 
   let felder = $state<Feld[]>([]);
   let aenderungen = $state<Record<string, unknown>>({});
@@ -13,6 +14,7 @@
   let fehler = $state("");
   let laeuft = $state(false);
   let karten: Record<string, HTMLElement> = {};
+  let wertFelder: Record<string, HTMLElement> = $state({});
 
   async function laden() {
     try {
@@ -39,11 +41,14 @@
     return aufgedeckt[f.name];
   }
 
-  async function kopieren(f: Feld) {
-    try {
-      await navigator.clipboard.writeText(f.name in aenderungen ? String(aenderungen[f.name]) : await aufdecken(f));
-    } catch (e) {
-      fehler = "Kopieren ging nicht: " + (e as Error).message;
+  // Kopieren muss im Klick geschehen; ist das Geheimnis noch verdeckt, wird es erst geholt. Geht das Kopieren danach
+  // nicht mehr (manche Browser), bleibt es aufgedeckt und markiert.
+  async function geheimnisKopieren(f: Feld, wertFeld: HTMLElement | undefined) {
+    fehler = "";
+    const text = f.name in aenderungen ? String(aenderungen[f.name]) : await aufdecken(f);
+    if (!(await kopieren(text))) {
+      markieren(wertFeld);
+      fehler = "Der Browser lässt hier nicht kopieren. Der Wert ist aufgedeckt und markiert: mit Befehlstaste+C oder Strg+C kopieren.";
     }
   }
 
@@ -130,14 +135,14 @@
                   <input type="text" autocomplete="off" spellcheck="false" placeholder="neuer Wert" value={String(aenderungen[f.name] ?? "")}
                          oninput={(e) => (aenderungen[f.name] = e.currentTarget.value)} />
                 {:else}
-                  <span class="wert">{f.name in aufgedeckt ? aufgedeckt[f.name] : f.gesetzt ? f.wert : "nicht gesetzt"}</span>
+                  <span class="wert" class:markierbar={f.name in aufgedeckt} bind:this={wertFelder[f.name]}>{f.name in aufgedeckt ? aufgedeckt[f.name] : f.gesetzt ? f.wert : "nicht gesetzt"}</span>
                   {#if f.gesetzt}
                     {#if f.name in aufgedeckt}
                       <button class="auge" title="Wieder verdecken" onclick={() => delete aufgedeckt[f.name]}><i class="fa-solid fa-eye-slash"></i></button>
                     {:else}
                       <button class="auge" title="Aufdecken" onclick={() => aufdecken(f)}><i class="fa-solid fa-eye"></i></button>
                     {/if}
-                    <button class="auge" title="Kopieren" onclick={() => kopieren(f)}><i class="fa-solid fa-copy"></i></button>
+                    <button class="auge" title="Kopieren" onclick={() => geheimnisKopieren(f, wertFelder[f.name])}><i class="fa-solid fa-copy"></i></button>
                   {/if}
                   <button class="auge" title="Neuen Wert eintragen" onclick={() => (aenderungen[f.name] = "")}><i class="fa-solid fa-pen"></i></button>
                 {/if}

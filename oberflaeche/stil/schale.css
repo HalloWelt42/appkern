@@ -270,3 +270,4 @@ button { font: inherit; color: inherit; }
 .mobil .seite .rollfeld { padding: 0; overflow: visible; }
 .mobil .leiste { display: none; }
 .mobil .suche { min-width: 0; flex: 1; }
+.eingabe .wert.markierbar { user-select: all; -webkit-user-select: all; }
