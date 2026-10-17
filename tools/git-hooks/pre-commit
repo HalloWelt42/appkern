@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Vor jedem Commit: Version hochzählen (oder nur neue Kennung, wenn version.json schon bewusst
+# geändert und vorgemerkt ist) und version.json mit vormerken. Dazu Prüfung auf typografische
+# Sonderzeichen in Texten und Code (Gedankenstriche, geschwungene Anführungszeichen).
+# Die Zeichenprüfung läuft in Python, weil die mitgelieferte Bash auf dem Mac keine \u-Escapes kennt.
+set -euo pipefail
+HIER="$(git rev-parse --show-toplevel)"
+cd "$HIER"
+
+if git diff --cached --name-only | grep -qx 'version.json'; then
+  tools/version.sh id >/dev/null
+else
+  tools/version.sh patch >/dev/null
+fi
+git add version.json
+
+git diff --cached --name-only --diff-filter=ACM | python3 -c '
+import sys, pathlib, re
+muster = re.compile("[–—“”„‘’]")
+endungen = (".md", ".html", ".js", ".ts", ".svelte", ".py", ".css", ".json", ".sh", ".toml")
+fehler = []
+for zeile in sys.stdin:
+    name = zeile.strip()
+    if not name.endswith(endungen) or "node_modules" in name:
+        continue
+    p = pathlib.Path(name)
+    if not p.is_file():
+        continue
+    for nr, text in enumerate(p.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        if muster.search(text):
+            fehler.append(f"{name}:{nr}: {text.strip()[:100]}")
+if fehler:
+    print("Abbruch: typografische Sonderzeichen gefunden (nur gerade Zeichen erlaubt):", file=sys.stderr)
+    print("\n".join(fehler[:10]), file=sys.stderr)
+    sys.exit(1)
+'
+exit 0
