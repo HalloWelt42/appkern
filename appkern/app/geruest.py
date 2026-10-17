@@ -48,6 +48,25 @@ from appkern.verzeichnis import Verzeichnis
 from .einstellungen import Grundeinstellungen
 
 logger = logging.getLogger("appkern.app")
+
+
+class Begleiter:
+    """Hintergrundarbeit einer App, die mit dem Gerüst lebt, etwa ein Abgleich mit der Kellerwolke. Eine App leitet
+    davon ab und überschreibt, was sie braucht; angemeldet mit `geruest.begleiter_anmelden`.
+
+    Reihenfolge beim Start: Datenbank, Einstellungen, Protokoll, Zugänge, dann `starten` und `verbunden` jedes
+    Begleiters, danach erst die Aufträge (die sich auf den Begleiter verlassen dürfen). `verbunden` kommt nach jedem
+    Neuaufbau der Zugänge wieder (geänderte Kellerwolke oder Leitstelle). Beim Stoppen enden erst die Aufträge, dann die
+    Begleiter in umgekehrter Reihenfolge. Ein Fehler eines Begleiters steht im Log und hält die App nicht an."""
+
+    async def starten(self) -> None:
+        """Einmal beim Start, etwa das eigene Datenbankschema einrichten."""
+
+    async def verbunden(self) -> None:
+        """Nach jedem Aufbau der Zugänge (auch dem ersten)."""
+
+    async def stoppen(self) -> None:
+        """Beim Beenden: eigene Aufgaben beenden."""
 E = TypeVar("E", bound=Grundeinstellungen)
 LOKAL = {"127.0.0.1", "::1", "localhost"}
 TAG_S = 24 * 3600
@@ -109,6 +128,21 @@ class Geruest(Generic[E]):
         self.mensch = Depends(angemeldet(self.anmeldung, nur_menschen=True))        # nur Menschen
         self.lesen = Depends(angemeldet(self.anmeldung, cookie=True))
         self._pflege: asyncio.Task | None = None
+        self._begleiter: list[Begleiter] = []
+        self._laeuft = False
+
+    def begleiter_anmelden(self, *begleiter: Begleiter) -> None:
+        """Vor dem Start anmelden (siehe `Begleiter`)."""
+        if self._laeuft:
+            raise RuntimeError("Begleiter vor dem Start anmelden")
+        self._begleiter.extend(begleiter)
+
+    async def _begleiter_rufen(self, schritt: str, begleiter: list[Begleiter] | None = None) -> None:
+        for b in begleiter if begleiter is not None else self._begleiter:
+            try:
+                await getattr(b, schritt)()
+            except Exception:  # noqa: BLE001 - ein Begleiter darf die App nie anhalten
+                logger.exception("Begleiter %s: %s", type(b).__name__, schritt)
 
     # --- Zugänge ----------------------------------------------------------------------------------------------
 
@@ -196,6 +230,9 @@ class Geruest(Generic[E]):
         await self.protokoll.starten()
         await self._zugaenge_bauen()
         self.einstellungen.bei_aenderung(self._nach_aenderung)
+        self._laeuft = True
+        await self._begleiter_rufen("starten")
+        await self._begleiter_rufen("verbunden")
         await self.auftraege.starten()
         self._pflege = asyncio.create_task(self._taeglich(), name="pflege")
 
@@ -204,6 +241,8 @@ class Geruest(Generic[E]):
             self._pflege.cancel()
             await asyncio.gather(self._pflege, return_exceptions=True)
         await self.auftraege.stoppen()
+        await self._begleiter_rufen("stoppen", list(reversed(self._begleiter)))
+        self._laeuft = False
         await self.verzeichnis.schliessen()
         for c in self._clients:
             await c.aclose()
@@ -217,6 +256,7 @@ class Geruest(Generic[E]):
         if geaendert & {"kellerwolke_adresse", "kellerwolke_schluessel", "leitstelle_adresse", "leitstelle_schluessel",
                         "ca_datei"}:
             await self._zugaenge_bauen()
+            await self._begleiter_rufen("verbunden")
 
     async def _taeglich(self) -> None:
         while True:

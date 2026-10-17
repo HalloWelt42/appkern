@@ -142,3 +142,37 @@ async def test_hausstelle_wird_gefunden_und_geladen(tmp_path: Path, monkeypatch)
     with pytest.raises(OSError):
         geruest._pruefung()
     await geruest.db.schliessen()
+
+
+async def test_begleiter_leben_mit_dem_geruest(tmp_path: Path):
+    from appkern.app import Begleiter
+
+    ablauf: list[str] = []
+
+    class Abgleich(Begleiter):
+        def __init__(self, name: str, geruest: Geruest):
+            self.name, self.geruest = name, geruest
+
+        async def starten(self):
+            ablauf.append(f"{self.name}.starten")
+
+        async def verbunden(self):
+            ablauf.append(f"{self.name}.verbunden:{self.geruest.kellerwolke is not None}")
+
+        async def stoppen(self):
+            ablauf.append(f"{self.name}.stoppen")
+
+    class Kaputt(Begleiter):
+        async def starten(self):
+            raise RuntimeError("kaputt")
+
+    geruest = Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
+                      einstellungen=ProbeEinstellungen, transport=httpx.MockTransport(Wolke()))
+    geruest.begleiter_anmelden(Abgleich("a", geruest), Kaputt(), Abgleich("b", geruest))
+    await geruest.starten()
+    with pytest.raises(RuntimeError):
+        geruest.begleiter_anmelden(Abgleich("c", geruest))
+    await geruest.einstellungen.aendern({"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
+    await geruest.stoppen()
+    assert ablauf == ["a.starten", "b.starten", "a.verbunden:False", "b.verbunden:False",
+                      "a.verbunden:True", "b.verbunden:True", "b.stoppen", "a.stoppen"]
