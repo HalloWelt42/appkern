@@ -36,6 +36,25 @@
     else aenderungen[f.name] = v;
   }
 
+  // Zahlen: auf die Schrittweite gerundet, in den Grenzen, mit Komma angezeigt.
+  function stellen(f: Feld): number {
+    const teil = String(f.schritt ?? 1).split(".")[1];
+    return teil ? teil.length : 0;
+  }
+
+  function zahlSetzen(f: Feld, v: number) {
+    if (Number.isNaN(v)) return;
+    let n = Number(v.toFixed(stellen(f)));
+    if (f.kleinste !== null) n = Math.max(f.kleinste, n);
+    if (f.groesste !== null) n = Math.min(f.groesste, n);
+    setzen(f, n);
+  }
+
+  function zahlZeigen(f: Feld): string {
+    const v = wert(f);
+    return typeof v === "number" ? v.toFixed(stellen(f)).replace(".", ",") : String(v ?? "");
+  }
+
   async function aufdecken(f: Feld): Promise<string> {
     if (!(f.name in aufgedeckt)) aufgedeckt[f.name] = (await hole<{ wert: string }>(`/einstellungen/geheimnis/${f.name}`)).wert;
     return aufgedeckt[f.name];
@@ -112,13 +131,13 @@
                       onclick={() => setzen(f, !wert(f))}></button>
             {:else if f.art === "auswahl"}
               <span class="segment">
-                {#each f.optionen as o (o)}<button class:aktiv={wert(f) === o} onclick={() => setzen(f, o)}>{o}</button>{/each}
+                {#each f.optionen as o (o)}<button class:aktiv={wert(f) === o} onclick={() => setzen(f, o)}>{f.beschriftungen?.[o] ?? o}</button>{/each}
               </span>
             {:else if f.art === "zahl"}
               <span class="zaehler">
-                <button onclick={() => setzen(f, Number(wert(f) ?? 0) - 1)} aria-label="weniger">-</button>
-                <input inputmode="numeric" value={wert(f)} onchange={(e) => setzen(f, Number(e.currentTarget.value))} />
-                <button onclick={() => setzen(f, Number(wert(f) ?? 0) + 1)} aria-label="mehr">+</button>
+                <button onclick={() => zahlSetzen(f, Number(wert(f) ?? 0) - (f.schritt ?? 1))} aria-label="weniger">-</button>
+                <input inputmode="decimal" value={zahlZeigen(f)} onchange={(e) => zahlSetzen(f, Number(e.currentTarget.value.replace(",", ".")))} />
+                <button onclick={() => zahlSetzen(f, Number(wert(f) ?? 0) + (f.schritt ?? 1))} aria-label="mehr">+</button>
               </span>
             {:else if f.art === "liste"}
               <span class="chips">

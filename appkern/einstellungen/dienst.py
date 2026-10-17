@@ -175,8 +175,11 @@ class Einstellungen(Generic[M]):
             wert = _klartext(getattr(self.stand, name))
             herkunft = "gespeichert" if name in self._gespeichert else ("umgebung" if name in aus_umgebung else "vorgabe")
             extra = info.json_schema_extra if isinstance(info.json_schema_extra, dict) else {}
+            kleinste, groesste = _grenzen(info)
             felder.append(Feld(
                 name=name, titel=info.title or name, beschreibung=info.description or "", art=art, optionen=optionen,
+                beschriftungen={str(k): str(v) for k, v in (extra.get("beschriftungen") or {}).items()},
+                schritt=extra.get("schritt"), kleinste=kleinste, groesste=groesste,
                 wert=verdeckt(wert) if art == "geheimnis" else _json(wert), gesetzt=bool(wert) if art == "geheimnis" else True,
                 vorgabe=None if art == "geheimnis" else _json(_klartext(getattr(vorgabe, name))), herkunft=herkunft,
                 gruppe=str(extra.get("gruppe", "")) or None))
@@ -188,6 +191,19 @@ class Einstellungen(Generic[M]):
         if info is None or _art(info.annotation)[0] != "geheimnis":
             raise UnbekanntesFeld(name)
         return _klartext(getattr(self.stand, name)) or ""
+
+
+def _grenzen(info: Any) -> tuple[float | None, float | None]:
+    """Untere und obere Grenze aus `Field(ge=..., le=...)` (auch gt und lt)."""
+    kleinste = groesste = None
+    for m in info.metadata:
+        for attr in ("ge", "gt"):
+            if getattr(m, attr, None) is not None:
+                kleinste = float(getattr(m, attr))
+        for attr in ("le", "lt"):
+            if getattr(m, attr, None) is not None:
+                groesste = float(getattr(m, attr))
+    return kleinste, groesste
 
 
 def _json(wert: Any) -> Any:

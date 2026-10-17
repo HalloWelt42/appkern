@@ -23,8 +23,10 @@ class AppEinstellungen(BaseModel):
     leitstelle_adresse: str = Field("http://leitstelle:8530", title="Leitstelle", description="Adresse der Leitstelle",
                                     json_schema_extra={"gruppe": "Verbindungen"})
     leitstelle_schluessel: SecretStr = Field(SecretStr(""), title="Schlüssel der Leitstelle")
-    sprache: Literal["de", "en"] = Field("de", title="Sprache")
+    sprache: Literal["de", "en"] = Field("de", title="Sprache",
+                                         json_schema_extra={"beschriftungen": {"de": "Deutsch", "en": "Englisch"}})
     gleichzeitig: int = Field(1, ge=1, le=8, title="Gleichzeitige Aufträge")
+    schwelle: float = Field(0.7, ge=0, le=1, title="Schwelle", json_schema_extra={"schritt": 0.05})
     vorlesen: bool = Field(True, title="Vorlesen")
 
 
@@ -98,6 +100,9 @@ async def test_felder_fuer_die_oberflaeche(db):
     await e.starten()
     felder = {f.name: f for f in e.felder()}
     assert felder["sprache"].art == "auswahl" and felder["sprache"].optionen == ["de", "en"]
+    assert felder["sprache"].beschriftungen == {"de": "Deutsch", "en": "Englisch"}
+    assert (felder["schwelle"].schritt, felder["schwelle"].kleinste, felder["schwelle"].groesste) == (0.05, 0.0, 1.0)
+    assert (felder["gleichzeitig"].schritt, felder["gleichzeitig"].kleinste, felder["gleichzeitig"].groesste) == (None, 1.0, 8.0)
     assert felder["gleichzeitig"].art == "zahl" and felder["vorlesen"].art == "schalter"
     assert felder["leitstelle_adresse"].gruppe == "Verbindungen" and felder["leitstelle_adresse"].titel == "Leitstelle"
     assert felder["leitstelle_adresse"].beschreibung == "Adresse der Leitstelle"

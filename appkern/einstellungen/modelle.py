@@ -15,6 +15,10 @@ class Feld(BaseModel):
     beschreibung: str = ""
     art: FeldArt
     optionen: list[str] = []
+    beschriftungen: dict[str, str] = {}   # Auswahl: lesbarer Name je Option (nie den Schlüssel zeigen)
+    schritt: float | None = None          # Zahl: Schrittweite der Knöpfe (Vorgabe 1)
+    kleinste: float | None = None
+    groesste: float | None = None
     wert: Any = None              # bei Geheimnissen verdeckt
     gesetzt: bool = True          # bei Geheimnissen: ist einer hinterlegt?
     vorgabe: Any = None

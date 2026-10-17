@@ -153,7 +153,9 @@ from appkern.einstellungen.api import einstellungs_router
 class AppEinstellungen(BaseModel):
     leitstelle_adresse: str = Field("http://192.168.178.49:8530", title="Leitstelle", json_schema_extra={"gruppe": "Verbindungen"})
     leitstelle_schluessel: SecretStr = Field(SecretStr(""), title="Schlüssel der Leitstelle")
-    sprache: Literal["de", "en"] = Field("de", title="Sprache")
+    sprache: Literal["de", "en"] = Field("de", title="Sprache",
+                                         json_schema_extra={"beschriftungen": {"de": "Deutsch", "en": "Englisch"}})
+    schwelle: float = Field(0.7, ge=0, le=1, title="Schwelle", json_schema_extra={"schritt": 0.05})
 
 einstellungen = Einstellungen(db, AppEinstellungen, umgebung_praefix="TRANSKRIPTION_")
 await einstellungen.starten()
@@ -163,7 +165,8 @@ app.include_router(einstellungs_router(einstellungen, abhaengigkeiten=[Depends(a
 
 Geändert wird alles oder nichts (`aendern` prüft die Werte zusammen; `None` setzt zurück, ein leeres Geheimnis bleibt
 unverändert). Geheimnisse (`SecretStr`) gehen nur verdeckt hinaus, bis auf die letzten vier Zeichen;
-`GET /api/v1/einstellungen/geheimnis/{name}` deckt eines auf (das Auge in der Oberfläche).
+`GET /api/v1/einstellungen/geheimnis/{name}` deckt eines auf (das Auge in der Oberfläche). Auswahlfelder zeigen ihre
+`beschriftungen` (nie den Schlüssel), Zahlen gehen in `schritt` und bleiben in den Grenzen aus `ge` und `le`.
 
 ## Protokoll
 

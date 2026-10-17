@@ -70,6 +70,10 @@ export interface Feld {
   beschreibung: string;
   art: FeldArt;
   optionen: string[];
+  beschriftungen: Record<string, string>;
+  schritt: number | null;
+  kleinste: number | null;
+  groesste: number | null;
   wert: unknown;
   gesetzt: boolean;
   vorgabe: unknown;
