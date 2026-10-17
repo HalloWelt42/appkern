@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="de" data-theme="hell">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Appkern - Schale am Telefon</title>
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/400.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/600.css" />
+    <link rel="stylesheet" href="/node_modules/@fortawesome/fontawesome-free/css/all.min.css" />
+    <link rel="stylesheet" href="schale.css" />
+    <style>
+      /* Eigene Ansicht fürs Telefon: keine verkleinerte Schale, sondern Reiter unten, große Berührflächen. */
+      .buehne { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+      .telefon { width: 390px; height: 844px; border-radius: 44px; overflow: hidden; position: relative; background: var(--hg);
+                 box-shadow: 0 0 0 10px #1b2735, 0 20px 50px rgba(0,0,0,.35); display: flex; flex-direction: column; }
+      .t-status { height: 47px; flex: none; }
+      .t-kopf { display: flex; align-items: center; gap: 10px; padding: 4px 16px 10px; }
+      .t-kopf h1 { margin: 0; font-size: 26px; }
+      .t-kopf .t-rechts { margin-left: auto; display: flex; gap: 8px; }
+      .t-inhalt { flex: 1; overflow-y: auto; overflow-x: clip; padding: 0 16px 16px; }
+      .t-reiter { flex: none; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--flaeche); box-shadow: 0 -1px 0 var(--rand); padding: 6px 0 30px; }
+      .t-reiter span { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; color: var(--text-3); padding: 6px 0; }
+      .t-reiter span i { font-size: 21px; }
+      .t-reiter span.aktiv { color: var(--akzent); font-weight: 600; }
+      .t-gruppe { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); padding: 16px 4px 6px; }
+      .t-liste { background: var(--flaeche); border-radius: 14px; overflow: hidden; }
+      .t-zeile { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 10px 14px; }
+      .t-zeile + .t-zeile { border-top: 1px solid var(--rand); }
+      .t-zeile > i { width: 26px; text-align: center; font-size: 20px; color: var(--text-3); }
+      .t-zeile .t-text { flex: 1; min-width: 0; }
+      .t-zeile .t-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .t-zeile .t-meta { font-size: 15px; color: var(--text-3); margin-top: 2px; }
+      .t-zeile .fa-chevron-right { width: auto; font-size: 15px; }
+      .t-zeile.gefahr, .t-zeile.gefahr > i { color: var(--gefahr); }
+      .t-auftrag { background: var(--flaeche); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+      .t-auftrag .oben { display: flex; align-items: center; gap: 10px; }
+      .t-auftrag .oben b { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+      .t-auftrag .schritte { margin: 10px 0 8px; }
+      .t-auftrag .unterzeile { font-size: 15px; }
+      .t-band { margin: 0 16px 10px; padding: 10px 14px; border-radius: 12px; background: var(--warn-weich); color: var(--warn); font-size: 15px; display: flex; gap: 10px; }
+      .t-karte { display: flex; flex-direction: column; gap: 14px; padding: 0 28px; flex: 1; justify-content: center; }
+      .t-karte .marke { justify-content: center; font-size: 26px; min-width: 0; }
+      .t-karte .rolle { justify-content: center; }
+      .t-karte .eingabe { height: 52px; }
+      .t-karte .knopf { height: 52px; border-radius: 26px; justify-content: center; font-size: 17px; }
+      .t-segment { display: flex; background: var(--flaeche-2); border-radius: 10px; padding: 3px; margin: 6px 0; }
+      .t-segment span { flex: 1; text-align: center; padding: 9px 0; border-radius: 8px; font-size: 15px; color: var(--text-2); }
+      .t-segment span.aktiv { background: var(--flaeche); color: var(--text); font-weight: 600; box-shadow: var(--schatten); }
+      .t-marke-geraet { font-size: 12px; padding: 1px 8px; border-radius: 10px; background: var(--akzent-weich); color: var(--akzent); margin-left: 6px; vertical-align: 2px; }
+    </style>
+  </head>
+  <body>
+    <div class="buehne">
+
+      <div>
+        <p class="zustand-titel" style="margin-top:0">1. Anmeldung: Kellerwolke-Konto oder Code</p>
+        <div class="telefon">
+          <div class="t-status"></div>
+          <div class="t-karte">
+            <div class="marke"><span class="symbol"><i class="fa-solid fa-closed-captioning"></i></span> Transkription</div>
+            <div class="rolle"><i class="fa-solid fa-wave-square"></i>macht aus Ton Text</div>
+            <div class="hinweis-kw"><i class="fa-solid fa-cloud"></i><span>Mit deinem Konto der Kellerwolke.</span></div>
+            <span class="eingabe"><span class="wert" style="color:var(--text-3)">Name oder Kürzel</span></span>
+            <span class="eingabe"><span class="wert" style="color:var(--text-3)">Passwort</span></span>
+            <button class="knopf primaer">Anmelden</button>
+            <div class="oder">oder</div>
+            <button class="knopf zweit"><i class="fa-solid fa-link"></i> Mit Code koppeln</button>
+            <p class="fassung" style="text-align:center; margin:0; font-size:15px">Einmal je App am Telefon; den Code zeigt die Kellerwolke unter Einstellungen, Geräte.</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="zustand-titel" style="margin-top:0">2. Bereich der App (gestrichelt), Reiter unten</p>
+        <div class="telefon">
+          <div class="t-status"></div>
+          <div class="t-kopf"><h1>Aufnahmen</h1><div class="t-rechts"><span class="pille aktiv"><i class="fa-solid fa-gears"></i>1</span></div></div>
+          <div class="t-inhalt"><div class="platz">Seiten der App am Telefon.<br />Entwürfe dazu entstehen mit der App selbst.</div></div>
+          <nav class="t-reiter">
+            <span class="aktiv"><i class="fa-solid fa-microphone-lines"></i>Aufnahmen</span>
+            <span><i class="fa-solid fa-file-lines"></i>Transkripte</span>
+            <span><i class="fa-solid fa-list-check"></i>Aufträge</span>
+            <span><i class="fa-solid fa-ellipsis"></i>Mehr</span>
+          </nav>
+        </div>
+      </div>
+
+      <div>
+        <p class="zustand-titel" style="margin-top:0">3. Aufträge, Band bei fehlender Leitstelle</p>
+        <div class="telefon">
+          <div class="t-status"></div>
+          <div class="t-kopf"><h1>Aufträge</h1></div>
+          <div class="t-band"><i class="fa-solid fa-triangle-exclamation" style="margin-top:3px"></i><span>Leitstelle nicht erreichbar; wartende Aufträge beginnen danach.</span></div>
+          <div style="padding: 0 16px 10px"><div class="t-segment"><span class="aktiv">Offen 2</span><span>Fertig</span><span>Fehler 1</span></div></div>
+          <div class="t-inhalt">
+            <div class="t-auftrag">
+              <div class="oben"><b>Folge 12: Gespräch mit der Hausverwaltung</b><span class="zustand laeuft">läuft</span></div>
+              <div class="schritte"><span class="schritt fertig"><i class="fa-solid fa-check"></i>Hören</span><span class="schritt jetzt"><i class="fa-solid fa-user-group"></i>Sprecher</span><span class="schritt">Speichern</span></div>
+              <div class="balken"><span style="width:62%"></span></div>
+              <div class="unterzeile"><span>Abschnitt 31 von 50</span><span class="rechts">62 %</span></div>
+            </div>
+            <div class="t-auftrag">
+              <div class="oben"><b>Vortrag Stadtrat</b><span class="zustand wartet">wartet</span></div>
+              <div class="unterzeile"><span>wartet auf einen freien Platz</span></div>
+            </div>
+            <div class="t-auftrag">
+              <div class="oben"><b>Folge 11</b><span class="zustand fehler">Fehler</span></div>
+              <div class="fehlertext">Sprecher-Dienst nicht erreichbar; 34 von 50 fertig.</div>
+              <div style="display:flex; gap:8px; margin-top:10px"><button class="knopf" style="flex:1; justify-content:center; height:44px"><i class="fa-solid fa-rotate-right"></i> Wiederholen</button></div>
+            </div>
+          </div>
+          <nav class="t-reiter">
+            <span><i class="fa-solid fa-microphone-lines"></i>Aufnahmen</span>
+            <span><i class="fa-solid fa-file-lines"></i>Transkripte</span>
+            <span class="aktiv"><i class="fa-solid fa-list-check"></i>Aufträge</span>
+            <span><i class="fa-solid fa-ellipsis"></i>Mehr</span>
+          </nav>
+        </div>
+      </div>
+
+      <div>
+        <p class="zustand-titel" style="margin-top:0">4. Mehr: weitere Bereiche, Protokoll, Einstellungen, Anzeige, Gerät</p>
+        <div class="telefon">
+          <div class="t-status"></div>
+          <div class="t-kopf"><h1>Mehr</h1></div>
+          <div class="t-inhalt">
+            <div class="t-liste">
+              <div class="t-zeile"><i class="fa-solid fa-user-group"></i><div class="t-text"><div class="t-name">Sprecher</div></div><i class="fa-solid fa-chevron-right"></i></div>
+              <div class="t-zeile"><i class="fa-solid fa-clock-rotate-left"></i><div class="t-text"><div class="t-name">Protokoll</div><div class="t-meta">1 Fehler gestern</div></div><i class="fa-solid fa-chevron-right"></i></div>
+              <div class="t-zeile"><i class="fa-solid fa-sliders"></i><div class="t-text"><div class="t-name">Einstellungen</div></div><i class="fa-solid fa-chevron-right"></i></div>
+            </div>
+            <div class="t-gruppe">Verbindungen</div>
+            <div class="t-liste">
+              <div class="t-zeile"><i class="fa-solid fa-circle" style="color:var(--warn); font-size:12px"></i><div class="t-text"><div class="t-name">Leitstelle</div><div class="t-meta">antwortet nicht</div></div></div>
+              <div class="t-zeile"><i class="fa-solid fa-circle" style="color:var(--gut); font-size:12px"></i><div class="t-text"><div class="t-name">Kellerwolke</div><div class="t-meta">Apps/Transkription</div></div></div>
+            </div>
+            <div class="t-gruppe">Anzeige auf diesem Telefon</div>
+            <div class="t-liste" style="padding: 8px 14px">
+              <div class="t-meta" style="font-size:15px; color:var(--text-2)">Schriftgröße</div>
+              <div class="t-segment"><span>Normal</span><span class="aktiv">Groß</span><span>Sehr groß</span></div>
+            </div>
+            <div class="t-gruppe">Konto</div>
+            <div class="t-liste">
+              <div class="t-zeile"><i class="fa-solid fa-mobile-screen"></i><div class="t-text"><div class="t-name">Telefon<span class="t-marke-geraet">dieses Gerät</span></div><div class="t-meta">Konto chef, gekoppelt</div></div></div>
+              <div class="t-zeile gefahr"><i class="fa-solid fa-link-slash"></i><div class="t-text"><div class="t-name">Gerät trennen</div><div class="t-meta">meldet ab; zum Wiederkommen neu koppeln</div></div></div>
+            </div>
+            <p class="fassung" style="text-align:center; padding: 14px; font-size: 15px">Transkription 0.1.0 · Appkern 0.6.0</p>
+          </div>
+          <nav class="t-reiter">
+            <span><i class="fa-solid fa-microphone-lines"></i>Aufnahmen</span>
+            <span><i class="fa-solid fa-file-lines"></i>Transkripte</span>
+            <span><i class="fa-solid fa-list-check"></i>Aufträge</span>
+            <span class="aktiv"><i class="fa-solid fa-ellipsis"></i>Mehr</span>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <div class="mock-leiste">
+      <button onclick="location.href='schale.html'" title="Rechner"><i class="fa-solid fa-display"></i></button>
+      <button data-theme-btn="hell" title="Hell"><i class="fa-solid fa-sun"></i></button>
+      <button data-theme-btn="dunkel" title="Dunkel"><i class="fa-solid fa-moon"></i></button>
+    </div>
+    <script>
+      const setzeThema = (t) => {
+        document.documentElement.dataset.theme = t;
+        document.querySelectorAll("[data-theme-btn]").forEach((b) => b.classList.toggle("aktiv", b.dataset.themeBtn === t));
+      };
+      document.querySelectorAll("[data-theme-btn]").forEach((b) => (b.onclick = () => setzeThema(b.dataset.themeBtn)));
+      setzeThema("hell");
+    </script>
+  </body>
+</html>

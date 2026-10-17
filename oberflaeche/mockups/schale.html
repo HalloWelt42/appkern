@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="de" data-theme="hell">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appkern - Schale der Apps</title>
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/400.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/600.css" />
+    <link rel="stylesheet" href="/node_modules/@fortawesome/fontawesome-free/css/all.min.css" />
+    <link rel="stylesheet" href="schale.css" />
+  </head>
+  <body>
+    <!-- Kopf, Navigation (Bereiche der App, dann Aufträge, Protokoll, Einstellungen), Konto unten: kommt aus dem Appkern.
+         Was die App selbst zeigt, ist gestrichelt. Beispiel: Transkription. -->
+
+    <p class="zustand-titel" style="margin-top:0">1. Anmeldung mit dem Kellerwolke-Konto</p>
+    <div class="fenster" style="grid-template-rows: minmax(0, 1fr)">
+      <div class="anmeldung">
+        <div class="anmelde-karte">
+          <div class="marke"><span class="symbol"><i class="fa-solid fa-closed-captioning"></i></span> Transkription</div>
+          <div class="rolle"><i class="fa-solid fa-wave-square"></i>macht aus Ton Text</div>
+          <div class="hinweis-kw"><i class="fa-solid fa-cloud"></i><span>Anmelden mit deinem Konto der Kellerwolke. Diese App gehört dem Konto <b>chef</b>.</span></div>
+          <label>Name oder Kürzel<span class="eingabe"><span class="wert" style="color:var(--text-3)">Name oder Kürzel</span></span></label>
+          <label>Passwort<span class="eingabe"><span class="wert" style="color:var(--text-3)">Passwort</span></span></label>
+          <button class="knopf primaer breit">Anmelden</button>
+          <div class="oder">oder</div>
+          <button class="knopf zweit breit"><i class="fa-solid fa-link"></i> Mit Code koppeln</button>
+          <p class="fassung" style="text-align:center; margin:0">Den Code zeigt die Kellerwolke unter Einstellungen, Geräte.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="zustand-titel">2. Aufträge: Liste mit Schritten, rechts der gewählte Auftrag; oben ein Band, wenn die Leitstelle fehlt</p>
+    <div class="fenster">
+      <header class="kopf">
+        <div class="marke"><span class="symbol"><i class="fa-solid fa-closed-captioning"></i></span> Transkription</div>
+        <span class="rolle" title="Leitstelle verteilt Aufträge, Kellerwolke hält die Dateien, Transkription macht aus Ton Text"><i class="fa-solid fa-wave-square"></i>macht aus Ton Text</span>
+        <div class="kopf-rechts">
+          <span class="pille warn" title="Leitstelle unter http://192.168.178.49:8530 antwortet nicht"><span class="punkt"></span>Leitstelle</span>
+          <span class="pille" title="Kellerwolke unter https://192.168.178.49:39280, Zweig Apps/Transkription"><span class="punkt"></span>Kellerwolke</span>
+          <span class="pille aktiv"><i class="fa-solid fa-gears"></i>2 laufen, 1 wartet</span>
+          <button class="rund" title="Hilfe (schwebendes Fenster, durchsuchbar)"><i class="fa-solid fa-circle-question"></i></button>
+        </div>
+      </header>
+      <div class="band"><i class="fa-solid fa-triangle-exclamation"></i><span><b>Leitstelle nicht erreichbar.</b> Wartende Aufträge beginnen, sobald sie wieder antwortet; nichts geht verloren.</span><button class="knopf">Erneut prüfen</button></div>
+      <div class="geruest mit-leiste">
+        <nav class="nav">
+          <div class="nav-gruppe">Transkription</div>
+          <a class="nav-eintrag"><i class="fa-solid fa-microphone-lines"></i>Aufnahmen</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-file-lines"></i>Transkripte</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-user-group"></i>Sprecher</a>
+          <div class="nav-gruppe">App</div>
+          <a class="nav-eintrag aktiv"><i class="fa-solid fa-list-check"></i>Aufträge<span class="zahl">3</span></a>
+          <a class="nav-eintrag"><i class="fa-solid fa-clock-rotate-left"></i>Protokoll</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-sliders"></i>Einstellungen</a>
+          <div class="nav-fuss">
+            <div class="konto"><span class="bild">C</span><span><div class="wer">chef</div><div class="wie">angemeldet mit Passwort</div></span><button class="rund" title="Abmelden"><i class="fa-solid fa-right-from-bracket"></i></button></div>
+            <div class="fassung">Transkription 0.1.0 · Appkern 0.6.0</div>
+          </div>
+        </nav>
+
+        <section class="seite">
+          <div class="seiten-kopf">
+            <h1>Aufträge</h1>
+            <span class="segment"><span>Alle</span><span class="aktiv">Offen 3</span><span>Fertig</span><span>Fehler 1</span></span>
+            <span class="suche"><i class="fa-solid fa-magnifying-glass"></i>Titel suchen</span>
+          </div>
+          <div class="rollfeld">
+            <div class="auftrag gewaehlt">
+              <span class="art"><i class="fa-solid fa-closed-captioning"></i></span>
+              <div style="min-width:0">
+                <div class="titel"><span class="name">Folge 12: Gespräch mit der Hausverwaltung</span><span class="wann">seit 6 Min</span></div>
+                <div class="schritte">
+                  <span class="schritt fertig"><i class="fa-solid fa-check"></i>Hören</span><span class="linie"></span>
+                  <span class="schritt jetzt"><i class="fa-solid fa-user-group"></i>Sprecher</span><span class="linie"></span>
+                  <span class="schritt"><i class="fa-solid fa-floppy-disk"></i>Speichern</span>
+                </div>
+                <div class="balken"><span style="width:62%"></span></div>
+                <div class="unterzeile"><span>Abschnitt 31 von 50</span><span class="rechts">62 %</span></div>
+              </div>
+              <div class="aktionen"><span class="zustand laeuft">läuft</span><button class="knopf still" title="Abbrechen (am nächsten Haltepunkt)"><i class="fa-solid fa-stop"></i></button></div>
+            </div>
+
+            <div class="auftrag">
+              <span class="art"><i class="fa-solid fa-closed-captioning"></i></span>
+              <div style="min-width:0">
+                <div class="titel"><span class="name">Sprachnotiz Termin</span><span class="wann">seit 1 Min</span></div>
+                <div class="schritte">
+                  <span class="schritt jetzt"><i class="fa-solid fa-ear-listen"></i>Hören</span><span class="linie"></span>
+                  <span class="schritt"><i class="fa-solid fa-user-group"></i>Sprecher</span><span class="linie"></span>
+                  <span class="schritt"><i class="fa-solid fa-floppy-disk"></i>Speichern</span>
+                </div>
+                <div class="balken"><span style="width:0%"></span></div>
+                <div class="unterzeile"><span><i class="fa-solid fa-hourglass-half"></i> Leitstelle: Modell wird geladen, etwa 40 s</span></div>
+              </div>
+              <div class="aktionen"><span class="zustand laeuft">läuft</span><button class="knopf still"><i class="fa-solid fa-stop"></i></button></div>
+            </div>
+
+            <div class="auftrag">
+              <span class="art"><i class="fa-solid fa-closed-captioning"></i></span>
+              <div style="min-width:0">
+                <div class="titel"><span class="name">Vortrag Stadtrat (2 h 14 min)</span><span class="wann">eingereiht 14:02</span></div>
+                <div class="unterzeile" style="margin-top:4px"><span>wartet auf einen freien Platz (2 gleichzeitig)</span></div>
+              </div>
+              <div class="aktionen"><span class="zustand wartet">wartet</span><button class="knopf still"><i class="fa-solid fa-xmark"></i></button></div>
+            </div>
+
+            <div class="auftrag">
+              <span class="art"><i class="fa-solid fa-closed-captioning"></i></span>
+              <div style="min-width:0">
+                <div class="titel"><span class="name">Folge 11</span><span class="wann">gestern, 21:40</span></div>
+                <div class="schritte">
+                  <span class="schritt fertig"><i class="fa-solid fa-check"></i>Hören</span><span class="linie"></span>
+                  <span class="schritt fehler"><i class="fa-solid fa-xmark"></i>Sprecher</span><span class="linie"></span>
+                  <span class="schritt"><i class="fa-solid fa-floppy-disk"></i>Speichern</span>
+                </div>
+                <div class="fehlertext">DienstWeg: Der Sprecher-Dienst ist nicht erreichbar. 34 von 50 Abschnitten sind fertig; Wiederholen setzt dort an.</div>
+              </div>
+              <div class="aktionen"><span class="zustand fehler">Fehler</span><button class="knopf"><i class="fa-solid fa-rotate-right"></i> Wiederholen</button></div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="leiste">
+          <div class="leiste-kopf">
+            <h2>Folge 12: Gespräch mit der Hausverwaltung</h2>
+            <span class="zustand laeuft">läuft</span> <span class="fassung">seit 14:08, 6 Min</span>
+          </div>
+          <div class="rollfeld">
+            <div class="abschnitt">Schritte</div>
+            <div class="phasen-liste">
+              <div class="phase fertig"><i class="fa-solid fa-circle-check"></i>Hören<span class="dauer">4 Min 12 s</span></div>
+              <div class="phase jetzt"><i class="fa-solid fa-circle-notch fa-spin"></i>Sprecher<span class="dauer">Abschnitt 31 von 50</span></div>
+              <div class="phase offen"><i class="fa-regular fa-circle"></i>Speichern</div>
+            </div>
+            <div class="abschnitt">Eingabe</div>
+            <dl class="werte">
+              <dt>Datei</dt><dd>Apps/Transkription/Aufnahmen/Folge 12.wav</dd>
+              <dt>Sprache</dt><dd>Deutsch</dd>
+              <dt>Sprecher</dt><dd>erkennen (2 bis 4)</dd>
+            </dl>
+            <div class="abschnitt">Leitstelle</div>
+            <dl class="werte">
+              <dt>Auftrag</dt><dd>Transkription: Folge 12</dd>
+              <dt>Dienst</dt><dd>klangwerk-sprecher auf studio</dd>
+            </dl>
+            <div style="display:flex; gap:8px; margin-top:20px">
+              <button class="knopf gefahr"><i class="fa-solid fa-stop"></i> Abbrechen</button>
+              <button class="knopf still"><i class="fa-solid fa-clock-rotate-left"></i> Im Protokoll</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <p class="zustand-titel">3. Einstellungen: aus der Beschreibung der App erzeugt, Geheimnisse verdeckt mit Auge, Herkunft je Wert, Speichern in einer Leiste</p>
+    <div class="fenster">
+      <header class="kopf">
+        <div class="marke"><span class="symbol"><i class="fa-solid fa-closed-captioning"></i></span> Transkription</div>
+        <span class="rolle"><i class="fa-solid fa-wave-square"></i>macht aus Ton Text</span>
+        <div class="kopf-rechts">
+          <span class="pille"><span class="punkt"></span>Leitstelle</span>
+          <span class="pille"><span class="punkt"></span>Kellerwolke</span>
+          <button class="rund"><i class="fa-solid fa-circle-question"></i></button>
+        </div>
+      </header>
+      <div></div>
+      <div class="geruest">
+        <nav class="nav">
+          <div class="nav-gruppe">Transkription</div>
+          <a class="nav-eintrag"><i class="fa-solid fa-microphone-lines"></i>Aufnahmen</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-file-lines"></i>Transkripte</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-user-group"></i>Sprecher</a>
+          <div class="nav-gruppe">App</div>
+          <a class="nav-eintrag"><i class="fa-solid fa-list-check"></i>Aufträge</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-clock-rotate-left"></i>Protokoll</a>
+          <a class="nav-eintrag aktiv"><i class="fa-solid fa-sliders"></i>Einstellungen</a>
+          <div class="nav-fuss">
+            <div class="konto"><span class="bild">C</span><span><div class="wer">chef</div><div class="wie">angemeldet mit Passwort</div></span><button class="rund"><i class="fa-solid fa-right-from-bracket"></i></button></div>
+            <div class="fassung">Transkription 0.1.0 · Appkern 0.6.0</div>
+          </div>
+        </nav>
+        <section class="seite">
+          <div class="seiten-kopf">
+            <h1>Einstellungen</h1>
+            <span class="segment"><span class="aktiv">Verbindungen</span><span>Zugang</span><span>Transkription</span><span>Anzeige</span></span>
+          </div>
+          <div class="rollfeld">
+            <div class="karte">
+              <h2><i class="fa-solid fa-plug"></i>Verbindungen</h2>
+              <p class="karte-unter">Wo die App ihre KI und ihre Dateien holt.</p>
+              <div class="feld">
+                <div class="was"><div class="name">Leitstelle <span class="herkunft umgebung" title="Aus der Umgebung beim Start (TRANSKRIPTION_LEITSTELLE_ADRESSE); hier ändern überschreibt sie">aus der Umgebung</span></div><div class="beschreibung">Adresse der Leitstelle, über die alle KI-Aufträge gehen.</div></div>
+                <span class="eingabe"><span class="wert">http://192.168.178.49:8530</span></span>
+              </div>
+              <div class="feld">
+                <div class="was"><div class="name">Schlüssel der Leitstelle <span class="herkunft gespeichert">gespeichert</span></div><div class="beschreibung">In der Leitstelle unter Anwendungen erzeugt.</div></div>
+                <span class="eingabe"><span class="wert">••••••••a1b2</span><i class="fa-solid fa-eye auge" title="Aufdecken"></i><i class="fa-solid fa-copy auge" title="Kopieren"></i></span>
+              </div>
+              <div class="feld">
+                <div class="was"><div class="name">Kellerwolke <span class="herkunft gespeichert">gespeichert</span><span class="zuruecksetzen">zurücksetzen</span></div><div class="beschreibung">Adresse der Kellerwolke; die Dateien liegen im Zweig Apps/Transkription.</div></div>
+                <span class="eingabe geaendert"><span class="wert">https://192.168.178.49:39280</span></span>
+              </div>
+              <div class="feld">
+                <div class="was"><div class="name">App-Schlüssel der Kellerwolke <span class="herkunft gespeichert">gespeichert</span></div><div class="beschreibung">In der Kellerwolke unter Einstellungen, Zugänge ausgestellt. Er gehört dem Konto chef.</div></div>
+                <span class="eingabe"><span class="wert">kw_app_Vh3qR8xL0dJm2ZtYw4bN9cKpF7aE1sGu6iOyQ5rTe0M</span><i class="fa-solid fa-eye-slash auge" title="Wieder verdecken"></i><i class="fa-solid fa-copy auge"></i></span>
+              </div>
+            </div>
+            <div class="karte">
+              <h2><i class="fa-solid fa-user-lock"></i>Zugang</h2>
+              <div class="feld">
+                <div class="was"><div class="name">Weitere Konten <span class="herkunft">Vorgabe</span></div><div class="beschreibung">Wer außer chef diese App nutzen darf (Konten der Kellerwolke).</div></div>
+                <span class="chips"><span class="chip">partnerin <i class="fa-solid fa-xmark"></i></span><span class="chip" style="background:transparent; border:1px dashed var(--rand)"><i class="fa-solid fa-plus"></i> Konto</span></span>
+              </div>
+            </div>
+            <div class="karte">
+              <h2><i class="fa-solid fa-closed-captioning"></i>Transkription</h2>
+              <p class="karte-unter">Einstellungen, die die App selbst mitbringt.</p>
+              <div class="feld">
+                <div class="was"><div class="name">Sprache <span class="herkunft">Vorgabe</span></div><div class="beschreibung">Sprache der Aufnahmen; automatisch erkennt sie selbst.</div></div>
+                <span class="segment"><span class="aktiv">Deutsch</span><span>Englisch</span><span>automatisch</span></span>
+              </div>
+              <div class="feld">
+                <div class="was"><div class="name">Gleichzeitige Aufträge <span class="herkunft gespeichert">gespeichert</span></div><div class="beschreibung">Wie viele Aufnahmen zugleich bearbeitet werden; die Leitstelle plant den Speicher.</div></div>
+                <span class="zaehler"><span>-</span><span>2</span><span>+</span></span>
+              </div>
+              <div class="feld">
+                <div class="was"><div class="name">Sprecher erkennen <span class="herkunft">Vorgabe</span></div><div class="beschreibung">Nach jedem Transkribieren die Sprecher trennen.</div></div>
+                <span class="schalter"></span>
+              </div>
+            </div>
+            <div class="karte">
+              <h2><i class="fa-solid fa-display"></i>Anzeige auf diesem Gerät</h2>
+              <p class="karte-unter">Gilt nur für diesen Browser.</p>
+              <div class="feld">
+                <div class="was"><div class="name">Schriftgröße</div></div>
+                <span class="segment"><span>Normal</span><span class="aktiv">Groß</span><span>Sehr groß</span></span>
+              </div>
+              <div class="feld">
+                <div class="was"><div class="name">Thema</div></div>
+                <span class="segment"><span>Hell</span><span>Dunkel</span><span class="aktiv">wie das System</span></span>
+              </div>
+            </div>
+            <div class="speicherleiste"><i class="fa-solid fa-pen" style="color:var(--akzent)"></i><span class="was">1 Änderung: Kellerwolke</span><button class="knopf still">Verwerfen</button><button class="knopf primaer"><i class="fa-solid fa-check"></i> Speichern</button></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <p class="zustand-titel">4. Protokoll: Filter fest oben, Liste seitenweise</p>
+    <div class="fenster">
+      <header class="kopf">
+        <div class="marke"><span class="symbol"><i class="fa-solid fa-closed-captioning"></i></span> Transkription</div>
+        <span class="rolle"><i class="fa-solid fa-wave-square"></i>macht aus Ton Text</span>
+        <div class="kopf-rechts">
+          <span class="pille"><span class="punkt"></span>Leitstelle</span>
+          <span class="pille"><span class="punkt"></span>Kellerwolke</span>
+          <button class="rund"><i class="fa-solid fa-circle-question"></i></button>
+        </div>
+      </header>
+      <div></div>
+      <div class="geruest">
+        <nav class="nav">
+          <div class="nav-gruppe">Transkription</div>
+          <a class="nav-eintrag"><i class="fa-solid fa-microphone-lines"></i>Aufnahmen</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-file-lines"></i>Transkripte</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-user-group"></i>Sprecher</a>
+          <div class="nav-gruppe">App</div>
+          <a class="nav-eintrag"><i class="fa-solid fa-list-check"></i>Aufträge</a>
+          <a class="nav-eintrag aktiv"><i class="fa-solid fa-clock-rotate-left"></i>Protokoll</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-sliders"></i>Einstellungen</a>
+          <div class="nav-fuss">
+            <div class="konto"><span class="bild">C</span><span><div class="wer">chef</div><div class="wie">angemeldet mit Passwort</div></span><button class="rund"><i class="fa-solid fa-right-from-bracket"></i></button></div>
+            <div class="fassung">Transkription 0.1.0 · Appkern 0.6.0</div>
+          </div>
+        </nav>
+        <section class="seite">
+          <div class="seiten-kopf">
+            <h1>Protokoll</h1>
+            <span class="segment"><span class="aktiv">Alle</span><span>Info</span><span>Warnung</span><span>Fehler</span></span>
+            <span class="segment"><span>Heute</span><span>Gestern</span><span class="aktiv">7 Tage</span><span>Tag wählen</span></span>
+            <span class="suche"><i class="fa-solid fa-magnifying-glass"></i>Name oder Text</span>
+          </div>
+          <div class="rollfeld">
+            <table class="tabelle">
+              <thead><tr><th style="width:150px">Zeit</th><th style="width:44px"></th><th style="width:210px">Ereignis</th><th style="width:300px">Bezug</th><th>Text</th></tr></thead>
+              <tbody>
+                <tr><td class="zeit">heute 14:16</td><td class="stufe info"><i class="fa-solid fa-circle-info"></i></td><td class="ereignis"><code>einstellung.geaendert</code></td><td>Kellerwolke</td><td>Adresse geändert</td></tr>
+                <tr><td class="zeit">heute 14:12</td><td class="stufe info"><i class="fa-solid fa-circle-check"></i></td><td class="ereignis"><code>auftrag.fertig</code></td><td>Sprachnotiz Einkauf</td><td>213 Wörter</td></tr>
+                <tr><td class="zeit">heute 14:08</td><td class="stufe info"><i class="fa-solid fa-circle-info"></i></td><td class="ereignis"><code>datei.hochgeladen</code></td><td>Folge 12.wav</td><td>184 MB, in Aufnahmen</td></tr>
+                <tr><td class="zeit">gestern 21:52</td><td class="stufe fehler"><i class="fa-solid fa-circle-xmark"></i></td><td class="ereignis"><code>auftrag.fehler</code></td><td>Folge 11</td><td>DienstWeg: Der Sprecher-Dienst ist nicht erreichbar.</td></tr>
+                <tr><td class="zeit">gestern 21:40</td><td class="stufe warnung"><i class="fa-solid fa-triangle-exclamation"></i></td><td class="ereignis"><code>auftrag.unterbrochen</code></td><td>Vortrag Ortsbeirat</td><td>Durch einen Neustart unterbrochen</td></tr>
+                <tr><td class="zeit">gestern 18:03</td><td class="stufe info"><i class="fa-solid fa-circle-info"></i></td><td class="ereignis"><code>anmeldung.gekoppelt</code></td><td>Telefon</td><td>Konto chef, Web-App</td></tr>
+              </tbody>
+            </table>
+            <div class="seitenzeile"><span>1 bis 100 von 1.284</span><button class="knopf" disabled><i class="fa-solid fa-chevron-left"></i></button><button class="knopf">Weiter <i class="fa-solid fa-chevron-right"></i></button></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <p class="zustand-titel">5. Bereich der App (gestrichelt): hier zeigt die Transkription ihre eigenen Seiten</p>
+    <div class="fenster">
+      <header class="kopf">
+        <div class="marke"><span class="symbol"><i class="fa-solid fa-closed-captioning"></i></span> Transkription</div>
+        <span class="rolle"><i class="fa-solid fa-wave-square"></i>macht aus Ton Text</span>
+        <div class="kopf-rechts"><span class="pille"><span class="punkt"></span>Leitstelle</span><span class="pille"><span class="punkt"></span>Kellerwolke</span><span class="pille aktiv"><i class="fa-solid fa-gears"></i>1 läuft</span><button class="rund"><i class="fa-solid fa-circle-question"></i></button></div>
+      </header>
+      <div></div>
+      <div class="geruest">
+        <nav class="nav">
+          <div class="nav-gruppe">Transkription</div>
+          <a class="nav-eintrag aktiv"><i class="fa-solid fa-microphone-lines"></i>Aufnahmen</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-file-lines"></i>Transkripte</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-user-group"></i>Sprecher</a>
+          <div class="nav-gruppe">App</div>
+          <a class="nav-eintrag"><i class="fa-solid fa-list-check"></i>Aufträge<span class="zahl">1</span></a>
+          <a class="nav-eintrag"><i class="fa-solid fa-clock-rotate-left"></i>Protokoll</a>
+          <a class="nav-eintrag"><i class="fa-solid fa-sliders"></i>Einstellungen</a>
+          <div class="nav-fuss">
+            <div class="konto"><span class="bild">C</span><span><div class="wer">chef</div><div class="wie">angemeldet mit Passwort</div></span><button class="rund"><i class="fa-solid fa-right-from-bracket"></i></button></div>
+            <div class="fassung">Transkription 0.1.0 · Appkern 0.6.0</div>
+          </div>
+        </nav>
+        <section class="seite"><div class="rollfeld" style="padding-top:22px"><div class="platz">Seiten der App (Aufnahmen, Transkripte, Sprecher).<br />Entwürfe dazu entstehen mit der App selbst.</div></div></section>
+      </div>
+    </div>
+
+    <div class="mock-leiste">
+      <button onclick="location.href='schale-mobil.html'" title="Telefon"><i class="fa-solid fa-mobile-screen"></i></button>
+      <button data-theme-btn="hell" title="Hell"><i class="fa-solid fa-sun"></i></button>
+      <button data-theme-btn="dunkel" title="Dunkel"><i class="fa-solid fa-moon"></i></button>
+    </div>
+    <script>
+      const setzeThema = (t) => {
+        document.documentElement.dataset.theme = t;
+        document.querySelectorAll("[data-theme-btn]").forEach((b) => b.classList.toggle("aktiv", b.dataset.themeBtn === t));
+      };
+      document.querySelectorAll("[data-theme-btn]").forEach((b) => (b.onclick = () => setzeThema(b.dataset.themeBtn)));
+      setzeThema("hell");
+    </script>
+  </body>
+</html>
