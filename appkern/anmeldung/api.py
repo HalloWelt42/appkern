@@ -14,6 +14,8 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 
+from appkern.protokoll import Protokoll
+
 from .dienst import Anmeldung, AnmeldungsFehler, Konto
 
 KOPF = "x-kellerwolke-sitzung"
@@ -68,9 +70,14 @@ def angemeldet(anmeldung: Anmeldung, *, cookie: bool = False) -> Callable[[Reque
 
 
 def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung",
-                      inhalt_pfad: str = "/api/v1/inhalt") -> APIRouter:
+                      inhalt_pfad: str = "/api/v1/inhalt", protokoll: Protokoll | None = None) -> APIRouter:
+    """Mit `protokoll` werden Anmelden, Koppeln, Abweisungen und Abmelden eingetragen (nie Passwörter oder Token)."""
     router = APIRouter(prefix=prefix, tags=["anmeldung"])
     pflicht = angemeldet(anmeldung)
+
+    async def eintragen(ereignis: str, text: str, name: str | None = None, stufe: str = "info") -> None:
+        if protokoll is not None:
+            await protokoll.eintragen(ereignis, text, stufe=stufe, bezug_art="konto", bezug_name=name)
 
     @router.get("", response_model=Stand)
     async def stand(request: Request) -> Stand:
@@ -85,7 +92,9 @@ def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung"
         try:
             token, konto = await anmeldung.anmelden(eingabe.kennung, eingabe.passwort)
         except AnmeldungsFehler as f:
+            await eintragen("anmeldung.abgewiesen", f.meldung, eingabe.kennung, "warnung")
             raise _http(f)
+        await eintragen("anmeldung.angemeldet", "mit Passwort", konto.name)
         return Angemeldet(token=token, konto=konto)
 
     @router.post("/koppeln", response_model=Angemeldet, status_code=201)
@@ -93,12 +102,22 @@ def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung"
         try:
             token, konto = await anmeldung.koppeln(eingabe.code, eingabe.name, eingabe.art)
         except AnmeldungsFehler as f:
+            await eintragen("anmeldung.abgewiesen", f.meldung, eingabe.name, "warnung")
             raise _http(f)
+        await eintragen("anmeldung.gekoppelt", f"{eingabe.name}, {'Web-App' if eingabe.art == 'webapp' else 'Browser'}",
+                        konto.name)
         return Angemeldet(token=token, konto=konto)
 
     @router.post("/abmelden", status_code=204)
     async def abmelden(request: Request, response: Response) -> Response:
-        await anmeldung.abmelden(request.headers.get(KOPF, ""))
+        token = request.headers.get(KOPF, "")
+        try:
+            konto = await anmeldung.pruefen(token)
+        except AnmeldungsFehler:
+            konto = None
+        await anmeldung.abmelden(token)
+        if konto is not None:
+            await eintragen("anmeldung.abgemeldet", "Gerät getrennt" if konto.geraet else "Sitzung beendet", konto.name)
         response.delete_cookie(COOKIE, path=inhalt_pfad, httponly=True, samesite="strict", secure=_https(request))
         response.status_code = 204
         return response

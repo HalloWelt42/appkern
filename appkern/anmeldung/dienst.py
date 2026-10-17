@@ -82,22 +82,32 @@ class Anmeldung:
         self.adresse = adresse.rstrip("/")
         self.erlaubt = erlaubt
         self.merken_s = merken_s
-        self._client = client or httpx.AsyncClient(timeout=httpx.Timeout(10.0))
-        self._eigener_client = client is None
+        self._eigener_client = client is None and bool(self.adresse)
+        self._client = client or (httpx.AsyncClient(timeout=httpx.Timeout(10.0)) if self.adresse else None)
         self._geheim = secrets.token_bytes(32)
         self._gemerkt: dict[str, tuple[Konto, float]] = {}
+
+    def verbinden(self, adresse: str, client: httpx.AsyncClient | None) -> None:
+        """Neue Kellerwolke (etwa nach geänderten Einstellungen); den Client verwaltet der Aufrufer. Gemerkte
+        Prüfungen verfallen."""
+        self.adresse = adresse.rstrip("/")
+        self._client = client
+        self._eigener_client = False
+        self._gemerkt.clear()
 
     def __repr__(self) -> str:
         return f"Anmeldung({self.adresse!r})"
 
     async def schliessen(self) -> None:
-        if self._eigener_client:
+        if self._eigener_client and self._client is not None:
             await self._client.aclose()
 
     def _schluessel(self, token: str) -> str:
         return hmac.new(self._geheim, token.encode("utf-8"), hashlib.sha256).hexdigest()
 
     async def _senden(self, methode: str, pfad: str, **art) -> httpx.Response:
+        if self._client is None or not self.adresse:
+            raise KellerwolkeWeg("Keine Kellerwolke eingerichtet")
         try:
             return await self._client.request(methode, f"{self.adresse}{pfad}", **art)
         except httpx.TransportError as f:

@@ -205,6 +205,37 @@ lesen = Depends(angemeldet(anmeldung, cookie=True))           # für Inhaltsadre
 Auf dem iPhone hat jede Web-App vom Home-Bildschirm ihren eigenen Speicher; ein Telefon wird deshalb je App einmal
 gekoppelt, immer mit dem Kellerwolke-Konto.
 
+## Gerüst einer App
+
+`appkern.app.Geruest` verdrahtet alle Bausteine einmal; eine App schreibt danach nur noch ihr Fachliches.
+
+```python
+from pathlib import Path
+from pydantic import Field
+from appkern.app import Geruest, Grundeinstellungen
+
+class TranskriptionEinstellungen(Grundeinstellungen):      # Kellerwolke, Leitstelle, weitere Konten sind schon da
+    sprache: str = Field("de", title="Sprache")
+
+geruest = Geruest(name="Transkription", kennung="transkription", rolle="macht aus Ton Text", fassung="0.1.0",
+                  symbol="fa-closed-captioning", daten=Path("daten"), einstellungen=TranskriptionEinstellungen,
+                  arten=[...], oberflaeche=Path("../frontend/dist"))
+app = geruest.fastapi()
+app.include_router(eigener_router)                          # Endpunkte mit dependencies=[geruest.pflicht]
+geruest.oberflaeche_ausliefern(app)                         # zuletzt
+```
+
+| Teil | Inhalt |
+|---|---|
+| Einstellungen | `Grundeinstellungen` (Kellerwolke, Leitstelle, Zertifikatsstelle, weitere Konten) plus die der App; Zugänge werden nach jeder Änderung neu aufgebaut |
+| Erste Einrichtung | `POST /api/v1/einrichtung` mit Kellerwolke und App-Schlüssel, nur vom Rechner der App und nur, solange nichts eingetragen ist |
+| Anmeldung | Besitzer ist das Konto des App-Schlüssels; Anmelden, Koppeln, Abweisungen und Abmelden stehen im Protokoll |
+| Schnittstellen | `/api/v1/app`, `/api/v1/ich`, `/api/v1/verbindungen`, Anmeldung, Aufträge, Einstellungen, Protokoll |
+| Betrieb | Datenbank `daten/<kennung>.sqlite`, tägliches Aufräumen, Auslieferung der gebauten Oberfläche |
+
+Im Gerüst stehen `geruest.kellerwolke`, `geruest.leitstelle`, `geruest.auftraege`, `geruest.protokoll`,
+`geruest.einstellungen.stand` und `geruest.verzeichnis` bereit.
+
 ## Einbinden
 
 In der `pyproject.toml` einer App:
