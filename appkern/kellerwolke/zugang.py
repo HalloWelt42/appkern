@@ -286,6 +286,10 @@ class Kellerwolke:
                                       json={"knoten_id": str(knoten_id), "zusatz": zusatz})
         return Knoten.model_validate(antwort.json())
 
+    async def begleiter_loesen(self, knoten_id: UUID | str) -> Knoten:
+        """Ein Begleiter wird eine gewöhnliche Datei (zieht nicht mehr mit; Kellerwolke ab 0.82.1)."""
+        return Knoten.model_validate((await self._anfrage("POST", f"/knoten/{knoten_id}/loesen")).json())
+
     # --- Aktionen und Anfragen (Kellerwolke ab 0.79) ----------------------------------------------------------------
 
     async def aktionen_melden(self, aktionen: list[Aktion], adresse: str | None = None) -> None:

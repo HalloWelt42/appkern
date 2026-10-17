@@ -50,7 +50,7 @@ async with Kellerwolke("http://192.168.178.49:39277", schluessel) as kw:
 | Zusammenarbeit | `sperren` und `entsperren` für lange Arbeiten, `herkunft_setzen`, `herkunft`, `herkunft_entfernen`, `suchen` nach Feldern |
 | Änderungen | `aenderungen` (seit einem Stand), `ereignisse` (eine Verbindung), `beobachten` (verbindet sich nach einem Abbruch neu und setzt am letzten Stand fort) |
 | Versionen | `versionen` (neueste zuerst, aktuelle markiert), `version_lesen` (Strom, auch Bereiche), `version_ganz`; zurückholen heißt: alten Inhalt als `neue_version` schreiben |
-| Begleitdateien | `begleiter` (einer Hauptdatei), `begleiter_schreiben` (je Rolle; den Namen aus Stamm und Zusatz vergibt die Kellerwolke: `Runde.wav` mit `.transkript.json` ergibt `Runde.transkript.json`), `begleiter_anhaengen` (vorhandene Datei kommt neben die Hauptdatei) |
+| Begleitdateien | `begleiter` (einer Hauptdatei), `begleiter_schreiben` (je Rolle; den Namen aus Stamm und Zusatz vergibt die Kellerwolke: `Runde.wav` mit `.transkript.json` ergibt `Runde.transkript.json`), `begleiter_anhaengen` (vorhandene Datei kommt neben die Hauptdatei), `begleiter_loesen` (wird eine gewöhnliche Datei) |
 | Anfragen | `aktionen_melden`, `anfragen_holen` (lange Abfrage), `anfrage`, `anfrage_annehmen`, `anfrage_melden`, `weitergeben`; `mit_anfrage(id)` ist derselbe Zugang mit dem Recht genau dieser Anfrage (die angefragte Datei lesen, ihre Begleiter schreiben) |
 | Dateiwahl | `wahl` und `waehlen` mit der Anmeldung des Menschen an dieser App: blättern zeigt nur Namen, die Wahl stellt eine Anfrage |
 

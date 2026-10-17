@@ -118,3 +118,45 @@ export interface Bereich {
   seite: Component;
   reiter?: boolean;
 }
+
+// --- Kellerwolke: Dateiwahl und Anfragen (Gerüst mit Angeboten, Kellerwolke ab 0.81) -----------------------------
+
+export interface WahlEintrag {
+  id: string;
+  name: string;
+  typ: "ordner" | "datei";
+  groesse: number | null;
+  inhaltstyp: string | null;
+  geaendert_am: string;
+  kinder_anzahl: number | null;
+  haupt_id: string | null; // ein Begleiter: seine Hauptdatei
+  rolle: string | null;
+  begleiter_anzahl: number;
+}
+
+export interface WahlSeite {
+  kette: { id: string | null; name: string }[]; // vom Konto bis zum gezeigten Ordner
+  eintraege: WahlEintrag[];
+}
+
+export type AnfrageZustand = "wartet" | "laeuft" | "fertig" | "fehler" | "abgebrochen";
+
+// Eine Anfrage der Kellerwolke an diese App: Aktion auf einer Datei; solange sie offen ist, darf die App genau diese
+// Datei lesen und ihre Begleiter schreiben.
+export interface Anfrage {
+  id: string;
+  app: string;
+  aktion: string;
+  titel: string;
+  art: "hintergrund" | "oeffnen";
+  knoten_id: string;
+  knoten_name: string;
+  von: string;
+  zustand: AnfrageZustand;
+  fortschritt: number | null;
+  meldung: string | null;
+  ergebnis_id: string | null;
+  ergebnis_name: string | null;
+  erstellt_am: string;
+  gueltig_bis: string;
+}
