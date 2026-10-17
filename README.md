@@ -14,7 +14,7 @@ Stelle nachgezogen.
 | Leitstelle | verteilt Aufträge an die KI-Dienste |
 | [Maschinenraum](https://github.com/HalloWelt42/maschinenraum) | regelt die KI-Dienste eines Rechners |
 | [Stellwerk](https://github.com/HalloWelt42/stellwerk) | startet die Apps |
-| Appkern | die Bausteine, aus denen jede App ihren Zugang zu all dem baut: Kellerwolke, Leitstelle, Aufträge, Einstellungen, Protokoll, App-Verzeichnis |
+| Appkern | die Bausteine, aus denen jede App ihren Zugang zu all dem baut: Kellerwolke, Leitstelle, Anmeldung, Aufträge, Einstellungen, Protokoll, App-Verzeichnis |
 
 ## Kellerwolke-Zugang
 
@@ -183,6 +183,27 @@ from appkern.verzeichnis import Verzeichnis
 verzeichnis = Verzeichnis(eingetragen={"stimmenausgabe": "http://studio:8611"})
 adresse = await verzeichnis.adresse("transkription")      # etwa http://127.0.0.1:8601
 ```
+
+## Anmeldung
+
+Die Apps haben keine eigenen Konten: man meldet sich mit dem Kellerwolke-Konto an, mit Passwort oder als gekoppeltes
+Gerät (Code aus der Kellerwolke, Einstellungen, Geräte). Die App reicht beides an die Kellerwolke weiter und prüft
+jede Anfrage mit deren Token (kurz gemerkt). Nutzen darf die App das Konto, dem ihr App-Schlüssel gehört, dazu weitere
+aus den Einstellungen; ein anderes Konto wird abgewiesen und seine eben entstandene Sitzung sofort beendet.
+
+```python
+from appkern.anmeldung import Anmeldung
+from appkern.anmeldung.api import angemeldet, anmeldungs_router
+
+ich = await kellerwolke.ich()                                   # Konto des App-Schlüssels
+anmeldung = Anmeldung("https://192.168.178.49:39280", lambda: {ich.konto, *einstellungen.stand.weitere_konten})
+app.include_router(anmeldungs_router(anmeldung))               # POST /api/v1/anmeldung, .../koppeln, .../abmelden, .../zugang
+pflicht = Depends(angemeldet(anmeldung))                       # für alle eigenen Endpunkte
+lesen = Depends(angemeldet(anmeldung, cookie=True))           # für Inhaltsadressen unter /api/v1/inhalt
+```
+
+Auf dem iPhone hat jede Web-App vom Home-Bildschirm ihren eigenen Speicher; ein Telefon wird deshalb je App einmal
+gekoppelt, immer mit dem Kellerwolke-Konto.
 
 ## Einbinden
 
