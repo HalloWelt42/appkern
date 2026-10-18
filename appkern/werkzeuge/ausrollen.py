@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 from pathlib import Path
 
@@ -161,6 +162,34 @@ def stand_holen(z: Ziel) -> None:
   echo "Stand: $(git log --oneline -1)\""""))
 
 
+RUHE_HOECHSTENS_S = 4 * 3600     # so lange wartet das Ausrollen höchstens auf laufende Aufträge
+RUHE_TAKT_S = 30
+
+
+def ruhe_abwarten(z: Ziel, sofort: bool) -> None:
+    """Nie laufende Aufträge abschießen (Lehre 29): warten, bis die App auf dem Pi keinen mehr hat. Die Zahl steht
+    öffentlich in /api/v1/app; eine App, die nicht antwortet (oder noch nie lief), hat nichts zu verlieren."""
+    if sofort:
+        return
+    _schritt("Laufende Aufträge abwarten")
+    w = shlex.quote(z.wurzel)
+    beginn = time.monotonic()
+    while True:
+        try:
+            info = json.loads(_ssh(z, f"curl -sf --cacert {w}/zertifikate/rootCA.pem {shlex.quote(z.adresse)}/api/v1/app"))
+        except (Abbruch, ValueError):
+            print("Die App antwortet nicht; nichts abzuwarten")
+            return
+        n = int(info.get("auftraege_laufend") or 0)
+        if n == 0:
+            print("Keine laufenden Aufträge")
+            return
+        if time.monotonic() - beginn > RUHE_HOECHSTENS_S:
+            raise Abbruch(f"Nach {RUHE_HOECHSTENS_S // 3600} Stunden laufen noch {n} Aufträge; mit --sofort trotzdem ausrollen")
+        print(f"{n} Aufträge laufen, warte ...", flush=True)
+        time.sleep(RUHE_TAKT_S)
+
+
 def bauen(z: Ziel) -> None:
     _schritt("Bauen und starten")
     w = shlex.quote(z.wurzel)
@@ -209,13 +238,14 @@ def pruefen(z: Ziel, wurzel: Path) -> None:
     print("HTTP/2 über den Vorschaltdienst, Symbole deckend, Manifest in Ordnung")
 
 
-def ausrollen(wurzel: Path) -> int:
+def ausrollen(wurzel: Path, sofort: bool = False) -> int:
     z = laden(wurzel)
     try:
         stand_und_tests(z, wurzel)
         pi_pruefen(z)
         zertifikat(z)
         stand_holen(z)
+        ruhe_abwarten(z, sofort)
         bauen(z)
         pruefen(z, wurzel)
     except Abbruch as f:

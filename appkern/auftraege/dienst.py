@@ -209,6 +209,11 @@ class Auftraege:
             return eingabe.model_dump(mode="json")
         return dict(eingabe or {})
 
+    async def laufend(self) -> int:
+        """Wie viele Aufträge gerade arbeiten (ein Neustart würde sie unterbrechen)."""
+        zeile = await self.db.zeile("SELECT COUNT(*) AS n FROM auftrag WHERE zustand = 'laeuft'")
+        return int(zeile["n"]) if zeile else 0
+
     async def holen(self, auftrag_id: str) -> Auftrag:
         zeile = await self.db.zeile("SELECT * FROM auftrag WHERE id=?", (auftrag_id,))
         if zeile is None:

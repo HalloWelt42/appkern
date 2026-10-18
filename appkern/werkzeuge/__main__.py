@@ -55,7 +55,8 @@ def main(argv: list[str] | None = None) -> int:
     f = befehle.add_parser("fassung")
     f.add_argument("art", nargs="?", default="patch", choices=["patch", "minor", "major", "id"])
     befehle.add_parser("appkern")
-    befehle.add_parser("ausrollen")
+    aus = befehle.add_parser("ausrollen")
+    aus.add_argument("--sofort", action="store_true", help="nicht auf laufende Aufträge warten (bricht sie ab)")
     a = teiler.parse_args(argv)
     wurzel = _wurzel()
 
@@ -63,7 +64,7 @@ def main(argv: list[str] | None = None) -> int:
         print(hochzaehlen(wurzel / "version.json", a.art))
         return 0
     if a.befehl == "ausrollen":
-        return ausrollen(wurzel)
+        return ausrollen(wurzel, a.sofort)
     if a.befehl == "appkern":
         try:
             print(f"Appkern auf {anheben(wurzel)[:7]} (Oberfläche und Backend)")

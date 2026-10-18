@@ -120,6 +120,7 @@ async def test_abbruch_wartend_und_laufend(db):
         wartet = await dienst.einreihen("warten")               # einer gleichzeitig: der zweite wartet
         await asyncio.wait_for(gestartet.wait(), 5)
         assert (await dienst.holen(wartet.id)).zustand == "wartet"
+        assert await dienst.laufend() == 1                      # der wartende zählt nicht (ein Neustart setzt ihn fort)
         assert (await dienst.abbrechen(wartet.id)).zustand == "abgebrochen"
         a = await dienst.abbrechen(laeuft.id)
         assert a.zustand == "laeuft" and a.abbruch_gewuenscht and a.schritt == "Wird abgebrochen"

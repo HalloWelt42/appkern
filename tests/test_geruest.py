@@ -75,6 +75,7 @@ async def test_einrichtung_anmeldung_verbindungen_protokoll(umgebung):
     geruest, app, c = umgebung
     info = (await c.get("/api/v1/app")).json()
     assert info["einrichtung_noetig"] and info["name"] == "Probe" and info["appkern"]
+    assert info["auftraege_laufend"] == 0                    # nur die Zahl, für das Ausrollen ohne Abbruch
     assert (await c.get("/api/v1/verbindungen")).status_code == 401
     assert (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).status_code == 503
 

@@ -95,6 +95,7 @@ class AppInfo(BaseModel):
     besitzer: str | None = None
     kellerwolke: str = ""       # Adresse, gegen die angemeldet und gekoppelt wird (nie der Schlüssel)
     oberflaeche: str | None = None  # Fassung der gebauten Oberfläche, die der Server gerade ausliefert
+    auftraege_laufend: int = 0      # nur die Zahl (für das Ausrollen ohne Abbruch), nie Inhalte
 
 
 class Verbindung(BaseModel):
@@ -383,7 +384,7 @@ class Geruest(Generic[E]):
 
         @router.get("/app", response_model=AppInfo)
         async def app_info() -> AppInfo:
-            return self.info()
+            return self.info().model_copy(update={"auftraege_laufend": await self.auftraege.laufend()})
 
         @router.post("/einrichtung", response_model=AppInfo)
         async def einrichten(eingabe: Einrichtung, request: Request) -> AppInfo:
