@@ -10,6 +10,9 @@
 //                 { "name": "aufnehmen", "pfad": "/aufnahmen", "nur": [1440, 390],
 //                   "wechsel": [ { "klick": "Aufnehmen", "fest": [".rek-leiste"] } ] } ] }
 // `klick` ist ein CSS-Selektor oder der Text eines Knopfs; `fest` sind Teile, die sich beim Wechsel nicht bewegen dürfen.
+// Detailseiten holen ihren Pfad aus einer Abfrage der App (mit der Testanmeldung); {weg.zum.wert} wird gefüllt:
+//   { "name": "plan", "abfrage": "/api/v1/plaene?anzahl=1", "pfad": "/vertonen/{eintraege.0.id}" }
+// Gibt die Abfrage keinen Wert her, ist das ein Befund (die Seite fehlt sonst still in der Prüfung).
 // Angemeldet wird mit dem Testzugang aus backend/.env.test (KELLERWOLKE_KENNUNG, KELLERWOLKE_PASSWORT); die Werte
 // werden nie ausgegeben. Ein Browser-Dialog (alert, confirm, beforeunload) ist selbst ein Befund und wird geschlossen;
 // antwortet der Browser nicht binnen 30 Sekunden, ist auch das ein Befund. Ende mit 1, wenn es Befunde gibt.
@@ -132,13 +135,28 @@ await rufe("Page.enable");
 await rufe("Runtime.enable");
 await rufe("Page.navigate", { url: `${basis}/` });
 await warte(800);
+for (const seite of einstellung.seiten.filter((s) => s.abfrage)) {
+  try {
+    const antwort = await fetch(basis + seite.abfrage, { headers: { "X-Kellerwolke-Sitzung": token } });
+    if (!antwort.ok) throw new Error(`Antwort ${antwort.status}`);
+    const daten = await antwort.json();
+    seite.pfad = seite.pfad.replace(/\{([^}]+)\}/g, (_, weg) => {
+      const w = weg.split(".").reduce((o, k) => o?.[k], daten);
+      if (w == null) throw new Error(`kein Wert für {${weg}}`);
+      return encodeURIComponent(String(w));
+    });
+  } catch (f) {
+    befunde.push(`${seite.name}: Pfad aus ${seite.abfrage} nicht ermittelbar (${f.message})`);
+    seite.auslassen = true;
+  }
+}
 for (const thema of themen) {
   await werte(`localStorage.setItem(${JSON.stringify(`${app.kennung}_sitzung`)}, ${JSON.stringify(token)});
     localStorage.setItem("appkern_anzeige", JSON.stringify({ schrift: "normal", thema: ${JSON.stringify(thema)} })); true`);
   for (const [b, h] of BREITEN) {
     await rufe("Emulation.setDeviceMetricsOverride", { width: b, height: h, deviceScaleFactor: b < 600 ? 2 : 1, mobile: b < 600 });
     for (const seite of einstellung.seiten) {
-      if ((nur && seite.name !== nur) || (seite.nur && !seite.nur.includes(b))) continue;
+      if (seite.auslassen || (nur && seite.name !== nur) || (seite.nur && !seite.nur.includes(b))) continue;
       const name = `${seite.name}-${b}-${thema}`;
       ansicht = name;
       try {

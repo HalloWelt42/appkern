@@ -108,5 +108,11 @@ async def test_gleitkomma_lesen_stauchen_schreiben(tmp_path):
     assert (w.rate, w.kanaele, w.kodierung) == (48000, 2, "pcm_s16le") and w.dauer_s == pytest.approx(2.4, abs=0.02)
     assert frequenz_werte(await ton.lesen(wav, 48000), 48000) == pytest.approx(440, abs=2)
 
+    # m4a mit dem Inhaltsverzeichnis vorn (moov vor mdat): spielt im Browser, bevor die ganze Datei geladen ist
+    m4a = await ton.schreiben(kurz, 24000, tmp_path / "ergebnis.m4a", Tonformat(rate=44100, kanaele=2, kodierung="aac", bitrate="192k"))
+    assert (await ton.eigenschaften(m4a)).kodierung == "aac"
+    roh = m4a.read_bytes()
+    assert roh.index(b"moov") < roh.index(b"mdat")
+
     with pytest.raises(TonFehler):
         await ton.schreiben(kurz * 10.0, 24000, tmp_path / "zu_laut.wav", ARBEIT)

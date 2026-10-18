@@ -2,6 +2,7 @@
   // Wurzel jeder App-Oberfläche: Einrichtung, Anmeldung, dann Rechner- oder Telefonansicht.
   // Entwurf (freigegeben 17.10.2026): oberflaeche/mockups/schale.html und schale-mobil.html.
   import { onMount } from "svelte";
+  import { nurEinTon } from "../lib/wiedergabe";
   import { anzeigeStarten } from "../lib/anzeige.svelte";
   import { fassungVerfolgen } from "../lib/fassung.svelte";
   import { geraet, geraetStarten } from "../lib/geraet.svelte";
@@ -25,9 +26,11 @@
     const fassungStoppen = fassungVerfolgen(fassung, ruhig);
     starten();
     const navigationStoppen = navigationStarten();
+    const tonStoppen = nurEinTon();
     return () => {
       fassungStoppen();
       navigationStoppen();
+      tonStoppen();
     };
   });
 </script>

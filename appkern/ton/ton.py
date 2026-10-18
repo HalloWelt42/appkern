@@ -24,6 +24,7 @@ _STILLE_ENDE = re.compile(r"silence_end: (-?[0-9.]+)")
 # Resampler: soxr in höchster Präzision; der eingebaute mit langem Filter, falls soxr fehlt
 _SOXR = "resampler=soxr:precision=28"
 _SWR = "resampler=swr:filter_size=64:phase_shift=10:linear_interp=1:cutoff=0.97"
+MP4_ENDUNGEN = (".m4a", ".mp4", ".m4b", ".mov")    # Behälter mit Inhaltsverzeichnis (moov), das vorn stehen soll
 
 
 class TonFehler(Exception):
@@ -273,6 +274,8 @@ class Ton:
                   "-ac", str(format.kanaele), "-c:a", format.kodierung]
         if format.bitrate:
             befehl += ["-b:a", format.bitrate]
+        if ziel.suffix.lower() in MP4_ENDUNGEN:
+            befehl += ["-movflags", "+faststart"]      # Inhaltsverzeichnis vorn: abspielbar, bevor alles geladen ist
         await _durchleiten([*befehl, str(vorlaeufig)], werte.tobytes())
         vorlaeufig.replace(ziel)
         return ziel
