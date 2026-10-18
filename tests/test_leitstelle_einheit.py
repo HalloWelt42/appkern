@@ -217,3 +217,15 @@ def test_gehoerte_segmente_mit_versatz_ohne_leere():
     assert len(s) == 1 and (s[0].start, s[0].ende, s[0].text) == (10.0, 11.2, "Guten Tag.")
     assert [(w.wort, w.start) for w in s[0].woerter] == [("Guten", 10.0), ("Tag.", 10.5)]
     assert Gehoert(segmente=s).text == "Guten Tag."
+
+
+async def test_schemaantwort_aus_dem_denkfeld():
+    """Denkende Modelle legen in LM Studio die Schema-Ausgabe ins Denkfeld; ohne Schema bleibt das Denken Denken."""
+    def handler(request: httpx.Request):
+        return httpx.Response(200, json={"model": "qwen3.8", "choices": [{"message": {
+            "content": "", "reasoning_content": '{"a": 1}'}, "finish_reason": "stop"}]})
+
+    async with leitstelle(handler) as ls:
+        mit = await ls.chat(["x"], response_format={"type": "json_schema", "json_schema": {"name": "n", "schema": {}}})
+        ohne = await ls.chat(["x"])
+    assert (mit.text, mit.denken) == ('{"a": 1}', '{"a": 1}') and (ohne.text, ohne.denken) == ("", '{"a": 1}')

@@ -131,7 +131,14 @@ class Leitstelle:
         daten = antwort.json()
         wahl = (daten.get("choices") or [{}])[0]
         ende = wahl.get("finish_reason")
-        return ChatAntwort(text=(wahl.get("message") or {}).get("content") or "", ende=ende, abgebrochen=ende == ABBRUCH,
+        nachricht = wahl.get("message") or {}
+        text = nachricht.get("content") or ""
+        denken = nachricht.get("reasoning_content") or nachricht.get("reasoning") or ""
+        if "response_format" in optionen and not text.strip() and denken.strip():
+            # Denkende Modelle (etwa Qwen 3.6 und 3.8 in LM Studio) legen die durch das Schema eingeschränkte Ausgabe
+            # ins Denkfeld und lassen das Antwortfeld leer; mit fester Antwortform ist das die Antwort.
+            text = denken
+        return ChatAntwort(text=text, denken=denken, ende=ende, abgebrochen=ende == ABBRUCH,
                            modell=antwort.headers.get("x-leitstelle-modell") or daten.get("model"),
                            knoten=antwort.headers.get("x-leitstelle-knoten"),
                            auftrag=antwort.headers.get("x-leitstelle-auftrag"), verbrauch=_verbrauch(daten.get("usage")))

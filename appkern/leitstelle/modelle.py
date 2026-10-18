@@ -61,6 +61,7 @@ class ChatAntwort(_Modell):
     """Eine fertige Antwort. `abgebrochen`: in der Leitstelle abgebrochen, `text` ist dann der bisherige Teil."""
 
     text: str
+    denken: str = ""                 # Denkfeld des Modells (reasoning_content), falls es eins liefert
     ende: str | None = None
     abgebrochen: bool = False
     modell: str | None = None
