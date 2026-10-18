@@ -72,21 +72,21 @@ class TonDienst(Tonarbeit):
                           prioritaet: Prioritaet | None = None) -> Aufbereitet:
         if len(ziele) != len(auftrag.ausgaben):
             raise ValueError(f"{len(auftrag.ausgaben)} Ausgaben, aber {len(ziele)} Ziele")
-        async with self._uebersetzt():
+        async with self._uebersetzt(), self._dienst().gebunden():   # Abholen bei derselben Instanz
             erg = Aufbereitet.model_validate(await self._senden("/ton/aufbereiten", [("datei", quelle)], auftrag, titel, prioritaet))
             await self._abholen(erg.ausgaben, ziele, titel, prioritaet)
         return erg
 
     async def blenden(self, dateien: Sequence[Path], auftrag: Blenden, ziel: Path, *, titel: str = "",
                       prioritaet: Prioritaet | None = None) -> Datei:
-        async with self._uebersetzt():
+        async with self._uebersetzt(), self._dienst().gebunden():   # Abholen bei derselben Instanz
             d = Datei.model_validate(await self._senden("/ton/blenden", [("dateien", p) for p in dateien], auftrag, titel, prioritaet))
             await self._abholen([d], [ziel], titel, prioritaet)
         return d
 
     async def legen(self, dateien: Sequence[Path], auftrag: Legen, ziel: Path, *, titel: str = "",
                     prioritaet: Prioritaet | None = None) -> Gelegt:
-        async with self._uebersetzt():
+        async with self._uebersetzt(), self._dienst().gebunden():   # Abholen bei derselben Instanz
             g = Gelegt.model_validate(await self._senden("/ton/legen", [("dateien", p) for p in dateien], auftrag, titel, prioritaet))
             await self._abholen([g.datei], [ziel], titel, prioritaet)
         return g

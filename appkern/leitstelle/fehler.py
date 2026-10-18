@@ -93,6 +93,7 @@ _NACH_GRUND: dict[str, type[LeitstellenFehler]] = {
     "gesperrt": Gesperrt, "kontingent": Gesperrt,
     "halt": Halt, "wartung": Halt,
     "kein_dienst": DienstWeg, "dienst_nicht_erreichbar": DienstWeg, "modell_passt_nicht": DienstWeg,
+    "instanz_weg": DienstWeg,         # die gebundene Instanz läuft nicht mehr: von vorn beginnen (geduldig wiederholt)
     "dienst_fehler": DienstFehler,
     "nutzer": Abgebrochen, "anwendung": Abgebrochen,
     "eingabe": Ungueltig,

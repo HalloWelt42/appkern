@@ -254,3 +254,31 @@ async def test_erlaubnisliste_extern_und_steckbriefe():
     assert dict(gesehen["/v1/steckbriefe"].url.params) == {"eignung": "lange_texte", "sprache": "de"}
     assert s[0].id == "Qwen/Qwen3.8-27B" and s[0].steckbrief.zone == "extern" and s[0].steckbrief.eignung == ["lange_texte", "kuenftig"]
     assert s[0].steckbrief.gemessen.token_je_s == 40.0 and s[0].steckbrief.herkunft == {"zweck": "hand"}
+
+
+async def test_bindung_an_eine_instanz():
+    """Rechnen und Abholen gehen an dieselbe Instanz: die erste Antwort nennt sie (X-Leitstelle-Instanz), die folgenden
+    Aufrufe in der Bindung schicken sie mit; außerhalb der Bindung nicht. "instanz_weg" heißt: von vorn (DienstWeg)."""
+    from appkern.leitstelle import DienstWeg as Weg
+
+    gesehen = []
+
+    def handler(request):
+        gesehen.append(request)
+        if request.url.path.endswith("/ton/aufbereiten"):
+            return httpx.Response(200, json={"ok": True}, headers={"X-Leitstelle-Instanz": "ton.2@agent"})
+        if request.url.path.endswith("/weg"):
+            return httpx.Response(409, json={"error": {"code": "instanz_weg", "message": "läuft nicht mehr"}})
+        return httpx.Response(200, content=b"daten")
+
+    async with leitstelle(handler) as ls:
+        ton = ls.dienst("klangwerk-ton")
+        async with ton.gebunden():
+            await ton.json("POST", "/ton/aufbereiten")
+            assert "x-leitstelle-instanz" not in gesehen[-1].headers
+            daten = b"".join([d async for d in ton.strom("/ton/ergebnis/a.wav")])
+            assert daten == b"daten" and gesehen[-1].headers["x-leitstelle-instanz"] == "ton.2@agent"
+        await ton.json("POST", "/ton/aufbereiten")
+        assert "x-leitstelle-instanz" not in gesehen[-1].headers
+        with pytest.raises(Weg):
+            await ton.anfrage("GET", "/weg")

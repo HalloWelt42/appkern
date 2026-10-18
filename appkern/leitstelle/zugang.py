@@ -17,6 +17,7 @@ Der Schlüssel erscheint nie in Ausgaben (auch nicht in `repr`).
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import os
 import re
@@ -30,6 +31,7 @@ import httpx
 from .fehler import LeitstellenFehler, NichtErreichbar, fehler_aus
 from .modelle import ChatAntwort, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Stueck, Verbrauch, Wartet
 from .arbeit import KOPF as ARBEIT_KOPF, LAUFENDE_ARBEIT
+from .bindung import GEBUNDEN, KOPF as INSTANZ_KOPF, Bindung
 
 # Arbeit hat keine Lese-Zeitgrenze; eine Abfrage (Modellliste) schon.
 ARBEIT = httpx.Timeout(10.0, read=None, write=None, pool=None)
@@ -232,10 +234,32 @@ class Dienst:
     def _pfad(self, pfad: str) -> str:
         return f"/v1/dienste/{quote(self.name, safe='')}/{pfad.lstrip('/')}"
 
+    @contextlib.asynccontextmanager
+    async def gebunden(self) -> AsyncIterator[Bindung]:
+        """Alle Aufrufe dieses Dienstes in der Klammer gehen an dieselbe Instanz wie der erste (siehe `bindung`)."""
+        b = Bindung(self.name)
+        marke = GEBUNDEN.set({**GEBUNDEN.get(), self.name: b})
+        try:
+            yield b
+        finally:
+            GEBUNDEN.reset(marke)
+
+    def _koepfe(self, titel: str, prioritaet: Prioritaet | None) -> dict[str, str]:
+        kopf = self._ls.koepfe(titel, prioritaet)
+        if (b := GEBUNDEN.get().get(self.name)) is not None and b.instanz:
+            kopf[INSTANZ_KOPF] = b.instanz
+        return kopf
+
+    def _merken(self, antwort: httpx.Response) -> None:
+        if (b := GEBUNDEN.get().get(self.name)) is not None and b.instanz is None:
+            b.instanz = antwort.headers.get(INSTANZ_KOPF)
+
     async def anfrage(self, methode: str, pfad: str, *, titel: str = "", prioritaet: Prioritaet | None = None,
                       **art: Any) -> httpx.Response:
         """Rohe Anfrage (json, data, files, params wie bei httpx); die Antwort ist vollständig gelesen."""
-        return await self._ls._senden(methode, self._pfad(pfad), kopf=self._ls.koepfe(titel, prioritaet), **art)
+        antwort = await self._ls._senden(methode, self._pfad(pfad), kopf=self._koepfe(titel, prioritaet), **art)
+        self._merken(antwort)
+        return antwort
 
     async def json(self, methode: str, pfad: str, *, titel: str = "", prioritaet: Prioritaet | None = None,
                    **art: Any) -> Any:
@@ -246,9 +270,10 @@ class Dienst:
         """Eine große Antwort (etwa eine Tondatei) stückweise lesen."""
         try:
             async with self._ls._client.stream("GET", f"{self._ls.adresse}{self._pfad(pfad)}", timeout=ARBEIT,
-                                               headers=self._ls.koepfe(titel, prioritaet), **art) as antwort:
+                                               headers=self._koepfe(titel, prioritaet), **art) as antwort:
                 if antwort.status_code >= 400:
                     raise _fehler(antwort, (await antwort.aread()).decode("utf-8", "replace"))
+                self._merken(antwort)
                 async for daten in antwort.aiter_bytes():
                     yield daten
         except httpx.TransportError as f:
