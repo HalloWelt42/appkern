@@ -20,6 +20,17 @@ export function einrichten(kennung: string, sitzungsende: () => void): void {
   beiSitzungsende = sitzungsende;
 }
 
+// Abfrageteil einer Adresse aus Werten; leere fallen weg, Listen werden wiederholt (?zustand=a&zustand=b).
+export function abfrage(werte: Record<string, string | number | boolean | null | undefined | string[]>): string {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(werte)) {
+    if (Array.isArray(v)) v.forEach((x) => p.append(k, x));
+    else if (v !== null && v !== undefined && v !== "") p.set(k, String(v));
+  }
+  const text = p.toString();
+  return text ? `?${text}` : "";
+}
+
 export function token(): string {
   try {
     return localStorage.getItem(schluessel) ?? "";

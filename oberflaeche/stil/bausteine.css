@@ -158,3 +158,13 @@
 .mobil .leiste-inhalt .knopf.still { background: var(--flaeche-2); box-shadow: 0 0 0 1px var(--rand); min-height: 40px; }
 .liste-klein div { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; font-size: var(--klein); }
 .liste-klein .zeit { font-family: ui-monospace, monospace; color: var(--text-3); width: 60px; flex: none; }
+
+/* Seite mit eigener Leiste daneben (Liste links, Gewähltes rechts); unter 1280 Pixel wird die Leiste eine
+   einschiebbare Tafel (wie in der Schale), ein Knopf "nur-schmal" öffnet sie */
+.geruest-innen { display: grid; grid-template-columns: minmax(0, 1fr) 380px; flex: 1; min-height: 0; }
+.geruest-innen > .seite { min-height: 0; }
+.nur-schmal { display: none; }
+@media (max-width: 1279px) {
+  .geruest-innen { grid-template-columns: minmax(0, 1fr); }
+  .nur-schmal { display: inline-flex; }
+}
