@@ -2,11 +2,11 @@
   // Wurzel jeder App-Oberfläche: Einrichtung, Anmeldung, dann Rechner- oder Telefonansicht.
   // Entwurf (freigegeben 17.10.2026): oberflaeche/mockups/schale.html und schale-mobil.html.
   import { onMount } from "svelte";
-  import { nurEinTon } from "../lib/wiedergabe";
+  import { einzelton, nurEinTon } from "../lib/wiedergabe.svelte";
   import { anzeigeStarten } from "../lib/anzeige.svelte";
   import { fassungVerfolgen } from "../lib/fassung.svelte";
   import { geraet, geraetStarten } from "../lib/geraet.svelte";
-  import { navigationStarten } from "../lib/navigation.svelte";
+  import { navigation, navigationStarten } from "../lib/navigation.svelte";
   import { sitzung, starten } from "../lib/sitzung.svelte";
   import type { Anfrage, Bereich } from "../lib/typen";
   import Anmeldung from "./Anmeldung.svelte";
@@ -22,6 +22,12 @@
 
   anzeigeStarten();
   geraetStarten();
+  // Ein Seitenwechsel beendet kurze Wiedergaben (Abschnitt, Probe); der große Spieler hält von selbst an
+  $effect(() => {
+    void navigation.teile.join("/");
+    void navigation.seite;
+    einzelton.anhalten();
+  });
   onMount(() => {
     const fassungStoppen = fassungVerfolgen(fassung, ruhig);
     starten();

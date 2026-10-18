@@ -121,6 +121,9 @@
     arbeit.wiedergabe = laeuft;
     return () => (arbeit.wiedergabe = false);
   });
+
+  // Verlässt man die Seite, hält der Ton an (ein entferntes Tonelement spielt am iPhone sonst weiter)
+  $effect(() => () => ton?.pause());
 </script>
 
 <svelte:window onkeydown={tasten} />
