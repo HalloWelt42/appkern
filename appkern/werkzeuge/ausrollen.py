@@ -5,8 +5,9 @@
 2. auf dem Pi: Docker mit Compose; nutzt die App Ton, meldet die Leitstelle den Tondienst (gerechnet wird auf dem Mac,
    der Pi liefert nur Daten; fehlt er, ist das eine Warnung, kein Abbruch: der Mac kann gerade schlafen)
 3. Zertifikat der Hausstelle für den Vorschaltdienst, noch mindestens 60 Tage gültig, sonst neu ausgestellt
-4. Stand holen, Datenbank sichern (die letzten zehn Sicherungen bleiben)
-5. Abbild bauen und starten; der Vorschaltdienst startet jedes Mal neu (geänderte eingehängte Dateien bemerkt Docker nicht)
+4. Stand holen, Abbild bauen (der alte Stand läuft weiter)
+5. warten, bis die App keinen laufenden Auftrag hat, dann Datenbank sichern (die letzten zehn bleiben) und neu starten;
+   der Vorschaltdienst startet jedes Mal neu (geänderte eingehängte Dateien bemerkt Docker nicht)
 6. über HTTPS melden Server, gebaute Oberfläche und version.json dieselbe Fassung; die Seite kommt über HTTP/2; Symbole
    für Tab, Startbildschirm und Web-App sowie das Manifest antworten mit 200 und dem richtigen Typ, die Symbole des
    Startbildschirms sind deckend (sonst zeigt iOS keins)
@@ -21,7 +22,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import tomllib
 from pathlib import Path
 
@@ -156,13 +156,22 @@ def zertifikat(z: Ziel) -> None:
 
 
 def stand_holen(z: Ziel) -> None:
-    _schritt("Stand holen und Datenbank sichern")
-    w, db, k = shlex.quote(z.wurzel), shlex.quote(z.datenbank), z.kennung
+    _schritt("Stand holen")
+    w, k = shlex.quote(z.wurzel), z.kennung
     print(_ssh(z, f"""set -e
   mkdir -p {w}
   cd {w}
   if [ ! -d .git ]; then git clone -q {shlex.quote(z.repo)} /tmp/{k}-klon && cp -a /tmp/{k}-klon/. . && rm -rf /tmp/{k}-klon; fi
   git pull --ff-only -q
+  echo "Stand: $(git log --oneline -1)\""""))
+
+
+def sichern(z: Ziel) -> None:
+    """Die Datenbank so, wie sie unmittelbar vor dem Neustart ist (die letzten zehn Sicherungen bleiben)."""
+    _schritt("Datenbank sichern")
+    w, db, k = shlex.quote(z.wurzel), shlex.quote(z.datenbank), z.kennung
+    print(_ssh(z, f"""set -e
+  cd {w}
   mkdir -p daten sicherungen
   if [ -f {db} ]; then
     ziel=sicherungen/{k}-$(date +%Y%m%d-%H%M%S).sqlite
@@ -171,42 +180,49 @@ def stand_holen(z: Ziel) -> None:
     ls -1t sicherungen/{k}-*.sqlite | tail -n +11 | xargs -r rm --
   else
     echo 'noch keine Datenbank'
-  fi
-  echo "Stand: $(git log --oneline -1)\""""))
+  fi"""))
 
 
 RUHE_HOECHSTENS_S = 4 * 3600     # so lange wartet das Ausrollen höchstens auf laufende Aufträge
-RUHE_TAKT_S = 30
+# Auf dem Pi: jede Sekunde die Zahl laufender Aufträge der App; antwortet sie nicht, gibt es nichts zu verlieren
+RUHE_SKRIPT = """zaehlen() { curl -sf -m 10 --cacert %(ca)s %(adresse)s | python3 -c 'import sys, json; print(int(json.load(sys.stdin).get("auftraege_laufend") or 0))' 2>/dev/null || echo 0; }
+n=$(zaehlen)
+if [ "$n" = 0 ]; then echo "Keine laufenden Aufträge"; exit 0; fi
+echo "$n Aufträge laufen, warte auf eine Lücke ..."
+ende=$(( $(date +%%s) + %(hoechstens)d ))
+while [ "$(zaehlen)" != 0 ]; do
+  if [ "$(date +%%s)" -gt "$ende" ]; then echo "noch nicht ruhig"; exit 3; fi
+  sleep 1
+done
+echo "Ruhig"
+"""
 
 
 def ruhe_abwarten(z: Ziel, sofort: bool) -> None:
-    """Nie laufende Aufträge abschießen (Lehre 29): warten, bis die App auf dem Pi keinen mehr hat. Die Zahl steht
-    öffentlich in /api/v1/app; eine App, die nicht antwortet (oder noch nie lief), hat nichts zu verlieren."""
+    """Nie laufende Aufträge abschießen (Lehre 29): warten, bis die App auf dem Pi keinen mehr hat, und zwar nach dem
+    Bauen, unmittelbar vor dem Neustart (sonst beginnt während des Bauens ein neuer). Geprüft wird auf dem Pi selbst
+    jede Sekunde: Aufträge, die dicht aufeinander folgen (etwa KI-Transkripte), lassen nur kurze Lücken. Die Zahl steht
+    öffentlich in /api/v1/app."""
     if sofort:
         return
     _schritt("Laufende Aufträge abwarten")
-    w = shlex.quote(z.wurzel)
-    beginn = time.monotonic()
-    while True:
-        try:
-            info = json.loads(_ssh(z, f"curl -sf --cacert {w}/zertifikate/rootCA.pem {shlex.quote(z.adresse)}/api/v1/app"))
-        except (Abbruch, ValueError):
-            print("Die App antwortet nicht; nichts abzuwarten")
-            return
-        n = int(info.get("auftraege_laufend") or 0)
-        if n == 0:
-            print("Keine laufenden Aufträge")
-            return
-        if time.monotonic() - beginn > RUHE_HOECHSTENS_S:
-            raise Abbruch(f"Nach {RUHE_HOECHSTENS_S // 3600} Stunden laufen noch {n} Aufträge; mit --sofort trotzdem ausrollen")
-        print(f"{n} Aufträge laufen, warte ...", flush=True)
-        time.sleep(RUHE_TAKT_S)
+    skript = RUHE_SKRIPT % {"ca": shlex.quote(f"{z.wurzel}/zertifikate/rootCA.pem"),
+                            "adresse": shlex.quote(f"{z.adresse}/api/v1/app"), "hoechstens": RUHE_HOECHSTENS_S}
+    try:
+        print(_ssh(z, skript))
+    except Abbruch as f:
+        raise Abbruch(f"Nach {RUHE_HOECHSTENS_S // 3600} Stunden laufen noch Aufträge; mit --sofort trotzdem ausrollen") from f
 
 
 def bauen(z: Ziel) -> None:
-    _schritt("Bauen und starten")
-    w = shlex.quote(z.wurzel)
-    _ssh(z, f"cd {w} && docker compose -f compose.pi.yml build --quiet && docker compose -f compose.pi.yml up -d --remove-orphans "
+    """Das neue Abbild entsteht, während der alte Stand weiterläuft."""
+    _schritt("Bauen")
+    _ssh(z, f"cd {shlex.quote(z.wurzel)} && docker compose -f compose.pi.yml build --quiet")
+
+
+def starten(z: Ziel) -> None:
+    _schritt("Starten")
+    _ssh(z, f"cd {shlex.quote(z.wurzel)} && docker compose -f compose.pi.yml up -d --remove-orphans "
             "&& docker compose -f compose.pi.yml restart vorne")
 
 
@@ -253,8 +269,10 @@ def ausrollen(wurzel: Path, sofort: bool = False) -> int:
         pi_pruefen(z)
         zertifikat(z)
         stand_holen(z)
-        ruhe_abwarten(z, sofort)
         bauen(z)
+        ruhe_abwarten(z, sofort)
+        sichern(z)
+        starten(z)
         pruefen(z, wurzel)
     except Abbruch as f:
         print(f"\nAbbruch: {f}", file=sys.stderr)
