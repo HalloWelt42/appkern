@@ -29,6 +29,7 @@ import httpx
 
 from .fehler import LeitstellenFehler, NichtErreichbar, fehler_aus
 from .modelle import ChatAntwort, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Stueck, Verbrauch, Wartet
+from .arbeit import KOPF as ARBEIT_KOPF, LAUFENDE_ARBEIT
 
 # Arbeit hat keine Lese-Zeitgrenze; eine Abfrage (Modellliste) schon.
 ARBEIT = httpx.Timeout(10.0, read=None, write=None, pool=None)
@@ -94,6 +95,8 @@ class Leitstelle:
         kopf["X-Leitstelle-Titel"] = quote(f"{self.app}: {titel}" if titel else self.app, safe="")
         if prioritaet:
             kopf["X-Leitstelle-Prioritaet"] = prioritaet
+        if (arbeit := LAUFENDE_ARBEIT.get()) is not None:
+            kopf[ARBEIT_KOPF] = arbeit
         return kopf
 
     async def _senden(self, methode: str, pfad: str, *, kopf: dict[str, str], timeout: httpx.Timeout = ARBEIT,

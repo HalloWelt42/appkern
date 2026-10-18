@@ -25,6 +25,7 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from appkern.datenbank import Datenbank
+from appkern.leitstelle.arbeit import LAUFENDE_ARBEIT
 from appkern.protokoll import Protokoll
 
 from .modelle import OFFEN, WIEDERHOLBAR, Auftrag, Phase, Seite, Zustand
@@ -383,6 +384,7 @@ class Auftraege:
             eingabe = json.loads(zeile["eingabe"])
             kontext = Kontext(auftrag_id=auftrag_id, eingabe=art.eingabe.model_validate(eingabe) if art.eingabe else eingabe,
                               zwischenstand=json.loads(zeile["zwischenstand"] or "{}"), _dienst=self, _abbruch=abbruch)
+            LAUFENDE_ARBEIT.set(auftrag_id)    # eigene Aufgabe je Auftrag: gilt für ihn und alles, was er startet
             try:
                 ergebnis = await art.arbeit(kontext)
             except AuftragAbgebrochen:

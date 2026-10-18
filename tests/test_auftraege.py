@@ -256,3 +256,31 @@ async def test_datenbank_stufen_nur_einmal(tmp_path: Path):
             await db.einrichten("kaputt", ["CREATE TABLE b (x INTEGER); CREATE TABLE b (x INTEGER);"])
         assert await db.zeile("SELECT name FROM sqlite_master WHERE name='b'") is None     # ganz oder gar nicht
         assert await db.zeilen("SELECT x, y FROM a") == [{"x": 1, "y": "z"}]
+
+
+async def test_anfragen_im_auftrag_tragen_seine_kennung(db):
+    """Jede Anfrage an die Leitstelle, die innerhalb eines Auftrags läuft, trägt seine Kennung (X-Leitstelle-Arbeit);
+    außerhalb nicht. So sieht die Leitstelle, welche Modelle eine begonnene Arbeit nutzt."""
+    from appkern.leitstelle import Leitstelle
+
+    ls = Leitstelle("http://ls.test", "probe", "Probe")
+    gesehen = {}
+
+    async def fragen(k: Kontext):
+        gesehen["kopf"] = ls.koepfe("im Auftrag")
+
+        async def nebenher():                        # auch in Aufgaben, die die Arbeit selbst startet
+            return ls.koepfe("nebenher")
+        gesehen["nebenher"] = await asyncio.create_task(nebenher())
+        return {"ok": True}
+
+    a = Auftraege(db, [Art("fragen", "Fragen", fragen)])
+    await a.starten()
+    try:
+        auftrag = await a.einreihen("fragen", None, titel="Probe")
+        await bis(a, auftrag.id, "fertig")
+    finally:
+        await a.stoppen()
+        await ls.schliessen()
+    assert gesehen["kopf"]["X-Leitstelle-Arbeit"] == auftrag.id == gesehen["nebenher"]["X-Leitstelle-Arbeit"]
+    assert "X-Leitstelle-Arbeit" not in ls.koepfe("außerhalb")
