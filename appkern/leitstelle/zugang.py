@@ -67,11 +67,15 @@ def _fehler(antwort: httpx.Response, text: str | None = None) -> LeitstellenFehl
 
 
 class Leitstelle:
-    def __init__(self, adresse: str, schluessel: str, app: str, *, client: httpx.AsyncClient | None = None) -> None:
-        """`adresse` mit oder ohne `/v1`; `app` steht vor jedem Titel, damit Aufträge in der Leitstelle erkennbar sind."""
+    def __init__(self, adresse: str, schluessel: str, app: str, *, client: httpx.AsyncClient | None = None,
+                 extern: Sequence[str] = ()) -> None:
+        """`adresse` mit oder ohne `/v1`; `app` steht vor jedem Titel, damit Aufträge in der Leitstelle erkennbar sind.
+        `extern`: Erlaubnisliste externer Modelle aus den Einstellungen der App; nur dorthin darf die Leitstelle
+        ausweichen (Kopf X-Leitstelle-Extern). Leer: nie nach extern, außer ein Aufruf verlangt ein Modell ausdrücklich."""
         adresse = adresse.rstrip("/")
         self.adresse = adresse[:-3] if adresse.endswith("/v1") else adresse
         self.app = app
+        self.extern = tuple(extern)
         self._schluessel_kopf = {"Authorization": f"Bearer {schluessel}"}
         self._client = client or httpx.AsyncClient(timeout=ARBEIT)
         self._eigener_client = client is None
@@ -97,6 +101,8 @@ class Leitstelle:
             kopf["X-Leitstelle-Prioritaet"] = prioritaet
         if (arbeit := LAUFENDE_ARBEIT.get()) is not None:
             kopf[ARBEIT_KOPF] = arbeit
+        if self.extern:
+            kopf["X-Leitstelle-Extern"] = quote(",".join(self.extern), safe=",")
         return kopf
 
     async def _senden(self, methode: str, pfad: str, *, kopf: dict[str, str], timeout: httpx.Timeout = ARBEIT,
@@ -115,6 +121,14 @@ class Leitstelle:
         """Was die App nutzen darf, mit Ladezustand. Lädt nichts; dient auch als Gesundheitsprüfung."""
         antwort = await self._senden("GET", "/v1/models", kopf=dict(self._schluessel_kopf), timeout=ABFRAGE)
         return [Modell(id=m["id"], **(m.get("x-leitstelle") or {})) for m in antwort.json().get("data", [])]
+
+    async def steckbriefe(self, *, faehigkeit: str | None = None, eignung: str | None = None, sprache: str | None = None) -> list[Modell]:
+        """Wofür welches Modell gemacht ist (PROTOKOLL 4.8), nur was die App nutzen darf; mit `sprache` zuerst die Modelle,
+        die sie ausdrücklich können."""
+        abfrage = {k: v for k, v in (("faehigkeit", faehigkeit), ("eignung", eignung), ("sprache", sprache)) if v}
+        antwort = await self._senden("GET", "/v1/steckbriefe", kopf=dict(self._schluessel_kopf), timeout=ABFRAGE, params=abfrage)
+        return [Modell(id=m["id"], name=m.get("name", ""), geladen=m.get("geladen", False), steckbrief=m.get("steckbrief"))
+                for m in antwort.json().get("data", [])]
 
     def _chat_koerper(self, nachrichten, modell, optionen, strom: bool) -> dict[str, Any]:
         koerper: dict[str, Any] = {"messages": _nachrichten(nachrichten), **optionen}

@@ -229,3 +229,28 @@ async def test_schemaantwort_aus_dem_denkfeld():
         mit = await ls.chat(["x"], response_format={"type": "json_schema", "json_schema": {"name": "n", "schema": {}}})
         ohne = await ls.chat(["x"])
     assert (mit.text, mit.denken) == ('{"a": 1}', '{"a": 1}') and (ohne.text, ohne.denken) == ("", '{"a": 1}')
+
+
+async def test_erlaubnisliste_extern_und_steckbriefe():
+    """Die Erlaubnisliste aus den Einstellungen der App geht als Kopf X-Leitstelle-Extern mit jeder Anfrage; leer fehlt
+    der Kopf (dann nie nach extern). Steckbriefe kommen gefiltert; neue Wörter einer neueren Leitstelle brechen nichts."""
+    gesehen = {}
+
+    def handler(request):
+        gesehen[request.url.path] = request
+        if request.url.path == "/v1/steckbriefe":
+            return httpx.Response(200, json={"object": "list", "data": [{"id": "Qwen/Qwen3.8-27B", "name": "Qwen3.8-27B", "geladen": True,
+                "steckbrief": {"zweck": "Übersetzen", "eignung": ["lange_texte", "kuenftig"], "zone": "extern", "anfragen_je_minute": 10,
+                               "gemessen": {"auftraege": 3, "token_je_s": 40.0}, "herkunft": {"zweck": "hand"}, "neu": True}}]})
+        return httpx.Response(200, json={"choices": [{"message": {"content": "ok"}}]})
+
+    async with leitstelle(handler) as ls:
+        await ls.chat(["x"])
+        assert "x-leitstelle-extern" not in gesehen["/v1/chat/completions"].headers
+        ls.extern = ("Qwen/Qwen3.8-27B", "Qwen3.6 35B")
+        await ls.chat(["x"])
+        assert unquote(gesehen["/v1/chat/completions"].headers["x-leitstelle-extern"]) == "Qwen/Qwen3.8-27B,Qwen3.6 35B"
+        s = await ls.steckbriefe(eignung="lange_texte", sprache="de")
+    assert dict(gesehen["/v1/steckbriefe"].url.params) == {"eignung": "lange_texte", "sprache": "de"}
+    assert s[0].id == "Qwen/Qwen3.8-27B" and s[0].steckbrief.zone == "extern" and s[0].steckbrief.eignung == ["lange_texte", "kuenftig"]
+    assert s[0].steckbrief.gemessen.token_je_s == 40.0 and s[0].steckbrief.herkunft == {"zweck": "hand"}

@@ -18,6 +18,10 @@ class Grundeinstellungen(BaseModel):
                                     description="Adresse der Leitstelle, über die alle KI-Aufträge gehen.")
     leitstelle_schluessel: SecretStr = Field(SecretStr(""), title="Schlüssel der Leitstelle", json_schema_extra=VERBINDUNGEN,
                                              description="In der Leitstelle unter Anwendungen erzeugt.")
+    leitstelle_extern: list[str] = Field(default_factory=list, title="Ausweichen nach extern", json_schema_extra=VERBINDUNGEN,
+                                         description="Externe Modelle (etwa bei Hetzner), auf die die Leitstelle ausweichen darf, "
+                                                     "wenn die eigenen Rechner lange belegt sind; dabei verlassen Texte das Heimnetz. "
+                                                     "Nur wählen, wo die Qualität reicht. Leer: alles bleibt im Heimnetz.")
     ca_datei: str = Field("", title="Zertifikatsstelle", json_schema_extra=VERBINDUNGEN,
                           description="Pfad zur Datei einer eigenen Zertifikatsstelle (rootCA.pem) für Kellerwolke und "
                                       "Leitstelle über HTTPS. Leer: die üblichen Stellen und die Hausstelle dieses "

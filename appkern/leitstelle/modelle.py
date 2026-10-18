@@ -17,6 +17,33 @@ class _Modell(BaseModel):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
 
+class Messwerte(_Modell):
+    """Wie sich ein Modell im Betrieb verhält, gemessen von der Leitstelle."""
+
+    auftraege: int = 0
+    rechenzeit_s: float | None = None
+    erstes_stueck_s: float | None = None
+    token_je_s: float | None = None
+    ladezeit_s: float | None = None
+
+
+class Steckbrief(_Modell):
+    """Wofür ein Modell gemacht ist (Selbstauskunft, PROTOKOLL 4.8 der Leitstelle). Wörter bleiben Zeichenketten, damit
+    eine neuere Leitstelle mit neuen Wörtern ältere Apps nicht bricht."""
+
+    zweck: str = ""
+    eignung: list[str] = Field(default_factory=list)       # denken, programmieren, lange_texte, schnell, gruendlich
+    sprachen: list[str] = Field(default_factory=list)
+    faehigkeiten: list[str] = Field(default_factory=list)
+    kontext: int | None = None
+    parameter_mrd: float | None = None
+    quantisierung: str | None = None
+    zone: str = "heim"                                     # extern heißt: Daten verlassen das Heimnetz
+    anfragen_je_minute: int | None = None
+    gemessen: Messwerte = Field(default_factory=Messwerte)
+    herkunft: dict[str, str] = Field(default_factory=dict)
+
+
 class Modell(_Modell):
     """Ein Modell oder Dienst, den die App nutzen darf (`GET /v1/models`)."""
 
@@ -27,6 +54,7 @@ class Modell(_Modell):
     extern: bool = False
     faehigkeiten: list[str] = Field(default_factory=list)
     gb: float | None = None
+    steckbrief: Steckbrief | None = None                   # ab Leitstelle 0.15
 
 
 class Nachricht(_Modell):

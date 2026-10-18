@@ -181,7 +181,22 @@ class Geruest(Generic[E]):
             gilt = self.einstellungen.stand.ca_datei or (f"Hausstelle {haus}" if haus else "nur die üblichen Stellen")
             return Angebot(optionen=optionen, stand=f"es gilt: {gilt}")
 
+        async def extern() -> Angebot:
+            if self.leitstelle is None:
+                return Angebot(eigener_wert=False, stand="Leitstelle noch nicht eingerichtet")
+            try:
+                modelle = [m for m in await self.leitstelle.modelle() if m.extern]
+            except LeitstellenFehler as f:
+                return Angebot(eigener_wert=False, stand=f"Leitstelle antwortet nicht: {f.meldung}")
+            optionen = [Option(wert=m.id, titel=m.name or m.id, hinweis=(m.steckbrief.zweck if m.steckbrief and m.steckbrief.zweck else "extern")
+                               + (f", höchstens {m.steckbrief.anfragen_je_minute} je Minute" if m.steckbrief and m.steckbrief.anfragen_je_minute else ""))
+                        for m in modelle]
+            return Angebot(optionen=optionen, eigener_wert=False,
+                           stand=f"gefunden: {len(optionen)} externe Modelle" if optionen
+                           else "Die Leitstelle erlaubt dieser App keine externen Modelle (Leitstelle, Anwendungen, Zone extern)")
+
         self.einstellungen.anbieten("kellerwolke_adresse", kellerwolke)
+        self.einstellungen.anbieten("leitstelle_extern", extern)
         self.einstellungen.anbieten("leitstelle_adresse", leitstelle)
         self.einstellungen.anbieten("ca_datei", zertifikate)
 
@@ -251,7 +266,7 @@ class Geruest(Generic[E]):
         self.kellerwolke = Kellerwolke(stand.kellerwolke_adresse, kw_schluessel, client=kurz) \
             if stand.kellerwolke_adresse and kw_schluessel else None
         ls_schluessel = stand.leitstelle_schluessel.get_secret_value()
-        self.leitstelle = Leitstelle(stand.leitstelle_adresse, ls_schluessel, self.name, client=lang) \
+        self.leitstelle = Leitstelle(stand.leitstelle_adresse, ls_schluessel, self.name, client=lang, extern=stand.leitstelle_extern) \
             if stand.leitstelle_adresse and ls_schluessel else None
         self.anmeldung.verbinden(stand.kellerwolke_adresse, kurz)
         await self._besitzer_bestimmen()
@@ -343,6 +358,8 @@ class Geruest(Generic[E]):
                         "ca_datei", "adresse"}:
             await self._zugaenge_bauen()
             await self._begleiter_rufen("verbunden")
+        elif "leitstelle_extern" in geaendert and self.leitstelle is not None:
+            self.leitstelle.extern = tuple(stand.leitstelle_extern)
 
     async def _taeglich(self) -> None:
         while True:

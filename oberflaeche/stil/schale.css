@@ -233,6 +233,9 @@ button { font: inherit; color: inherit; }
 .zaehler button { width: 42px; height: 40px; border: 0; background: transparent; font: inherit; cursor: pointer; }
 .zaehler input { width: 56px; height: 40px; border: 0; border-left: 1px solid var(--rand); border-right: 1px solid var(--rand); text-align: center; font: inherit; background: transparent; color: inherit; }
 .chip button { border: 0; background: transparent; cursor: pointer; padding: 0; color: var(--text-3); }
+.chip.wahl { border: 0; cursor: pointer; color: var(--text-2); font: inherit; font-size: var(--klein); }
+.chip.wahl.an { background: var(--akzent-flaeche); color: #fff; }
+.chip.wahl i { font-size: 0.95em; }
 .chip input { border: 0; background: transparent; font: inherit; width: 120px; outline: none; color: inherit; }
 .zuruecksetzen { border: 0; background: transparent; font-family: inherit; padding: 0; }
 .code-feld { position: relative; }

@@ -64,6 +64,19 @@
     return optionen;
   }
 
+  // Liste mit Angebot: Mehrfachwahl aus dem, was das System anbietet; Eingetragenes, das nicht mehr angeboten wird, bleibt sichtbar
+  function listenOptionen(f: Feld) {
+    const gewaehlt = (wert(f) as string[] | null) ?? [];
+    const optionen = (angebote[f.name]?.optionen ?? []).map((o) => ({ wert: o.wert, titel: o.titel, hinweis: o.hinweis }));
+    for (const w of gewaehlt) if (!optionen.some((o) => o.wert === w)) optionen.push({ wert: w, titel: w, hinweis: "nicht mehr angeboten" });
+    return optionen;
+  }
+
+  function umschalten(f: Feld, w: string) {
+    const gewaehlt = (wert(f) as string[] | null) ?? [];
+    setzen(f, gewaehlt.includes(w) ? gewaehlt.filter((x) => x !== w) : [...gewaehlt, w]);
+  }
+
   function angebotWaehlen(f: Feld, w: string) {
     if (w === EIGEN) {
       eigen[f.name] = true;
@@ -179,6 +192,21 @@
             {#if f.art === "schalter"}
               <button class="schalter" class:an={Boolean(wert(f))} aria-label={f.titel} aria-pressed={Boolean(wert(f))}
                       onclick={() => setzen(f, !wert(f))}></button>
+            {:else if f.angebot && f.art === "liste"}
+              <div class="angebot">
+                <span class="chips">
+                  {#each listenOptionen(f) as o (o.wert)}
+                    <button class="chip wahl" class:an={((wert(f) as string[] | null) ?? []).includes(o.wert)} title={o.hinweis}
+                            aria-pressed={((wert(f) as string[] | null) ?? []).includes(o.wert)} onclick={() => umschalten(f, o.wert)}>
+                      <i class="fa-solid {((wert(f) as string[] | null) ?? []).includes(o.wert) ? 'fa-square-check' : 'fa-square'}"></i>{o.titel}</button>
+                  {/each}
+                </span>
+                {#if angebote[f.name]?.stand}
+                  <div class="stand" class:gut={angebote[f.name].stand.startsWith("gefunden")}>
+                    <i class="fa-solid {angebote[f.name].stand.startsWith('gefunden') ? 'fa-circle-check' : 'fa-circle-info'}"></i>
+                    <span>{angebote[f.name].stand}</span></div>
+                {/if}
+              </div>
             {:else if f.angebot}
               <div class="angebot">
                 <Auswahl wert={eigen[f.name] ? EIGEN : String(wert(f) ?? "")} optionen={angebotOptionen(f)} onwahl={(w) => angebotWaehlen(f, w)} />
