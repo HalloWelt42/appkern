@@ -152,6 +152,9 @@
 .leiste-inhalt .gruppe:last-child { border-bottom: 0; }
 .leiste .gruppe h3, .leiste-inhalt .gruppe h3 { margin: 0 0 10px; font-size: var(--marke); text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); font-weight: 600; }
 .leiste .gruppe .knopfreihe, .leiste-inhalt .gruppe .knopfreihe { margin-top: 8px; align-items: center; }
+.leiste-inhalt { padding: 0; }
 .mobil .leiste-inhalt .gruppe { padding: 14px 16px; }
+/* am Telefon sind auch stille Knöpfe als Knopf erkennbar und groß genug zum Tippen */
+.mobil .leiste-inhalt .knopf.still { background: var(--flaeche-2); box-shadow: 0 0 0 1px var(--rand); min-height: 40px; }
 .liste-klein div { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; font-size: var(--klein); }
 .liste-klein .zeit { font-family: ui-monospace, monospace; color: var(--text-3); width: 60px; flex: none; }
