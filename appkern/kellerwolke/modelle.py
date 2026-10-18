@@ -136,6 +136,7 @@ class Anfrage(_Modell):
     knoten_id: UUID
     knoten_name: str
     von: str                        # konto oder die App, die weitergab
+    optionen: dict[str, str | int | float | bool] = {}   # kleine Angaben der weitergebenden App (Kellerwolke ab 0.85)
     zustand: AnfrageZustand
     fortschritt: float | None = None
     meldung: str | None = None

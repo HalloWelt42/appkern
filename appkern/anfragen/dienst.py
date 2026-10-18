@@ -53,6 +53,7 @@ class AnfrageEingabe(BaseModel):
     knoten_id: UUID
     aktion: str
     knoten_name: str = ""
+    optionen: dict[str, str | int | float | bool] = {}   # was die weitergebende App mitgab (etwa die Sprache)
 
 
 @dataclass(frozen=True)
@@ -164,7 +165,7 @@ class Abholer:
             # Als dict: die Art darf ein eigenes Eingabemodell haben, das AnfrageEingabe erweitert.
             daten = eingabe if eingabe is not None else AnfrageEingabe(
                 anfrage_id=anfrage.id, knoten_id=anfrage.knoten_id, aktion=anfrage.aktion,
-                knoten_name=anfrage.knoten_name).model_dump(mode="json")
+                knoten_name=anfrage.knoten_name, optionen=anfrage.optionen).model_dump(mode="json")
             if str(daten.get("anfrage_id")) != schluessel:
                 raise ValueError("Die Eingabe muss die Anfrage nennen (anfrage_id)")
             neu = await self.auftraege.einreihen(art, daten, titel=titel or f"{angebot.aktion.titel}: {anfrage.knoten_name}")

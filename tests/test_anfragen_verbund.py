@@ -63,9 +63,12 @@ async def test_begleiter_im_eigenen_zweig(verbund):
 
 
 async def test_anfrage_aus_der_kellerwolke_wird_zum_begleiter(verbund, tmp_path):
-    kw, _, client, sitzung, _, ton = verbund
+    kw, ich, client, sitzung, _, ton = verbund
+
+    optionen = []
 
     async def probe(k: Kontext):
+        optionen.append(k.eingabe.optionen)
         zugang = kw.mit_anfrage(k.eingabe.anfrage_id)
         inhalt = b"".join([d async for d in zugang.lesen(k.eingabe.knoten_id)])
         await k.fortschritt(0.5, "gelesen")
@@ -98,6 +101,16 @@ async def test_anfrage_aus_der_kellerwolke_wird_zum_begleiter(verbund, tmp_path)
             await asyncio.sleep(0.1)
         assert stand["zustand"] == "fertig", stand
         assert stand["ergebnis_name"] == "Stimme.probe.txt"
+        # weitergegeben (hier an sich selbst) kommen die Optionen bis in den Auftrag
+        eigen = await kw.schreiben(pfad_aus(ich.zweig, f"weiter-{secrets.token_hex(3)}.wav"), b"RIFF-weiter")
+        weiter = (await kw.weitergeben(ich.app, "probe", eigen.id, {"sprache": "en"})).anfrage
+        assert weiter.optionen == {"sprache": "en"}
+        for _ in range(100):
+            if (await kw.anfrage(weiter.id)).zustand in ("fertig", "fehler"):
+                break
+            await asyncio.sleep(0.1)
+        assert optionen == [{}, {"sprache": "en"}]
+        await kw.loeschen(eigen.id)
         # danach kommt die App nicht mehr an die Datei
         with pytest.raises(Exception):
             await kw.mit_anfrage(neu["id"]).knoten(ton["id"])

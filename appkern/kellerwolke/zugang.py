@@ -320,9 +320,12 @@ class Kellerwolke:
                                       json={k: v for k, v in daten.items() if v is not None})
         return Anfrage.model_validate(antwort.json())
 
-    async def weitergeben(self, app: str, aktion: str, knoten_id: UUID | str) -> AnfrageNeu:
-        """Anfrage an eine andere App desselben Kontos; die App muss die Datei lesen und neben ihr schreiben dürfen."""
-        antwort = await self._anfrage("POST", "/anfragen", json={"app": app, "aktion": aktion, "knoten_id": str(knoten_id)})
+    async def weitergeben(self, app: str, aktion: str, knoten_id: UUID | str,
+                          optionen: dict[str, str | int | float | bool] | None = None) -> AnfrageNeu:
+        """Anfrage an eine andere App desselben Kontos; die App muss die Datei lesen und neben ihr schreiben dürfen.
+        `optionen` (etwa {"sprache": "en"}) bekommt die angefragte App beim Abholen unverändert."""
+        antwort = await self._anfrage("POST", "/anfragen", json={"app": app, "aktion": aktion, "knoten_id": str(knoten_id),
+                                                                "optionen": optionen or {}})
         return AnfrageNeu.model_validate(antwort.json())
 
     # --- Dateiwahl mit der Anmeldung des Menschen an dieser App (Kellerwolke ab 0.81) -------------------------------
