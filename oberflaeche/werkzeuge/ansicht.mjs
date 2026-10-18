@@ -43,7 +43,9 @@ if (!anmeldung.ok) { console.error(`Anmeldung mit dem Testzugang scheitert (${an
 const token = (await anmeldung.json()).token;
 
 const profil = fs.mkdtempSync(path.join(os.tmpdir(), "ansicht-"));
-const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--use-fake-ui-for-media-stream",
+// ohne Zwischenspeicher für Zurück: sonst halten verlassene Seiten ihre Ereignisströme offen, bis keine Verbindung frei ist
+const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--disable-features=BackForwardCache",
+  "--use-fake-ui-for-media-stream",
   "--use-fake-device-for-media-stream", "--remote-debugging-port=0", "--remote-allow-origins=*", `--user-data-dir=${profil}`,
   "about:blank"], { stdio: "ignore" });
 const warte = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -75,7 +77,8 @@ const werte = async (ausdruck) => {
   return r.result.result?.value;
 };
 
-// Messung im Browser: seitliches Rollen, Überlauf rechts (nicht von einem rollenden oder schneidenden Rahmen gefangen),
+// Messung im Browser: seitliches Rollen, Überlauf rechts (angeschnitten, also teils sichtbar, und nicht von einem
+// rollenden oder schneidenden Rahmen gefangen; ganz draußen liegen eingeschobene Tafeln),
 // kleinster Kontrast von Text gegen seinen tatsächlichen Hintergrund (ohne abgeschaltete oder abgeblendete Teile).
 const MESSEN = `(() => {
   const stile = new Map();
@@ -99,7 +102,7 @@ const MESSEN = `(() => {
   for (const e of document.querySelectorAll("body *")) {
     const r = e.getBoundingClientRect(); const s = stil(e);
     if (!r.width || !r.height || s.visibility === "hidden" || s.display === "none") continue;
-    if (r.right > breite + 1) {
+    if (r.right > breite + 1 && r.left < breite - 1) {
       let gefangen = false;
       for (let x = e.parentElement; x && x !== document.documentElement; x = x.parentElement) {
         const sx = stil(x); if (sx.overflowX !== "visible" && x.getBoundingClientRect().right <= breite + 1) { gefangen = true; break; } }

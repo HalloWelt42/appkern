@@ -12,9 +12,9 @@
   --akzent: #2f7ce0;
   --akzent-weich: #e6f0fd;
   --akzent-flaeche: #2f7ce0;   /* Füllung unter weißer Schrift (Knöpfe); hell gleich dem Akzent */
-  --gut: #2faf5b;
+  --gut: #218a4a;      /* Schrift auf --gut-weich mit 3,9 : 1 (vorher 2,5) */
   --gut-weich: #e3f6ea;
-  --warn: #c98a12;
+  --warn: #a16207;     /* Schrift auf --warn-weich mit 4,5 : 1 (vorher 2,7) */
   --warn-weich: #fdf3dc;
   --gefahr: #d9534f;
   --gefahr-weich: #fbe7e6;

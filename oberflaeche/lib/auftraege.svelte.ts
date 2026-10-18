@@ -87,15 +87,24 @@ function einpflegen(a: Auftrag): void {
   }
 }
 
-// Folgt dem Ereignisstrom, bis `stoppen()` gerufen wird; nach einem Abriss mit wachsender Pause neu.
+// Folgt dem Ereignisstrom, bis die zurückgegebene Funktion ihn beendet; nach einem Abriss mit wachsender Pause neu.
+// Verlässt man die Seite, schließt der Strom: eine Seite im Zwischenspeicher für Zurück hielte ihn sonst offen und
+// belegte eine der wenigen Verbindungen je Server (gemessen: neue Seiten warteten dann bis zu 30 s). Kommt sie aus dem
+// Zwischenspeicher zurück, folgt sie wieder und zählt neu.
 export function verfolgen(): () => void {
-  const abbruch = new AbortController();
-  (async () => {
+  let beendet = false;
+  let verbindung: AbortController | null = null;
+  let laeuft = false;
+
+  async function folgen() {
+    if (laeuft) return;
+    laeuft = true;
     let pause = 1000;
-    while (!abbruch.signal.aborted) {
+    while (!beendet) {
+      const diese = (verbindung = new AbortController());
       try {
         await zaehlen();
-        for await (const e of ereignisse("/auftraege/ereignisse", abbruch.signal)) {
+        for await (const e of ereignisse("/auftraege/ereignisse", diese.signal)) {
           pause = 1000;
           if (e.art === "auftrag") {
             einpflegen(JSON.parse(e.daten) as Auftrag);
@@ -105,12 +114,26 @@ export function verfolgen(): () => void {
       } catch {
         // Verbindung weg oder abgebrochen
       }
-      if (abbruch.signal.aborted) return;
+      if (beendet || diese.signal.aborted) break;      // beendet oder Seite verlassen
       await new Promise((r) => setTimeout(r, pause));
       pause = Math.min(pause * 2, 30000);
     }
-  })();
-  return () => abbruch.abort();
+    laeuft = false;
+  }
+
+  const verlassen = () => verbindung?.abort();
+  const wieder = (e: PageTransitionEvent) => {
+    if (e.persisted) void folgen();
+  };
+  addEventListener("pagehide", verlassen);
+  addEventListener("pageshow", wieder);
+  void folgen();
+  return () => {
+    beendet = true;
+    verbindung?.abort();
+    removeEventListener("pagehide", verlassen);
+    removeEventListener("pageshow", wieder);
+  };
 }
 
 export async function abbrechen(id: string): Promise<void> {
