@@ -1,5 +1,5 @@
 /* Gemeinsame Bausteine der Apps: Spieler und Wellenform (Rechner und Telefon), Sprecherfarben, Rückfrage, Hochladen,
-   Hinweisband, Listen und Dateiwahl, Rekorder. Kommen mit `appkern-oberflaeche/stil.css`; die Apps ergänzen nur, was ihnen eigen ist. */
+   Hinweisband, Listen und Dateiwahl, Rekorder, Gruppen der Seitenleiste. Kommen mit `appkern-oberflaeche/stil.css`; die Apps ergänzen nur, was ihnen eigen ist. */
 
 :root {
   --s1: #12938a; --s2: #c2410c; --s3: #7c3aed; --s4: #2f7ce0; --s5: #b45309; --s6: #db2777;
@@ -143,3 +143,15 @@
 .rek-flaeche { display: flex; flex-direction: column; }
 .rekorder:has(> .rek) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .rek { flex: 1; }
+
+/* Seitenleiste: Gruppen mit kleiner Überschrift, kurze Listen mit Zeit; Sprecher und Rollen mit Farbpunkt
+   (Transkription: Sprecher, Vertonung: Rollen) */
+.sprecher { display: inline-flex; align-items: center; gap: 7px; font-size: var(--klein); font-weight: 600; white-space: nowrap; height: 28px; }
+.sprecher .punkt { width: 10px; height: 10px; border-radius: 5px; flex: none; }
+.leiste .gruppe, .leiste-inhalt .gruppe { padding: 14px 20px; border-bottom: 1px solid var(--rand); }
+.leiste-inhalt .gruppe:last-child { border-bottom: 0; }
+.leiste .gruppe h3, .leiste-inhalt .gruppe h3 { margin: 0 0 10px; font-size: var(--marke); text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); font-weight: 600; }
+.leiste .gruppe .knopfreihe, .leiste-inhalt .gruppe .knopfreihe { margin-top: 8px; align-items: center; }
+.mobil .leiste-inhalt .gruppe { padding: 14px 16px; }
+.liste-klein div { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; font-size: var(--klein); }
+.liste-klein .zeit { font-family: ui-monospace, monospace; color: var(--text-3); width: 60px; flex: none; }
