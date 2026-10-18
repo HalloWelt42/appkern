@@ -21,7 +21,7 @@ class Wolke:
 
     async def knoten(self, k):
         if k not in self.knoten_:
-            raise NichtGefunden(404, "weg")
+            raise NichtGefunden("weg")
         return self.knoten_[k]
 
     async def loeschen(self, k):
