@@ -7,9 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from appkern.ton import ABSPIELEN, HOEREN, Ton, TonFehler, Tonformat, programm
-
-ARBEIT = Tonformat(rate=24000, kanaele=1, kodierung="pcm_f32le")
+from appkern.ton import ABSPIELEN, ARBEIT, HOEREN, Ton, TonFehler, Tonformat, programm
 
 
 async def erzeugen(ziel: Path, *argumente: str) -> Path:
@@ -78,3 +76,37 @@ async def test_pausen_ausschnitt_wellenform(tmp_path):
     assert await ton.dauer(stueck) == pytest.approx(3.0, abs=0.02)
     welle = await ton.wellenform(mit_pausen, punkte=48)           # vier Punkte je Sekunde: mitten in der Pause leer
     assert len(welle) == 48 and min(welle) == 0 and max(welle) > 80
+
+
+def frequenz_werte(werte: np.ndarray, rate: int) -> float:
+    spektrum = np.abs(np.fft.rfft(werte.astype(np.float64) * np.hanning(werte.size)))
+    return float(np.fft.rfftfreq(werte.size, 1 / rate)[np.argmax(spektrum)])
+
+
+async def test_gleitkomma_lesen_stauchen_schreiben(tmp_path):
+    """Sprachausgabe: lesen (aus 48 kHz Stereo in 24 kHz Mono), stauchen (kürzer, gleiche Tonhöhe), genau einmal in MP3
+    mono 24 kHz und in WAV 48 kHz Stereo schreiben; gemessen werden Frequenz, Dauer und Format."""
+    ton = Ton()
+    quelle = await erzeugen(tmp_path / "quelle.wav", "-f", "lavfi", "-i", "sine=f=440:d=3:sample_rate=48000",
+                            "-ac", "2", "-c:a", "pcm_s16le")
+    werte = await ton.lesen(quelle, 24000)
+    assert werte.dtype == np.float32 and werte.size == pytest.approx(72000, abs=48)
+    assert frequenz_werte(werte, 24000) == pytest.approx(440, abs=1)
+
+    kurz = await ton.stauchen(werte, 24000, 1.25)
+    assert kurz.size / 24000 == pytest.approx(2.4, abs=0.02)
+    assert frequenz_werte(kurz, 24000) == pytest.approx(440, abs=2)
+
+    mp3 = await ton.schreiben(kurz, 24000, tmp_path / "ergebnis.mp3",
+                              Tonformat(rate=24000, kanaele=1, kodierung="libmp3lame", bitrate="128k"))
+    e = await ton.eigenschaften(mp3)
+    assert (e.rate, e.kanaele, e.kodierung) == (24000, 1, "mp3") and e.dauer_s == pytest.approx(2.4, abs=0.08)
+    assert e.bitrate == pytest.approx(128000, rel=0.05)
+
+    wav = await ton.schreiben(kurz, 24000, tmp_path / "wie_quelle.wav", Tonformat(rate=48000, kanaele=2, kodierung="pcm_s16le"))
+    w = await ton.eigenschaften(wav)
+    assert (w.rate, w.kanaele, w.kodierung) == (48000, 2, "pcm_s16le") and w.dauer_s == pytest.approx(2.4, abs=0.02)
+    assert frequenz_werte(await ton.lesen(wav, 48000), 48000) == pytest.approx(440, abs=2)
+
+    with pytest.raises(TonFehler):
+        await ton.schreiben(kurz * 10.0, 24000, tmp_path / "zu_laut.wav", ARBEIT)

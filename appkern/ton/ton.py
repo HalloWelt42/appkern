@@ -1,5 +1,5 @@
 """Ton mit ffmpeg: Eigenschaften messen, in ein genau beschriebenes Format wandeln, Dauer, Sprechpausen, Ausschneiden,
-Wellenform.
+Wellenform; Ton als Gleitkommawerte lesen, bearbeiten (stauchen) und genau einmal in ein Zielformat schreiben.
 
 Formate sind ein Modell (`Tonformat`), keine verstreuten Schalter: Abtastrate, Kanäle, Kodierung (Codec von ffmpeg) und
 bei verlustbehafteten die Bitrate. Gewandelt wird mit dem besten verfügbaren Resampler: soxr, wenn ffmpeg ihn hat (Pi,
@@ -42,6 +42,7 @@ class Tonformat(BaseModel):
 
 
 HOEREN = Tonformat(rate=16000, kanaele=1, kodierung="pcm_s16le")       # was Spracherkennung erwartet
+ARBEIT = Tonformat(rate=24000, kanaele=1, kodierung="pcm_f32le")       # Sprachausgabe: Rate der Sprachmodelle, Gleitkomma
 ABSPIELEN = Tonformat(rate=44100, kanaele=1, kodierung="pcm_s16le")    # samplegenau springbar im Browser
 
 
@@ -104,6 +105,22 @@ async def _ausfuehren(*befehl: str) -> tuple[str, str]:
         letzte = fehler.decode("utf-8", "replace").strip().splitlines()[-3:]
         raise TonFehler(f"{Path(befehl[0]).name} gescheitert: {' '.join(letzte)}")
     return aus.decode("utf-8", "replace"), fehler.decode("utf-8", "replace")
+
+
+async def _durchleiten(befehl: list[str], eingabe: bytes | None = None) -> bytes:
+    """ffmpeg mit Daten über stdin und stdout (rohe Gleitkommawerte statt Zwischendateien)."""
+    prozess = await asyncio.create_subprocess_exec(*befehl, stdin=asyncio.subprocess.PIPE if eingabe is not None else None,
+                                                   stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+    try:
+        aus, fehler = await prozess.communicate(eingabe)
+    except asyncio.CancelledError:
+        prozess.kill()
+        await prozess.wait()
+        raise
+    if prozess.returncode != 0:
+        letzte = fehler.decode("utf-8", "replace").strip().splitlines()[-3:]
+        raise TonFehler(f"{Path(befehl[0]).name} gescheitert: {' '.join(letzte)}")
+    return aus
 
 
 def _zwischen(ziel: Path) -> Path:
@@ -227,6 +244,51 @@ class Ton:
         spitzen = np.array([t.max() for t in teile])
         db = 20 * np.log10(np.maximum(spitzen, 1.0) / 32768.0)
         return [int(round(v)) for v in np.clip(100 * (1 + db / WELLE_DB), 0, 100)]
+
+    # --- Gleitkomma: lesen, bearbeiten, genau einmal schreiben -----------------------------------------------------
+
+    async def lesen(self, datei: Path, rate: int):
+        """Die Tonspur als Gleitkommawerte (numpy float32, mono) in `rate`. Aus 16 Bit verlustfrei; nur wenn die Rate
+        der Datei abweicht, wird mit dem gemessenen Resampler gewandelt."""
+        import numpy as np
+
+        filter_ = f"aresample={rate}:{_SOXR if await self.resampler() == 'soxr' else _SWR}"
+        roh = await _durchleiten([self._ffmpeg(), "-nostdin", "-hide_banner", "-loglevel", "error", "-i", str(datei),
+                                  "-vn", "-af", filter_, "-ac", "1", "-ar", str(rate), "-f", "f32le", "-"])
+        return np.frombuffer(roh, dtype="<f4").copy()
+
+    async def schreiben(self, werte, rate: int, ziel: Path, format: Tonformat) -> Path:
+        """Gleitkommawerte (mono, `rate`) genau einmal in `format`: Rate (gemessener Resampler), Kanäle (Mono in jeden
+        Kanal), Kodierung und Bitrate. Werte außerhalb von -1 bis 1 werden nicht abgeschnitten, sondern sind ein Fehler
+        des Aufrufers (`TonFehler`), damit nichts unbemerkt verzerrt."""
+        import numpy as np
+
+        werte = np.asarray(werte, dtype="<f4")
+        if werte.size and float(np.max(np.abs(werte))) > 1.0 + 1e-6:
+            raise TonFehler("Ton übersteuert (Werte über 1,0): vor dem Schreiben anpassen")
+        vorlaeufig = _zwischen(ziel)
+        filter_ = f"aresample={format.rate}:{_SOXR if await self.resampler() == 'soxr' else _SWR}"
+        befehl = [self._ffmpeg(), "-nostdin", "-hide_banner", "-loglevel", "error", "-y", "-f", "f32le", "-ar", str(rate),
+                  "-ac", "1", "-i", "-", "-map_metadata", "-1", "-af", filter_, "-ar", str(format.rate),
+                  "-ac", str(format.kanaele), "-c:a", format.kodierung]
+        if format.bitrate:
+            befehl += ["-b:a", format.bitrate]
+        await _durchleiten([*befehl, str(vorlaeufig)], werte.tobytes())
+        vorlaeufig.replace(ziel)
+        return ziel
+
+    async def stauchen(self, werte, rate: int, faktor: float):
+        """Schneller sprechen um `faktor` (über 1 kürzer, unter 1 länger) bei gleicher Tonhöhe; Gleitkomma rein und raus."""
+        import numpy as np
+
+        if not 0.5 <= faktor <= 4.0:
+            raise TonFehler(f"Stauchen nur zwischen 0,5 und 4,0, nicht {faktor}")
+        if abs(faktor - 1.0) < 1e-4:
+            return np.asarray(werte, dtype="<f4").copy()
+        roh = await _durchleiten([self._ffmpeg(), "-nostdin", "-hide_banner", "-loglevel", "error", "-f", "f32le",
+                                  "-ar", str(rate), "-ac", "1", "-i", "-", "-af", f"atempo={faktor:.5f}", "-f", "f32le", "-"],
+                                 np.asarray(werte, dtype="<f4").tobytes())
+        return np.frombuffer(roh, dtype="<f4").copy()
 
     async def flac(self, datei: Path, ziel: Path) -> Path:
         """Verlustfrei kleiner (etwa die Hälfte) bei gleicher Rate und gleichen Kanälen."""
