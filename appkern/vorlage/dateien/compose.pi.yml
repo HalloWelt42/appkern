@@ -9,6 +9,10 @@ services:
     user: "1000:1000"
     expose:
       - "8000"
+    # Einstellungen, die nicht ins Repo gehören (etwa Adresse und Schlüssel der Leitstelle), stehen nur auf dem Pi
+    env_file:
+      - path: .env
+        required: false
     environment:
       __UMGEBUNG___DATEN: /app/daten
       __UMGEBUNG___CA_DATEI: /zertifikate/rootCA.pem
