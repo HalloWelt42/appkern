@@ -29,7 +29,8 @@
   const SEITE = 100;   // Zeilen je Seite; ein Ordner kann groß sein
   let ab = $state(0);
 
-  const waehlbar = (e: WahlEintrag) => e.typ === "datei" && (zweck.waehlbar ?? ((x: WahlEintrag) => istMedium(x.inhaltstyp)))(e);
+  const waehlbar = (e: WahlEintrag) =>
+    e.typ === "datei" && (zweck.waehlbar ?? ((x: WahlEintrag) => istMedium(x.inhaltstyp)))(e, begleiter[e.id] ?? []);
 
   async function laden() {
     fehler = "";
@@ -112,7 +113,7 @@
 
   function umschalten(e: WahlEintrag) {
     if (stand(e) !== "offen") return;
-    gewaehlt = gewaehlt.includes(e.id) ? gewaehlt.filter((x) => x !== e.id) : [...gewaehlt, e.id];
+    gewaehlt = gewaehlt.includes(e.id) ? gewaehlt.filter((x) => x !== e.id) : zweck.einzeln ? [e.id] : [...gewaehlt, e.id];
   }
 
   async function oeffnen(e: WahlEintrag) {

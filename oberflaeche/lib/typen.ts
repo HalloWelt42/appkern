@@ -117,6 +117,7 @@ export interface Bereich {
   symbol: string;
   seite: Component;
   reiter?: boolean;
+  geraete?: "beide" | "rechner" | "telefon";   // wo der Bereich erscheint (Vorgabe: beide)
 }
 
 // --- Kellerwolke: Dateiwahl und Anfragen (Gerüst mit Angeboten, Kellerwolke ab 0.81) -----------------------------
@@ -145,7 +146,8 @@ export interface WahlZweck {
   auftrag: string;                         // Art der Aufträge, die eine gewählte Datei bearbeiten
   quelle: (a: Auftrag) => string;          // welche Datei (Knoten) ein solcher Auftrag bearbeitet
   ergebnis: string[];                      // Rollen der Begleiter, die das Ergebnis halten: dann "fertig", Zeile öffnet
-  waehlbar?: (e: WahlEintrag) => boolean;  // Vorgabe: Ton und Video
+  waehlbar?: (e: WahlEintrag, begleiter: WahlEintrag[]) => boolean;  // Vorgabe: Ton und Video
+  einzeln?: boolean;                       // nur eine Datei auf einmal (die neue Wahl ersetzt die vorige)
   ordnerAdresse: (ordnerId: string) => string;   // Ort der App für einen Unterordner
   woerter: WahlWoerter;
   starten: (ids: string[]) => Promise<string>;   // stellt die Aufträge; zurück kommt die Meldung danach

@@ -41,7 +41,7 @@
 {:else if !sitzung.angemeldet}
   <Anmeldung />
 {:else if geraet.mobil}
-  <MobilSchale {bereiche} {oeffnen} />
+  <MobilSchale bereiche={bereiche.filter((b) => b.geraete !== "rechner")} {oeffnen} />
 {:else}
-  <Rechner {bereiche} {oeffnen} />
+  <Rechner bereiche={bereiche.filter((b) => b.geraete !== "telefon")} {oeffnen} />
 {/if}
