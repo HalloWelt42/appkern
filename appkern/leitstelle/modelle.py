@@ -51,6 +51,7 @@ class Modell(_Modell):
     name: str = ""
     geladen: bool = False
     knoten: str | None = None
+    knoten_name: str | None = None                         # ab Leitstelle 0.17
     extern: bool = False
     faehigkeiten: list[str] = Field(default_factory=list)
     gb: float | None = None
