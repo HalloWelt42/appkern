@@ -213,7 +213,9 @@ Sprachdienste); ffmpeg gibt es in ihren Containern nicht. `appkern.ton` (Zusatz 
     an ihre Zeiten, gestaucht, mit glatten Rändern, begrenzt, genau einmal ins Zielformat.
   - dazu `eigenschaften`, `dauer`, `wandeln` als häufige Fälle von `aufbereiten`.
 - `TonDienst(leitstelle, name)`: die Tonarbeit der Apps über die Leitstelle; Tonfehler des Dienstes kommen als
-  `TonFehler` an. `TonHier` rechnet selbst (ffmpeg und numpy) und läuft nur im Tondienst und in Tests; seine Routen
+  `TonFehler` an. `GeduldigeTonarbeit(ton, melden=, pruefen=)` wiederholt jeden Schritt, solange die Leitstelle sagt,
+  dass es gerade nicht geht (`appkern.leitstelle.geduldig`: Halt, Dienst weg oder noch nicht gemeldet, nicht
+  erreichbar; nach Retry-After, höchstens 30 Minuten). `TonHier` rechnet selbst (ffmpeg und numpy) und läuft nur im Tondienst und in Tests; seine Routen
   stehen in `appkern.ton.gegenseite` (Zusatz `appkern[tondienst]`, Wirt ist das Klangwerk).
 - `Tonformat(rate, kanaele, kodierung, bitrate)`: ein Ziel als Modell; feste Formate `HOEREN` (16 kHz mono PCM16, für
   die Spracherkennung), `ARBEIT` (24 kHz mono Gleitkomma) und `ABSPIELEN` (44,1 kHz mono PCM16, samplegenau springbar).

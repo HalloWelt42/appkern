@@ -17,12 +17,13 @@ macht (Prüfen eines Sprechstücks, Zeitlage, Wahl einer Referenzstelle), bleibt
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
+from ..leitstelle.geduld import geduldig
 from ..leitstelle.modelle import Prioritaet
 from . import rechnen
 from .ton import Eigenschaften, Pause, Ton, TonFehler, Tonformat
@@ -271,3 +272,28 @@ class TonHier(Tonarbeit):
         welle = await self.ton.wellenform(ziel, auftrag.wellenform) if auftrag.wellenform else None
         return Gelegt(datei=Datei(groesse=ziel.stat().st_size, dauer_s=round(werte.size / rate, 4)),
                       spitze_vorher=round(vorher, 6), wellenform=welle)
+
+
+class GeduldigeTonarbeit(Tonarbeit):
+    """Hülle um eine Tonarbeit: jeder Schritt wird wiederholt, solange die Leitstelle sagt, dass es gerade nicht geht
+    (`appkern.leitstelle.geduldig`). Für Aufträge: `melden` zeigt, worauf gewartet wird, `pruefen` lässt abbrechen."""
+
+    def __init__(self, innen: Tonarbeit, *, melden: Callable[[str], Awaitable[None]] | None = None,
+                 pruefen: Callable[[], Awaitable[None]] | None = None, geduld_s: float | None = None) -> None:
+        self.innen = innen
+        self._weiter = {"melden": melden, "pruefen": pruefen, **({"geduld_s": geduld_s} if geduld_s is not None else {})}
+
+    async def aufbereiten(self, quelle: Path, auftrag: Aufbereiten, ziele: Sequence[Path], *, titel: str = "",
+                          prioritaet: Prioritaet | None = None) -> Aufbereitet:
+        return await geduldig(lambda: self.innen.aufbereiten(quelle, auftrag, ziele, titel=titel, prioritaet=prioritaet),
+                              was="Tondienst", **self._weiter)
+
+    async def blenden(self, dateien: Sequence[Path], auftrag: Blenden, ziel: Path, *, titel: str = "",
+                      prioritaet: Prioritaet | None = None) -> Datei:
+        return await geduldig(lambda: self.innen.blenden(dateien, auftrag, ziel, titel=titel, prioritaet=prioritaet),
+                              was="Tondienst", **self._weiter)
+
+    async def legen(self, dateien: Sequence[Path], auftrag: Legen, ziel: Path, *, titel: str = "",
+                    prioritaet: Prioritaet | None = None) -> Gelegt:
+        return await geduldig(lambda: self.innen.legen(dateien, auftrag, ziel, titel=titel, prioritaet=prioritaet),
+                              was="Tondienst", **self._weiter)

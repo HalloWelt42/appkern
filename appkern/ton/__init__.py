@@ -6,15 +6,15 @@ Datenarbeit an PCM-WAV (`wav`)."""
 from . import wav
 from .abspielen import Abspielfassungen
 from .arbeit import (
-    Aufbereiten, Aufbereitet, Ausgabe, Blenden, Datei, Gelegt, Lage, LauteSpanne, LautWahl, Legen, Messen, Messwerte,
-    PausenWahl, Pegelverlauf, Stueck, Tonarbeit, TonHier,
+    Aufbereiten, Aufbereitet, Ausgabe, Blenden, Datei, GeduldigeTonarbeit, Gelegt, Lage, LauteSpanne, LautWahl, Legen,
+    Messen, Messwerte, PausenWahl, Pegelverlauf, Stueck, Tonarbeit, TonHier,
 )
 from .dienst import TonDienst
 from .ton import ABSPIELEN, ARBEIT, HOEREN, Eigenschaften, Pause, Ton, TonFehler, Tonformat, programm
 
 __all__ = [
     "ABSPIELEN", "ARBEIT", "Abspielfassungen", "Aufbereiten", "Aufbereitet", "Ausgabe", "Blenden", "Datei", "Eigenschaften",
-    "Gelegt", "HOEREN", "Lage", "LauteSpanne", "LautWahl", "Legen", "Messen", "Messwerte", "Pause", "PausenWahl",
+    "GeduldigeTonarbeit", "Gelegt", "HOEREN", "Lage", "LauteSpanne", "LautWahl", "Legen", "Messen", "Messwerte", "Pause", "PausenWahl",
     "Pegelverlauf", "Stueck", "Ton", "TonDienst", "TonFehler", "TonHier", "Tonarbeit", "Tonformat", "programm",
     "wav",
 ]

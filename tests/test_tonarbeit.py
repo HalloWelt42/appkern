@@ -192,3 +192,63 @@ async def test_tondienst_fuer_nachgestellte_leitstellen(tmp_path):
         ls = Leitstelle("http://ls.test", "probe", "Probe", client=client)
         quelle = await datei(tmp_path, "q.wav", sinus(1.0))
         assert await TonDienst(lambda: ls, lambda: "klangwerk-ton").dauer(quelle) == pytest.approx(1.0, abs=0.01)
+
+
+async def test_geduldig_wartet_auf_die_leitstelle_und_gibt_dann_auf(monkeypatch):
+    """Gerade nicht (Dienst weg, Halt, nicht erreichbar): erneut nach Retry-After, mit Meldung; anderes sofort; nach der
+    Geduld gilt der Fehler."""
+    import asyncio as aio
+
+    from appkern.leitstelle import DienstFehler, DienstWeg, geduldig
+
+    async def sofort(_):
+        return None
+    monkeypatch.setattr(aio, "sleep", sofort)
+    versuche, meldungen = [], []
+
+    async def zweimal_weg():
+        versuche.append(1)
+        if len(versuche) < 3:
+            raise DienstWeg("noch nicht gemeldet", grund="dienst_nicht_erreichbar", nochmal_in=2)
+        return "da"
+
+    async def melden(text):
+        meldungen.append(text)
+    assert await geduldig(zweimal_weg, was="Tondienst", melden=melden) == "da"
+    assert len(versuche) == 3 and meldungen[0].startswith("Tondienst: noch nicht gemeldet; neuer Versuch in 2 s")
+
+    async def kaputt():
+        raise DienstFehler("rechnet falsch")
+    with pytest.raises(DienstFehler):
+        await geduldig(kaputt, was="x")
+
+    async def immer_weg():
+        raise DienstWeg("weg")
+    with pytest.raises(DienstWeg):
+        await geduldig(immer_weg, was="x", geduld_s=-1)
+
+
+async def test_geduldige_tonarbeit_baut_jeden_versuch_neu(tmp_path, monkeypatch):
+    """Die Hülle wiederholt den ganzen Schritt (Dateien neu geöffnet), bis der Tondienst wieder da ist."""
+    import asyncio as aio
+
+    from appkern.leitstelle import DienstWeg
+    from appkern.ton import GeduldigeTonarbeit
+
+    async def sofort(_):
+        return None
+    monkeypatch.setattr(aio, "sleep", sofort)
+
+    class Einmal(TonHier):
+        def __init__(self):
+            super().__init__()
+            self.versuche = 0
+
+        async def aufbereiten(self, quelle, auftrag, ziele, **kw):
+            self.versuche += 1
+            if self.versuche == 1:
+                raise DienstWeg("Tondienst startet")
+            return await super().aufbereiten(quelle, auftrag, ziele, **kw)
+    innen = Einmal()
+    quelle = await datei(tmp_path, "q.wav", sinus(1.0))
+    assert await GeduldigeTonarbeit(innen).dauer(quelle) == pytest.approx(1.0, abs=0.01) and innen.versuche == 2
