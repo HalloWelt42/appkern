@@ -8,7 +8,8 @@
     "oberflaeche/index.ts",
     "oberflaeche/lib/",
     "oberflaeche/teile/",
-    "oberflaeche/stil/"
+    "oberflaeche/stil/",
+    "oberflaeche/werkzeuge/"
   ],
   "dependencies": {
     "@fontsource/barlow": "^5.2.8",

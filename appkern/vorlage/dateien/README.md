@@ -21,9 +21,21 @@ Kellerwolke und dem App-Schlüssel (in der Kellerwolke unter Einstellungen, Zug�
 | Oberfläche | `cd frontend && npm run dev` (Port __DEVPORT__, leitet `/api` ans Backend) |
 | Tests | `cd backend && .venv/bin/python -m pytest` |
 | Symbole | `python3 tools/symbole.py` nach einer Änderung an `frontend/public/symbol.svg` |
+| Fassung | `tools/version.sh minor` für eine neue Fähigkeit; jeder Commit zählt sonst selbst hoch |
+| Appkern | `tools/appkern.sh` hebt Oberfläche und Backend auf denselben neuesten Commit |
+| Ausrollen | `tools/ausrollen.sh` (Angaben in `deploy/ausrollen.toml`) |
 
 Der Verbundtest (`tests/test_verbund.py`) spricht mit einer echten Kellerwolke und braucht `backend/.env.test` (nicht
-im Repo) mit `KELLERWOLKE_ADRESSE`, `KELLERWOLKE_SCHLUESSEL`, `KELLERWOLKE_KENNUNG`, `KELLERWOLKE_PASSWORT`.
+im Repo) mit `KELLERWOLKE_ADRESSE`, `KELLERWOLKE_SCHLUESSEL`, `KELLERWOLKE_KENNUNG`, `KELLERWOLKE_PASSWORT`: ein eigener
+Zugang nur für Tests, nicht der der Entwicklungsinstanz. Aufräumen und Zurückziehen der Aktionen kommen aus
+`appkern.testen`.
+
+## Prüfungen
+
+Vor jedem Commit (Hook in `tools/git-hooks`, eingerichtet von `einrichten.sh`): Fassung hochzählen, nur gerade
+Zeichen, Stil ohne `!important`, ohne einseitige Streifen und ohne Regeln auf Klassen der Schale. Beim Ausrollen: Tests,
+gleicher Appkern in Oberfläche und Backend, Fassungen, HTTP/2, deckende Symbole. Von Hand vor dem Vorzeigen:
+`docs/ABNAHME.md`.
 
 ## Aufbau
 

@@ -1,0 +1,225 @@
+"""Ausrollen einer App auf den Pi, für jede App gleich (Lehren 3 bis 6 der Transkription). Angaben in
+`deploy/ausrollen.toml`; aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim ersten Fehler ab:
+
+1. nur gepushte Stände, Tests hier grün, Appkern in Oberfläche und Backend auf demselben Commit
+2. auf dem Pi: Docker mit Compose; braucht die App Ton, dazu ffmpeg und ffprobe des Pi (sie kommen nicht in den
+   Container) samt Lader
+3. Zertifikat der Hausstelle für den Vorschaltdienst, noch mindestens 60 Tage gültig, sonst neu ausgestellt
+4. Stand holen, Datenbank sichern (die letzten zehn Sicherungen bleiben)
+5. Abbild bauen und starten; der Vorschaltdienst startet jedes Mal neu (geänderte eingehängte Dateien bemerkt Docker nicht)
+6. über HTTPS melden Server, gebaute Oberfläche und version.json dieselbe Fassung; die Seite kommt über HTTP/2; Symbole
+   für Tab, Startbildschirm und Web-App sowie das Manifest antworten mit 200 und dem richtigen Typ, die Symbole des
+   Startbildschirms sind deckend (sonst zeigt iOS keins); mit Ton eine echte Umwandlung im Container
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+import tomllib
+from pathlib import Path
+
+from pydantic import BaseModel
+
+SCHWELLE_S = 60 * 86400
+SYMBOLE = {"favicon.ico": "image/", "favicon-32.png": "image/png", "apple-touch-icon.png": "image/png",
+           "icon-192.png": "image/png", "icon-512.png": "image/png", "icon-maskable-512.png": "image/png",
+           "site.webmanifest": "application/manifest+json"}
+DECKEND = ("icon-192.png", "icon-512.png", "apple-touch-icon.png")
+
+
+class Ziel(BaseModel):
+    kennung: str            # Name des App-Dienstes in compose.pi.yml, der Zertifikate und der Datenbank
+    rechner: str            # ssh-Ziel, etwa pi@192.168.178.49
+    wurzel: str             # Ordner der App auf dem Pi
+    adresse: str            # https://... des Vorschaltdienstes
+    repo: str               # woher der Pi den Stand holt
+    namen: list[str]        # Namen und Adressen im Zertifikat
+    zweig: str = "main"
+    ton: bool = False       # die App nutzt appkern.ton: ffmpeg des Pi wird geprüft und im Container ausprobiert
+
+    @property
+    def datenbank(self) -> str:
+        return f"daten/{self.kennung}.sqlite"
+
+
+class Abbruch(Exception):
+    pass
+
+
+def laden(wurzel: Path) -> Ziel:
+    return Ziel.model_validate(tomllib.loads((wurzel / "deploy" / "ausrollen.toml").read_text(encoding="utf-8")))
+
+
+def _lauf(befehl: list[str], *, ort: Path | None = None) -> str:
+    erg = subprocess.run(befehl, cwd=ort, capture_output=True, text=True)
+    if erg.returncode != 0:
+        raise Abbruch((erg.stdout + erg.stderr).strip() or f"{befehl[0]} endete mit {erg.returncode}")
+    return erg.stdout.strip()
+
+
+def _ssh(z: Ziel, skript: str) -> str:
+    return _lauf(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", z.rechner, skript])
+
+
+def _schritt(titel: str) -> None:
+    print(f"\n== {titel}", flush=True)
+
+
+def appkern_staende(wurzel: Path) -> tuple[str, str | None]:
+    """(Commit der Oberfläche aus package-lock.json, Commit des Backends aus requirements.txt oder None)."""
+    lock = json.loads((wurzel / "frontend" / "package-lock.json").read_text())
+    oberflaeche = lock["packages"]["node_modules/appkern-oberflaeche"]["resolved"].rsplit("#", 1)[1]
+    m = re.search(r"appkern(?:\[[^\]]*\])? @ https://github\.com/HalloWelt42/appkern/archive/([0-9a-f]{7,40})\.tar\.gz",
+                  (wurzel / "backend" / "requirements.txt").read_text())
+    return oberflaeche, m.group(1) if m else None
+
+
+def stand_und_tests(z: Ziel, wurzel: Path) -> None:
+    _schritt("Stand und Tests")
+    if _lauf(["git", "status", "--porcelain"], ort=wurzel):
+        raise Abbruch("Erst committen.")
+    _lauf(["git", "fetch", "-q", "origin"], ort=wurzel)
+    if _lauf(["git", "rev-parse", "HEAD"], ort=wurzel) != _lauf(["git", "rev-parse", f"origin/{z.zweig}"], ort=wurzel):
+        raise Abbruch(f"Erst pushen ({z.zweig} ist nicht auf origin).")
+    tests = subprocess.run([".venv/bin/python", "-m", "pytest", "-q"], cwd=wurzel / "backend", capture_output=True, text=True)
+    print((tests.stdout.strip().splitlines() or [""])[-1])
+    if tests.returncode != 0:
+        raise Abbruch("Tests nicht grün")
+    oberflaeche, backend = appkern_staende(wurzel)
+    if backend != oberflaeche:
+        raise Abbruch(f"Appkern in Oberfläche ({oberflaeche[:7]}) und Backend ({(backend or 'nicht festgelegt')[:7]}) "
+                      "verschieden: tools/appkern.sh ausführen")
+    print(f"Appkern {oberflaeche[:7]} in Oberfläche und Backend")
+
+
+def pi_pruefen(z: Ziel) -> None:
+    _schritt("Pi prüfen")
+    ton = """
+  for p in ffmpeg ffprobe; do
+    command -v "$p" >/dev/null || { echo "$p fehlt auf dem Pi (sudo apt install ffmpeg)"; exit 1; }
+    "$p" -hide_banner -version >/dev/null || { echo "$p startet nicht"; exit 1; }
+  done
+  test -x /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1 || { echo "Lader /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1 fehlt"; exit 1; }
+  echo "ffmpeg: $(ffmpeg -hide_banner -version | head -1)"
+""" if z.ton else ""
+    print(_ssh(z, f"""set -e{ton}
+  docker compose version >/dev/null || {{ echo "Docker Compose fehlt"; exit 1; }}
+  echo "Docker: $(docker --version)\""""))
+
+
+def zertifikat(z: Ziel) -> None:
+    _schritt("Zertifikat")
+    pem = f"{z.wurzel}/zertifikate/{z.kennung}.pem"
+    gueltig = subprocess.run(["ssh", "-o", "BatchMode=yes", z.rechner,
+                              f"test -f {shlex.quote(pem)} && openssl x509 -in {shlex.quote(pem)} -noout -checkend {SCHWELLE_S}"],
+                             capture_output=True)
+    if gueltig.returncode == 0:
+        print("vorhanden, noch mindestens 60 Tage gültig")
+        return
+    if not shutil.which("mkcert"):
+        raise Abbruch("mkcert fehlt auf diesem Mac")
+    hausstelle = Path(_lauf(["mkcert", "-CAROOT"])) / "rootCA.pem"
+    if not hausstelle.is_file():
+        raise Abbruch(f"Die Hausstelle fehlt: {hausstelle}")
+    with tempfile.TemporaryDirectory() as arbeit:
+        a = Path(arbeit)
+        _lauf(["mkcert", "-cert-file", f"{z.kennung}.pem", "-key-file", f"{z.kennung}-schluessel.pem", *z.namen], ort=a)
+        shutil.copy(hausstelle, a / "rootCA.pem")
+        ordner = f"{z.wurzel}/zertifikate"
+        _ssh(z, f"mkdir -p {shlex.quote(ordner)}")
+        _lauf(["scp", "-q", str(a / f"{z.kennung}.pem"), str(a / f"{z.kennung}-schluessel.pem"), str(a / "rootCA.pem"),
+               f"{z.rechner}:{ordner}/"])
+        _ssh(z, f"chmod 644 {shlex.quote(ordner)}/{z.kennung}.pem {shlex.quote(ordner)}/rootCA.pem && "
+                f"chmod 640 {shlex.quote(ordner)}/{z.kennung}-schluessel.pem")
+        bis = _lauf(["openssl", "x509", "-in", str(a / f"{z.kennung}.pem"), "-noout", "-enddate"]).split("=", 1)[1]
+        print(f"ausgestellt, gültig bis {bis}")
+
+
+def stand_holen(z: Ziel) -> None:
+    _schritt("Stand holen und Datenbank sichern")
+    w, db, k = shlex.quote(z.wurzel), shlex.quote(z.datenbank), z.kennung
+    print(_ssh(z, f"""set -e
+  mkdir -p {w}
+  cd {w}
+  if [ ! -d .git ]; then git clone -q {shlex.quote(z.repo)} /tmp/{k}-klon && cp -a /tmp/{k}-klon/. . && rm -rf /tmp/{k}-klon; fi
+  git pull --ff-only -q
+  mkdir -p daten sicherungen
+  if [ -f {db} ]; then
+    ziel=sicherungen/{k}-$(date +%Y%m%d-%H%M%S).sqlite
+    python3 -c 'import sqlite3, sys; q = sqlite3.connect(sys.argv[1]); z = sqlite3.connect(sys.argv[2]); q.backup(z); z.close(); q.close()' {db} "$ziel"
+    echo "gesichert: $ziel"
+    ls -1t sicherungen/{k}-*.sqlite | tail -n +11 | xargs -r rm --
+  else
+    echo 'noch keine Datenbank'
+  fi
+  echo "Stand: $(git log --oneline -1)\""""))
+
+
+def bauen(z: Ziel) -> None:
+    _schritt("Bauen und starten")
+    w = shlex.quote(z.wurzel)
+    _ssh(z, f"cd {w} && docker compose -f compose.pi.yml build --quiet && docker compose -f compose.pi.yml up -d --remove-orphans "
+            "&& docker compose -f compose.pi.yml restart vorne")
+
+
+def _curl(z: Ziel, *args: str) -> str:
+    hausstelle = Path(_lauf(["mkcert", "-CAROOT"])) / "rootCA.pem"
+    return _lauf(["curl", "-s", "--cacert", str(hausstelle), *args])
+
+
+def _deckend(daten: bytes) -> bool:
+    """Ohne durchsichtige Stellen; gerechnet mit dem Python des Systems (Pillow gehört nicht ins Abbild der App)."""
+    pruefung = ("import io, sys\nfrom PIL import Image\nb = Image.open(io.BytesIO(sys.stdin.buffer.read())).convert('RGBA')\n"
+                "sys.exit(0 if b.getchannel('A').getextrema()[0] == 255 else 1)")
+    return subprocess.run(["python3", "-c", pruefung], input=daten, capture_output=True).returncode == 0
+
+
+def pruefen(z: Ziel, wurzel: Path) -> None:
+    _schritt("Prüfen")
+    w = shlex.quote(z.wurzel)
+    _ssh(z, f"cd {w} && for i in $(seq 1 30); do curl -sf --cacert zertifikate/rootCA.pem {shlex.quote(z.adresse)}/api/v1/app "
+            ">/dev/null && exit 0; sleep 2; done; echo 'Die App antwortet nicht'; exit 1")
+    if z.ton:
+        dauer = _ssh(z, f"cd {w} && docker compose -f compose.pi.yml exec -T {z.kennung} sh -c 'ffmpeg -nostdin -hide_banner "
+                        "-loglevel error -f lavfi -i sine=frequency=440:duration=1 -ac 1 -ar 16000 -y /tmp/probe.wav && "
+                        "ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/probe.wav'")
+        print(f"Umwandlung im Container mit dem ffmpeg des Pi, Dauer: {dauer}")
+    info = json.loads(_ssh(z, f"curl -sf --cacert {w}/zertifikate/rootCA.pem {shlex.quote(z.adresse)}/api/v1/app"))
+    fassung = json.loads((wurzel / "version.json").read_text())["version"]
+    print(f"Server {info['fassung']}, Oberfläche {info.get('oberflaeche')}, version.json {fassung}, Appkern {info['appkern']}")
+    if not info["fassung"] == fassung == info.get("oberflaeche"):
+        raise Abbruch("Fassungen passen nicht zusammen")
+    if _curl(z, "-o", "/dev/null", "-w", "%{http_version}", "--http2", f"{z.adresse}/") != "2":
+        raise Abbruch("Die Seite kommt nicht über HTTP/2: Vorschaltdienst prüfen (docker compose -f compose.pi.yml logs vorne)")
+    for pfad, typ in SYMBOLE.items():
+        antwort = _curl(z, "-o", "/dev/null", "-w", "%{http_code} %{content_type}", f"{z.adresse}/{pfad}")
+        if not antwort.startswith(f"200 {typ}"):
+            raise Abbruch(f"Symbol {pfad}: {antwort} (erwartet 200 {typ})")
+    hausstelle = Path(_lauf(["mkcert", "-CAROOT"])) / "rootCA.pem"
+    for pfad in DECKEND:
+        daten = subprocess.run(["curl", "-s", "--cacert", str(hausstelle), f"{z.adresse}/{pfad}"], capture_output=True).stdout
+        if not _deckend(daten):
+            raise Abbruch(f"Symbol {pfad} hat durchsichtige Stellen (iOS zeigt dann keins): python3 tools/symbole.py")
+    print("HTTP/2 über den Vorschaltdienst, Symbole deckend, Manifest in Ordnung")
+
+
+def ausrollen(wurzel: Path) -> int:
+    z = laden(wurzel)
+    try:
+        stand_und_tests(z, wurzel)
+        pi_pruefen(z)
+        zertifikat(z)
+        stand_holen(z)
+        bauen(z)
+        pruefen(z, wurzel)
+    except Abbruch as f:
+        print(f"\nAbbruch: {f}", file=sys.stderr)
+        return 1
+    print(f"\nAusgerollt: {z.adresse}")
+    return 0

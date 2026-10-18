@@ -3,6 +3,7 @@
     uvicorn app.main:app --port __PORT__
 """
 
+import os
 from pathlib import Path
 
 import httpx
@@ -29,4 +30,9 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None) ->
     return app
 
 
-app = app_bauen(WURZEL / "daten")
+def daten_ordner() -> Path:
+    """Wo die App ihre Daten hält: `__UMGEBUNG___DATEN` (im Container /app/daten), sonst daten/ im Repo."""
+    return Path(os.environ.get("__UMGEBUNG___DATEN") or WURZEL / "daten")
+
+
+app = app_bauen(daten_ordner())

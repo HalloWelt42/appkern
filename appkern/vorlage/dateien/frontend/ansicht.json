@@ -1,0 +1,8 @@
+{
+  "seiten": [
+    { "name": "start", "pfad": "/start" },
+    { "name": "auftraege", "pfad": "/auftraege" },
+    { "name": "protokoll", "pfad": "/protokoll" },
+    { "name": "einstellungen", "pfad": "/einstellungen" }
+  ]
+}

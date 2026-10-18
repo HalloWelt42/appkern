@@ -11,6 +11,7 @@
   --text-3: #7c8a9b;
   --akzent: #2f7ce0;
   --akzent-weich: #e6f0fd;
+  --akzent-flaeche: #2f7ce0;   /* Füllung unter weißer Schrift (Knöpfe); hell gleich dem Akzent */
   --gut: #2faf5b;
   --gut-weich: #e3f6ea;
   --warn: #c98a12;
@@ -38,6 +39,7 @@
   --text-3: #74859a;
   --akzent: #4aa8ff;
   --akzent-weich: #16324d;
+  --akzent-flaeche: #2a72d4;   /* das helle Blau für Text trüge Weiß nur mit 2,5 : 1, dieses mit 4,7 : 1 */
   --gut: #4ade80;
   --gut-weich: #16321f;
   --warn: #f2b84b;
@@ -101,7 +103,7 @@ button { font: inherit; color: inherit; }
 .segment span.aktiv { background: var(--flaeche); color: var(--text); font-weight: 600; box-shadow: var(--schatten); }
 .suche { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: var(--r2); background: var(--flaeche); border: 1px solid var(--rand); color: var(--text-3); font-size: var(--klein); min-width: 240px; }
 .knopf { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: var(--r2); border: 1px solid var(--rand); background: var(--flaeche); cursor: pointer; font-size: var(--klein); white-space: nowrap; }
-.knopf.primaer { background: var(--akzent); color: #fff; border-color: transparent; font-weight: 600; }
+.knopf.primaer { background: var(--akzent-flaeche); color: #fff; border-color: transparent; font-weight: 600; }
 .knopf.gefahr { color: var(--gefahr); }
 .knopf.still { border-color: transparent; background: transparent; color: var(--text-2); }
 
@@ -293,11 +295,12 @@ button { font: inherit; color: inherit; }
 .auswahl-liste button:hover, .auswahl-liste button.aktiv { background: var(--akzent-weich); color: var(--akzent); }
 
 /* ----- Reiter ----- */
-.reiterleiste { display: flex; flex-wrap: wrap; gap: 2px 6px; padding: 0 22px; border-bottom: 1px solid var(--rand); flex: none; }
+/* der aktive Reiter hebt sich ab wie das aktive Segment eines Filters (keine einseitige Unterstreichung) */
+.reiterleiste { display: flex; flex-wrap: wrap; gap: 4px 6px; padding: 0 22px 10px; border-bottom: 1px solid var(--rand); flex: none; }
 .reiterleiste button { position: relative; border: 0; background: transparent; font: inherit; font-size: var(--klein); color: var(--text-2);
-                       padding: 12px 10px 11px; margin-bottom: -1px; border-bottom: 3px solid transparent; cursor: pointer; }
-.reiterleiste button:hover { color: var(--text); }
-.reiterleiste button.aktiv { color: var(--akzent); border-bottom-color: var(--akzent); font-weight: 600; }
+                       padding: 7px 12px; border-radius: var(--r2); cursor: pointer; }
+.reiterleiste button:hover { color: var(--text); background: var(--flaeche-2); }
+.reiterleiste button.aktiv { color: var(--akzent); background: var(--flaeche); box-shadow: var(--schatten); font-weight: 600; }
 .reiter-punkt { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--akzent); margin-left: 6px; vertical-align: 2px; }
 
 /* ----- Einstellungen in voller Breite ----- */

@@ -2,7 +2,10 @@
 Symbolsatz für alle Geräte, Eintrag fürs Stellwerk, Tests und Verbundtest.
 
     python -m appkern.vorlage --name Transkription --kennung transkription --rolle "macht aus Ton Text" \\
-        --symbol fa-closed-captioning --port 8601 --ziel ~/Entwicklung/Apps
+        --symbol fa-closed-captioning --port 8601 --ziel ~/Entwicklung/Apps [--ton]
+
+Mit `--ton` nutzt die App die Tonbausteine (`appkern[web,ton]`): ffmpeg und ffprobe des Pi werden in den Container
+eingehängt und beim Ausrollen geprüft; ohne fallen diese Abschnitte (zwischen `ton:anfang` und `ton:ende`) weg.
 
 Mit `--appkern-lokal <Pfad>` zeigen Backend und Oberfläche auf eine lokale Arbeitskopie des Appkerns statt auf GitHub
 (zum Entwickeln am Appkern selbst).
@@ -20,7 +23,7 @@ from pathlib import Path
 
 DATEIEN = Path(__file__).resolve().parent / "dateien"
 REPO = Path(__file__).resolve().parents[2]
-GITHUB_PY = "appkern[web] @ https://github.com/HalloWelt42/appkern/archive/refs/heads/main.tar.gz"
+GITHUB_PY = "appkern[{extras}] @ https://github.com/HalloWelt42/appkern/archive/refs/heads/main.tar.gz"
 GITHUB_NPM = "github:HalloWelt42/appkern"
 _KENNUNG = re.compile(r"^[a-z][a-z0-9-]{1,40}$")
 _SYMBOL = re.compile(r"^fa-[a-z0-9-]+$")
@@ -28,7 +31,8 @@ _FARBE = re.compile(r"^#[0-9a-fA-F]{6}$")
 SVG = "http://www.w3.org/2000/svg"
 # Platzhalter der Vorlage; andere Namen mit doppelten Unterstrichen (etwa __APP_FASSUNG__ beim Bauen) bleiben stehen.
 PLATZHALTER = ("__NAME__", "__KENNUNG__", "__ROLLE__", "__SYMBOL__", "__PORT__", "__DEVPORT__", "__FARBE__", "__ORDNER__",
-               "__APPKERN_PY__", "__APPKERN_NPM__")
+               "__APPKERN_PY__", "__APPKERN_NPM__", "__UMGEBUNG__", "__TON__")
+TON_BLOCK = re.compile(r"^[ \t]*# ton:anfang\n(.*?)^[ \t]*# ton:ende\n", re.S | re.M)
 
 
 class VorlagenFehler(ValueError):
@@ -88,7 +92,8 @@ def _python_mit_cairosvg() -> str | None:
 
 
 def erzeugen(*, name: str, kennung: str, rolle: str, symbol: str, port: int, ziel: Path, devport: int | None = None,
-             farbe: str = "#2f7ce0", appkern_lokal: Path | None = None, symbole_ordner: Path | None = None) -> Path:
+             farbe: str = "#2f7ce0", appkern_lokal: Path | None = None, symbole_ordner: Path | None = None,
+             ton: bool = False) -> Path:
     if not _KENNUNG.match(kennung):
         raise VorlagenFehler("Kennung: Kleinbuchstaben, Ziffern und Bindestrich, mit einem Buchstaben vorn")
     if not _SYMBOL.match(symbol):
@@ -102,13 +107,18 @@ def erzeugen(*, name: str, kennung: str, rolle: str, symbol: str, port: int, zie
         raise VorlagenFehler(f"{ordner} gibt es schon")
     shutil.copytree(DATEIEN, ordner, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache"))
     (ordner / "gitignore").rename(ordner / ".gitignore")
+    (ordner / "dockerignore").rename(ordner / ".dockerignore")
+    if not ton:
+        (ordner / "deploy" / "ffmpeg-vom-pi").unlink()
 
     lokal = Path(appkern_lokal).expanduser().resolve() if appkern_lokal else None
+    extras = "web,ton" if ton else "web"
     ersetzen = {
         "__NAME__": name, "__KENNUNG__": kennung, "__ROLLE__": rolle, "__SYMBOL__": symbol, "__PORT__": str(port),
         "__DEVPORT__": str(devport or port + 1000), "__FARBE__": farbe, "__ORDNER__": str(ordner),
-        "__APPKERN_PY__": f"-e {lokal}[web]" if lokal else GITHUB_PY,
+        "__APPKERN_PY__": f"-e {lokal}[{extras}]" if lokal else GITHUB_PY.format(extras=extras),
         "__APPKERN_NPM__": f"file:{lokal}" if lokal else GITHUB_NPM,
+        "__UMGEBUNG__": kennung.upper().replace("-", "_"), "__TON__": "true" if ton else "false",
     }
     assert set(ersetzen) == set(PLATZHALTER)
     for datei in ordner.rglob("*"):
@@ -118,7 +128,7 @@ def erzeugen(*, name: str, kennung: str, rolle: str, symbol: str, port: int, zie
             text = datei.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        neu = text
+        neu = TON_BLOCK.sub(r"\1" if ton else "", text)
         for platzhalter, wert in ersetzen.items():
             neu = neu.replace(platzhalter, wert)
         if neu != text:
@@ -144,10 +154,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--farbe", default="#2f7ce0", help="Farbe des Symbols (#rrggbb)")
     p.add_argument("--ziel", required=True, type=Path, help="Ordner, in dem die App als Unterordner entsteht")
     p.add_argument("--appkern-lokal", type=Path, help="lokale Arbeitskopie des Appkerns statt GitHub")
+    p.add_argument("--ton", action="store_true", help="Tonbausteine nutzen (ffmpeg des Pi im Container)")
     a = p.parse_args(argv)
     try:
         ordner = erzeugen(name=a.name, kennung=a.kennung, rolle=a.rolle, symbol=a.symbol, port=a.port, devport=a.devport,
-                          farbe=a.farbe, ziel=a.ziel, appkern_lokal=a.appkern_lokal)
+                          farbe=a.farbe, ziel=a.ziel, appkern_lokal=a.appkern_lokal, ton=a.ton)
     except VorlagenFehler as f:
         print(f"Nicht erzeugt: {f}", file=sys.stderr)
         return 2

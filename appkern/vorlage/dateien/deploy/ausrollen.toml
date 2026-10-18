@@ -1,0 +1,8 @@
+# Ausrollen auf den Pi mit tools/ausrollen.sh (Ablauf und Prüfungen im Appkern: appkern.werkzeuge.ausrollen)
+kennung = "__KENNUNG__"
+rechner = "pi@192.168.178.49"
+wurzel = "/mnt/data/__KENNUNG__"
+adresse = "https://192.168.178.49:__PORT__"
+repo = "https://github.com/HalloWelt42/__KENNUNG__.git"
+namen = ["192.168.178.49", "raspberrypi-3.fritz.box", "raspberrypi-3", "__KENNUNG__.fritz.box", "__KENNUNG__.local"]
+ton = __TON__

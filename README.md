@@ -372,23 +372,45 @@ Dazu die Listenstile (`.zeile`, `.stand-pille`, `.optionen`, `.knopfzeile`).
 
 ```bash
 .venv/bin/python -m appkern.vorlage --name Transkription --kennung transkription --rolle "macht aus Ton Text" \
-    --symbol fa-closed-captioning --port 8601 --ziel ~/Entwicklung/Apps
+    --symbol fa-closed-captioning --port 8601 --ziel ~/Entwicklung/Apps [--ton]
 ```
 
 Es entsteht eine lauffähige App: Backend auf dem Gerüst mit einem Probeauftrag, Oberfläche in der Schale,
 Symbolsatz für alle Geräte (aus dem Font-Awesome-Symbol auf der App-Farbe, auch für den iPhone-Startbildschirm),
-`stellwerk.toml`, `einrichten.sh`, Test und Verbundtest. `--appkern-lokal .` lässt Backend und Oberfläche auf diese
+`stellwerk.toml`, `einrichten.sh`, Test und Verbundtest mit eigenem Testzugang. Dazu alles, was die Lehren aus den
+bisherigen Apps verlangen (`docs/LEHREN.md`): Git-Hook mit Fassung und Prüfungen, `tools/appkern.sh`,
+`tools/ausrollen.sh` mit `deploy/ausrollen.toml`, Dockerfile und `compose.pi.yml` mit Caddy davor, Ansichtsprüfung
+(`tools/ansicht.sh`, Seiten in `frontend/ansicht.json`) und die Abnahmeliste `docs/ABNAHME.md`. `--ton` hängt ffmpeg
+des Pi in den Container und prüft es beim Ausrollen. `--appkern-lokal .` lässt Backend und Oberfläche auf diese
 Arbeitskopie zeigen statt auf GitHub.
+
+## Werkzeuge der Entwicklung
+
+`python -m appkern.werkzeuge` im Wurzelordner einer App (aus ihrem Backend) oder des Appkerns:
+
+| Befehl | Was |
+|---|---|
+| `vor-dem-commit` | Fassung hochzählen (nur neue Kennung, wenn `version.json` schon vorgemerkt ist), vormerken, vorgemerkte Dateien prüfen; aufgerufen vom Hook `tools/git-hooks/pre-commit` |
+| `pruefen [PFAD ...]` | nur gerade Zeichen; Stil ohne `!important`, ohne einseitige Streifen (erlaubt nur 1px-Trennlinien in `var(--rand)`), ohne Regeln, die nur Klassen der Schale treffen (Svelte-Blöcke nur mit `:global`) |
+| `fassung [patch\|minor\|major\|id]` | `version.json` hochzählen |
+| `appkern` | Appkern in Oberfläche (package-lock) und Backend (requirements, Archiv des Commits) auf denselben neuesten Commit |
+| `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`) |
+
+`appkern.testen` hilft den Tests der Apps: Werte des eigenen Testzugangs aus `backend/.env.test`, `aufraeumen`
+(Dateien vor Ordnern, mit Wiederholung) und `aktionen_zurueckziehen`. Die Ansichtsprüfung liegt bei der Oberfläche
+(`oberflaeche/werkzeuge/ansicht.mjs`).
 
 ## Einbinden
 
 In der `pyproject.toml` einer App:
 
 ```toml
-dependencies = ["appkern[web] @ https://github.com/HalloWelt42/appkern/archive/refs/heads/main.tar.gz"]
+dependencies = ["appkern[web] @ https://github.com/HalloWelt42/appkern/archive/<commit>.tar.gz"]
 ```
 
-Ohne `[web]` fehlen nur die FastAPI-Schnittstellen; die Zugänge und die Aufträge selbst gehen auch ohne.
+Ohne `[web]` fehlen nur die FastAPI-Schnittstellen; die Zugänge und die Aufträge selbst gehen auch ohne. `[ton]` bringt
+die Tonbausteine mit. Immer einen Commit nennen (`tools/appkern.sh` in der App), nie den Zweig: das Archiv eines Zweigs
+ändert seinen Namen nie, und Docker baut dann mit dem alten Stand weiter.
 
 ## Tests
 
