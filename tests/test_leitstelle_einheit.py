@@ -206,3 +206,14 @@ async def test_herunterladen_hinterlaesst_bei_fehler_nichts(tmp_path: Path):
 def test_keine_lese_zeitgrenze_fuer_arbeit():
     ls = Leitstelle("http://ls.test", "k", "App")
     assert ls._client.timeout.read is None and ls._client.timeout.connect == 10.0
+
+
+def test_gehoerte_segmente_mit_versatz_ohne_leere():
+    from appkern.leitstelle.hoeren import Gehoert, segmente_aus
+    roh = [{"start": 0.0, "end": 1.2, "text": " Guten Tag. ", "words": [{"word": " Guten", "start": 0.0, "end": 0.5},
+                                                                          {"word": " Tag.", "start": 0.5, "end": 1.2}]},
+           {"start": 1.2, "end": 1.4, "text": "  ", "words": []}]
+    s = segmente_aus(roh, versatz=10.0)
+    assert len(s) == 1 and (s[0].start, s[0].ende, s[0].text) == (10.0, 11.2, "Guten Tag.")
+    assert [(w.wort, w.start) for w in s[0].woerter] == [("Guten", 10.0), ("Tag.", 10.5)]
+    assert Gehoert(segmente=s).text == "Guten Tag."
