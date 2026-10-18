@@ -1,5 +1,6 @@
-"""Abspielfassungen: der Spieler spielt nie das Original, sondern eine von ffmpeg dekodierte PCM-WAV (44,1 kHz, mono,
-16 Bit) derselben Quelle, aus der auch der Hördienst seinen Ton bekommt. So laufen Wortzeiten und Wiedergabe ohne
+"""Abspielfassungen: der Spieler spielt nie das Original, sondern eine von der Tonarbeit dekodierte PCM-WAV (44,1 kHz,
+mono, 16 Bit) derselben Quelle, aus der auch der Hördienst seinen Ton bekommt (am besten in derselben Aufbereitung,
+siehe `uebernehmen`). So laufen Wortzeiten und Wiedergabe ohne
 Versatz: WAV springt im Browser samplegenau, MP3 mit variabler Bitrate oder Aufnahmen aus dem Browser (WebM ohne
 Index) nicht. Bewährtes Verfahren der alten txt2voice (dieselben ffmpeg-Parameter).
 
@@ -20,13 +21,16 @@ from uuid import UUID
 
 from appkern.kellerwolke import Kellerwolke, Knoten
 
-from .ton import ABSPIELEN, Ton
+from .arbeit import Aufbereiten, Ausgabe, Messen, Tonarbeit
+from .ton import ABSPIELEN
+
+WELLE_PUNKTE = 800
 
 
 class Abspielfassungen:
-    def __init__(self, ordner: Path, ton: Callable[[], Ton], hoechstens_gb: Callable[[], float]) -> None:
+    def __init__(self, ordner: Path, arbeit: Callable[[], Tonarbeit], hoechstens_gb: Callable[[], float]) -> None:
         self.ordner = ordner
-        self._ton = ton
+        self._arbeit = arbeit
         self._hoechstens_gb = hoechstens_gb
         self._sperren: dict[str, asyncio.Lock] = {}
 
@@ -38,11 +42,23 @@ class Abspielfassungen:
         return p if p.is_file() else None
 
     async def aus_datei(self, quelle: Knoten, roh: Path) -> Path:
-        """Aus einer schon geholten Originaldatei (beim Transkribieren)."""
+        """Aus einer schon geholten Originaldatei."""
         async with self._sperre(quelle):
             if (p := self.vorhanden(quelle)) is not None:
                 return p
             return await self._erzeugen(quelle, roh)
+
+    async def uebernehmen(self, quelle: Knoten, fassung: Path, wellenform: list[int] | None) -> Path:
+        """Eine schon erzeugte Fassung (Ausgabe ABSPIELEN derselben Aufbereitung, etwa beim Transkribieren) an ihren
+        Platz; die Wellenform dazu, wenn sie mitkam."""
+        async with self._sperre(quelle):
+            self._fruehere_weg(quelle)
+            ziel = self.pfad(quelle)
+            fassung.replace(ziel)
+            if wellenform is not None:
+                ziel.with_suffix(".welle.json").write_text(json.dumps(wellenform))
+            self.aufraeumen()
+            return ziel
 
     async def holen(self, quelle: Knoten, kw: Kellerwolke) -> Path:
         """Die Fassung zur Quelle; fehlt sie, wird das Original geholt und gewandelt."""
@@ -63,7 +79,10 @@ class Abspielfassungen:
         merker = self.pfad(quelle).with_suffix(".welle.json")
         if merker.is_file():
             return json.loads(merker.read_text())
-        werte = await self._ton().wellenform(await self.holen(quelle, kw))
+        fassung = await self.holen(quelle, kw)
+        erg = await self._arbeit().aufbereiten(fassung, Aufbereiten(messen=Messen(wellenform=WELLE_PUNKTE)), [],
+                                               titel="Wellenform", prioritaet="hintergrund")
+        werte = erg.messwerte.wellenform or []
         merker.write_text(json.dumps(werte))
         return werte
 
@@ -75,11 +94,18 @@ class Abspielfassungen:
     def _sperre(self, quelle: Knoten) -> asyncio.Lock:
         return self._sperren.setdefault(str(quelle.id), asyncio.Lock())
 
-    async def _erzeugen(self, quelle: Knoten, roh: Path) -> Path:
+    def _fruehere_weg(self, quelle: Knoten) -> None:
         self.ordner.mkdir(parents=True, exist_ok=True)
-        for alt in [*self.ordner.glob(f"{quelle.id}-*.wav"), *self.ordner.glob(f"{quelle.id}-*.welle.json")]:  # frühere Stände
+        for alt in [*self.ordner.glob(f"{quelle.id}-*.wav"), *self.ordner.glob(f"{quelle.id}-*.welle.json")]:
             alt.unlink(missing_ok=True)
-        ziel = await self._ton().wandeln(roh, self.pfad(quelle), ABSPIELEN)
+
+    async def _erzeugen(self, quelle: Knoten, roh: Path) -> Path:
+        self._fruehere_weg(quelle)
+        ziel = self.pfad(quelle)
+        erg = await self._arbeit().aufbereiten(roh, Aufbereiten(ausgaben=[Ausgabe(format=ABSPIELEN)],
+                                                                messen=Messen(wellenform=WELLE_PUNKTE)),
+                                               [ziel], titel=f"Abspielfassung {quelle.name}")
+        ziel.with_suffix(".welle.json").write_text(json.dumps(erg.messwerte.wellenform or []))
         self.aufraeumen()
         return ziel
 

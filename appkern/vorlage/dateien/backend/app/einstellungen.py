@@ -3,7 +3,14 @@ hier dazu (mit `Field(title=..., description=...)`, Auswahl über `Literal`, Geh
 Einstellungen der Oberfläche entsteht daraus von selbst."""
 
 from appkern.app import Grundeinstellungen
+# ton:anfang
+from pydantic import Field
+# ton:ende
 
 
 class AppEinstellungen(Grundeinstellungen):
+    # ton:anfang
+    dienst_ton: str = Field("klangwerk-ton", title="Tondienst",
+                            description="Dienst der Leitstelle für alle Tonarbeit; gerechnet wird auf dem Mac, nie hier")
+    # ton:ende
     pass

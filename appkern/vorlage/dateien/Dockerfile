@@ -20,11 +20,6 @@ COPY backend/requirements.txt backend/requirements.txt
 RUN apt-get update && apt-get install -y --no-install-recommends git && \
     pip install --no-cache-dir -r backend/requirements.txt && \
     apt-get purge -y git && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
-# ton:anfang
-# ffmpeg kommt nicht ins Abbild: es läuft das des Pi (deploy/ffmpeg-vom-pi, eingehängt in compose.pi.yml)
-COPY deploy/ffmpeg-vom-pi /usr/local/bin/ffmpeg
-COPY deploy/ffmpeg-vom-pi /usr/local/bin/ffprobe
-# ton:ende
 COPY version.json ./
 COPY backend ./backend
 COPY --from=oberflaeche /bau/frontend/dist ./frontend/dist

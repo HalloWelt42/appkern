@@ -199,19 +199,34 @@ adresse = await verzeichnis.adresse("transkription")      # etwa http://127.0.0.
 
 ## Ton
 
-`appkern.ton` (Zusatz `appkern[ton]`, ffmpeg und ffprobe vom System) für alle Apps, die mit Ton arbeiten:
+Gerechnet wird an genau einem Ort (Nutzer 18.10.2026: "pi ist nur datenlieferant"): die Apps auf dem Pi nutzen die
+**Tonarbeit** über den **Tondienst** auf dem Mac (Dienst `klangwerk-ton` im Maschinenraum, über die Leitstelle wie die
+Sprachdienste); ffmpeg gibt es in ihren Containern nicht. `appkern.ton` (Zusatz `appkern[ton]`):
 
-- `Tonformat(rate, kanaele, kodierung, bitrate)`: ein Ziel als Modell statt verstreuter Schalter; feste Formate
-  `HOEREN` (16 kHz mono PCM16, für die Spracherkennung) und `ABSPIELEN` (44,1 kHz mono PCM16, samplegenau springbar).
-- `Ton.eigenschaften(datei)`: gemessen mit ffprobe (Dauer, Rate, Kanäle, Kodierung, Bittiefe, Bitrate, Behälter, ob
-  Video); `als_format()` liefert das Format der Quelle zum Zurückwandeln.
-- `Ton.wandeln(quelle, ziel, format, beginn=, ende=)`: Tonspur (auch aus Video) genau in das Format; Resampling mit
-  soxr, wenn ffmpeg es hat (Pi, Container), sonst mit dem eingebauten in hoher Qualität (`Ton.resampler()` sagt,
-  welcher). Ausgaben entstehen unter einem Zwischennamen und rücken erst vollständig an ihren Platz.
-- `dauer`, `pausen`, `ausschneiden`, `wellenform` (Dezibel mit festem Maßstab), `flac`; `Abspielfassungen` als
-  Zwischenspeicher je Quelle und Stand mit Obergrenze.
+- `Tonarbeit` mit drei Arbeitsschritten, jeder nimmt seine Dateien mit und schreibt seine Ergebnisse an Orte, die der
+  Aufrufer nennt:
+  - `aufbereiten(quelle, Aufbereiten(ausgaben=[...], messen=Messen(...)), ziele)`: eine Datei (auch Video), beliebig
+    viele `Ausgabe`n (Format, Behälter, Zeitbereich; auf Wunsch begrenzt, an den Rändern geblendet, mit Vor- und
+    Nachlauf) und Messungen (Eigenschaften immer; Pausen, Wellenform, Pegelverlauf je Rahmen, laute Spanne);
+  - `blenden(dateien, Blenden(stuecke=[Stueck(datei, von_s, bis_s)], ...), ziel)`: mit Gleichleistungsblende zu einem;
+  - `legen(dateien, Legen(lagen=[Lage(datei, beginn_s, stauchung)], mindestens_s=, spitze=, format=, wellenform=), ziel)`:
+    an ihre Zeiten, gestaucht, mit glatten Rändern, begrenzt, genau einmal ins Zielformat.
+  - dazu `eigenschaften`, `dauer`, `wandeln` als häufige Fälle von `aufbereiten`.
+- `TonDienst(leitstelle, name)`: die Tonarbeit der Apps über die Leitstelle; Tonfehler des Dienstes kommen als
+  `TonFehler` an. `TonHier` rechnet selbst (ffmpeg und numpy) und läuft nur im Tondienst und in Tests; seine Routen
+  stehen in `appkern.ton.gegenseite` (Zusatz `appkern[tondienst]`, Wirt ist das Klangwerk).
+- `Tonformat(rate, kanaele, kodierung, bitrate)`: ein Ziel als Modell; feste Formate `HOEREN` (16 kHz mono PCM16, für
+  die Spracherkennung), `ARBEIT` (24 kHz mono Gleitkomma) und `ABSPIELEN` (44,1 kHz mono PCM16, samplegenau springbar).
+- `Abspielfassungen`: Zwischenspeicher je Quelle und Stand mit Obergrenze, erzeugt über die Tonarbeit oder aus einer
+  Ausgabe derselben Aufbereitung übernommen (`uebernehmen`).
+- `wav.dauer`, `wav.ausschnitt`: reine Datenarbeit an fertigen PCM-WAV-Dateien (Bytekopie, kein Dekodieren); das darf
+  auf dem Pi laufen.
+- `Ton` ist die ffmpeg-Schicht unter `TonHier` (Resampling mit soxr, wenn ffmpeg es hat, sonst dem eingebauten in hoher
+  Qualität; Ausgaben entstehen unter einem Zwischennamen; mp4-Behälter mit dem Inhaltsverzeichnis vorn).
 
-Die Tests wandeln echte Töne hin und zurück und messen Frequenz, Dauer und Format.
+Die Tests wandeln echte Töne hin und zurück und messen Frequenz, Dauer und Format; dieselben Aufträge laufen einmal
+hier und einmal über das Protokoll (TonDienst gegen die Routen, über eine Leitstelle im Prozess) und müssen gleich
+ausgehen.
 
 ## Anfragen aus der Kellerwolke
 
@@ -380,8 +395,9 @@ Symbolsatz für alle Geräte (aus dem Font-Awesome-Symbol auf der App-Farbe, auc
 `stellwerk.toml`, `einrichten.sh`, Test und Verbundtest mit eigenem Testzugang. Dazu alles, was die Lehren aus den
 bisherigen Apps verlangen (`docs/LEHREN.md`): Git-Hook mit Fassung und Prüfungen, `tools/appkern.sh`,
 `tools/ausrollen.sh` mit `deploy/ausrollen.toml`, Dockerfile und `compose.pi.yml` mit Caddy davor, Ansichtsprüfung
-(`tools/ansicht.sh`, Seiten in `frontend/ansicht.json`) und die Abnahmeliste `docs/ABNAHME.md`. `--ton` hängt ffmpeg
-des Pi in den Container und prüft es beim Ausrollen. `--appkern-lokal .` lässt Backend und Oberfläche auf diese
+(`tools/ansicht.sh`, Seiten in `frontend/ansicht.json`) und die Abnahmeliste `docs/ABNAHME.md`. `--ton` gibt der App die
+Tonarbeit über den Tondienst (Einstellung `dienst_ton`, kein ffmpeg im Container); das Ausrollen prüft, ob die
+Leitstelle den Tondienst meldet. `--appkern-lokal .` lässt Backend und Oberfläche auf diese
 Arbeitskopie zeigen statt auf GitHub.
 
 ## Werkzeuge der Entwicklung
@@ -409,7 +425,7 @@ dependencies = ["appkern[web] @ https://github.com/HalloWelt42/appkern/archive/<
 ```
 
 Ohne `[web]` fehlen nur die FastAPI-Schnittstellen; die Zugänge und die Aufträge selbst gehen auch ohne. `[ton]` bringt
-die Tonbausteine mit. Immer einen Commit nennen (`tools/appkern.sh` in der App), nie den Zweig: das Archiv eines Zweigs
+die Tonarbeit mit, `[tondienst]` die Gegenseite für den Wirt des Tondienstes. Immer einen Commit nennen (`tools/appkern.sh` in der App), nie den Zweig: das Archiv eines Zweigs
 ändert seinen Namen nie, und Docker baut dann mit dem alten Stand weiter.
 
 ## Tests

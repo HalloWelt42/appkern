@@ -10,6 +10,9 @@ import httpx
 from fastapi import FastAPI
 
 from appkern.app import Geruest
+# ton:anfang
+from appkern.ton import TonDienst
+# ton:ende
 
 from .api import router
 from .arten import arten
@@ -25,6 +28,11 @@ def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None) ->
     geruest.auftraege.anmelden(*arten(geruest))
     app = geruest.fastapi()
     app.state.geruest = geruest
+    # ton:anfang
+    # Tonarbeit nur über den Tondienst (der Pi rechnet nicht); die Arten der App bekommen sie von hier
+    geruest.einstellungen.anbieten("dienst_ton", geruest.leitstelle_angebot("ton"))
+    app.state.ton = TonDienst(lambda: geruest.leitstelle, lambda: geruest.einstellungen.stand.dienst_ton)
+    # ton:ende
     app.include_router(router(geruest))
     geruest.oberflaeche_ausliefern(app)
     return app

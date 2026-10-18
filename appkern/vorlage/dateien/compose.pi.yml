@@ -21,12 +21,6 @@ services:
       - ./zertifikate:/zertifikate:ro
       # Ortszeit des Pi (sonst UTC)
       - /etc/localtime:/etc/localtime:ro
-      # ton:anfang
-      # ffmpeg und ffprobe vom Pi, nur lesend
-      - /usr/bin/ffmpeg:/host/usr/bin/ffmpeg:ro
-      - /usr/bin/ffprobe:/host/usr/bin/ffprobe:ro
-      - /usr/lib/aarch64-linux-gnu:/host/usr/lib/aarch64-linux-gnu:ro
-      # ton:ende
 
   vorne:
     image: caddy:2.11.6-alpine

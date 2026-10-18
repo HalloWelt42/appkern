@@ -70,6 +70,7 @@ def test_ohne_ton(tmp_path: Path):
     for datei in ("Dockerfile", "compose.pi.yml"):
         text = (ordner / datei).read_text(encoding="utf-8")
         assert "ton:" not in text and "ffmpeg" not in text and "TRANSKRIPTION_DATEN" in text, datei
+    assert "TonDienst" not in (ordner / "backend" / "app" / "main.py").read_text(encoding="utf-8")
     assert not (ordner / "deploy" / "ffmpeg-vom-pi").exists()
     ziel = tomllib.loads((ordner / "deploy" / "ausrollen.toml").read_text(encoding="utf-8"))
     assert ziel["ton"] is False and ziel["kennung"] == "transkription" and ziel["adresse"].endswith(":8601")
@@ -83,10 +84,14 @@ def test_mit_ton(tmp_path: Path):
     ordner = neu(tmp_path, ton=True)
     docker = (ordner / "Dockerfile").read_text(encoding="utf-8")
     compose = (ordner / "compose.pi.yml").read_text(encoding="utf-8")
-    assert "ton:" not in docker + compose and "ffmpeg-vom-pi /usr/local/bin/ffprobe" in docker and "/host/usr/bin/ffmpeg" in compose
-    assert os.access(ordner / "deploy" / "ffmpeg-vom-pi", os.X_OK)
+    assert "ffmpeg" not in docker + compose, "der Pi rechnet nicht: kein ffmpeg im Container"
+    assert not (ordner / "deploy" / "ffmpeg-vom-pi").exists()
     assert "appkern[web,ton] @" in (ordner / "backend" / "requirements.txt").read_text(encoding="utf-8")
-    assert tomllib.loads((ordner / "deploy" / "ausrollen.toml").read_text(encoding="utf-8"))["ton"] is True
+    ziel = tomllib.loads((ordner / "deploy" / "ausrollen.toml").read_text(encoding="utf-8"))
+    assert ziel["ton"] is True and ziel["leitstelle"].startswith("http")
+    app = (ordner / "backend" / "app" / "main.py").read_text(encoding="utf-8")
+    assert "TonDienst(" in app and "ton:" not in app
+    assert 'dienst_ton: str = Field("klangwerk-ton"' in (ordner / "backend" / "app" / "einstellungen.py").read_text(encoding="utf-8")
 
 
 def test_neue_app_besteht_die_eigenen_pruefungen(tmp_path: Path):

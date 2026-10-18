@@ -13,6 +13,7 @@ import asyncio
 import json
 import re
 import shutil
+from collections.abc import AsyncIterator
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -124,6 +125,14 @@ async def _durchleiten(befehl: list[str], eingabe: bytes | None = None) -> bytes
     return aus
 
 
+async def _lesen_bis(strom: asyncio.StreamReader, groesse: int) -> bytes:
+    """Bis zu `groesse` Bytes; weniger nur am Ende des Stroms (leer heißt: fertig)."""
+    try:
+        return await strom.readexactly(groesse)
+    except asyncio.IncompleteReadError as f:
+        return f.partial
+
+
 def _zwischen(ziel: Path) -> Path:
     """Zwischenname mit derselben Endung (ffmpeg wählt den Behälter nach ihr)."""
     return ziel.with_name(f".{ziel.stem}.teil{ziel.suffix}")
@@ -202,6 +211,8 @@ class Ton:
                    "-ac", str(format.kanaele), "-c:a", format.kodierung]
         if format.bitrate:
             befehl += ["-b:a", format.bitrate]
+        if ziel.suffix.lower() in MP4_ENDUNGEN:
+            befehl += ["-movflags", "+faststart"]
         await _ausfuehren(*befehl, str(vorlaeufig))
         vorlaeufig.replace(ziel)
         return ziel
@@ -248,15 +259,41 @@ class Ton:
 
     # --- Gleitkomma: lesen, bearbeiten, genau einmal schreiben -----------------------------------------------------
 
-    async def lesen(self, datei: Path, rate: int):
-        """Die Tonspur als Gleitkommawerte (numpy float32, mono) in `rate`. Aus 16 Bit verlustfrei; nur wenn die Rate
-        der Datei abweicht, wird mit dem gemessenen Resampler gewandelt."""
+    async def _lesebefehl(self, datei: Path, rate: int, beginn: float | None, ende: float | None) -> list[str]:
+        filter_ = f"aresample={rate}:{_SOXR if await self.resampler() == 'soxr' else _SWR}"
+        befehl = [self._ffmpeg(), "-nostdin", "-hide_banner", "-loglevel", "error"]
+        if beginn is not None:
+            befehl += ["-ss", f"{beginn:.3f}"]
+        if ende is not None:
+            befehl += ["-to", f"{ende:.3f}"]
+        return [*befehl, "-i", str(datei), "-vn", "-af", filter_, "-ac", "1", "-ar", str(rate), "-f", "f32le", "-"]
+
+    async def lesen(self, datei: Path, rate: int, *, beginn: float | None = None, ende: float | None = None):
+        """Die Tonspur (auf Wunsch nur von `beginn` bis `ende`) als Gleitkommawerte (numpy float32, mono) in `rate`.
+        Aus 16 Bit verlustfrei; nur wenn die Rate der Datei abweicht, wird mit dem gemessenen Resampler gewandelt."""
         import numpy as np
 
-        filter_ = f"aresample={rate}:{_SOXR if await self.resampler() == 'soxr' else _SWR}"
-        roh = await _durchleiten([self._ffmpeg(), "-nostdin", "-hide_banner", "-loglevel", "error", "-i", str(datei),
-                                  "-vn", "-af", filter_, "-ac", "1", "-ar", str(rate), "-f", "f32le", "-"])
+        roh = await _durchleiten(await self._lesebefehl(datei, rate, beginn, ende))
         return np.frombuffer(roh, dtype="<f4").copy()
+
+    async def bloecke(self, datei: Path, rate: int, sekunden: float = 30.0) -> AsyncIterator:
+        """Wie `lesen`, aber in Blöcken von etwa `sekunden`: für Messungen über Stunden mit wenig Speicher."""
+        import numpy as np
+
+        prozess = await asyncio.create_subprocess_exec(*await self._lesebefehl(datei, rate, None, None),
+                                                       stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        groesse = max(4, int(rate * sekunden) * 4)
+        try:
+            while daten := await _lesen_bis(prozess.stdout, groesse):
+                yield np.frombuffer(daten[: len(daten) // 4 * 4], dtype="<f4").copy()
+            fehler = await prozess.stderr.read()
+            if await prozess.wait() != 0:
+                letzte = fehler.decode("utf-8", "replace").strip().splitlines()[-3:]
+                raise TonFehler(f"ffmpeg gescheitert: {' '.join(letzte)}")
+        finally:
+            if prozess.returncode is None:
+                prozess.kill()
+                await prozess.wait()
 
     async def schreiben(self, werte, rate: int, ziel: Path, format: Tonformat) -> Path:
         """Gleitkommawerte (mono, `rate`) genau einmal in `format`: Rate (gemessener Resampler), Kanäle (Mono in jeden

@@ -87,3 +87,22 @@ def test_fassung(tmp_path):
     vorher = json.loads(datei.read_text())
     assert hochzaehlen(datei, "id").startswith("v0.10.0-") and json.loads(datei.read_text())["id"] != vorher["id"]
     assert hochzaehlen(datei, "major").startswith("v1.0.0-")
+
+
+def test_ausrollen_prueft_den_tondienst_statt_ffmpeg():
+    """Der Pi rechnet nicht: mit Ton prüft das Ausrollen nur, ob die Leitstelle den Tondienst meldet."""
+    import pytest
+    from pydantic import ValidationError
+
+    from appkern.werkzeuge.ausrollen import Ziel, tondienst
+
+    gemeldet = {"data": [{"id": "klangwerk-ton", "x-leitstelle": {"faehigkeiten": ["ton"]}},
+                         {"id": "klangwerk-hoeren", "x-leitstelle": {"faehigkeiten": ["hoeren"]}}]}
+    assert tondienst(json.dumps(gemeldet)) == "Tondienst: klangwerk-ton"
+    assert tondienst(json.dumps({"data": gemeldet["data"][1:]})).startswith("WARNUNG")
+    assert tondienst("").startswith("WARNUNG")
+    angaben = {"kennung": "probe", "rechner": "pi@pi", "wurzel": "/mnt/data/probe", "adresse": "https://pi:1",
+               "repo": "x", "namen": ["pi"]}
+    with pytest.raises(ValidationError):
+        Ziel.model_validate({**angaben, "ton": True})
+    assert Ziel.model_validate({**angaben, "ton": True, "leitstelle": "http://pi:8530"}).ton

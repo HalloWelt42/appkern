@@ -4,8 +4,9 @@ Symbolsatz für alle Geräte, Eintrag fürs Stellwerk, Tests und Verbundtest.
     python -m appkern.vorlage --name Transkription --kennung transkription --rolle "macht aus Ton Text" \\
         --symbol fa-closed-captioning --port 8601 --ziel ~/Entwicklung/Apps [--ton]
 
-Mit `--ton` nutzt die App die Tonbausteine (`appkern[web,ton]`): ffmpeg und ffprobe des Pi werden in den Container
-eingehängt und beim Ausrollen geprüft; ohne fallen diese Abschnitte (zwischen `ton:anfang` und `ton:ende`) weg.
+Mit `--ton` nutzt die App die Tonarbeit (`appkern[web,ton]`) über den Tondienst auf dem Mac; der Pi rechnet nicht
+(Nutzer 18.10.2026: "pi ist nur datenlieferant"), im Container gibt es kein ffmpeg. Beim Ausrollen wird geprüft, ob die
+Leitstelle den Tondienst meldet.
 
 Mit `--appkern-lokal <Pfad>` zeigen Backend und Oberfläche auf eine lokale Arbeitskopie des Appkerns statt auf GitHub
 (zum Entwickeln am Appkern selbst).
@@ -108,8 +109,6 @@ def erzeugen(*, name: str, kennung: str, rolle: str, symbol: str, port: int, zie
     shutil.copytree(DATEIEN, ordner, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".pytest_cache"))
     (ordner / "gitignore").rename(ordner / ".gitignore")
     (ordner / "dockerignore").rename(ordner / ".dockerignore")
-    if not ton:
-        (ordner / "deploy" / "ffmpeg-vom-pi").unlink()
 
     lokal = Path(appkern_lokal).expanduser().resolve() if appkern_lokal else None
     extras = "web,ton" if ton else "web"
@@ -154,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--farbe", default="#2f7ce0", help="Farbe des Symbols (#rrggbb)")
     p.add_argument("--ziel", required=True, type=Path, help="Ordner, in dem die App als Unterordner entsteht")
     p.add_argument("--appkern-lokal", type=Path, help="lokale Arbeitskopie des Appkerns statt GitHub")
-    p.add_argument("--ton", action="store_true", help="Tonbausteine nutzen (ffmpeg des Pi im Container)")
+    p.add_argument("--ton", action="store_true", help="Tonarbeit über den Tondienst nutzen")
     a = p.parse_args(argv)
     try:
         ordner = erzeugen(name=a.name, kennung=a.kennung, rolle=a.rolle, symbol=a.symbol, port=a.port, devport=a.devport,

@@ -2,14 +2,14 @@
 `deploy/ausrollen.toml`; aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim ersten Fehler ab:
 
 1. nur gepushte Stände, Tests hier grün, Appkern in Oberfläche und Backend auf demselben Commit
-2. auf dem Pi: Docker mit Compose; braucht die App Ton, dazu ffmpeg und ffprobe des Pi (sie kommen nicht in den
-   Container) samt Lader
+2. auf dem Pi: Docker mit Compose; nutzt die App Ton, meldet die Leitstelle den Tondienst (gerechnet wird auf dem Mac,
+   der Pi liefert nur Daten; fehlt er, ist das eine Warnung, kein Abbruch: der Mac kann gerade schlafen)
 3. Zertifikat der Hausstelle für den Vorschaltdienst, noch mindestens 60 Tage gültig, sonst neu ausgestellt
 4. Stand holen, Datenbank sichern (die letzten zehn Sicherungen bleiben)
 5. Abbild bauen und starten; der Vorschaltdienst startet jedes Mal neu (geänderte eingehängte Dateien bemerkt Docker nicht)
 6. über HTTPS melden Server, gebaute Oberfläche und version.json dieselbe Fassung; die Seite kommt über HTTP/2; Symbole
    für Tab, Startbildschirm und Web-App sowie das Manifest antworten mit 200 und dem richtigen Typ, die Symbole des
-   Startbildschirms sind deckend (sonst zeigt iOS keins); mit Ton eine echte Umwandlung im Container
+   Startbildschirms sind deckend (sonst zeigt iOS keins)
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ import time
 import tomllib
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 SCHWELLE_S = 60 * 86400
 SYMBOLE = {"favicon.ico": "image/", "favicon-32.png": "image/png", "apple-touch-icon.png": "image/png",
@@ -42,7 +42,14 @@ class Ziel(BaseModel):
     repo: str               # woher der Pi den Stand holt
     namen: list[str]        # Namen und Adressen im Zertifikat
     zweig: str = "main"
-    ton: bool = False       # die App nutzt appkern.ton: ffmpeg des Pi wird geprüft und im Container ausprobiert
+    ton: bool = False       # die App nutzt die Tonarbeit über den Tondienst: die Leitstelle muss ihn melden
+    leitstelle: str | None = None   # Adresse der Leitstelle, vom Pi aus erreichbar (nötig mit Ton)
+
+    @model_validator(mode="after")
+    def _ton_braucht_leitstelle(self) -> "Ziel":
+        if self.ton and not self.leitstelle:
+            raise ValueError("Mit ton = true gehört leitstelle in deploy/ausrollen.toml (Prüfung des Tondienstes)")
+        return self
 
     @property
     def datenbank(self) -> str:
@@ -101,17 +108,23 @@ def stand_und_tests(z: Ziel, wurzel: Path) -> None:
 
 def pi_pruefen(z: Ziel) -> None:
     _schritt("Pi prüfen")
-    ton = """
-  for p in ffmpeg ffprobe; do
-    command -v "$p" >/dev/null || { echo "$p fehlt auf dem Pi (sudo apt install ffmpeg)"; exit 1; }
-    "$p" -hide_banner -version >/dev/null || { echo "$p startet nicht"; exit 1; }
-  done
-  test -x /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1 || { echo "Lader /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1 fehlt"; exit 1; }
-  echo "ffmpeg: $(ffmpeg -hide_banner -version | head -1)"
-""" if z.ton else ""
-    print(_ssh(z, f"""set -e{ton}
-  docker compose version >/dev/null || {{ echo "Docker Compose fehlt"; exit 1; }}
+    print(_ssh(z, """set -e
+  docker compose version >/dev/null || { echo "Docker Compose fehlt"; exit 1; }
   echo "Docker: $(docker --version)\""""))
+    if z.ton:
+        print(tondienst(_ssh(z, f"curl -sf -m 15 {shlex.quote(str(z.leitstelle).rstrip('/'))}/v1/models || true")))
+
+
+def tondienst(modelle_json: str) -> str:
+    """Meldung zur Tonarbeit aus der Modellliste der Leitstelle (ohne Schlüssel aus dem Heimnetz lesbar)."""
+    try:
+        daten = json.loads(modelle_json).get("data") or []
+    except (ValueError, AttributeError):
+        return "WARNUNG: Leitstelle nicht lesbar; ohne Tondienst scheitert jede Tonarbeit der App"
+    namen = [m["id"] for m in daten if "ton" in ((m.get("x-leitstelle") or {}).get("faehigkeiten") or [])]
+    if not namen:
+        return "WARNUNG: die Leitstelle meldet keinen Tondienst (Fähigkeit ton); Tonarbeit scheitert, bis er da ist"
+    return f"Tondienst: {', '.join(namen)}"
 
 
 def zertifikat(z: Ziel) -> None:
@@ -214,11 +227,6 @@ def pruefen(z: Ziel, wurzel: Path) -> None:
     w = shlex.quote(z.wurzel)
     _ssh(z, f"cd {w} && for i in $(seq 1 30); do curl -sf --cacert zertifikate/rootCA.pem {shlex.quote(z.adresse)}/api/v1/app "
             ">/dev/null && exit 0; sleep 2; done; echo 'Die App antwortet nicht'; exit 1")
-    if z.ton:
-        dauer = _ssh(z, f"cd {w} && docker compose -f compose.pi.yml exec -T {z.kennung} sh -c 'ffmpeg -nostdin -hide_banner "
-                        "-loglevel error -f lavfi -i sine=frequency=440:duration=1 -ac 1 -ar 16000 -y /tmp/probe.wav && "
-                        "ffprobe -v error -show_entries format=duration -of csv=p=0 /tmp/probe.wav'")
-        print(f"Umwandlung im Container mit dem ffmpeg des Pi, Dauer: {dauer}")
     info = json.loads(_ssh(z, f"curl -sf --cacert {w}/zertifikate/rootCA.pem {shlex.quote(z.adresse)}/api/v1/app"))
     fassung = json.loads((wurzel / "version.json").read_text())["version"]
     print(f"Server {info['fassung']}, Oberfläche {info.get('oberflaeche')}, version.json {fassung}, Appkern {info['appkern']}")
