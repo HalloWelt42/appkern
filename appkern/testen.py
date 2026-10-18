@@ -6,6 +6,8 @@
   Dateimenü der Kellerwolke nur echte Apps zeigt.
 - `aufraeumen` legt Angelegtes in den Papierkorb: Dateien vor Ordnern, tiefe Ordner zuerst, mit Wiederholung; ein
   Ordner, der vor seinen Dateien drankommt, bliebe sonst liegen.
+- `Tondienst` ist der echte Tondienst im Prozess (rechnet hier mit ffmpeg) für eine nachgestellte Leitstelle: der
+  Verbundtest geht denselben Weg wie der Betrieb (Tonarbeit über die Leitstelle), ohne Mac.
 """
 
 from __future__ import annotations
@@ -69,3 +71,23 @@ async def aktionen_zurueckziehen(adresse: str, schluessel: str) -> None:
         await kw.aktionen_melden([])
     finally:
         await kw.schliessen()
+
+
+class Tondienst:
+    """Der Tondienst einer nachgestellten Leitstelle: `zustaendig(request)` sagt, ob eine Anfrage ihm gilt
+    (`/v1/dienste/<name>/...`), `transport` beantwortet sie mit den echten Routen und `TonHier`."""
+
+    def __init__(self, ablage: Path, name: str = "klangwerk-ton") -> None:
+        import httpx
+        from fastapi import FastAPI
+
+        from .ton import TonHier
+        from .ton.gegenseite import routen
+
+        self.praefix = f"/v1/dienste/{name}/"
+        app = FastAPI()
+        app.include_router(routen(TonHier(), ablage), prefix=self.praefix.rstrip("/"))
+        self.transport = httpx.ASGITransport(app=app)
+
+    def zustaendig(self, request) -> bool:
+        return request.url.path.startswith(self.praefix)

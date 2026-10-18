@@ -174,3 +174,21 @@ async def test_abspielfassungen_ueber_die_tonarbeit(tmp_path):
     fertig = await TonHier().wandeln(roh, tmp_path / "fertig.wav", ABSPIELEN)
     p2 = await fassungen.uebernehmen(quelle, fertig, [1, 2, 3])
     assert p2 == p and await fassungen.wellenform(quelle, None) == [1, 2, 3] and not fertig.exists()
+
+
+async def test_tondienst_fuer_nachgestellte_leitstellen(tmp_path):
+    """Der Testbaustein der Apps: eine Weiche schickt nur Anfragen an den Tondienst dorthin, alles andere woandershin."""
+    from appkern.testen import Tondienst
+
+    td = Tondienst(tmp_path / "ablage")
+
+    class Weiche(httpx.AsyncBaseTransport):
+        async def handle_async_request(self, request):
+            if td.zustaendig(request):
+                return await td.transport.handle_async_request(request)
+            return httpx.Response(404, json={"error": {"code": "kein_modell", "message": "nicht nachgestellt"}})
+
+    async with httpx.AsyncClient(transport=Weiche()) as client:
+        ls = Leitstelle("http://ls.test", "probe", "Probe", client=client)
+        quelle = await datei(tmp_path, "q.wav", sinus(1.0))
+        assert await TonDienst(lambda: ls, lambda: "klangwerk-ton").dauer(quelle) == pytest.approx(1.0, abs=0.01)
