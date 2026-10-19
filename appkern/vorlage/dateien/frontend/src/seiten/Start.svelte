@@ -1,6 +1,6 @@
 <script lang="ts">
   // Erste Seite von __NAME__. Der Probeauftrag zeigt den Ablauf der Aufträge; die eigentlichen Seiten ersetzen sie.
-  import { gehe, hole, json, sitzung } from "appkern-oberflaeche";
+  import { gehe, hole, json, seitenFehler, sitzung } from "appkern-oberflaeche";
 
   let fehler = $state("");
   let laeuft = $state(false);
@@ -12,7 +12,7 @@
       await hole("/probe", { method: "POST", ...json({ schritte: 20, pause_s: 0.5 }) });
       gehe("auftraege");
     } catch (f) {
-      fehler = (f as Error).message;
+      fehler = seitenFehler(f);           // antwortet die App nicht, sagt das die Schale an einer Stelle
     } finally {
       laeuft = false;
     }
