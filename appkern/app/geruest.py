@@ -11,6 +11,10 @@ Anmeldung mit dem Kellerwolke-Konto (Besitzer ist das Konto des App-Schlüssels)
 (nach jeder Änderung der Einstellungen neu aufgebaut), App-Verzeichnis, Prüfung der Verbindungen, erste Einrichtung
 (nur vom Rechner selbst, solange keine Kellerwolke eingetragen ist), tägliches Aufräumen, Auslieferung der gebauten
 Oberfläche.
+
+Die Schnittstellendoku zum Ausprobieren (/docs, /redoc, /openapi.json) gibt es nur in der Entwicklung, mit
+`<KENNUNG>_SCHNITTSTELLEN_DOKU=1` in der Umgebung; sonst zeigt die App ihren Aufbau niemandem ohne Anmeldung.
+`app.openapi()` liefert das Schema im Code immer (etwa für eine Ausfuhr).
 """
 
 from __future__ import annotations
@@ -74,6 +78,12 @@ class Begleiter:
 E = TypeVar("E", bound=Grundeinstellungen)
 LOKAL = {"127.0.0.1", "::1", "localhost"}
 TAG_S = 24 * 3600
+JA = {"1", "ja", "an", "true", "yes", "on"}
+
+
+def schnittstellen_doku(kennung: str) -> bool:
+    """Ob die App ihre Schnittstellendoku zeigt: nur mit `<KENNUNG>_SCHNITTSTELLEN_DOKU=1` (Entwicklung)."""
+    return os.environ.get(f"{kennung.upper()}_SCHNITTSTELLEN_DOKU", "").strip().lower() in JA
 
 
 def hausstelle() -> Path | None:
@@ -508,7 +518,9 @@ class Geruest(Generic[E]):
             finally:
                 await self.stoppen()
 
-        app = FastAPI(title=self.name, version=self.fassung, lifespan=lebenszyklus)
+        doku = schnittstellen_doku(self.kennung)
+        app = FastAPI(title=self.name, version=self.fassung, lifespan=lebenszyklus, docs_url="/docs" if doku else None,
+                      redoc_url="/redoc" if doku else None, openapi_url="/openapi.json" if doku else None)
         app.include_router(self._grund_router())
         app.include_router(anmeldungs_router(self.anmeldung, protokoll=self.protokoll))
         if self.abholer.angebote:
@@ -529,7 +541,7 @@ class Geruest(Generic[E]):
             if pfad.startswith("api/"):
                 return JSONResponse({"detail": "Nicht gefunden"}, status_code=404)
             if wurzel is None or not (wurzel / "index.html").is_file():
-                return JSONResponse({"meldung": f"{self.name}: Oberfläche nicht gebaut; Schnittstelle unter /docs"})
+                return JSONResponse({"meldung": f"{self.name}: Oberfläche nicht gebaut"})
             datei = (wurzel / pfad).resolve()
             if pfad and datei.is_file() and datei.is_relative_to(wurzel):
                 kopf = {"Cache-Control": "public, max-age=31536000, immutable"} if pfad.startswith("assets/") \

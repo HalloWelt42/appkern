@@ -306,3 +306,27 @@ async def test_anmeldung_traegt_durch_einen_ausfall_der_kellerwolke(umgebung):
     assert kw["ok"]
     await geruest.einstellungen.aendern({"anmeldung_ausfall_h": 2})
     assert geruest.anmeldung.ausfall_s == 2 * 3600
+
+
+async def test_schnittstellendoku_nur_in_der_entwicklung(tmp_path: Path, monkeypatch):
+    """Ohne Anmeldung zeigt die App ihren Aufbau nicht (/docs, /redoc, /openapi.json); mit
+    PROBE_SCHNITTSTELLEN_DOKU=1 schon. Das Schema im Code (app.openapi()) gibt es immer."""
+    def bauen():
+        geruest = Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
+                          einstellungen=ProbeEinstellungen, transport=httpx.MockTransport(Wolke()))
+        app = geruest.fastapi()
+        geruest.oberflaeche_ausliefern(app)
+        return app
+
+    monkeypatch.delenv("PROBE_SCHNITTSTELLEN_DOKU", raising=False)
+    app = bauen()
+    assert "/api/v1/app" in app.openapi()["paths"]
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        for pfad in ("/docs", "/redoc", "/openapi.json"):
+            r = await c.get(pfad)
+            assert "swagger" not in r.text.lower() and "redoc" not in r.text.lower() and '"paths"' not in r.text, pfad
+    monkeypatch.setenv("PROBE_SCHNITTSTELLEN_DOKU", "1")
+    app = bauen()
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        assert "swagger" in (await c.get("/docs")).text.lower()
+        assert "/api/v1/app" in (await c.get("/openapi.json")).json()["paths"]

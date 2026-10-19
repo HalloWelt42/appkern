@@ -343,6 +343,7 @@ geruest.oberflaeche_ausliefern(app)                         # zuletzt
 | Erste Einrichtung | `POST /api/v1/einrichtung` mit Kellerwolke und App-Schlüssel, nur vom Rechner der App und nur, solange nichts eingetragen ist |
 | Anmeldung | Besitzer ist das Konto des App-Schlüssels; Anmelden, Koppeln, Abweisungen und Abmelden stehen im Protokoll |
 | Schnittstellen | `/api/v1/app`, `/api/v1/ich`, `/api/v1/verbindungen`, Anmeldung, Aufträge, Einstellungen, Protokoll |
+| Schnittstellendoku | `/docs`, `/redoc` und `/openapi.json` nur in der Entwicklung mit `<KENNUNG>_SCHNITTSTELLEN_DOKU=1`; sonst zeigt die App ihren Aufbau niemandem ohne Anmeldung. `app.openapi()` liefert das Schema im Code immer |
 | Betrieb | Datenbank `daten/<kennung>.sqlite` (Lesen neben dem Schreiben, `leseverbindungen`, Vorgabe 4), tägliches Aufräumen, Auslieferung der gebauten Oberfläche |
 | Begleiter | Hintergrundarbeit der App (`Begleiter` mit `starten`, `verbunden` nach jedem Aufbau der Zugänge, `stoppen`), angemeldet mit `geruest.begleiter_anmelden` vor dem Start; läuft vor den Aufträgen an und nach ihnen aus |
 
