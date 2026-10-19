@@ -35,7 +35,7 @@ const ausgabe = wert("--ausgabe") ?? path.join(os.tmpdir(), "ansicht");
 const nur = wert("--nur");
 const themen = wert("--thema") ? [wert("--thema")] : THEMEN;
 // eigene Breiten (etwa die eines Entwurfs); die Höhe folgt der Vorgabe: 844 am Telefon, sonst 900
-const BREITEN = wert("--breiten") ? wert("--breiten").split(",").map(Number).filter((b) => b > 0).map((b) => [b, b < 760 ? 844 : 900])
+const BREITEN = wert("--breiten") ? wert("--breiten").split(",").map(Number).filter((b) => b > 0).map((b) => [b, b <= 600 ? 844 : 900])
   : VORGABE_BREITEN;
 const einstellung = JSON.parse(fs.readFileSync("frontend/ansicht.json", "utf8"));
 const env = Object.fromEntries((fs.existsSync("backend/.env.test") ? fs.readFileSync("backend/.env.test", "utf8") : "")

@@ -388,7 +388,8 @@ am Telefon steht er im Kopf, mit einem Knopf zurück zum Bereich, und daneben au
 
 Breiten: ab 1280 Pixel wie im Entwurf (Navigation mit Text, Leiste daneben); darunter wird die Leiste eine Tafel, die
 über den Inhalt fährt (Schleier, Knopf zum Schließen, Escape); unter 1000 Pixel wird die Navigation eine Symbolleiste;
-bis 760 Pixel gilt die eigene Telefonansicht. Das Protokoll wird bei wenig Platz eine Liste. Die Fassung der gebauten
+bis 600 Pixel gilt die eigene Telefonansicht (mit dem Finger bis 760 Pixel oder flach im Querformat; ein schmales oder
+vergrößertes Fenster am Rechner behält die Rechneransicht). Das Protokoll wird bei wenig Platz eine Liste. Die Fassung der gebauten
 Oberfläche steht als Meta `app-fassung` in ihrer Startseite (eingesetzt in `vite.config.ts`); der Server meldet sie in
 `/api/v1/app` (`oberflaeche`), und ein Tab vergleicht sich mit ihr. Ist die Oberfläche nach einer neuen Fassung nicht
 neu gebaut, steht das als Warnung im Protokoll.

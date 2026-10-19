@@ -342,7 +342,7 @@ button:focus:not(:focus-visible), [tabindex]:focus:not(:focus-visible) { outline
    ab 1280 px: wie im Entwurf (Navigation mit Text, Leiste daneben)
    unter 1280 px: Leiste als einschiebbare Tafel über dem Inhalt
    unter 1000 px: Navigation als Symbolleiste, Rolle im Kopf ausgeblendet
-   bis 760 px: eigene Telefonansicht (MobilSchale) */
+   bis 600 px (mit dem Finger bis 760 px oder flach im Querformat): eigene Telefonansicht (MobilSchale) */
 @media (max-width: 1279px) {
   .geruest.mit-leiste { grid-template-columns: 240px minmax(0, 1fr); }
   .leiste { position: fixed; top: 60px; right: 0; bottom: 0; width: min(420px, 92vw); z-index: 30;
