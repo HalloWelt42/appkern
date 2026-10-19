@@ -48,6 +48,7 @@ from appkern.protokoll import Protokoll
 from appkern.protokoll.api import protokoll_router
 from appkern.verzeichnis import Verzeichnis
 
+from .einrichtungscode import Einrichtungscode, Gesperrt
 from .einstellungen import Grundeinstellungen
 
 logger = logging.getLogger("appkern.app")
@@ -96,6 +97,7 @@ class AppInfo(BaseModel):
     kellerwolke: str = ""       # Adresse, gegen die angemeldet und gekoppelt wird (nie der Schlüssel)
     oberflaeche: str | None = None  # Fassung der gebauten Oberfläche, die der Server gerade ausliefert
     auftraege_laufend: int = 0      # nur die Zahl (für das Ausrollen ohne Abbruch), nie Inhalte
+    einrichtungscode: str | None = None  # solange die Einrichtung nötig ist: wo der Code steht (nie der Code)
 
 
 class Verbindung(BaseModel):
@@ -108,6 +110,7 @@ class Verbindung(BaseModel):
 class Einrichtung(BaseModel):
     kellerwolke_adresse: str = Field(min_length=1)
     kellerwolke_schluessel: str = Field(min_length=1)
+    einrichtungscode: str = Field("", max_length=64)   # nötig, wenn die Anfrage nicht vom Rechner der App kommt
 
 
 class AdresseEingabe(BaseModel):
@@ -127,6 +130,7 @@ class Geruest(Generic[E]):
         self.oberflaeche = oberflaeche
         self._transport = transport
         self.db = Datenbank(self.daten / f"{kennung}.sqlite")
+        self.einrichtungscode = Einrichtungscode.aus_umgebung(kennung, self.daten)
         self.einstellungen: Einstellungen[E] = Einstellungen(self.db, einstellungen, umgebung_praefix=f"{kennung.upper()}_")
         self.protokoll = Protokoll(self.db)
         self.auftraege = Auftraege(self.db, arten, gleichzeitig=gleichzeitig, protokoll=self.protokoll)
@@ -328,6 +332,7 @@ class Geruest(Generic[E]):
         await self._zugaenge_bauen()
         self.einstellungen.bei_aenderung(self._nach_aenderung)
         self._laeuft = True
+        await self._einrichtungscode_bereitstellen()
         gebaut = self.oberflaeche_fassung()
         if gebaut and gebaut != self.fassung:
             await self.protokoll.eintragen("app.oberflaeche_veraltet", f"Die Oberfläche ist für {gebaut} gebaut, die App ist "
@@ -337,6 +342,19 @@ class Geruest(Generic[E]):
         await self._begleiter_rufen("verbunden")
         await self.auftraege.starten()
         self._pflege = asyncio.create_task(self._taeglich(), name="pflege")
+
+    async def _einrichtungscode_bereitstellen(self) -> None:
+        """Solange die Einrichtung nötig ist, ein neuer Code je Start (Ort ins Protokoll, nie der Code); sonst keiner."""
+        if not self.einrichtung_noetig:
+            self.einrichtungscode.entfernen()
+            return
+        try:
+            self.einrichtungscode.erzeugen()
+        except OSError as f:
+            logger.warning("Einrichtungscode nicht schreibbar (%s): erste Einrichtung nur am Rechner der App", f)
+            return
+        await self.protokoll.eintragen("app.einrichtungscode", f"Code für die erste Einrichtung liegt in {self.einrichtungscode.ort}")
+        logger.warning("Erste Einrichtung nötig; der Einrichtungscode liegt in %s", self.einrichtungscode.ort)
 
     async def stoppen(self) -> None:
         if self._pflege:
@@ -379,7 +397,8 @@ class Geruest(Generic[E]):
         return AppInfo(name=self.name, kennung=self.kennung, rolle=self.rolle, symbol=self.symbol, fassung=self.fassung,
                        appkern=appkern.__version__, einrichtung_noetig=self.einrichtung_noetig, besitzer=self.besitzer,
                        kellerwolke=self.einstellungen.stand.kellerwolke_adresse.rstrip("/"),
-                       oberflaeche=self.oberflaeche_fassung())
+                       oberflaeche=self.oberflaeche_fassung(),
+                       einrichtungscode=self.einrichtungscode.ort if self.einrichtung_noetig and self.einrichtungscode.aktiv else None)
 
     def oberflaeche_fassung(self) -> str | None:
         """Fassung der gebauten Oberfläche (Meta `app-fassung` in index.html, beim Bau eingesetzt). Gegen sie vergleicht
@@ -399,6 +418,20 @@ class Geruest(Generic[E]):
         self._oberflaeche_gemerkt = (stand, fassung)
         return fassung
 
+    def _einrichtungscode_pruefen(self, code: str) -> None:
+        if not self.einrichtungscode.aktiv:
+            raise HTTPException(status_code=403, detail="Die erste Einrichtung geht nur am Rechner der App selbst")
+        ort = self.einrichtungscode.ort
+        if not code.strip():
+            raise HTTPException(status_code=403, detail=f"Von hier aus braucht die erste Einrichtung den Einrichtungscode; er steht "
+                                                        f"am Rechner der App in {ort}")
+        try:
+            richtig = self.einrichtungscode.pruefen(code)
+        except Gesperrt as g:
+            raise HTTPException(status_code=429, detail=f"Zu viele falsche Codes; in {max(1, g.sekunden // 60)} Minuten wieder")
+        if not richtig:
+            raise HTTPException(status_code=403, detail=f"Der Einrichtungscode stimmt nicht; er steht am Rechner der App in {ort}")
+
     def _grund_router(self) -> APIRouter:
         router = APIRouter(prefix="/api/v1", tags=["app"])
 
@@ -408,11 +441,12 @@ class Geruest(Generic[E]):
 
         @router.post("/einrichtung", response_model=AppInfo)
         async def einrichten(eingabe: Einrichtung, request: Request) -> AppInfo:
-            """Erste Einrichtung: nur vom Rechner selbst und nur, solange keine Kellerwolke eingetragen ist."""
+            """Erste Einrichtung, nur solange keine Kellerwolke eingetragen ist: vom Rechner der App selbst, von
+            anderswo (Vorschaltdienst, Docker, anderes Gerät) nur mit dem Einrichtungscode aus der Datei am Rechner."""
             if not self.einrichtung_noetig:
                 raise HTTPException(status_code=409, detail="Die App ist schon eingerichtet; Änderungen unter Einstellungen")
             if (request.client.host if request.client else "") not in LOKAL:
-                raise HTTPException(status_code=403, detail="Die erste Einrichtung geht nur am Rechner der App selbst")
+                self._einrichtungscode_pruefen(eingabe.einrichtungscode)
             try:
                 pruefung = self._pruefung()
             except (OSError, ssl.SSLError) as f:
@@ -433,6 +467,7 @@ class Geruest(Generic[E]):
                     raise HTTPException(status_code=422, detail=f"Die Kellerwolke antwortet unerwartet: {f.meldung}")
             await self.einstellungen.aendern({"kellerwolke_adresse": eingabe.kellerwolke_adresse.rstrip("/"),
                                               "kellerwolke_schluessel": eingabe.kellerwolke_schluessel})
+            self.einrichtungscode.entfernen()
             await self.protokoll.eintragen("app.eingerichtet", f"Kellerwolke, Zweig {ich.zweig}", bezug_name=ich.konto)
             return self.info()
 

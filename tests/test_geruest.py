@@ -235,3 +235,45 @@ async def test_geduld_bei_ausfall_aus_den_einstellungen(umgebung):
         assert geduld() == 5 * 60
     finally:
         geduld_setzen(GEDULD_S)
+
+
+async def test_einrichtung_von_anderswo_mit_einrichtungscode(umgebung):
+    """Hinter Vorschaltdienst oder Docker kommt keine Anfrage vom Rechner selbst (Lehre 34): dann gilt der einmalige Code
+    aus der Datei am Rechner (Modus 0600); App-Angaben nennen nur den Ort, nach der Einrichtung ist die Datei weg."""
+    geruest, app, c = umgebung
+    datei = geruest.daten / "einrichtungscode"
+    assert datei.is_file() and (datei.stat().st_mode & 0o777) == 0o600
+    code = datei.read_text().strip()
+    info = (await c.get("/api/v1/app")).json()
+    assert info["einrichtungscode"] == str(datei) and code not in json.dumps(info)
+    eingabe = {"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"}
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=("172.25.0.3", 5)), base_url="http://t") as fremd:
+        ohne = await fremd.post("/api/v1/einrichtung", json=eingabe)
+        assert ohne.status_code == 403 and str(datei) in ohne.json()["detail"]
+        falsch = await fremd.post("/api/v1/einrichtung", json={**eingabe, "einrichtungscode": "AAAA-BBBB-CCCC-DDDD"})
+        assert falsch.status_code == 403 and "stimmt nicht" in falsch.json()["detail"]
+        r = await fremd.post("/api/v1/einrichtung", json={**eingabe, "einrichtungscode": code.lower().replace("-", " ")})
+        assert r.status_code == 200, r.text
+        assert not r.json()["einrichtung_noetig"] and r.json()["einrichtungscode"] is None
+    assert not datei.exists()
+    protokoll = (await c.get("/api/v1/protokoll", headers={"X-Kellerwolke-Sitzung": (await c.post(
+        "/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]})).text
+    assert "einrichtungscode" in protokoll and code not in protokoll         # der Ort steht drin, der Code nie
+
+
+def test_einrichtungscode_sperrt_nach_falschen_versuchen(tmp_path):
+    from appkern.app.einrichtungscode import Einrichtungscode, Gesperrt
+
+    jetzt = [1000.0]
+    e = Einrichtungscode(tmp_path / "code", "~/.app/code", versuche=3, sperre_s=600, uhr=lambda: jetzt[0])
+    e.erzeugen()
+    richtig = (tmp_path / "code").read_text().strip()
+    assert len(richtig) == 19 and richtig.count("-") == 3 and not set(richtig.replace("-", "")) & set("01OIL")
+    assert [e.pruefen("falsch") for _ in range(3)] == [False, False, False]
+    with pytest.raises(Gesperrt) as g:
+        e.pruefen(richtig)                                   # gesperrt, auch für den richtigen Code
+    assert 0 < g.value.sekunden <= 600
+    jetzt[0] += 601
+    assert e.pruefen(richtig)
+    e.entfernen()
+    assert not (tmp_path / "code").exists() and not e.aktiv and e.pruefen(richtig) is False
