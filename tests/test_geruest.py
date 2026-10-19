@@ -162,10 +162,10 @@ async def test_hausstelle_wird_gefunden_und_geladen(tmp_path: Path, monkeypatch)
     geruest = Geruest(name="P", kennung="p", rolle="r", fassung="0", daten=tmp_path / "d", einstellungen=ProbeEinstellungen)
     await geruest.db.oeffnen()
     await geruest.einstellungen.starten()
-    assert geruest._pruefung().cert_store_stats()["x509_ca"] > 0
+    assert geruest.tls_pruefung().cert_store_stats()["x509_ca"] > 0
     await geruest.einstellungen.aendern({"ca_datei": str(tmp_path / "gibtsnicht.pem")})
     with pytest.raises(OSError):
-        geruest._pruefung()
+        geruest.tls_pruefung()
     await geruest.db.schliessen()
 
 

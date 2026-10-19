@@ -1,5 +1,6 @@
 """Ausrollen einer App auf den Pi, für jede App gleich (Lehren 3 bis 6 der Transkription). Angaben in
-`deploy/ausrollen.toml`; aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim ersten Fehler ab:
+`deploy/ausrollen.toml` (oder einer anderen Datei mit `--ziel`, etwa für einen Probestand in eigenem Ordner mit
+eigenen Ports); aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim ersten Fehler ab:
 
 1. nur gepushte Stände, Tests hier grün, Appkern in Oberfläche und Backend auf demselben Commit
 2. auf dem Pi: Docker mit Compose; nutzt die App Ton, meldet die Leitstelle den Tondienst (gerechnet wird auf dem Mac,
@@ -42,6 +43,7 @@ class Ziel(BaseModel):
     repo: str               # woher der Pi den Stand holt
     namen: list[str]        # Namen und Adressen im Zertifikat
     zweig: str = "main"
+    compose: str = "compose.pi.yml"    # Compose-Datei im Ordner der App; das Projekt heißt wie der Ordner
     ton: bool = False       # die App nutzt die Tonarbeit über den Tondienst: die Leitstelle muss ihn melden
     leitstelle: str | None = None   # Adresse der Leitstelle, vom Pi aus erreichbar (nötig mit Ton)
 
@@ -60,8 +62,11 @@ class Abbruch(Exception):
     pass
 
 
-def laden(wurzel: Path) -> Ziel:
-    return Ziel.model_validate(tomllib.loads((wurzel / "deploy" / "ausrollen.toml").read_text(encoding="utf-8")))
+ZIEL_DATEI = Path("deploy") / "ausrollen.toml"
+
+
+def laden(wurzel: Path, datei: Path = ZIEL_DATEI) -> Ziel:
+    return Ziel.model_validate(tomllib.loads((wurzel / datei).read_text(encoding="utf-8")))
 
 
 def _lauf(befehl: list[str], *, ort: Path | None = None) -> str:
@@ -217,13 +222,13 @@ def ruhe_abwarten(z: Ziel, sofort: bool) -> None:
 def bauen(z: Ziel) -> None:
     """Das neue Abbild entsteht, während der alte Stand weiterläuft."""
     _schritt("Bauen")
-    _ssh(z, f"cd {shlex.quote(z.wurzel)} && docker compose -f compose.pi.yml build --quiet")
+    _ssh(z, f"cd {shlex.quote(z.wurzel)} && docker compose -f {shlex.quote(z.compose)} build --quiet")
 
 
 def starten(z: Ziel) -> None:
     _schritt("Starten")
-    _ssh(z, f"cd {shlex.quote(z.wurzel)} && docker compose -f compose.pi.yml up -d --remove-orphans "
-            "&& docker compose -f compose.pi.yml restart vorne")
+    c = shlex.quote(z.compose)
+    _ssh(z, f"cd {shlex.quote(z.wurzel)} && docker compose -f {c} up -d --remove-orphans && docker compose -f {c} restart vorne")
 
 
 def _curl(z: Ziel, *args: str) -> str:
@@ -249,7 +254,7 @@ def pruefen(z: Ziel, wurzel: Path) -> None:
     if not info["fassung"] == fassung == info.get("oberflaeche"):
         raise Abbruch("Fassungen passen nicht zusammen")
     if _curl(z, "-o", "/dev/null", "-w", "%{http_version}", "--http2", f"{z.adresse}/") != "2":
-        raise Abbruch("Die Seite kommt nicht über HTTP/2: Vorschaltdienst prüfen (docker compose -f compose.pi.yml logs vorne)")
+        raise Abbruch(f"Die Seite kommt nicht über HTTP/2: Vorschaltdienst prüfen (docker compose -f {z.compose} logs vorne)")
     for pfad, typ in SYMBOLE.items():
         antwort = _curl(z, "-o", "/dev/null", "-w", "%{http_code} %{content_type}", f"{z.adresse}/{pfad}")
         if not antwort.startswith(f"200 {typ}"):
@@ -262,8 +267,8 @@ def pruefen(z: Ziel, wurzel: Path) -> None:
     print("HTTP/2 über den Vorschaltdienst, Symbole deckend, Manifest in Ordnung")
 
 
-def ausrollen(wurzel: Path, sofort: bool = False) -> int:
-    z = laden(wurzel)
+def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI) -> int:
+    z = laden(wurzel, datei)
     try:
         stand_und_tests(z, wurzel)
         pi_pruefen(z)

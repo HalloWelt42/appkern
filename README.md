@@ -341,7 +341,7 @@ geruest.oberflaeche_ausliefern(app)                         # zuletzt
 
 | Teil | Inhalt |
 |---|---|
-| Einstellungen | `Grundeinstellungen` (Kellerwolke, Leitstelle, Zertifikatsstelle, weitere Konten, Anmeldung bei Ausfall) plus die der App; Zugänge werden nach jeder Änderung neu aufgebaut |
+| Einstellungen | `Grundeinstellungen` (Kellerwolke, Leitstelle, Zertifikatsstelle, weitere Konten, Anmeldung bei Ausfall) plus die der App; Zugänge werden nach jeder Änderung neu aufgebaut; `geruest.tls_pruefung()` gibt dieselbe Prüfung der Zertifikate für eigene Verbindungen im Heimnetz |
 | Erste Einrichtung | `POST /api/v1/einrichtung` mit Kellerwolke und App-Schlüssel, nur solange nichts eingetragen ist. Vom Rechner der App geht sie ohne weiteres; von anderswo (anderes Gerät, hinter einem Vorschaltdienst, in Docker) mit dem einmaligen Einrichtungscode aus einer Datei am Rechner (Modus 0600, je Start neu, `<KENNUNG>_EINRICHTUNGSCODE_DATEI`, Vorgabe `<daten>/einrichtungscode`; wie man sie am Rechner findet: `<KENNUNG>_EINRICHTUNGSCODE_ORT`). App-Angaben (`einrichtungscode`), Protokoll und die Einrichtung der Schale nennen nur den Ort, nie den Code; fünf falsche Codes sperren zehn Minuten, nach der Einrichtung ist die Datei weg (Lehre 34) |
 | Anmeldung | Besitzer ist das Konto des App-Schlüssels; Anmelden, Koppeln, Abweisungen und Abmelden stehen im Protokoll |
 | Schnittstellen | `/api/v1/app`, `/api/v1/ich`, `/api/v1/verbindungen` (Kellerwolke und Leitstelle nebeneinander geprüft, jede höchstens 10 s), Anmeldung, Aufträge, Einstellungen, Protokoll |
@@ -464,7 +464,7 @@ Arbeitskopie zeigen statt auf GitHub.
 | `pruefen [PFAD ...]` | nur gerade Zeichen; Stil ohne `!important`, ohne einseitige Streifen (erlaubt nur 1px-Trennlinien in `var(--rand)`), ohne Regeln, die nur Klassen der Schale treffen (Svelte-Blöcke nur mit `:global`; entfällt für eine App mit eigener Schale, die den Stil des Appkerns nicht lädt) |
 | `fassung [patch\|minor\|major\|id]` | `version.json` hochzählen |
 | `appkern` | Appkern in Oberfläche (package-lock) und Backend (requirements, Archiv des Commits) auf denselben neuesten Commit |
-| `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`) |
+| `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`); `--ziel DATEI` für einen Probestand in eigenem Ordner, `compose` darin nennt die Compose-Datei |
 
 `appkern.testen` hilft den Tests der Apps: Werte des eigenen Testzugangs aus `backend/.env.test`, `aufraeumen`
 (Dateien vor Ordnern, mit Wiederholung) und `aktionen_zurueckziehen`. Die Ansichtsprüfung liegt bei der Oberfläche

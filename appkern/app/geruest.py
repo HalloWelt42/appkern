@@ -266,9 +266,10 @@ class Geruest(Generic[E]):
             return set()
         return {self.besitzer, *self.einstellungen.stand.weitere_konten}
 
-    def _pruefung(self) -> ssl.SSLContext:
+    def tls_pruefung(self) -> ssl.SSLContext:
         """Vertraut den üblichen Stellen und dazu der eingestellten Zertifikatsstelle, sonst der Hausstelle dieses
-        Rechners. So geht HTTPS zu Kellerwolke und Leitstelle im Heimnetz ohne weitere Einstellung."""
+        Rechners. So geht HTTPS zu Kellerwolke und Leitstelle im Heimnetz ohne weitere Einstellung; eine App nutzt
+        dieselbe Prüfung für ihre eigenen Verbindungen im Heimnetz (etwa zu Diensten am Mac)."""
         kontext = ssl.create_default_context(cafile=certifi.where())
         ca = self.einstellungen.stand.ca_datei.strip()
         zusatz = Path(ca).expanduser() if ca else hausstelle()
@@ -281,7 +282,7 @@ class Geruest(Generic[E]):
         alte = self._clients
         stand = self.einstellungen.stand
         try:
-            pruefung: ssl.SSLContext | bool = self._pruefung()
+            pruefung: ssl.SSLContext | bool = self.tls_pruefung()
         except (OSError, ssl.SSLError) as f:
             logger.warning("Zertifikatsstelle nicht lesbar: %s", f)
             pruefung = True
@@ -485,7 +486,7 @@ class Geruest(Generic[E]):
             if (request.client.host if request.client else "") not in LOKAL:
                 self._einrichtungscode_pruefen(eingabe.einrichtungscode)
             try:
-                pruefung = self._pruefung()
+                pruefung = self.tls_pruefung()
             except (OSError, ssl.SSLError) as f:
                 raise HTTPException(status_code=422, detail=f"Zertifikatsstelle nicht lesbar: {f}")
             async with httpx.AsyncClient(timeout=httpx.Timeout(15.0), verify=pruefung,

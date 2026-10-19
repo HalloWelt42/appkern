@@ -1,6 +1,7 @@
 """Werkzeuge der Entwicklung: Zeichenprüfung, Stilprüfung (mit Gegenproben), Fassung hochzählen."""
 
 import json
+from pathlib import Path
 
 from appkern.werkzeuge import hochzaehlen, stil_pruefen, zeichen_pruefen
 from appkern.werkzeuge.stil import regeln
@@ -106,6 +107,20 @@ def test_ausrollen_prueft_den_tondienst_statt_ffmpeg():
     with pytest.raises(ValidationError):
         Ziel.model_validate({**angaben, "ton": True})
     assert Ziel.model_validate({**angaben, "ton": True, "leitstelle": "http://pi:8530"}).ton
+
+
+def test_ausrollen_mit_eigener_zieldatei(tmp_path):
+    """Ein Probestand rollt aus einer eigenen Datei aus (eigener Ordner, eigene Compose-Datei); ohne Angabe gilt
+    deploy/ausrollen.toml mit compose.pi.yml."""
+    from appkern.werkzeuge.ausrollen import laden
+
+    (tmp_path / "deploy").mkdir()
+    gemeinsam = 'kennung = "probe"\nrechner = "pi@pi"\nadresse = "https://pi:1"\nrepo = "x"\nnamen = ["pi"]\n'
+    (tmp_path / "deploy" / "ausrollen.toml").write_text(gemeinsam + 'wurzel = "/mnt/data/probe"\n')
+    (tmp_path / "deploy" / "probe.toml").write_text(gemeinsam + 'wurzel = "/mnt/data/probe-test"\ncompose = "compose.test.yml"\n')
+    assert (laden(tmp_path).wurzel, laden(tmp_path).compose) == ("/mnt/data/probe", "compose.pi.yml")
+    z = laden(tmp_path, Path("deploy/probe.toml"))
+    assert (z.wurzel, z.compose) == ("/mnt/data/probe-test", "compose.test.yml")
 
 
 def test_eigene_schale_ohne_pruefung_auf_klassen_der_schale(tmp_path):

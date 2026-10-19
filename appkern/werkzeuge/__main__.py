@@ -5,7 +5,7 @@
     python -m appkern.werkzeuge pruefen [PFAD ...]   Zeichen und Stil prüfen (ohne Pfade: alle Dateien im Repo)
     python -m appkern.werkzeuge fassung [patch|minor|major|id]
     python -m appkern.werkzeuge appkern              Appkern in Oberfläche und Backend auf den neuesten Commit heben
-    python -m appkern.werkzeuge ausrollen            auf den Pi nach deploy/ausrollen.toml
+    python -m appkern.werkzeuge ausrollen [--ziel DATEI]  auf den Pi nach deploy/ausrollen.toml (oder DATEI)
 """
 
 import argparse
@@ -13,7 +13,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from .ausrollen import Abbruch, ausrollen
+from .ausrollen import ZIEL_DATEI, Abbruch, ausrollen
 from .fassung import hochzaehlen
 from .stil import schalen_klassen, stil_pruefen
 from .stand import anheben
@@ -71,6 +71,8 @@ def main(argv: list[str] | None = None) -> int:
     befehle.add_parser("appkern")
     aus = befehle.add_parser("ausrollen")
     aus.add_argument("--sofort", action="store_true", help="nicht auf laufende Aufträge warten (bricht sie ab)")
+    aus.add_argument("--ziel", type=Path, default=ZIEL_DATEI, metavar="DATEI",
+                     help="Angaben des Ziels, relativ zum Ordner der App (Vorgabe deploy/ausrollen.toml)")
     a = teiler.parse_args(argv)
     wurzel = _wurzel()
 
@@ -78,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
         print(hochzaehlen(wurzel / "version.json", a.art))
         return 0
     if a.befehl == "ausrollen":
-        return ausrollen(wurzel, a.sofort)
+        return ausrollen(wurzel, a.sofort, a.ziel)
     if a.befehl == "appkern":
         try:
             print(f"Appkern auf {anheben(wurzel)[:7]} (Oberfläche und Backend)")
