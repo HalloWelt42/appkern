@@ -1,0 +1,17 @@
+/* Aufklappliste statt nativer Auswahlfelder (teile/Auswahl.svelte), eine Stelle für alle Apps. Für sich vollständig:
+   Apps mit eigener Schale laden nur diese Datei (`appkern-oberflaeche/auswahl.css`) und setzen die Variablen der Schale
+   (--flaeche, --rand, --text, --text-3, --akzent, --akzent-weich, --schatten, --r1, --r2, --klein, --marke) in ihren Farben. */
+.auswahl { position: relative; display: inline-flex; max-width: 100%; }
+.auswahl-knopf { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: var(--r2); max-width: 100%;
+                 background: var(--flaeche); border: 1px solid var(--rand); font: inherit; font-size: var(--klein); color: var(--text); cursor: pointer; }
+.auswahl-knopf.klein { height: 32px; padding: 0 10px; }
+.auswahl-knopf .auswahl-pfeil { font-size: 12px; color: var(--text-3); }
+.auswahl-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.auswahl-liste { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; min-width: 100%; max-height: 340px; overflow-y: auto;
+                 background: var(--flaeche); border-radius: var(--r2); box-shadow: var(--schatten), 0 10px 30px rgba(20, 30, 45, .2);
+                 display: flex; flex-direction: column; padding: 4px; }
+.auswahl-liste button { border: 0; background: transparent; font: inherit; font-size: var(--klein); text-align: left; padding: 9px 12px;
+                        border-radius: var(--r1); cursor: pointer; color: var(--text); white-space: nowrap; }
+.auswahl-liste button:hover, .auswahl-liste button.aktiv { background: var(--akzent-weich); color: var(--akzent); }
+.auswahl-hinweis { font-size: var(--marke); color: var(--text-3); }
+.auswahl-liste button.aktiv .auswahl-hinweis { color: var(--akzent); opacity: .8; }

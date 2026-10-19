@@ -264,19 +264,7 @@ button { font: inherit; color: inherit; }
 .mobil .suche { min-width: 0; flex: 1; }
 .eingabe .wert.markierbar { user-select: all; -webkit-user-select: all; }
 
-/* ----- Aufklappliste (Auswahl) ----- */
-.auswahl { position: relative; display: inline-flex; max-width: 100%; }
-.auswahl-knopf { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: var(--r2); max-width: 100%;
-                 background: var(--flaeche); border: 1px solid var(--rand); font: inherit; font-size: var(--klein); color: var(--text); cursor: pointer; }
-.auswahl-knopf.klein { height: 32px; padding: 0 10px; }
-.auswahl-knopf .auswahl-pfeil { font-size: 12px; color: var(--text-3); }
-.auswahl-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.auswahl-liste { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; min-width: 100%; max-height: 340px; overflow-y: auto;
-                 background: var(--flaeche); border-radius: var(--r2); box-shadow: var(--schatten), 0 10px 30px rgba(20, 30, 45, .2);
-                 display: flex; flex-direction: column; padding: 4px; }
-.auswahl-liste button { border: 0; background: transparent; font: inherit; font-size: var(--klein); text-align: left; padding: 9px 12px;
-                        border-radius: var(--r1); cursor: pointer; color: var(--text); white-space: nowrap; }
-.auswahl-liste button:hover, .auswahl-liste button.aktiv { background: var(--akzent-weich); color: var(--akzent); }
+/* ----- Aufklappliste (Auswahl): stil/auswahl.css ----- */
 
 /* ----- Reiter ----- */
 /* der aktive Reiter hebt sich ab wie das aktive Segment eines Filters (keine einseitige Unterstreichung) */
@@ -358,8 +346,6 @@ button:focus:not(:focus-visible), [tabindex]:focus:not(:focus-visible) { outline
 .angebot .auswahl-knopf { height: 42px; justify-content: space-between; }
 .angebot .auswahl-liste { width: 100%; }
 .auswahl-liste button { display: flex; flex-direction: column; gap: 1px; }
-.auswahl-hinweis { font-size: var(--marke); color: var(--text-3); }
-.auswahl-liste button.aktiv .auswahl-hinweis { color: var(--akzent); opacity: .8; }
 .stand { display: flex; gap: 8px; align-items: baseline; font-size: var(--klein); color: var(--text-2); min-width: 0; }
 /* lange Stände (Pfade, Fehlermeldungen) brechen um statt über den Rand zu laufen */
 .stand > span { min-width: 0; overflow-wrap: anywhere; }
