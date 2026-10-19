@@ -38,7 +38,7 @@ from appkern.anmeldung import Anmeldung, Konto
 from appkern.anmeldung.api import angemeldet, anmeldungs_router
 from appkern.auftraege import Art, Auftraege
 from appkern.auftraege.api import auftrags_router
-from appkern.datenbank import Datenbank
+from appkern.datenbank import LESER, Datenbank
 from appkern.einstellungen import Angebot, Einstellungen, Option
 from appkern.einstellungen.api import einstellungs_router
 from appkern.kellerwolke import Kellerwolke, KellerwolkeFehler, NichtErreichbar, SchluesselUngueltig
@@ -121,15 +121,16 @@ class AdresseEingabe(BaseModel):
 class Geruest(Generic[E]):
     def __init__(self, *, name: str, kennung: str, rolle: str, fassung: str, daten: Path, einstellungen: type[E],
                  arten: Sequence[Art] = (), symbol: str = "fa-cube", oberflaeche: Path | None = None,
-                 gleichzeitig: int = 1, angebote: Sequence[AppAngebot] = (),
+                 gleichzeitig: int = 1, angebote: Sequence[AppAngebot] = (), leseverbindungen: int = LESER,
                  transport: httpx.AsyncBaseTransport | None = None) -> None:
         """`angebote`: was die App mit Dateien der Kellerwolke kann (Aktionen im Dateimenü, Dateiwahl in der App).
+        `leseverbindungen`: so viele Lesungen der Datenbank laufen nebeneinander (neben dem Schreiben).
         `transport` nur für Tests: alle Verbindungen nach außen gehen dann über ihn."""
         self.name, self.kennung, self.rolle, self.symbol, self.fassung = name, kennung, rolle, symbol, fassung
         self.daten = Path(daten)
         self.oberflaeche = oberflaeche
         self._transport = transport
-        self.db = Datenbank(self.daten / f"{kennung}.sqlite")
+        self.db = Datenbank(self.daten / f"{kennung}.sqlite", leser=leseverbindungen)
         self.einrichtungscode = Einrichtungscode.aus_umgebung(kennung, self.daten)
         self.einstellungen: Einstellungen[E] = Einstellungen(self.db, einstellungen, umgebung_praefix=f"{kennung.upper()}_")
         self.protokoll = Protokoll(self.db)

@@ -139,6 +139,12 @@ await auftraege.einreihen("transkribieren", {"datei": "Apps/Transkription/Folge 
 | Neustart | je Art `nach_neustart="fortsetzen"` (wieder einreihen, Zwischenstand bleibt) oder `"anhalten"` (unterbrochen, Wiederholen ist ein Klick) |
 | Schnittstelle | `GET /api/v1/auftraege` (seitenweise, Filter), `GET .../{id}`, `POST .../{id}/abbrechen`, `POST .../{id}/wiederholen`, `DELETE .../{id}`, `GET .../ereignisse` (Server-Sent Events) |
 
+Die Datenbank schreibt nacheinander über eine Verbindung (`ausfuehren`, `transaktion`, `einrichten`) und liest über
+eigene Verbindungen, die nur lesen dürfen (`zeile`, `zeilen`; `leser`, Vorgabe 4). Im WAL-Modus sieht jedes Lesen den
+zuletzt bestätigten Stand: eine lange Abfrage hält weder andere Seiten noch das Schreiben auf, eine laufende
+Schreibtransaktion kein Lesen. Wer nicht mehr wartet, bricht sein Lesen in SQLite ab. Schreiben über `zeile` scheitert
+laut. Im Speicher (`":memory:"`, Tests) geht alles über eine Verbindung.
+
 Abgebrochen wird gemeinsam an Haltepunkten, nie mit einer Uhr. Wie viele Aufträge gleichzeitig laufen, sagt
 `gleichzeitig` (Vorgabe 1); beendete Aufträge räumt `aufraeumen` nach `aufbewahren_tage` aus der Liste. Die
 Schnittstelle braucht den Zusatz `appkern[web]` (FastAPI).
@@ -325,7 +331,7 @@ geruest.oberflaeche_ausliefern(app)                         # zuletzt
 | Erste Einrichtung | `POST /api/v1/einrichtung` mit Kellerwolke und App-Schlüssel, nur vom Rechner der App und nur, solange nichts eingetragen ist |
 | Anmeldung | Besitzer ist das Konto des App-Schlüssels; Anmelden, Koppeln, Abweisungen und Abmelden stehen im Protokoll |
 | Schnittstellen | `/api/v1/app`, `/api/v1/ich`, `/api/v1/verbindungen`, Anmeldung, Aufträge, Einstellungen, Protokoll |
-| Betrieb | Datenbank `daten/<kennung>.sqlite`, tägliches Aufräumen, Auslieferung der gebauten Oberfläche |
+| Betrieb | Datenbank `daten/<kennung>.sqlite` (Lesen neben dem Schreiben, `leseverbindungen`, Vorgabe 4), tägliches Aufräumen, Auslieferung der gebauten Oberfläche |
 | Begleiter | Hintergrundarbeit der App (`Begleiter` mit `starten`, `verbunden` nach jedem Aufbau der Zugänge, `stoppen`), angemeldet mit `geruest.begleiter_anmelden` vor dem Start; läuft vor den Aufträgen an und nach ihnen aus |
 
 Im Gerüst stehen `geruest.kellerwolke`, `geruest.leitstelle`, `geruest.auftraege`, `geruest.protokoll`,
