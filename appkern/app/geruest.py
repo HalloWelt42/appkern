@@ -42,7 +42,7 @@ from appkern.datenbank import Datenbank
 from appkern.einstellungen import Angebot, Einstellungen, Option
 from appkern.einstellungen.api import einstellungs_router
 from appkern.kellerwolke import Kellerwolke, KellerwolkeFehler, NichtErreichbar, SchluesselUngueltig
-from appkern.leitstelle import Leitstelle, LeitstellenFehler
+from appkern.leitstelle import Leitstelle, LeitstellenFehler, geduld_setzen
 from appkern.leitstelle.zugang import ARBEIT
 from appkern.protokoll import Protokoll
 from appkern.protokoll.api import protokoll_router
@@ -324,6 +324,7 @@ class Geruest(Generic[E]):
         await self.db.oeffnen()
         await self.einstellungen.starten()
         await self.protokoll.starten()
+        geduld_setzen(self.einstellungen.stand.leitstelle_geduld_min * 60)
         await self._zugaenge_bauen()
         self.einstellungen.bei_aenderung(self._nach_aenderung)
         self._laeuft = True
@@ -360,6 +361,8 @@ class Geruest(Generic[E]):
             await self._begleiter_rufen("verbunden")
         elif "leitstelle_extern" in geaendert and self.leitstelle is not None:
             self.leitstelle.extern = tuple(stand.leitstelle_extern)
+        if "leitstelle_geduld_min" in geaendert:
+            geduld_setzen(stand.leitstelle_geduld_min * 60)
 
     async def _taeglich(self) -> None:
         while True:

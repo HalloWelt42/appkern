@@ -281,7 +281,7 @@ class GeduldigeTonarbeit(Tonarbeit):
     def __init__(self, innen: Tonarbeit, *, melden: Callable[[str], Awaitable[None]] | None = None,
                  pruefen: Callable[[], Awaitable[None]] | None = None, geduld_s: float | None = None) -> None:
         self.innen = innen
-        self._weiter = {"melden": melden, "pruefen": pruefen, **({"geduld_s": geduld_s} if geduld_s is not None else {})}
+        self._weiter = {"melden": melden, "pruefen": pruefen, "geduld_s": geduld_s}   # None: die Geduld der App
 
     async def aufbereiten(self, quelle: Path, auftrag: Aufbereiten, ziele: Sequence[Path], *, titel: str = "",
                           prioritaet: Prioritaet | None = None) -> Aufbereitet:

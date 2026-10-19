@@ -52,20 +52,28 @@ def _nachrichten(nachrichten: Sequence[Nachricht | str]) -> list[dict[str, Any]]
     return [(n if isinstance(n, Nachricht) else Nachricht.nutzer(n)).fuer_fassade() for n in nachrichten]
 
 
+def _rechner(fehler: dict[str, Any]) -> list[str]:
+    """Die Rechner, die die Leitstelle zum Fehler nennt (`error.x-leitstelle.rechner`, etwa schlafende)."""
+    zusatz = fehler.get("x-leitstelle")
+    rechner = zusatz.get("rechner") if isinstance(zusatz, dict) else None
+    return [str(r) for r in rechner] if isinstance(rechner, list) else []
+
+
 def _fehler(antwort: httpx.Response, text: str | None = None) -> LeitstellenFehler:
     roh = text if text is not None else antwort.text
-    grund, meldung = "", roh[:300] or antwort.reason_phrase
+    grund, meldung, rechner = "", roh[:300] or antwort.reason_phrase, []
     try:
         daten = json.loads(roh)
         if isinstance(daten.get("error"), dict):
             grund = daten["error"].get("code") or ""
             meldung = daten["error"].get("message") or meldung
+            rechner = _rechner(daten["error"])
         elif isinstance(daten.get("detail"), str):
             meldung = daten["detail"]
     except (ValueError, AttributeError):
         pass
     nochmal = antwort.headers.get("retry-after", "")
-    return fehler_aus(antwort.status_code, grund, meldung, int(nochmal) if nochmal.isdigit() else None)
+    return fehler_aus(antwort.status_code, grund, meldung, int(nochmal) if nochmal.isdigit() else None, rechner)
 
 
 class Leitstelle:
@@ -189,7 +197,7 @@ class Leitstelle:
                     teil = json.loads(daten)
                     if isinstance(teil.get("error"), dict):
                         f = teil["error"]
-                        raise fehler_aus(502, f.get("code") or "", f.get("message") or "Fehler im Strom")
+                        raise fehler_aus(502, f.get("code") or "", f.get("message") or "Fehler im Strom", rechner=_rechner(f))
                     modell_name = teil.get("model") or modell_name
                     verbrauch = _verbrauch(teil.get("usage")) or verbrauch
                     for wahl in teil.get("choices") or []:

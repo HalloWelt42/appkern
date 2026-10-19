@@ -1,11 +1,14 @@
 """Fehler der Leitstelle als eigene Arten.
 
 Die Leitstelle nennt in `error.code` ein Grundwort (ANBINDUNG.md Abschnitt 2.2); danach richtet sich die Art, nicht
-nach der Statuszahl. Bei 429 und 503 sagt `nochmal_in` (Sekunden aus `Retry-After`), wann ein neuer Versuch Sinn hat.
+nach der Statuszahl. Bei 429 und 503 sagt `nochmal_in` (Sekunden aus `Retry-After`), wann ein neuer Versuch Sinn hat;
+`rechner` nennt die Rechner, die die Leitstelle zum Fehler angibt (`error.x-leitstelle.rechner`, etwa schlafende).
 Nichts hier wiederholt von selbst: abgelehnte oder gesperrte Aufträge gehen an den Menschen, nicht in eine Schleife.
 """
 
 from __future__ import annotations
+
+from collections.abc import Sequence
 
 
 class LeitstellenFehler(Exception):
@@ -13,11 +16,13 @@ class LeitstellenFehler(Exception):
 
     status = 0
 
-    def __init__(self, meldung: str, status: int | None = None, grund: str = "", nochmal_in: int | None = None) -> None:
+    def __init__(self, meldung: str, status: int | None = None, grund: str = "", nochmal_in: int | None = None,
+                 rechner: Sequence[str] = ()) -> None:
         super().__init__(meldung)
         self.meldung = meldung
         self.grund = grund
         self.nochmal_in = nochmal_in
+        self.rechner = tuple(rechner)
         if status is not None:
             self.status = status
 
@@ -68,6 +73,11 @@ class DienstWeg(LeitstellenFehler):
     status = 503
 
 
+class RechnerSchlaeft(DienstWeg):
+    """Der Rechner mit dem Dienst schläft (503 `rechner_schlaeft`); `rechner` nennt ihn. Geduldig wartet darauf ohne
+    Grenze, bis er wach ist."""
+
+
 class DienstFehler(LeitstellenFehler):
     """Der Dienst hat den Auftrag nicht geschafft (502 oder ein anderer Fehler des Dienstes)."""
 
@@ -93,6 +103,7 @@ _NACH_GRUND: dict[str, type[LeitstellenFehler]] = {
     "gesperrt": Gesperrt, "kontingent": Gesperrt,
     "halt": Halt, "wartung": Halt,
     "kein_dienst": DienstWeg, "dienst_nicht_erreichbar": DienstWeg, "modell_passt_nicht": DienstWeg,
+    "rechner_schlaeft": RechnerSchlaeft,
     "instanz_weg": DienstWeg,         # die gebundene Instanz läuft nicht mehr: von vorn beginnen (geduldig wiederholt)
     "dienst_fehler": DienstFehler,
     "nutzer": Abgebrochen, "anwendung": Abgebrochen,
@@ -106,6 +117,6 @@ _NACH_STATUS: dict[int, type[LeitstellenFehler]] = {
 }
 
 
-def fehler_aus(status: int, grund: str, meldung: str, nochmal_in: int | None = None) -> LeitstellenFehler:
+def fehler_aus(status: int, grund: str, meldung: str, nochmal_in: int | None = None, rechner: Sequence[str] = ()) -> LeitstellenFehler:
     art = _NACH_GRUND.get(grund) or _NACH_STATUS.get(status) or (DienstFehler if status >= 500 else LeitstellenFehler)
-    return art(meldung or f"Fehler {status}", status, grund, nochmal_in)
+    return art(meldung or f"Fehler {status}", status, grund, nochmal_in, rechner)

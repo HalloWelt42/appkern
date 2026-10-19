@@ -22,6 +22,11 @@ class Grundeinstellungen(BaseModel):
                                          description="Externe Modelle (etwa bei Hetzner), auf die die Leitstelle ausweichen darf, "
                                                      "wenn die eigenen Rechner lange belegt sind; dabei verlassen Texte das Heimnetz. "
                                                      "Nur wählen, wo die Qualität reicht. Leer: alles bleibt im Heimnetz.")
+    leitstelle_geduld_min: int = Field(30, ge=1, le=1440, title="Geduld bei Ausfall",
+                                       json_schema_extra={**VERBINDUNGEN, "einheit": "Minuten", "schritt": 5},
+                                       description="So lange wartet ein Auftrag, wenn Leitstelle oder Dienst gerade nicht können "
+                                                   "(Neustart, Dienst startet, nicht erreichbar); danach gilt der Fehler. Schläft "
+                                                   "der Rechner mit dem Dienst, wartet er ohne Grenze, bis er wach ist.")
     ca_datei: str = Field("", title="Zertifikatsstelle", json_schema_extra=VERBINDUNGEN,
                           description="Pfad zur Datei einer eigenen Zertifikatsstelle (rootCA.pem) für Kellerwolke und "
                                       "Leitstelle über HTTPS. Leer: die üblichen Stellen und die Hausstelle dieses "

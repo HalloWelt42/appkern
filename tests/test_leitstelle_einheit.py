@@ -282,3 +282,38 @@ async def test_bindung_an_eine_instanz():
         assert "x-leitstelle-instanz" not in gesehen[-1].headers
         with pytest.raises(Weg):
             await ton.anfrage("GET", "/weg")
+
+
+async def test_rechner_schlaeft_nennt_die_rechner_auch_im_strom_und_in_der_dienstfassade():
+    """503 rechner_schlaeft wird zu RechnerSchlaeft (Unterart von DienstWeg) mit den Rechnern aus error.x-leitstelle;
+    ebenso ein Fehler mitten im Strom und eine Absage der Dienstfassade."""
+    from appkern.leitstelle import RechnerSchlaeft
+    satz = "Mac Studio schläft; der Auftrag kann erst laufen, wenn er wach ist."
+    inhalt = {"error": {"message": satz, "type": "leitstelle", "code": "rechner_schlaeft", "x-leitstelle": {"rechner": ["Mac Studio"]}}}
+
+    def handler(request):
+        if request.url.path.startswith("/v1/dienste/") or not json.loads(request.content or b"{}").get("stream"):
+            return httpx.Response(503, json=inhalt, headers={"Retry-After": "60"})
+        return httpx.Response(200, content=sse(f"data: {json.dumps(inhalt)}\n\ndata: [DONE]\n\n"))
+
+    async with leitstelle(handler) as ls:
+        with pytest.raises(RechnerSchlaeft) as f:
+            await ls.chat(["x"])
+        assert isinstance(f.value, DienstWeg) and f.value.rechner == ("Mac Studio",) and f.value.nochmal_in == 60
+        assert f.value.status == 503 and f.value.meldung == satz
+        with pytest.raises(RechnerSchlaeft) as f:
+            [e async for e in ls.chat_strom(["x"])]
+        assert f.value.rechner == ("Mac Studio",)
+        with pytest.raises(RechnerSchlaeft) as f:
+            await ls.dienst("klangwerk-hoeren").json("POST", "hoeren")
+        assert f.value.rechner == ("Mac Studio",)
+
+
+async def test_alte_leitstelle_ohne_rechner():
+    def handler(request):
+        return fehler(503, "dienst_nicht_erreichbar", "weg", **{"Retry-After": "30"})
+
+    async with leitstelle(handler) as ls:
+        with pytest.raises(DienstWeg) as f:
+            await ls.chat(["x"])
+    assert f.value.rechner == ()

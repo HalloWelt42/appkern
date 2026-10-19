@@ -219,3 +219,19 @@ async def test_oberflaeche_meldet_ihre_gebaute_fassung(umgebung):
     import os
     os.utime(geruest.oberflaeche / "index.html", (1, 1))
     assert (await c.get("/api/v1/app")).json()["oberflaeche"] == "0.1.0"
+
+
+async def test_geduld_bei_ausfall_aus_den_einstellungen(umgebung):
+    """Die Einstellung "Geduld bei Ausfall" (Minuten, Gruppe Verbindungen) gilt beim Start und nach jeder Änderung für
+    alle geduldigen Aufrufe der App."""
+    from appkern.leitstelle import geduld, geduld_setzen
+    from appkern.leitstelle.geduld import GEDULD_S
+    geruest, _app, _c = umgebung
+    try:
+        feld = geruest.einstellungen.modell.model_fields["leitstelle_geduld_min"]
+        assert feld.title == "Geduld bei Ausfall" and feld.default == 30 and feld.json_schema_extra["gruppe"] == "Verbindungen"
+        assert geduld() == 30 * 60
+        await geruest.einstellungen.aendern({"leitstelle_geduld_min": 5})
+        assert geduld() == 5 * 60
+    finally:
+        geduld_setzen(GEDULD_S)
