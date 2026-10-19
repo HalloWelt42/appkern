@@ -3,7 +3,7 @@
 // fester Teile beim Zustandswechsel; legt von jeder Ansicht ein Bild ab.
 //
 //   node frontend/node_modules/appkern-oberflaeche/oberflaeche/werkzeuge/ansicht.mjs <basis> [--ausgabe ORDNER]
-//        [--nur SEITE] [--thema hell|dunkel]
+//        [--nur SEITE] [--thema hell|dunkel] [--breiten 1920,1440,1000,390]
 //
 // im Wurzelordner der App (tools/ansicht.sh). Seiten und Zustandswechsel stehen in frontend/ansicht.json:
 //   { "seiten": [ { "name": "start", "pfad": "/" },
@@ -21,7 +21,7 @@ import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
 
-const BREITEN = [[1920, 1080], [1440, 900], [1280, 800], [1100, 800], [900, 800], [390, 844]];
+const VORGABE_BREITEN = [[1920, 1080], [1440, 900], [1280, 800], [1100, 800], [900, 800], [390, 844]];
 const THEMEN = ["hell", "dunkel"];
 const KONTRAST_MIN = 3;          // darunter ist Text auch groß kaum lesbar (WCAG für große Schrift)
 const FRIST_MS = 30000;
@@ -34,6 +34,9 @@ if (!basis) { console.error("Aufruf: ansicht.mjs <basis> [--ausgabe ORDNER] [--n
 const ausgabe = wert("--ausgabe") ?? path.join(os.tmpdir(), "ansicht");
 const nur = wert("--nur");
 const themen = wert("--thema") ? [wert("--thema")] : THEMEN;
+// eigene Breiten (etwa die eines Entwurfs); die Höhe folgt der Vorgabe: 844 am Telefon, sonst 900
+const BREITEN = wert("--breiten") ? wert("--breiten").split(",").map(Number).filter((b) => b > 0).map((b) => [b, b < 760 ? 844 : 900])
+  : VORGABE_BREITEN;
 const einstellung = JSON.parse(fs.readFileSync("frontend/ansicht.json", "utf8"));
 const env = Object.fromEntries((fs.existsSync("backend/.env.test") ? fs.readFileSync("backend/.env.test", "utf8") : "")
   .split("\n").filter((z) => z.includes("=") && !z.trimStart().startsWith("#"))
