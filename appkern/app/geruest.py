@@ -24,7 +24,7 @@ import logging
 import os
 import re
 import ssl
-from collections.abc import Sequence
+from collections.abc import Awaitable, Sequence
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Generic, TypeVar
@@ -78,6 +78,7 @@ class Begleiter:
 E = TypeVar("E", bound=Grundeinstellungen)
 LOKAL = {"127.0.0.1", "::1", "localhost"}
 TAG_S = 24 * 3600
+PRUEFEN_S = 10.0     # so lange darf die Prüfung einer Verbindung dauern (beide laufen nebeneinander)
 JA = {"1", "ja", "an", "true", "yes", "on"}
 # Endet der letzte Teil eines Wegs wie ein Dateiname (Punkt, dann Buchstabe, dann Buchstaben oder Ziffern), ist es eine
 # Datei und nie eine Seite; Zahlen wie /transkripte/<kennung>/12.5 bleiben Seiten.
@@ -129,6 +130,13 @@ class Einrichtung(BaseModel):
 class AdresseEingabe(BaseModel):
     adresse: str = Field(pattern=r"^https?://[^/\s?#]+$", max_length=200,
                          description="Herkunft der Seite im Browser (location.origin), ohne Pfad")
+
+
+async def _begrenzt(name: str, adresse: str, pruefung: Awaitable[Verbindung]) -> Verbindung:
+    try:
+        return await asyncio.wait_for(pruefung, PRUEFEN_S)
+    except TimeoutError:
+        return Verbindung(name=name, ok=False, adresse=adresse, meldung=f"antwortet nicht binnen {PRUEFEN_S:.0f} s")
 
 
 class Geruest(Generic[E]):
@@ -318,27 +326,34 @@ class Geruest(Generic[E]):
         return not (stand.kellerwolke_adresse and stand.kellerwolke_schluessel.get_secret_value())
 
     async def verbindungen(self) -> list[Verbindung]:
+        """Kellerwolke und Leitstelle nebeneinander geprüft, jede höchstens `PRUEFEN_S`: auch wenn beide hängen,
+        antwortet die App rasch."""
         stand = self.einstellungen.stand
-        ergebnis = []
+        return list(await asyncio.gather(
+            _begrenzt("Kellerwolke", stand.kellerwolke_adresse, self._kellerwolke_pruefen()),
+            _begrenzt("Leitstelle", stand.leitstelle_adresse, self._leitstelle_pruefen())))
+
+    async def _kellerwolke_pruefen(self) -> Verbindung:
+        stand = self.einstellungen.stand
         if self.kellerwolke is None:
-            ergebnis.append(Verbindung(name="Kellerwolke", ok=False, meldung="nicht eingerichtet"))
-        else:
-            try:
-                ich = await self.kellerwolke.ich()
-                self.besitzer, self.app_name = ich.konto, ich.app
-                ergebnis.append(Verbindung(name="Kellerwolke", ok=True, adresse=stand.kellerwolke_adresse, meldung=ich.zweig))
-            except KellerwolkeFehler as f:
-                ergebnis.append(Verbindung(name="Kellerwolke", ok=False, adresse=stand.kellerwolke_adresse, meldung=f.meldung))
+            return Verbindung(name="Kellerwolke", ok=False, meldung="nicht eingerichtet")
+        try:
+            ich = await self.kellerwolke.ich()
+        except KellerwolkeFehler as f:
+            return Verbindung(name="Kellerwolke", ok=False, adresse=stand.kellerwolke_adresse, meldung=f.meldung)
+        self.besitzer, self.app_name = ich.konto, ich.app
+        return Verbindung(name="Kellerwolke", ok=True, adresse=stand.kellerwolke_adresse, meldung=ich.zweig)
+
+    async def _leitstelle_pruefen(self) -> Verbindung:
+        stand = self.einstellungen.stand
         if self.leitstelle is None:
-            ergebnis.append(Verbindung(name="Leitstelle", ok=False, meldung="nicht eingerichtet"))
-        else:
-            try:
-                modelle = await self.leitstelle.modelle()
-                ergebnis.append(Verbindung(name="Leitstelle", ok=True, adresse=stand.leitstelle_adresse,
-                                           meldung=f"{len(modelle)} Modelle und Dienste"))
-            except LeitstellenFehler as f:
-                ergebnis.append(Verbindung(name="Leitstelle", ok=False, adresse=stand.leitstelle_adresse, meldung=f.meldung))
-        return ergebnis
+            return Verbindung(name="Leitstelle", ok=False, meldung="nicht eingerichtet")
+        try:
+            modelle = await self.leitstelle.modelle()
+        except LeitstellenFehler as f:
+            return Verbindung(name="Leitstelle", ok=False, adresse=stand.leitstelle_adresse, meldung=f.meldung)
+        return Verbindung(name="Leitstelle", ok=True, adresse=stand.leitstelle_adresse,
+                          meldung=f"{len(modelle)} Modelle und Dienste")
 
     # --- Lebenszyklus -----------------------------------------------------------------------------------------
 

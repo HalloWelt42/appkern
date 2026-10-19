@@ -2,7 +2,9 @@
 Besitzer aus dem App-Schlüssel, Anmeldung nur für erlaubte Konten, Verbindungen, Protokoll der Ereignisse,
 geschützte Bausteine, Auslieferung der Oberfläche."""
 
+import asyncio
 import json
+import time
 from pathlib import Path
 
 import httpx
@@ -45,6 +47,8 @@ class Wolke:
             if pfad == "/api/v1/auth/logout":
                 self.sitzungen.pop(request.headers.get("x-kellerwolke-sitzung", ""), None)
                 return httpx.Response(204)
+        if request.url.host == "haengt.test":
+            return self._haengen()
         if request.url.host == "ls.test" and pfad == "/v1/models":
             return httpx.Response(200, json={"data": [
                 {"id": "gross", "x-leitstelle": {"name": "Groß", "faehigkeiten": ["text"], "geladen": True, "knoten": "studio"}},
@@ -54,6 +58,11 @@ class Wolke:
     @staticmethod
     def _b(name):
         return {"id": {"chef": "1", "gast": "2"}[name], "name": name, "rolle": "mitglied", "aktiv": True}
+
+    @staticmethod
+    async def _haengen() -> httpx.Response:
+        await asyncio.sleep(3600)
+        return httpx.Response(200)
 
 
 @pytest.fixture
@@ -335,3 +344,21 @@ async def test_schnittstellendoku_nur_in_der_entwicklung(tmp_path: Path, monkeyp
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
         assert "swagger" in (await c.get("/docs")).text.lower()
         assert "/api/v1/app" in (await c.get("/openapi.json")).json()["paths"]
+
+
+async def test_verbindungen_antworten_rasch_auch_wenn_eine_haengt(umgebung, monkeypatch):
+    """Beide Prüfungen laufen nebeneinander und höchstens PRUEFEN_S; eine hängende Leitstelle hält die Antwort nicht
+    auf (sonst hinge auch das Erneut-Prüfen der Oberfläche)."""
+    import appkern.app.geruest as geruest_modul
+    geruest, app, c = umgebung
+    monkeypatch.setattr(geruest_modul, "PRUEFEN_S", 0.3)
+    await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
+    h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
+    await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"leitstelle_adresse": "http://haengt.test",
+                                                                      "leitstelle_schluessel": "ls_x"}})
+    beginn = time.perf_counter()
+    verbindungen = {v["name"]: v for v in (await c.get("/api/v1/verbindungen", headers=h)).json()}
+    assert time.perf_counter() - beginn < 1.5
+    assert verbindungen["Kellerwolke"]["ok"]
+    assert not verbindungen["Leitstelle"]["ok"] and "antwortet nicht binnen" in verbindungen["Leitstelle"]["meldung"]
+    assert verbindungen["Leitstelle"]["adresse"] == "http://haengt.test"

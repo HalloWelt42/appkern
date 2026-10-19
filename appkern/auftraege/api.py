@@ -1,7 +1,7 @@
 """Schnittstelle der Aufträge für ein FastAPI-Backend (Zusatz `appkern[web]`).
 
 Anlegen ist Sache der App (sie prüft ihre Eingaben in eigenen Endpunkten und ruft `einreihen`); hier gibt es
-Liste, Stand, Abbrechen, Wiederholen, Entfernen und den Ereignisstrom, für alle Apps gleich.
+Liste, Zahlen je Zustand, Stand, Abbrechen, Wiederholen, Entfernen und den Ereignisstrom, für alle Apps gleich.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from fastapi.params import Depends
 from fastapi.responses import StreamingResponse
 
 from .dienst import Auftraege, FalscherZustand, NichtGefunden, UnbekannteArt
-from .modelle import Auftrag, Seite, Zustand
+from .modelle import Auftrag, Seite, Zahlen, Zustand
 
 HERZSCHLAG_S = 15.0
 
@@ -36,6 +36,11 @@ def auftrags_router(auftraege: Auftraege, *, prefix: str = "/api/v1/auftraege",
                     versatz: int = Query(0, ge=0)) -> Seite:
         return await auftraege.liste(zustand=zustand, art=art, stapel=stapel, suche=suche, grenze=grenze,
                                      versatz=versatz)
+
+    @router.get("/zahlen", response_model=Zahlen)
+    async def zahlen() -> Zahlen:
+        """Wie viele Aufträge in jedem Zustand sind (eine Abfrage für Kopf und Navigation)."""
+        return await auftraege.zahlen()
 
     @router.get("/ereignisse")
     async def ereignisse() -> StreamingResponse:

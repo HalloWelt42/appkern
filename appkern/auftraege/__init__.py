@@ -2,9 +2,9 @@
 Die Schnittstelle für FastAPI liegt in `appkern.auftraege.api` (Zusatz `appkern[web]`)."""
 
 from .dienst import Art, AuftragAbgebrochen, AuftragFehler, Auftraege, FalscherZustand, Kontext, NichtGefunden, UnbekannteArt
-from .modelle import Auftrag, Phase, Seite, Zustand
+from .modelle import Auftrag, Phase, Seite, Zahlen, Zustand
 
 __all__ = [
     "Art", "Auftrag", "AuftragAbgebrochen", "AuftragFehler", "Auftraege", "FalscherZustand", "Kontext", "NichtGefunden", "Phase",
-    "Seite", "UnbekannteArt", "Zustand",
+    "Seite", "UnbekannteArt", "Zahlen", "Zustand",
 ]

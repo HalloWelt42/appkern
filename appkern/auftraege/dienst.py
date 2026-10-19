@@ -32,7 +32,7 @@ from appkern.datenbank import Datenbank
 from appkern.leitstelle.arbeit import LAUFENDE_ARBEIT
 from appkern.protokoll import Protokoll
 
-from .modelle import OFFEN, WIEDERHOLBAR, Auftrag, Phase, Seite, Zustand
+from .modelle import OFFEN, WIEDERHOLBAR, Auftrag, Phase, Seite, Zahlen, Zustand
 
 logger = logging.getLogger("appkern.auftraege")
 
@@ -223,6 +223,11 @@ class Auftraege:
         """Wie viele Aufträge gerade arbeiten (ein Neustart würde sie unterbrechen)."""
         zeile = await self.db.zeile("SELECT COUNT(*) AS n FROM auftrag WHERE zustand = 'laeuft'")
         return int(zeile["n"]) if zeile else 0
+
+    async def zahlen(self) -> Zahlen:
+        """Wie viele Aufträge in jedem Zustand sind, in einer Abfrage."""
+        zeilen = await self.db.zeilen("SELECT zustand, count(*) AS n FROM auftrag GROUP BY zustand")
+        return Zahlen(**{z["zustand"]: z["n"] for z in zeilen})
 
     async def holen(self, auftrag_id: str) -> Auftrag:
         zeile = await self.db.zeile("SELECT * FROM auftrag WHERE id=?", (auftrag_id,))

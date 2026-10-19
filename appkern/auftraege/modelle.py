@@ -49,3 +49,14 @@ class Auftrag(BaseModel):
 class Seite(BaseModel):
     eintraege: list[Auftrag]
     gesamt: int
+
+
+class Zahlen(BaseModel):
+    """Wie viele Aufträge in jedem Zustand sind (für Kopf und Navigation, eine Abfrage statt einer je Zustand)."""
+
+    wartet: int = 0
+    laeuft: int = 0
+    fertig: int = 0
+    fehler: int = 0
+    abgebrochen: int = 0
+    unterbrochen: int = 0

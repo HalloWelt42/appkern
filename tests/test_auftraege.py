@@ -251,6 +251,8 @@ async def test_schnittstelle_mit_ereignisstrom(dienst):
         assert r.status_code == 201 and r.json()["wiederholung_von"] == k.id
         await bis(dienst, r.json()["id"], "fehler")
         assert (await client.delete(f"/api/v1/auftraege/{k.id}")).status_code == 204
+        zahlen = (await client.get("/api/v1/auftraege/zahlen")).json()     # eine Abfrage für alle Zustände
+        assert zahlen == {"wartet": 0, "laeuft": 0, "fertig": 1, "fehler": 1, "abgebrochen": 0, "unterbrochen": 0}
 
     # Ereignisstrom: der Testweg über ASGITransport wartet auf das Ende der Antwort, ein Strom endet nie;
     # deshalb den Körper der Antwort direkt lesen (Format und Reihenfolge sind dieselben).
