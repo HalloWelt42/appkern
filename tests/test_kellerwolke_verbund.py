@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pytest
 
+from appkern.testen import kellerwolke_antwortet
+
 from appkern.kellerwolke import (
     Kellerwolke, KeinRecht, NichtGefunden, StandFehlt, StandVeraltet, pfad_aus,
 )
@@ -28,11 +30,11 @@ def _zugangsdaten() -> tuple[str, str] | None:
             schluessel, _, wert = zeile.partition("=")
             werte.setdefault(schluessel.strip(), wert.strip())
     adresse, schluessel = werte.get("KELLERWOLKE_ADRESSE"), werte.get("KELLERWOLKE_SCHLUESSEL")
-    return (adresse, schluessel) if adresse and schluessel else None
+    return (adresse, schluessel) if adresse and schluessel and kellerwolke_antwortet(adresse, schluessel) else None
 
 
 ZUGANG = _zugangsdaten()
-pytestmark = pytest.mark.skipif(ZUGANG is None, reason="keine Test-Kellerwolke eingerichtet (.env.test)")
+pytestmark = pytest.mark.skipif(ZUGANG is None, reason="keine Test-Kellerwolke eingerichtet (.env.test) oder sie antwortet nicht")
 
 
 @pytest.fixture

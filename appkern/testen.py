@@ -18,6 +18,8 @@ from collections.abc import Iterable
 from pathlib import Path
 from uuid import UUID
 
+import httpx
+
 from .kellerwolke import Kellerwolke, NichtGefunden
 
 PFLICHT = ("KELLERWOLKE_ADRESSE", "KELLERWOLKE_SCHLUESSEL", "KELLERWOLKE_KENNUNG", "KELLERWOLKE_PASSWORT")
@@ -34,9 +36,20 @@ def werte(datei: Path) -> dict[str, str]:
     return alle
 
 
-def hat_kellerwolke(w: dict[str, str]) -> bool:
-    """Ein eigener Testzugang ist eingerichtet (sonst werden Verbundtests übersprungen)."""
-    return all(w.get(k) for k in PFLICHT)
+def hat_kellerwolke(w: dict[str, str], frist_s: float = 5.0) -> bool:
+    """Ein eigener Testzugang ist eingerichtet und die Kellerwolke der Entwicklung antwortet darauf (sonst werden
+    Verbundtests übersprungen, wie die Tests mit Docker ohne Docker: ein abgeschalteter Teil der Entwicklung ist kein
+    Fehler der App)."""
+    return all(w.get(k) for k in PFLICHT) and kellerwolke_antwortet(w["KELLERWOLKE_ADRESSE"], w["KELLERWOLKE_SCHLUESSEL"], frist_s)
+
+
+def kellerwolke_antwortet(adresse: str, schluessel: str, frist_s: float = 5.0) -> bool:
+    """Die Kellerwolke unter `adresse` nimmt den App-Schlüssel an (für Verbundtests: sonst überspringen)."""
+    try:
+        antwort = httpx.get(f"{adresse.rstrip('/')}/api/v1/ablage/ich", timeout=frist_s, headers={"Authorization": f"Bearer {schluessel}"})
+    except httpx.HTTPError:
+        return False
+    return antwort.status_code == 200
 
 
 async def aufraeumen(kw: Kellerwolke, knoten: Iterable[UUID | str], versuche: int = 3) -> list[str]:

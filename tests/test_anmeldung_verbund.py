@@ -8,6 +8,8 @@ from pathlib import Path
 import httpx
 import pytest
 
+from appkern.testen import hat_kellerwolke
+
 from appkern.anmeldung import Abgelehnt, Anmeldung, NichtErlaubt
 
 
@@ -22,8 +24,7 @@ def _werte() -> dict[str, str]:
 
 
 W = _werte()
-pytestmark = pytest.mark.skipif(not all(W.get(k) for k in ("KELLERWOLKE_ADRESSE", "KELLERWOLKE_KENNUNG", "KELLERWOLKE_PASSWORT")),
-                                reason="keine Test-Kellerwolke mit Konto eingerichtet (.env.test)")
+pytestmark = pytest.mark.skipif(not hat_kellerwolke(W), reason="keine Test-Kellerwolke mit Konto eingerichtet (.env.test) oder sie antwortet nicht")
 
 
 async def test_passwort_kopplung_und_trennen():

@@ -45,4 +45,8 @@ def test_werte(tmp_path, monkeypatch):
     monkeypatch.setenv("KELLERWOLKE_KENNUNG", "aus-der-umgebung")
     w = werte(datei)
     assert w["KELLERWOLKE_ADRESSE"] == "http://kw" and w["KELLERWOLKE_KENNUNG"] == "aus-der-umgebung"
-    assert not hat_kellerwolke(w) and hat_kellerwolke({**w, "KELLERWOLKE_PASSWORT": "p"})
+    assert not hat_kellerwolke(w)
+    monkeypatch.setattr("appkern.testen.kellerwolke_antwortet", lambda *_a, **_k: True)
+    assert hat_kellerwolke({**w, "KELLERWOLKE_PASSWORT": "p"})
+    monkeypatch.setattr("appkern.testen.kellerwolke_antwortet", lambda *_a, **_k: False)
+    assert not hat_kellerwolke({**w, "KELLERWOLKE_PASSWORT": "p"})               # antwortet sie nicht: überspringen

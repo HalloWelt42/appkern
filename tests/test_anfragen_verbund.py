@@ -15,10 +15,10 @@ from appkern.anmeldung import Anmeldung
 from appkern.auftraege import Art, Auftraege, Kontext
 from appkern.datenbank import Datenbank
 from appkern.kellerwolke import Aktion, Kellerwolke, pfad_aus
+from appkern.testen import hat_kellerwolke
 
-pytestmark = pytest.mark.skipif(
-    not all(W.get(k) for k in ("KELLERWOLKE_ADRESSE", "KELLERWOLKE_SCHLUESSEL", "KELLERWOLKE_KENNUNG", "KELLERWOLKE_PASSWORT")),
-    reason="keine Test-Kellerwolke mit Schlüssel und Konto eingerichtet (.env.test)")
+pytestmark = pytest.mark.skipif(not hat_kellerwolke(W), reason="keine Test-Kellerwolke mit Schlüssel und Konto eingerichtet (.env.test) "
+                                                                "oder sie antwortet nicht")
 
 PROBE = Aktion(kennung="probe", titel="Probe", symbol="fa-flask", typen=("audio/*",), rolle="probe")
 
