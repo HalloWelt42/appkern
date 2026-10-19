@@ -191,18 +191,7 @@ button { font: inherit; color: inherit; }
 .seitenzeile { display: flex; align-items: center; gap: 10px; padding: 12px 2px 0; font-size: var(--klein); color: var(--text-2); }
 .seitenzeile .knopf:first-of-type { margin-left: auto; }
 
-/* ----- Anmeldung ----- */
-.anmeldung { display: grid; place-items: center; background: radial-gradient(circle at 30% 20%, var(--akzent-weich), var(--hg) 60%); }
-.anmelde-karte { width: 420px; background: var(--flaeche); border-radius: var(--r3); box-shadow: var(--schatten); padding: 30px; display: flex; flex-direction: column; gap: 14px; }
-.anmelde-karte .marke { justify-content: center; font-size: 24px; }
-.anmelde-karte .rolle { justify-content: center; }
-.anmelde-karte label { font-size: var(--klein); color: var(--text-2); display: flex; flex-direction: column; gap: 6px; }
-.hinweis-kw { display: flex; gap: 10px; align-items: flex-start; font-size: var(--klein); color: var(--text-2); background: var(--flaeche-2); border-radius: var(--r2); padding: 10px 12px; }
-.hinweis-kw i { color: var(--akzent); margin-top: 3px; }
-.oder { display: flex; align-items: center; gap: 12px; font-size: var(--marke); color: var(--text-3); }
-.oder::before, .oder::after { content: ""; flex: 1; height: 1px; background: var(--rand); }
-.knopf.breit { justify-content: center; height: 46px; }
-.knopf.zweit { background: var(--akzent-weich); color: var(--akzent); border-color: transparent; font-weight: 600; }
+/* ----- Anmeldung: stil/anmeldung.css ----- */
 
 /* Bereich, den die App selbst füllt (nur in Entwürfen) */
 .platz { border: 2px dashed var(--rand); border-radius: var(--r3); height: 100%; display: grid; place-items: center; color: var(--text-3); text-align: center; font-size: var(--klein); padding: 30px; }
@@ -238,12 +227,6 @@ button { font: inherit; color: inherit; }
 .chip.wahl i { font-size: 0.95em; }
 .chip input { border: 0; background: transparent; font: inherit; width: 120px; outline: none; color: inherit; }
 .zuruecksetzen { border: 0; background: transparent; font-family: inherit; padding: 0; }
-.code-feld { position: relative; }
-.kaestchen { display: flex; gap: 6px; justify-content: center; }
-.kaestchen .k { flex: 1 1 0; min-width: 0; max-width: 40px; height: 52px; border-radius: var(--r2); border: 1px solid var(--rand); background: var(--flaeche); display: flex; align-items: center; justify-content: center; font-family: ui-monospace, monospace; font-size: 24px; font-weight: 600; }
-.kaestchen .k.aktiv { border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-weich); }
-.kaestchen .luecke { flex: none; width: 8px; }
-.code-feld input { position: absolute; inset: 0; width: 100%; opacity: 0; font-size: 16px; caret-color: transparent; }
 .kopf-zeile { display: flex; align-items: center; gap: 8px; }
 .kopf-zeile h1 { margin: 0; font-size: calc(var(--gross) + 5px); }
 .tabelle tr.leer td { text-align: center; color: var(--text-3); }
@@ -273,8 +256,6 @@ button { font: inherit; color: inherit; }
 .mobil .auftrag .art { display: none; }
 .mobil .feld { grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .mobil .karte { padding: 4px 14px; }
-.mobil .anmelde-karte { width: auto; box-shadow: none; background: transparent; padding: 0 12px; }
-.mobil .anmeldung { height: 100%; }
 .mobil .seiten-kopf { padding: 4px 0 10px; }
 .mobil .tabelle td.zeit { white-space: normal; }
 .mobil .seiten-kopf h1 { display: none; }

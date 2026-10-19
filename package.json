@@ -20,7 +20,8 @@
       "svelte": "./oberflaeche/index.ts",
       "default": "./oberflaeche/index.ts"
     },
-    "./stil.css": "./oberflaeche/stil/alles.css"
+    "./stil.css": "./oberflaeche/stil/alles.css",
+    "./anmeldung.css": "./oberflaeche/stil/anmeldung.css"
   },
   "svelte": "./oberflaeche/index.ts",
   "peerDependencies": {

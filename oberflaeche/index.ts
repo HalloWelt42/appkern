@@ -1,5 +1,8 @@
 // Gemeinsame Oberfläche der eigenen Apps: Schale, Bausteine und Zugriff auf die Schnittstellen des Appkerns.
 export { default as Schale } from "./teile/Schale.svelte";
+export { default as Anmeldung } from "./teile/Anmeldung.svelte";
+export { default as Einrichtung } from "./teile/Einrichtung.svelte";
+export { default as AppWeg } from "./teile/AppWeg.svelte";
 export { default as AuftragZeile } from "./teile/AuftragZeile.svelte";
 export { default as Schritte } from "./teile/Schritte.svelte";
 export { default as Auswahl } from "./teile/Auswahl.svelte";
