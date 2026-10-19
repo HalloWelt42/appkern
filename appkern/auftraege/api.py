@@ -6,10 +6,10 @@ Liste, Zahlen je Zustand, Stand, Abbrechen, Wiederholen, Entfernen und den Ereig
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 
-from fastapi import APIRouter, HTTPException, Query, Response
-from fastapi.params import Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi.params import Depends as Abhaengigkeit
 from fastapi.responses import StreamingResponse
 
 from .dienst import Auftraege, FalscherZustand, NichtGefunden, UnbekannteArt
@@ -18,9 +18,14 @@ from .modelle import Auftrag, Seite, Zahlen, Zustand
 HERZSCHLAG_S = 15.0
 
 
+async def _niemand() -> str:
+    return ""
+
+
 def auftrags_router(auftraege: Auftraege, *, prefix: str = "/api/v1/auftraege",
-                    abhaengigkeiten: Sequence[Depends] = ()) -> APIRouter:
-    """`abhaengigkeiten` etwa für die Anmeldung der App (gelten für jeden Endpunkt)."""
+                    abhaengigkeiten: Sequence[Abhaengigkeit] = (), wer: Callable[..., Awaitable[str]] = _niemand) -> APIRouter:
+    """`abhaengigkeiten` etwa für die Anmeldung der App (gelten für jeden Endpunkt); `wer`: Abhängigkeit, die den Namen
+    des Aufrufers liefert (wer wiederholt, steht dann am neuen Auftrag)."""
     router = APIRouter(prefix=prefix, tags=["auftraege"], dependencies=list(abhaengigkeiten))
 
     def _fehler(f: Exception) -> HTTPException:
@@ -70,9 +75,9 @@ def auftrags_router(auftraege: Auftraege, *, prefix: str = "/api/v1/auftraege",
             raise _fehler(f)
 
     @router.post("/{auftrag_id}/wiederholen", response_model=Auftrag, status_code=201)
-    async def wiederholen(auftrag_id: str) -> Auftrag:
+    async def wiederholen(auftrag_id: str, von: str = Depends(wer)) -> Auftrag:
         try:
-            return await auftraege.wiederholen(auftrag_id)
+            return await auftraege.wiederholen(auftrag_id, von=von or None)
         except Exception as f:  # noqa: BLE001
             raise _fehler(f)
 

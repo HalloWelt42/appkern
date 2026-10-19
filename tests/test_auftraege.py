@@ -193,6 +193,27 @@ async def test_wiederholen_mit_geaenderter_eingabe(dienst):
         await dienst.wiederholen(neu.id, {"texte": "kein Feld"})
 
 
+async def test_von_wem_und_zurueckgestellt_statt_fehlgeschlagen(dienst):
+    """Jeder Auftrag sagt, wer ihn angestoßen hat; was die App zurückhält (etwa im angehaltenen Betrieb), wartet mit
+    Grund statt zu scheitern und beginnt, sobald der Grund wegfällt und die App weckt."""
+    angehalten = {"ja": True}
+    dienst.zurueckstellen_wenn(lambda a: "Betrieb angehalten" if angehalten["ja"] and a.von == "Zeitplan" else "")
+    gehalten = await dienst.einreihen("zaehlen", Texte(texte=["abc"]), von="Zeitplan")
+    von_hand = await dienst.einreihen("zaehlen", Texte(texte=["de"]), von="Marcel")
+    assert (await bis(dienst, von_hand.id, "fertig")).von == "Marcel"
+    a = await dienst.holen(gehalten.id)
+    assert a.zustand == "wartet" and a.zurueckgestellt == "Betrieb angehalten" and a.von == "Zeitplan"
+    assert (await dienst.zahlen()).fehler == 0
+    angehalten["ja"] = False
+    dienst.wecken()
+    fertig = await bis(dienst, gehalten.id, "fertig")
+    assert fertig.zurueckgestellt == "" and fertig.ergebnis == {"zeichen": 3}
+    await dienst.db.ausfuehren("UPDATE auftrag SET zustand='fehler' WHERE id=?", (gehalten.id,))
+    assert (await dienst.wiederholen(gehalten.id)).von == "Zeitplan"                 # ohne Angabe: wer ihn anstieß
+    await dienst.db.ausfuehren("UPDATE auftrag SET zustand='fehler' WHERE id=?", (von_hand.id,))
+    assert (await dienst.wiederholen(von_hand.id, von="Anna")).von == "Anna"
+
+
 async def test_neustart_haelt_an_oder_setzt_fort(tmp_path: Path):
     pfad = tmp_path / "app.sqlite"
     async with Datenbank(pfad) as db:
@@ -249,7 +270,11 @@ async def test_liste_seitenweise_und_aufraeumen(dienst):
 
 async def test_schnittstelle_mit_ereignisstrom(dienst):
     app = FastAPI()
-    router = auftrags_router(dienst)
+
+    async def wer() -> str:
+        return "Marcel"
+
+    router = auftrags_router(dienst, wer=wer)
     app.include_router(router)
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
         a = await dienst.einreihen("zaehlen", {"texte": ["abc"]})
@@ -261,7 +286,7 @@ async def test_schnittstelle_mit_ereignisstrom(dienst):
         k = await dienst.einreihen("kaputt")
         await bis(dienst, k.id, "fehler")
         r = await client.post(f"/api/v1/auftraege/{k.id}/wiederholen")
-        assert r.status_code == 201 and r.json()["wiederholung_von"] == k.id
+        assert r.status_code == 201 and r.json()["wiederholung_von"] == k.id and r.json()["von"] == "Marcel"
         await bis(dienst, r.json()["id"], "fehler")
         assert (await client.delete(f"/api/v1/auftraege/{k.id}")).status_code == 204
         zahlen = (await client.get("/api/v1/auftraege/zahlen")).json()     # eine Abfrage für alle Zustände

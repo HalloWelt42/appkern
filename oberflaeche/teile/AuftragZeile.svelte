@@ -44,13 +44,14 @@
         <span>{a.schritt}</span>{#if a.fortschritt != null}<span class="rechts">{Math.round(a.fortschritt * 100)} %</span>{/if}
       </div>
     {:else if a.zustand === "wartet"}
-      <div class="unterzeile"><span>{a.schritt || "wartet auf einen freien Platz"}</span></div>
+      <div class="unterzeile"><span>{a.zurueckgestellt ? `zurückgestellt: ${a.zurueckgestellt}` : a.schritt || "wartet auf einen freien Platz"}</span></div>
     {/if}
+    {#if a.von}<div class="unterzeile"><span>angestoßen von {a.von}</span></div>{/if}
     {#if a.fehler && a.zustand !== "fertig"}<div class="fehlertext">{a.fehler}</div>{/if}
     {#if fehler}<div class="fehlerzeile">{fehler}</div>{/if}
   </div>
   <div class="aktionen">
-    <span class="zustand {a.zustand}">{ZUSTAND[a.zustand]}</span>
+    <span class="zustand {a.zustand}">{a.zurueckgestellt ? "zurückgestellt" : ZUSTAND[a.zustand]}</span>
     {#if a.zustand === "laeuft" || a.zustand === "wartet"}
       <button class="knopf still" title={a.zustand === "laeuft" ? "Abbrechen (am nächsten Haltepunkt)" : "Abbrechen"}
               disabled={a.abbruch_gewuenscht} onclick={(e) => tun(e, () => abbrechen(a.id))}>

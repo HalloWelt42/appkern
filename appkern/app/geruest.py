@@ -166,6 +166,14 @@ class Geruest(Generic[E]):
         self._grundangebote()
         self.pflicht = Depends(angemeldet(self.anmeldung))                          # Menschen und andere Apps
         self.mensch = Depends(angemeldet(self.anmeldung, nur_menschen=True))        # nur Menschen
+        pruefen = angemeldet(self.anmeldung)
+
+        async def wer(request: Request) -> str:
+            """Wer gerade fragt, in Worten: der Name des Kontos, bei einer anderen App deren Name."""
+            konto = await pruefen(request)
+            return konto.name if konto.mensch else (konto.app or konto.name)
+
+        self.wer = wer
         self.lesen = Depends(angemeldet(self.anmeldung, cookie=True))
         self._pflege: asyncio.Task | None = None
         self.abholer = Abholer(angebote, self.auftraege, lambda: self.kellerwolke,
@@ -544,7 +552,7 @@ class Geruest(Generic[E]):
         app.include_router(anmeldungs_router(self.anmeldung, protokoll=self.protokoll))
         if self.abholer.angebote:
             app.include_router(anfragen_router(self.abholer, lambda: self.kellerwolke, self.mensch))
-        for router in (auftrags_router(self.auftraege, abhaengigkeiten=[self.pflicht]),
+        for router in (auftrags_router(self.auftraege, abhaengigkeiten=[self.pflicht], wer=self.wer),
                        einstellungs_router(self.einstellungen, abhaengigkeiten=[self.mensch]),
                        protokoll_router(self.protokoll, abhaengigkeiten=[self.pflicht])):
             app.include_router(router)

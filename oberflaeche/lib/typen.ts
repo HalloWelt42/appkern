@@ -56,6 +56,8 @@ export interface Auftrag {
   fortsetzbar: boolean;
   stapel: string | null;
   wiederholung_von: string | null;
+  von: string;                    // wer oder was ihn angestoßen hat (Konto, App, Zeitplan); leer: unbekannt
+  zurueckgestellt: string;        // wartend, aber von der App zurückgehalten, mit Grund
   erstellt_am: string;
   begonnen_am: string | null;
   beendet_am: string | null;

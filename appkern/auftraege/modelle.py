@@ -41,6 +41,8 @@ class Auftrag(BaseModel):
     fortsetzbar: bool = False             # Wiederholen setzt am Zwischenstand an
     stapel: str | None = None
     wiederholung_von: str | None = None
+    von: str = ""                         # wer oder was ihn angestoßen hat (Konto, App, Zeitplan); leer: unbekannt
+    zurueckgestellt: str = ""             # wartend, aber von der App zurückgehalten, mit Grund; leer: darf beginnen
     erstellt_am: datetime
     begonnen_am: datetime | None = None
     beendet_am: datetime | None = None

@@ -62,7 +62,10 @@ SCHEMA = [
     CREATE INDEX auftrag_zustand_idx ON auftrag (zustand, erstellt_am);
     CREATE INDEX auftrag_stapel_idx ON auftrag (stapel);
     """,
+    # wer oder was einen Auftrag angestoßen hat (Konto, App, Zeitplan), in Worten; leer bei älteren
+    "ALTER TABLE auftrag ADD COLUMN von TEXT NOT NULL DEFAULT ''",
 ]
+Zurueckstellen = Callable[[Auftrag], str]
 
 
 class AuftragAbgebrochen(Exception):
@@ -156,7 +159,19 @@ class Auftraege:
         self._wecker = asyncio.Event()
         self._schleife: asyncio.Task | None = None
         self._hoerer: set[asyncio.Queue[Auftrag]] = set()
+        self._zurueckstellen: Zurueckstellen = lambda _a: ""
         self.gestartet = asyncio.Event()   # Schema steht, Neustart aufgeräumt (Begleiter starten früher und warten darauf)
+
+    def zurueckstellen_wenn(self, regel: Zurueckstellen) -> None:
+        """Die App hält wartende Aufträge zurück, solange `regel(auftrag)` einen Grund nennt (etwa: ihr Betrieb ist
+        angehalten, und der Auftrag kam vom Zeitplan). Sie bleiben wartend, beginnen nicht und tragen den Grund in
+        `zurueckgestellt`; kein Fehlschlag. Fällt der Grund weg, ruft die App `wecken()`. Die Regel muss schnell sein
+        und darf nicht warten (sie läuft beim Nehmen jedes Auftrags)."""
+        self._zurueckstellen = regel
+
+    def wecken(self) -> None:
+        """Wartende neu prüfen, etwa wenn ein Grund zum Zurückstellen weggefallen ist."""
+        self._wecker.set()
 
     def anmelden(self, *arten: Art) -> None:
         """Arten nachträglich anmelden (vor `starten`), etwa wenn ihre Arbeit das fertige Gerüst der App braucht."""
@@ -196,15 +211,17 @@ class Auftraege:
     # --- Für die App ---------------------------------------------------------------------------------------------
 
     async def einreihen(self, art: str, eingabe: BaseModel | dict[str, Any] | None = None, *, titel: str = "",
-                        stapel: str | None = None) -> Auftrag:
+                        stapel: str | None = None, von: str = "") -> Auftrag:
+        """`von`: wer oder was den Auftrag anstößt, in Worten (der Name des Kontos, die App, "Zeitplan"); die Oberfläche
+        zeigt es statt eines pauschalen "von dir"."""
         a = self.arten.get(art)
         if a is None:
             raise UnbekannteArt(f"Unbekannte Art: {art}")
         daten = self._eingabe_json(a, eingabe)
         auftrag_id = str(uuid.uuid4())
         await self.db.ausfuehren(
-            "INSERT INTO auftrag (id, art, titel, zustand, eingabe, stapel, erstellt_am) VALUES (?,?,?,?,?,?,?)",
-            (auftrag_id, art, titel or a.titel, "wartet", json.dumps(daten, ensure_ascii=False), stapel, _jetzt()))
+            "INSERT INTO auftrag (id, art, titel, zustand, eingabe, stapel, erstellt_am, von) VALUES (?,?,?,?,?,?,?,?)",
+            (auftrag_id, art, titel or a.titel, "wartet", json.dumps(daten, ensure_ascii=False), stapel, _jetzt(), von))
         auftrag = await self.holen(auftrag_id)
         self._melden(auftrag)
         self._wecker.set()
@@ -277,10 +294,10 @@ class Auftraege:
             await self._eintragen(auftrag)
         return auftrag
 
-    async def wiederholen(self, auftrag_id: str, aenderungen: dict[str, Any] | None = None) -> Auftrag:
+    async def wiederholen(self, auftrag_id: str, aenderungen: dict[str, Any] | None = None, *, von: str | None = None) -> Auftrag:
         """Neuer Auftrag mit derselben Eingabe; bei fortsetzbaren Arten mit dem Zwischenstand des alten. `aenderungen`
         ersetzen einzelne Felder der Eingabe (etwa eine Adresse, die sich seitdem geändert hat), geprüft wie beim
-        Einreihen."""
+        Einreihen. `von`: wer wiederholt; ohne Angabe gilt, wer den alten angestoßen hat."""
         alt = await self.db.zeile("SELECT * FROM auftrag WHERE id=?", (auftrag_id,))
         if alt is None:
             raise NichtGefunden(f"Auftrag {auftrag_id} nicht gefunden")
@@ -295,9 +312,10 @@ class Auftraege:
         if aenderungen:
             eingabe = json.dumps(self._eingabe_json(art, {**json.loads(eingabe or "{}"), **aenderungen}), ensure_ascii=False)
         await self.db.ausfuehren(
-            "INSERT INTO auftrag (id, art, titel, zustand, eingabe, zwischenstand, stapel, wiederholung_von, erstellt_am) "
-            "VALUES (?,?,?,?,?,?,?,?,?)",
-            (neu_id, alt["art"], alt["titel"], "wartet", eingabe, zwischen, alt["stapel"], auftrag_id, _jetzt()))
+            "INSERT INTO auftrag (id, art, titel, zustand, eingabe, zwischenstand, stapel, wiederholung_von, erstellt_am, von) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (neu_id, alt["art"], alt["titel"], "wartet", eingabe, zwischen, alt["stapel"], auftrag_id, _jetzt(),
+             alt["von"] if von is None else von))
         auftrag = await self.holen(neu_id)
         self._melden(auftrag)
         self._wecker.set()
@@ -343,15 +361,25 @@ class Auftraege:
             except asyncio.QueueFull:
                 pass
 
-    def _als_auftrag(self, z: dict[str, Any]) -> Auftrag:
+    def _grund(self, z: dict[str, Any]) -> str:
+        """Warum ein wartender Auftrag zurückgestellt ist (Regel der App); leer: darf beginnen."""
+        try:
+            return self._zurueckstellen(self._als_auftrag(z, mit_grund=False)) or ""
+        except Exception:  # noqa: BLE001 - eine Regel der App darf das Nehmen nie anhalten
+            logger.exception("Regel zum Zurückstellen")
+            return ""
+
+    def _als_auftrag(self, z: dict[str, Any], *, mit_grund: bool = True) -> Auftrag:
         art = self.arten.get(z["art"])
+        zurueck = self._grund(z) if mit_grund and z["zustand"] == "wartet" else ""
         return Auftrag(
             id=z["id"], art=z["art"], titel=z["titel"], zustand=z["zustand"], eingabe=json.loads(z["eingabe"]),
             ergebnis=json.loads(z["ergebnis"]) if z["ergebnis"] else None, fehler=z["fehler"],
             fortschritt=z["fortschritt"], schritt=z["schritt"], phase=z["phase"],
             phasen=list(art.phasen) if art else [], abbruch_gewuenscht=bool(z["abbruch"]),
             fortsetzbar=bool(art and art.fortsetzbar), stapel=z["stapel"], wiederholung_von=z["wiederholung_von"],
-            erstellt_am=z["erstellt_am"], begonnen_am=z["begonnen_am"], beendet_am=z["beendet_am"])
+            erstellt_am=z["erstellt_am"], begonnen_am=z["begonnen_am"], beendet_am=z["beendet_am"], von=z.get("von") or "",
+            zurueckgestellt=zurueck)
 
     async def _fortschritt(self, auftrag_id: str, anteil: float | None, schritt: str, phase: str | None) -> None:
         anteil = None if anteil is None else min(1.0, max(0.0, anteil))
@@ -367,15 +395,16 @@ class Auftraege:
                                  (json.dumps(stand, ensure_ascii=False), auftrag_id))
 
     async def _nehmen(self) -> dict[str, Any] | None:
-        """Den ältesten wartenden Auftrag atomar übernehmen."""
+        """Den ältesten wartenden Auftrag atomar übernehmen, der nicht zurückgestellt ist."""
 
         def arbeit(v):
-            z = v.execute("SELECT * FROM auftrag WHERE zustand='wartet' ORDER BY erstellt_am, id LIMIT 1").fetchone()
-            if z is None:
-                return None
-            v.execute("UPDATE auftrag SET zustand='laeuft', begonnen_am=coalesce(begonnen_am, ?) WHERE id=?",
-                      (_jetzt(), z["id"]))
-            return dict(z) | {"zustand": "laeuft"}
+            for z in v.execute("SELECT * FROM auftrag WHERE zustand='wartet' ORDER BY erstellt_am, id").fetchall():
+                if self._grund(dict(z)):
+                    continue
+                v.execute("UPDATE auftrag SET zustand='laeuft', begonnen_am=coalesce(begonnen_am, ?) WHERE id=?",
+                          (_jetzt(), z["id"]))
+                return dict(z) | {"zustand": "laeuft"}
+            return None
 
         return await self.db.transaktion(arbeit)
 
