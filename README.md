@@ -461,7 +461,7 @@ Arbeitskopie zeigen statt auf GitHub.
 | Befehl | Was |
 |---|---|
 | `vor-dem-commit` | Fassung hochzählen (nur neue Kennung, wenn `version.json` schon vorgemerkt ist), vormerken, vorgemerkte Dateien prüfen; aufgerufen vom Hook `tools/git-hooks/pre-commit` |
-| `pruefen [PFAD ...]` | nur gerade Zeichen; Stil ohne `!important`, ohne einseitige Streifen (erlaubt nur 1px-Trennlinien in `var(--rand)`), ohne Regeln, die nur Klassen der Schale treffen (Svelte-Blöcke nur mit `:global`) |
+| `pruefen [PFAD ...]` | nur gerade Zeichen; Stil ohne `!important`, ohne einseitige Streifen (erlaubt nur 1px-Trennlinien in `var(--rand)`), ohne Regeln, die nur Klassen der Schale treffen (Svelte-Blöcke nur mit `:global`; entfällt für eine App mit eigener Schale, die den Stil des Appkerns nicht lädt) |
 | `fassung [patch\|minor\|major\|id]` | `version.json` hochzählen |
 | `appkern` | Appkern in Oberfläche (package-lock) und Backend (requirements, Archiv des Commits) auf denselben neuesten Commit |
 | `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`) |

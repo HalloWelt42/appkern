@@ -29,11 +29,25 @@ def _wurzel() -> Path:
 
 
 def _schale(wurzel: Path) -> set[str] | None:
-    """Klassen der Schale aus dem eingebundenen Appkern; None im Appkern selbst (dort ist der Stil die Schale)."""
+    """Klassen der Schale aus dem eingebundenen Appkern; None im Appkern selbst (dort ist der Stil die Schale) und in
+    einer App mit eigener Schale (sie lädt den Stil des Appkerns nicht, nutzt nur seine Bausteine; dann kann keine
+    ihrer Regeln die Schale mit ändern)."""
     paket = wurzel / "frontend" / "node_modules" / "appkern-oberflaeche" / "oberflaeche"
     if (wurzel / "oberflaeche" / "stil" / "schale.css").is_file() or not paket.is_dir():
         return None
+    if not _laedt_stil(wurzel / "frontend" / "src"):
+        return None
     return schalen_klassen(paket / "stil", paket / "teile")
+
+
+def _laedt_stil(quellen: Path) -> bool:
+    """Lädt die Oberfläche der App den Stil oder die Schale des Appkerns?"""
+    for datei in quellen.rglob("*"):
+        if datei.suffix in (".ts", ".js", ".svelte", ".css", ".html") and datei.is_file():
+            text = datei.read_text(encoding="utf-8", errors="replace")
+            if "appkern-oberflaeche/stil.css" in text or "<Schale" in text:
+                return True
+    return False
 
 
 def pruefen(wurzel: Path, dateien: list[Path]) -> int:

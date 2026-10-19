@@ -106,3 +106,18 @@ def test_ausrollen_prueft_den_tondienst_statt_ffmpeg():
     with pytest.raises(ValidationError):
         Ziel.model_validate({**angaben, "ton": True})
     assert Ziel.model_validate({**angaben, "ton": True, "leitstelle": "http://pi:8530"}).ton
+
+
+def test_eigene_schale_ohne_pruefung_auf_klassen_der_schale(tmp_path):
+    """Eine App, die nur Bausteine des Appkerns nutzt und den Stil nicht lädt, hat eine eigene Schale: dann gibt es
+    keine Klassen der Schale, die ihre Regeln mit ändern könnten."""
+    from appkern.werkzeuge.__main__ import _schale
+    paket = tmp_path / "frontend" / "node_modules" / "appkern-oberflaeche" / "oberflaeche"
+    (paket / "stil").mkdir(parents=True)
+    (paket / "stil" / "alles.css").write_text(".knopf { color: red; }\n")
+    quellen = tmp_path / "frontend" / "src"
+    quellen.mkdir(parents=True)
+    (quellen / "main.ts").write_text('import "./stil/eigen.css";\nimport { sitzung } from "appkern-oberflaeche";\n')
+    assert _schale(tmp_path) is None
+    (quellen / "main.ts").write_text('import "appkern-oberflaeche/stil.css";\n')
+    assert _schale(tmp_path) == {"knopf"}
