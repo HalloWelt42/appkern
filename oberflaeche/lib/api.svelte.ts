@@ -150,6 +150,7 @@ async function senden(pfad: string, init: AnfrageOptionen, signal: AbortSignal):
 
 // Gleiche GET-Anfragen, die gerade unterwegs sind: eine gemeinsame Antwort, beendet, wenn niemand mehr wartet.
 interface Unterwegs {
+  kennung: string;
   antwort: Promise<Antwort>;
   steuerung: AbortController;
   wartende: number;
@@ -161,14 +162,16 @@ function gemeinsam(pfad: string, init: AnfrageOptionen): Promise<Antwort> {
   let u = unterwegs.get(kennung);
   if (!u) {
     const steuerung = new AbortController();
-    const neu: Unterwegs = { antwort: senden(pfad, { ...init, signal: undefined }, steuerung.signal), steuerung, wartende: 0 };
-    neu.antwort.catch(() => {}).finally(() => {
-      if (unterwegs.get(kennung) === neu) unterwegs.delete(kennung);
-    });
+    const neu: Unterwegs = { kennung, antwort: senden(pfad, { ...init, signal: undefined }, steuerung.signal), steuerung, wartende: 0 };
+    neu.antwort.catch(() => {}).finally(() => vergessen(neu));
     unterwegs.set(kennung, neu);
     u = neu;
   }
   return warten(u, init.signal ?? undefined);
+}
+
+function vergessen(u: Unterwegs): void {
+  if (unterwegs.get(u.kennung) === u) unterwegs.delete(u.kennung);
 }
 
 function warten(u: Unterwegs, signal: AbortSignal | undefined): Promise<Antwort> {
@@ -177,7 +180,10 @@ function warten(u: Unterwegs, signal: AbortSignal | undefined): Promise<Antwort>
   return new Promise<Antwort>((fertig, fehler) => {
     const aufgeben = () => {
       u.wartende -= 1;
-      if (u.wartende === 0) u.steuerung.abort();
+      if (u.wartende === 0) {
+        vergessen(u);                                  // wer jetzt kommt, fragt neu statt eine abgebrochene zu teilen
+        u.steuerung.abort();
+      }
       fehler(new ApiFehler(0, "Abgebrochen", "abgebrochen"));
     };
     if (signal.aborted) return aufgeben();
