@@ -195,7 +195,9 @@ Adresse (`/einstellungen/<gruppe>`), in voller Breite.
 Was in der App geschah, mit Ereignis (`auftrag.fertig`, `datei.hochgeladen`), Stufe (`info`, `warnung`, `fehler`),
 Bezug und Text; seitenweise, nach Ereignisanfang, Stufe, Bezug, Tag und Text filterbar. Eintragen wirft nie.
 `Auftraege(..., protokoll=protokoll)` trägt jedes Ende eines Auftrags ein. Schnittstelle: `protokoll_router`
-(`GET /api/v1/protokoll`).
+(`GET /api/v1/protokoll`). Für Sichten, die mehrere Ereignisse zu einem Bereich zusammenfassen, nimmt die Liste auch
+mehrere Anfänge (`ereignisse`), Stufen (`stufen`), Arten von Aufträgen (`arten`, aus `daten.art`) und einen festen
+Endpunkt (`bis`), damit eine Liste beim Blättern stehen bleibt, während Neues dazukommt.
 
 ## App-Verzeichnis
 

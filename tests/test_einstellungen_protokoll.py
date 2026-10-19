@@ -170,6 +170,27 @@ async def test_protokoll_filter_seiten_aufraeumen(db):
         assert (await c.get("/api/v1/protokoll", params={"tag": "gestern"})).status_code == 422
 
 
+async def test_protokoll_bereiche_fuer_sichten(db):
+    """Mehrere Anfänge, Stufen und Arten von Aufträgen zugleich, dazu ein fester Endpunkt beim Blättern."""
+    p = Protokoll(db)
+    await p.starten()
+    await p.eintragen("quelle.angelegt", "Ordner")
+    await p.eintragen("regeln.geaendert", "Regel")
+    await p.eintragen("auftrag.fertig", "", daten={"art": "scannen"})
+    await p.eintragen("auftrag.fehler", "weg", stufe="fehler", daten={"art": "einlesen"})
+    assert (await p.liste(ereignisse=["quelle.", "regeln."])).gesamt == 2
+    assert [e.text for e in (await p.liste(ereignisse=["auftrag."], arten=["einlesen"])).eintraege] == ["weg"]
+    assert (await p.liste(stufen=["info", "warnung"])).gesamt == 3
+    bis = (await p.liste()).eintraege[0].zeit
+    await p.eintragen("quelle.entfernt", "danach")
+    assert (await p.liste(bis=bis.isoformat())).gesamt == 4 and (await p.liste()).gesamt == 5
+    app = FastAPI()
+    app.include_router(protokoll_router(p))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        r = await c.get("/api/v1/protokoll", params=[("ereignisse", "quelle."), ("ereignisse", "regeln."), ("bis", bis.isoformat())])
+        assert r.json()["gesamt"] == 2
+
+
 async def test_protokoll_wirft_nie(db):
     p = Protokoll(db)
     await p.starten()
