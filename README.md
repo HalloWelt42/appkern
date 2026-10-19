@@ -378,7 +378,8 @@ während einer Aufnahme), wartet es. Kein Nutzer muss nach dem Ausrollen selbst 
 
 Die Adresse im Browser ist ein echter Pfad: der erste Teil wählt den Bereich (`/transkripte`), weitere Teile liest die
 Seite aus `navigation.teile` (`/transkripte/<kennung>`); Zurück und Vor im Browser funktionieren, das Backend liefert
-für jeden Pfad außerhalb von `/api` die Oberfläche aus. Eine Seite, die einen Teil zeigt, setzt `navigation.titel`;
+für jeden Pfad außerhalb von `/api` die Oberfläche aus, nur nie für eine fehlende Datei: ein Weg mit Dateiendung (etwa
+`/manifest.webmanifest`) bekommt 404, Zahlen wie `/transkripte/<kennung>/12.5` bleiben Seiten. Eine Seite, die einen Teil zeigt, setzt `navigation.titel`;
 am Telefon steht er im Kopf, mit einem Knopf zurück zum Bereich, und daneben auf Wunsch `navigation.kennzeichen`
 (`{ symbol, text }`, etwa woher das Gezeigte kommt). Für eigene Seiten stehen `hole`, `json`, `gehe`,
 `adresse`, `navigation`, `sitzung`, `geraet`, `auftraege`, `beiAuftrag` (Ereignisse der Aufträge mithören),
