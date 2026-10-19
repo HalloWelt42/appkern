@@ -86,6 +86,8 @@ async with Leitstelle("http://192.168.178.49:8530", schluessel, "Transkription")
 | Bereich | Inhalt |
 |---|---|
 | Sprachmodelle | `chat` (am Stück), `chat_strom` (`Stueck`, `Wartet`, `Ende`), `einbetten`, `modelle` (lädt nichts, auch als Gesundheitsprüfung) |
+| Werkzeuge | `tools` geht als Option mit; die Antwort trägt `werkzeugaufrufe` (im Strom zusammengesetzt in `Ende`), Ergebnisse gehen als `Nachricht.ergebnis(aufruf_id, text)` zurück, die Antwort des Modells als `Nachricht.assistent(text, werkzeugaufrufe)` |
+| Lage | `lage` an Antwort, `Ende` und `Einbettungen` (Kopf `X-Leitstelle-Lage`: ruhig, angespannt, engpass); Stapelarbeit startet bei angespannt oder engpass nichts Neues |
 | Dienste | `dienst(name)` mit `anfrage`, `json`, `strom`, `herunterladen` (nie halb) |
 | Aufträge | Titel `"<App>: <Titel>"`, Priorität `hintergrund`, `normal`, `hoch`, `dringend` (senkt die Vorgabe der App, hebt sie nie) |
 
@@ -370,6 +372,10 @@ bis 760 Pixel gilt die eigene Telefonansicht. Das Protokoll wird bei wenig Platz
 Oberfläche steht als Meta `app-fassung` in ihrer Startseite (eingesetzt in `vite.config.ts`); der Server meldet sie in
 `/api/v1/app` (`oberflaeche`), und ein Tab vergleicht sich mit ihr. Ist die Oberfläche nach einer neuen Fassung nicht
 neu gebaut, steht das als Warnung im Protokoll.
+
+Eigene Reiter in den Einstellungen (`<Schale {bereiche} einstellungen={[{ schluessel, titel, seite }]} />`) stehen
+zwischen den erzeugten Gruppen und der Anzeige, für Einstellungen mit eigener Verwaltung (etwa Zugänge mit Schlüsseln
+je Gerät).
 
 Gemeinsame Bausteine (Stile in `stil/bausteine.css`, kommen mit `stil.css`): `Spieler` (Wellenform, Sprecherspur,
 Marker, Tempo, Tasten; `kompakt` für das Telefon), `Rueckfrage` (vor dem Löschen, im Ablauf statt als Fenster),

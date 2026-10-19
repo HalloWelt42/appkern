@@ -5,7 +5,7 @@
   import { verfolgen } from "../lib/auftraege.svelte";
   import { fassung, ruhig } from "../lib/fassung.svelte";
   import { navigation } from "../lib/navigation.svelte";
-  import type { Anfrage, Bereich } from "../lib/typen";
+  import type { Anfrage, Bereich, EinstellungsReiter } from "../lib/typen";
   import { verbindungen, verbindungenVerfolgen } from "../lib/verbindungen.svelte";
   import Auftraege from "./Auftraege.svelte";
   import Band from "./Band.svelte";
@@ -14,7 +14,8 @@
   import Navigation from "./Navigation.svelte";
   import Protokoll from "./Protokoll.svelte";
 
-  let { bereiche, oeffnen }: { bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string } = $props();
+  let { bereiche, oeffnen, einstellungen = [] }: { bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string;
+                                                 einstellungen?: EinstellungsReiter[] } = $props();
 
   onMount(() => {
     const auftraegeStoppen = verfolgen();
@@ -49,7 +50,7 @@
     {:else if seite === "protokoll"}
       <Protokoll />
     {:else if seite === "einstellungen"}
-      <Einstellungen />
+      <Einstellungen reiter={einstellungen} />
     {:else}
       <Auftraege />
     {/if}

@@ -5,6 +5,7 @@ Unbekannte Felder werden überlesen: eine neuere Leitstelle mit zusätzlichen An
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -58,11 +59,27 @@ class Modell(_Modell):
     steckbrief: Steckbrief | None = None                   # ab Leitstelle 0.15
 
 
+class Werkzeugaufruf(_Modell):
+    """Ein Werkzeug, das das Modell aufrufen will (OpenAI `tool_calls`). `argumente` bleibt der Text, wie das Modell
+    ihn schrieb (JSON); prüfen und auslegen ist Sache der App."""
+
+    id: str
+    name: str
+    argumente: str = ""
+
+    def fuer_fassade(self) -> dict[str, Any]:
+        return {"id": self.id, "type": "function", "function": {"name": self.name, "arguments": self.argumente or "{}"}}
+
+
 class Nachricht(_Modell):
-    """Eine Nachricht im Gespräch. `inhalt` ist Text oder, mit Bildern, eine Liste von Teilen im OpenAI-Format."""
+    """Eine Nachricht im Gespräch. `inhalt` ist Text oder, mit Bildern, eine Liste von Teilen im OpenAI-Format.
+    `werkzeugaufrufe`: was das Modell in dieser Antwort aufrufen wollte (Rolle assistant); `aufruf_id`: zu welchem
+    Aufruf ein Ergebnis gehört (Rolle tool)."""
 
     rolle: Rolle
     inhalt: str | list[dict[str, Any]]
+    werkzeugaufrufe: list[Werkzeugaufruf] = Field(default_factory=list)
+    aufruf_id: str | None = None
 
     @classmethod
     def system(cls, text: str) -> Nachricht:
@@ -73,11 +90,21 @@ class Nachricht(_Modell):
         return cls(rolle="user", inhalt=inhalt)
 
     @classmethod
-    def assistent(cls, text: str) -> Nachricht:
-        return cls(rolle="assistant", inhalt=text)
+    def assistent(cls, text: str, werkzeugaufrufe: Sequence[Werkzeugaufruf] = ()) -> Nachricht:
+        return cls(rolle="assistant", inhalt=text, werkzeugaufrufe=list(werkzeugaufrufe))
+
+    @classmethod
+    def ergebnis(cls, aufruf_id: str, text: str) -> Nachricht:
+        """Das Ergebnis eines Werkzeugaufrufs für das Modell."""
+        return cls(rolle="tool", inhalt=text, aufruf_id=aufruf_id)
 
     def fuer_fassade(self) -> dict[str, Any]:
-        return {"role": self.rolle, "content": self.inhalt}
+        teil: dict[str, Any] = {"role": self.rolle, "content": self.inhalt}
+        if self.werkzeugaufrufe:
+            teil["tool_calls"] = [a.fuer_fassade() for a in self.werkzeugaufrufe]
+        if self.aufruf_id is not None:
+            teil["tool_call_id"] = self.aufruf_id
+        return teil
 
 
 class Verbrauch(_Modell):
@@ -87,15 +114,18 @@ class Verbrauch(_Modell):
 
 
 class ChatAntwort(_Modell):
-    """Eine fertige Antwort. `abgebrochen`: in der Leitstelle abgebrochen, `text` ist dann der bisherige Teil."""
+    """Eine fertige Antwort. `abgebrochen`: in der Leitstelle abgebrochen, `text` ist dann der bisherige Teil.
+    `lage`: wie die Leitstelle die Lage beim Antworten sah (Kopf X-Leitstelle-Lage: ruhig, angespannt, engpass)."""
 
     text: str
     denken: str = ""                 # Denkfeld des Modells (reasoning_content), falls es eins liefert
+    werkzeugaufrufe: list[Werkzeugaufruf] = Field(default_factory=list)
     ende: str | None = None
     abgebrochen: bool = False
     modell: str | None = None
     knoten: str | None = None
     auftrag: str | None = None
+    lage: str | None = None
     verbrauch: Verbrauch | None = None
 
 
@@ -115,13 +145,16 @@ class Wartet(_Modell):
 
 
 class Ende(_Modell):
-    """Der Strom ist zu Ende. `abgebrochen`: in der Leitstelle abgebrochen; der Text bis hier ist das Teilergebnis."""
+    """Der Strom ist zu Ende. `abgebrochen`: in der Leitstelle abgebrochen; der Text bis hier ist das Teilergebnis.
+    `werkzeugaufrufe`: die im Strom stückweise gekommenen Aufrufe, zusammengesetzt."""
 
     art: Literal["ende"] = "ende"
     ende: str | None = None
     abgebrochen: bool = False
+    werkzeugaufrufe: list[Werkzeugaufruf] = Field(default_factory=list)
     modell: str | None = None
     auftrag: str | None = None
+    lage: str | None = None
     verbrauch: Verbrauch | None = None
 
 
@@ -131,4 +164,5 @@ Ereignis = Stueck | Wartet | Ende
 class Einbettungen(_Modell):
     vektoren: list[list[float]]
     modell: str | None = None
+    lage: str | None = None          # Kopf X-Leitstelle-Lage; Stapelarbeit hält sich danach (ANBINDUNG Abschnitt 4)
     verbrauch: Verbrauch | None = None

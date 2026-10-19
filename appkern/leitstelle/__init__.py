@@ -6,6 +6,7 @@ from .fehler import (
 )
 from .modelle import (
     ChatAntwort, Einbettungen, Ende, Ereignis, Messwerte, Modell, Nachricht, Prioritaet, Steckbrief, Stueck, Verbrauch, Wartet,
+    Werkzeugaufruf,
 )
 from .hoeren import Gehoert, GehoertesSegment, GehoertesWort, hoeren
 from .geduld import WARTEN_BEI, geduld, geduld_setzen, geduldig
@@ -16,4 +17,5 @@ __all__ = [
     "GehoertesSegment", "GehoertesWort", "Gesperrt", "WARTEN_BEI", "geduld", "geduld_setzen", "geduldig", "hoeren",
     "Halt", "KeinModell", "Leitstelle", "LeitstellenFehler", "Messwerte", "Modell", "Nachricht", "NichtErlaubt", "NichtErreichbar",
     "NichtGefunden", "Prioritaet", "RechnerSchlaeft", "SchluesselUngueltig", "Steckbrief", "Stueck", "Ungueltig", "Verbrauch", "Wartet",
+    "Werkzeugaufruf",
 ]

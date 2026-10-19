@@ -5,14 +5,15 @@
   import { auftraege, verfolgen } from "../../lib/auftraege.svelte";
   import { fassung } from "../../lib/fassung.svelte";
   import { gehe, navigation } from "../../lib/navigation.svelte";
-  import type { Anfrage, Bereich } from "../../lib/typen";
+  import type { Anfrage, Bereich, EinstellungsReiter } from "../../lib/typen";
   import { verbindungen, verbindungenVerfolgen } from "../../lib/verbindungen.svelte";
   import Einstellungen from "../Einstellungen.svelte";
   import Protokoll from "../Protokoll.svelte";
   import MobilAuftraege from "./MobilAuftraege.svelte";
   import MobilMehr from "./MobilMehr.svelte";
 
-  let { bereiche, oeffnen }: { bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string } = $props();
+  let { bereiche, oeffnen, einstellungen = [] }: { bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string;
+                                                 einstellungen?: EinstellungsReiter[] } = $props();
 
   onMount(() => {
     const a = verfolgen();
@@ -61,7 +62,7 @@
     {:else if seite === "protokoll"}
       <Protokoll kompakt />
     {:else if seite === "einstellungen"}
-      <Einstellungen />
+      <Einstellungen reiter={einstellungen} />
     {:else if seite === "mehr"}
       <MobilMehr {weitere} />
     {:else}

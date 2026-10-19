@@ -29,7 +29,9 @@ from urllib.parse import quote
 import httpx
 
 from .fehler import LeitstellenFehler, NichtErreichbar, fehler_aus
-from .modelle import ChatAntwort, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Stueck, Verbrauch, Wartet
+from .modelle import (
+    ChatAntwort, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Stueck, Verbrauch, Wartet, Werkzeugaufruf,
+)
 from .arbeit import KOPF as ARBEIT_KOPF, LAUFENDE_ARBEIT
 from .bindung import GEBUNDEN, KOPF as INSTANZ_KOPF, Bindung
 
@@ -45,6 +47,32 @@ def _verbrauch(roh: dict[str, Any] | None) -> Verbrauch | None:
         return None
     return Verbrauch(eingabe=roh.get("prompt_tokens", 0), ausgabe=roh.get("completion_tokens", 0),
                      gesamt=roh.get("total_tokens", 0))
+
+
+def _aufrufe(roh: list[dict[str, Any]] | None) -> list[Werkzeugaufruf]:
+    """`tool_calls` einer fertigen Antwort."""
+    return [Werkzeugaufruf(id=a.get("id") or f"aufruf-{n}", name=(a.get("function") or {}).get("name") or "",
+                           argumente=(a.get("function") or {}).get("arguments") or "")
+            for n, a in enumerate(roh or [])]
+
+
+class _Aufrufsammler:
+    """Setzt die Werkzeugaufrufe eines Stroms zusammen: je `index` kommen Kennung, Name und Argumente in Stücken."""
+
+    def __init__(self) -> None:
+        self._teile: dict[int, dict[str, str]] = {}
+
+    def aufnehmen(self, delta: list[dict[str, Any]] | None) -> None:
+        for n, d in enumerate(delta or []):
+            teil = self._teile.setdefault(int(d.get("index", n)), {"id": "", "name": "", "argumente": ""})
+            funktion = d.get("function") or {}
+            teil["id"] = d.get("id") or teil["id"]
+            teil["name"] += funktion.get("name") or ""
+            teil["argumente"] += funktion.get("arguments") or ""
+
+    def aufrufe(self) -> list[Werkzeugaufruf]:
+        return [Werkzeugaufruf(id=t["id"] or f"aufruf-{i}", name=t["name"], argumente=t["argumente"])
+                for i, t in sorted(self._teile.items())]
 
 
 def _nachrichten(nachrichten: Sequence[Nachricht | str]) -> list[dict[str, Any]]:
@@ -165,15 +193,17 @@ class Leitstelle:
             # Denkende Modelle (etwa Qwen 3.6 und 3.8 in LM Studio) legen die durch das Schema eingeschränkte Ausgabe
             # ins Denkfeld und lassen das Antwortfeld leer; mit fester Antwortform ist das die Antwort.
             text = denken
-        return ChatAntwort(text=text, denken=denken, ende=ende, abgebrochen=ende == ABBRUCH,
-                           modell=antwort.headers.get("x-leitstelle-modell") or daten.get("model"),
+        return ChatAntwort(text=text, denken=denken, werkzeugaufrufe=_aufrufe(nachricht.get("tool_calls")), ende=ende,
+                           abgebrochen=ende == ABBRUCH, modell=antwort.headers.get("x-leitstelle-modell") or daten.get("model"),
                            knoten=antwort.headers.get("x-leitstelle-knoten"),
-                           auftrag=antwort.headers.get("x-leitstelle-auftrag"), verbrauch=_verbrauch(daten.get("usage")))
+                           auftrag=antwort.headers.get("x-leitstelle-auftrag"), lage=antwort.headers.get("x-leitstelle-lage"),
+                           verbrauch=_verbrauch(daten.get("usage")))
 
     async def chat_strom(self, nachrichten: Sequence[Nachricht | str], *, modell: str | None = None, titel: str = "",
                          prioritaet: Prioritaet | None = None, **optionen: Any) -> AsyncIterator[Ereignis]:
-        """Stücke, solange gerechnet wird, `Wartet`, solange der Auftrag wartet, zuletzt `Ende`. Ein Fehler mitten
-        im Strom kommt als Fehlerart; der Text bis dahin ist beim Aufrufer."""
+        """Stücke, solange gerechnet wird, `Wartet`, solange der Auftrag wartet, zuletzt `Ende` (mit den
+        Werkzeugaufrufen, wenn `tools` mitging). Ein Fehler mitten im Strom kommt als Fehlerart; der Text bis dahin ist
+        beim Aufrufer."""
         koerper = self._chat_koerper(nachrichten, modell, optionen, True)
         try:
             async with self._client.stream("POST", f"{self.adresse}/v1/chat/completions", json=koerper,
@@ -181,7 +211,9 @@ class Leitstelle:
                 if antwort.status_code >= 400:
                     raise _fehler(antwort, (await antwort.aread()).decode("utf-8", "replace"))
                 auftrag = antwort.headers.get("x-leitstelle-auftrag")
+                lage = antwort.headers.get("x-leitstelle-lage")
                 ende, modell_name, verbrauch = None, None, None
+                aufrufe = _Aufrufsammler()
                 async for zeile in antwort.aiter_lines():
                     if zeile.startswith(":"):
                         treffer = _WARTET.match(zeile)
@@ -201,12 +233,14 @@ class Leitstelle:
                     modell_name = teil.get("model") or modell_name
                     verbrauch = _verbrauch(teil.get("usage")) or verbrauch
                     for wahl in teil.get("choices") or []:
-                        text = (wahl.get("delta") or {}).get("content")
+                        delta = wahl.get("delta") or {}
+                        text = delta.get("content")
                         if text:
                             yield Stueck(text=text)
+                        aufrufe.aufnehmen(delta.get("tool_calls"))
                         ende = wahl.get("finish_reason") or ende
-                yield Ende(ende=ende, abgebrochen=ende == ABBRUCH, modell=modell_name, auftrag=auftrag,
-                           verbrauch=verbrauch)
+                yield Ende(ende=ende, abgebrochen=ende == ABBRUCH, werkzeugaufrufe=aufrufe.aufrufe(), modell=modell_name,
+                           auftrag=auftrag, lage=lage, verbrauch=verbrauch)
         except httpx.TransportError as f:
             raise NichtErreichbar(f"Leitstelle nicht erreichbar: {type(f).__name__}") from f
 
@@ -219,7 +253,7 @@ class Leitstelle:
         daten = antwort.json()
         reihe = sorted(daten.get("data") or [], key=lambda d: d.get("index", 0))
         return Einbettungen(vektoren=[d["embedding"] for d in reihe], modell=daten.get("model"),
-                            verbrauch=_verbrauch(daten.get("usage")))
+                            lage=antwort.headers.get("x-leitstelle-lage"), verbrauch=_verbrauch(daten.get("usage")))
 
     # --- Dienste mit eigener Schnittstelle -----------------------------------------------------------------------
 

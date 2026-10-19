@@ -317,3 +317,58 @@ async def test_alte_leitstelle_ohne_rechner():
         with pytest.raises(DienstWeg) as f:
             await ls.chat(["x"])
     assert f.value.rechner == ()
+
+
+async def test_werkzeugaufrufe_am_stueck_und_ergebnis_zurueck():
+    gesehen = {}
+
+    def handler(request: httpx.Request):
+        gesehen["koerper"] = json.loads(request.content)
+        return httpx.Response(200, json={"model": "gross", "choices": [{"finish_reason": "tool_calls", "message": {
+            "content": "", "tool_calls": [{"id": "r1", "type": "function",
+                                           "function": {"name": "get_weather", "arguments": "{\"ort\": \"Zeitz\"}"}}]}}]},
+                              headers={"X-Leitstelle-Lage": "angespannt"})
+
+    werkzeug = {"type": "function", "function": {"name": "get_weather", "parameters": {"type": "object"}}}
+    async with leitstelle(handler) as ls:
+        antwort = await ls.chat(["Wetter?"], tools=[werkzeug])
+    assert antwort.ende == "tool_calls" and antwort.lage == "angespannt"
+    assert [(a.id, a.name, a.argumente) for a in antwort.werkzeugaufrufe] == [("r1", "get_weather", "{\"ort\": \"Zeitz\"}")]
+    assert gesehen["koerper"]["tools"] == [werkzeug]
+    folge = [Nachricht.nutzer("Wetter?"), Nachricht.assistent("", antwort.werkzeugaufrufe), Nachricht.ergebnis("r1", "11 Grad")]
+    roh = [n.fuer_fassade() for n in folge]
+    assert roh[1]["tool_calls"] == [{"id": "r1", "type": "function", "function": {"name": "get_weather", "arguments": "{\"ort\": \"Zeitz\"}"}}]
+    assert roh[2] == {"role": "tool", "content": "11 Grad", "tool_call_id": "r1"}
+    assert "tool_calls" not in roh[0] and "tool_call_id" not in roh[0]
+
+
+async def test_werkzeugaufrufe_im_strom_zusammengesetzt():
+    def teil(delta, ende=None):
+        return f"data: {json.dumps({'model': 'gross', 'choices': [{'index': 0, 'delta': delta, 'finish_reason': ende}]})}\n\n"
+
+    def handler(request: httpx.Request):
+        return httpx.Response(200, headers={"content-type": "text/event-stream", "X-Leitstelle-Lage": "ruhig"}, content=sse(
+            teil({"content": "Ich schaue nach. "}),
+            teil({"tool_calls": [{"index": 0, "id": "a", "function": {"name": "system_", "arguments": ""}}]}),
+            teil({"tool_calls": [{"index": 0, "function": {"name": "status", "arguments": "{\"rech"}}]}),
+            teil({"tool_calls": [{"index": 1, "id": "b", "function": {"name": "list_events", "arguments": "{}"}}]}),
+            teil({"tool_calls": [{"index": 0, "function": {"arguments": "ner\": \"mac\"}"}}]}, "tool_calls"),
+            "data: [DONE]\n\n"))
+
+    async with leitstelle(handler) as ls:
+        ereignisse = [e async for e in ls.chat_strom(["Lage?"], tools=[])]
+    assert [e.text for e in ereignisse if isinstance(e, Stueck)] == ["Ich schaue nach. "]
+    ende = ereignisse[-1]
+    assert isinstance(ende, Ende) and ende.ende == "tool_calls" and ende.lage == "ruhig"
+    assert [(a.id, a.name, a.argumente) for a in ende.werkzeugaufrufe] == [
+        ("a", "system_status", "{\"rechner\": \"mac\"}"), ("b", "list_events", "{}")]
+
+
+async def test_einbettung_meldet_die_lage():
+    def handler(request: httpx.Request):
+        return httpx.Response(200, json={"model": "bge-m3", "data": [{"index": 0, "embedding": [0.1, 0.2]}]},
+                              headers={"X-Leitstelle-Lage": "engpass"})
+
+    async with leitstelle(handler) as ls:
+        e = await ls.einbetten(["a"], prioritaet="hintergrund")
+    assert e.lage == "engpass" and e.vektoren == [[0.1, 0.2]]

@@ -2,15 +2,17 @@
   // Einstellungen, erzeugt aus der Beschreibung der App: je Gruppe ein Reiter mit eigener Adresse
   // (/einstellungen/<gruppe>), Herkunft je Wert, Geheimnisse verdeckt (das Auge deckt auf, kopieren geht immer),
   // Speichern in einer Leiste über alle Reiter; dazu die Anzeige auf diesem Gerät. Volle Breite; schmal stehen
-  // Beschreibung und Eingabe untereinander. Auswahlen mit vielen oder langen Optionen klappen auf.
+  // Beschreibung und Eingabe untereinander. Auswahlen mit vielen oder langen Optionen klappen auf. Eigene Reiter der App
+  // (`reiter`) stehen zwischen den erzeugten Gruppen und der Anzeige und bringen ihre Seite selbst mit.
   import { anzeige, anzeigeSetzen, type Schrift, type Thema } from "../lib/anzeige.svelte";
   import { hole, json } from "../lib/api.svelte";
   import { gehe, navigation } from "../lib/navigation.svelte";
   import { sitzung } from "../lib/sitzung.svelte";
-  import type { Angebot, Feld } from "../lib/typen";
+  import type { Angebot, EinstellungsReiter, Feld } from "../lib/typen";
   import { kopieren, markieren } from "../lib/zwischenablage";
   import Auswahl from "./Auswahl.svelte";
 
+  let { reiter = [] }: { reiter?: EinstellungsReiter[] } = $props();
   let felder = $state<Feld[]>([]);
   let aenderungen = $state<Record<string, unknown>>({});
   let aufgedeckt = $state<Record<string, string>>({});
@@ -29,11 +31,13 @@
   laden();
 
   const ANZEIGE = "Anzeige auf diesem Gerät";
-  const gruppen = $derived([...new Set(felder.map((f) => f.gruppe ?? sitzung.app!.name)), ANZEIGE]);
-  // Adresse eines Reiters: technischer Bezeichner aus dem Namen der Gruppe
-  const schluessel = (g: string) => (g === ANZEIGE ? "anzeige" : g.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe")
-    .replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
+  const gruppen = $derived([...new Set(felder.map((f) => f.gruppe ?? sitzung.app!.name)), ...reiter.map((r) => r.titel), ANZEIGE]);
+  const eigenerReiter = (g: string) => reiter.find((r) => r.titel === g);
+  // Adresse eines Reiters: technischer Bezeichner aus dem Namen der Gruppe (eigene Reiter nennen ihren selbst)
+  const schluessel = (g: string) => (g === ANZEIGE ? "anzeige" : eigenerReiter(g)?.schluessel ?? g.toLowerCase().replace(/ä/g, "ae")
+    .replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
   const aktiv = $derived(gruppen.find((g) => schluessel(g) === navigation.teile[0]) ?? gruppen[0]);
+  const aktivEigen = $derived(eigenerReiter(aktiv));
   const geaendertIn = (g: string) => felder.some((f) => (f.gruppe ?? sitzung.app!.name) === g && f.name in aenderungen);
   // Angebote: Auswahl aus dem System (Dienste der Leitstelle, bekannte Adressen) und was gerade gilt; geholt, sobald
   // ein Reiter sie zeigt. "Eigener Wert" öffnet das Textfeld.
@@ -174,7 +178,9 @@
     {/each}
   </nav>
   <div class="rollfeld">
-    {#if aktiv && aktiv !== ANZEIGE}
+    {#if aktivEigen}
+      <aktivEigen.seite />
+    {:else if aktiv && aktiv !== ANZEIGE}
       <div class="karte breit">
         {#each felder.filter((f) => (f.gruppe ?? sitzung.app!.name) === aktiv) as f (f.name)}
           <div class="feld">

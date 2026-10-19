@@ -120,6 +120,14 @@ export interface Bereich {
   geraete?: "beide" | "rechner" | "telefon";   // wo der Bereich erscheint (Vorgabe: beide)
 }
 
+// Ein eigener Reiter der App in den Einstellungen, neben den aus der Beschreibung erzeugten Gruppen: für Einstellungen,
+// die eine eigene Verwaltung brauchen (etwa Zugänge mit Schlüsseln je Gerät). Die Seite steht im Rollfeld des Reiters.
+export interface EinstellungsReiter {
+  schluessel: string;   // Adresse des Reiters (/einstellungen/<schluessel>), ASCII
+  titel: string;
+  seite: Component;
+}
+
 // --- Kellerwolke: Dateiwahl und Anfragen (Gerüst mit Angeboten, Kellerwolke ab 0.81) -----------------------------
 
 export interface WahlEintrag {
