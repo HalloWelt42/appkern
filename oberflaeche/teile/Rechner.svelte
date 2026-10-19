@@ -1,7 +1,10 @@
 <script lang="ts">
-  // Ansicht am Rechner: Kopf, Band bei fehlender Verbindung, Navigation, Seite (Aufträge mit Leiste).
+  // Ansicht am Rechner: Kopf, Band (App antwortet nicht, neue Fassung oder fehlende Verbindung), Navigation, Seite
+  // (Aufträge mit Leiste).
   import { onMount } from "svelte";
   import AnfrageOeffnen from "./AnfrageOeffnen.svelte";
+  import AppWeg from "./AppWeg.svelte";
+  import { verbindung } from "../lib/erreichbar.svelte";
   import { verfolgen } from "../lib/auftraege.svelte";
   import { fassung, ruhig } from "../lib/fassung.svelte";
   import { navigation } from "../lib/navigation.svelte";
@@ -33,7 +36,9 @@
 
 <div class="fenster-voll">
   <Kopf />
-  {#if fassung.neu}
+  {#if !verbindung.ok}
+    <AppWeg />
+  {:else if fassung.neu}
     <div class="band">
       <i class="fa-solid fa-rotate"></i>
       <span><b>Neue Fassung {fassung.neu} ist da.</b>

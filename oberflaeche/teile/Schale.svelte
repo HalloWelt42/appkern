@@ -10,6 +10,7 @@
   import { sitzung, starten } from "../lib/sitzung.svelte";
   import type { Anfrage, Bereich, EinstellungsReiter } from "../lib/typen";
   import Anmeldung from "./Anmeldung.svelte";
+  import AppWeg from "./AppWeg.svelte";
   import Einrichtung from "./Einrichtung.svelte";
   import Rechner from "./Rechner.svelte";
   import MobilSchale from "./mobil/MobilSchale.svelte";
@@ -46,7 +47,7 @@
 {#if !sitzung.geladen}
   <div class="laden">Lädt ...</div>
 {:else if !sitzung.app}
-  <div class="laden">Die App antwortet gerade nicht.</div>
+  <AppWeg ganz nochmal={starten} />
 {:else if sitzung.app.einrichtung_noetig}
   <Einrichtung />
 {:else if !sitzung.angemeldet}

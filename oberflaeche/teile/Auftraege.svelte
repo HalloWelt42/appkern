@@ -1,6 +1,9 @@
 <script lang="ts">
   // Aufträge: Liste mit Filter und Suche, rechts in der Leiste der gewählte Auftrag.
+  import { onDestroy } from "svelte";
+  import { seitenFehler, seitenSignal } from "../lib/api.svelte";
   import { auftraege, entfernen, laden, mehrLaden, phasenStand, type Filter } from "../lib/auftraege.svelte";
+  import { beiRueckkehr } from "../lib/erreichbar.svelte";
   import { dauer, wann } from "../lib/format";
   import { gehe } from "../lib/navigation.svelte";
   import AuftragZeile from "./AuftragZeile.svelte";
@@ -9,16 +12,18 @@
   let { mitLeiste = true }: { mitLeiste?: boolean } = $props();
   let fehler = $state("");
   let suchTakt: ReturnType<typeof setTimeout> | null = null;
+  const signal = seitenSignal();
 
   async function neu() {
     fehler = "";
     try {
-      await laden();
+      await laden(signal);
     } catch (f) {
-      fehler = (f as Error).message;
+      fehler = seitenFehler(f);
     }
   }
   neu();
+  onDestroy(beiRueckkehr(() => void neu()));
 
   function filtern(f: Filter) {
     auftraege.filter = f;
@@ -58,7 +63,7 @@
       <div class="leer">Keine Aufträge {auftraege.filter === "alle" ? "" : `(${FILTER.find(([f]) => f === auftraege.filter)?.[1]})`}</div>
     {/each}
     {#if auftraege.liste.length < auftraege.gesamt}
-      <div style="text-align:center"><button class="knopf" onclick={mehrLaden}>Weitere laden ({auftraege.gesamt - auftraege.liste.length})</button></div>
+      <div style="text-align:center"><button class="knopf" onclick={() => mehrLaden(signal).catch((f) => (fehler = seitenFehler(f)))}>Weitere laden ({auftraege.gesamt - auftraege.liste.length})</button></div>
     {/if}
   </div>
 </section>

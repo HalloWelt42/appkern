@@ -3,9 +3,11 @@
 // andere Fassung als die eingebaute, lädt die Seite von selbst neu: beim Start sofort, später beim nächsten
 // Seitenwechsel (die Navigation meldet ihn) oder wenn das Fenster wieder nach vorn kommt; nie, solange die App etwas tut, das ein Neuladen
 // abbräche (sie meldet das über `ruhig`). Dazwischen steht ein Band mit Knopf. Je Fassung nur ein selbsttätiger
-// Versuch (Merker in der Sitzung), damit ein hängender Zwischenspeicher keine Schleife auslöst.
+// Versuch (Merker in der Sitzung), damit ein hängender Zwischenspeicher keine Schleife auslöst. Geprüft wird jede
+// Minute, nie zweimal gleichzeitig, und nicht, solange die App nicht antwortet (dann gleich nach ihrer Rückkehr).
 import { hole } from "./api.svelte";
 import { arbeitsfrei } from "./arbeit.svelte";
+import { takt } from "./takt";
 import type { AppInfo } from "./typen";
 
 const START_FENSTER_MS = 10_000;
@@ -65,10 +67,10 @@ function sichtbar(): void {
 export function fassungVerfolgen(eingebaut: string, frage?: () => boolean): () => void {
   fassung.eingebaut = eingebaut;
   if (frage) ruhigFrage = frage;
-  const takt = setInterval(() => pruefen("takt"), PRUEFEN_MS);
+  const regelmaessig = takt(() => pruefen("takt"), PRUEFEN_MS, { sofort: false });
   document.addEventListener("visibilitychange", sichtbar);
   return () => {
-    clearInterval(takt);
+    regelmaessig.stoppen();
     document.removeEventListener("visibilitychange", sichtbar);
   };
 }

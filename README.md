@@ -386,6 +386,22 @@ am Telefon steht er im Kopf, mit einem Knopf zurück zum Bereich, und daneben au
 `AuftragZeile`, `Schritte`, `Auswahl` (Aufklappliste statt nativer Auswahlfelder), `Leiste` mit `leisteOeffnen` und
 `ereignisseBenennen` (lesbare Namen eigener Protokollereignisse) bereit.
 
+Jede Anfrage (`hole`) hat eine Zeitgrenze (Vorgabe 20 s; für die ganze Oberfläche `anfragenEinstellen({ zeitgrenzeMs })`
+im Einstieg, je Anfrage `{ zeitgrenzeMs }`, 0 heißt ohne). Gleiche GET-Anfragen, die schon unterwegs sind, gehen nur
+einmal hinaus. Eine Seite holt im Skript mit `seitenSignal()` ein Signal, das beim Verlassen abbricht, und gibt es mit
+(`hole(pfad, { signal })`); so wartet keine verlassene Seite auf ihre Antworten. Ob die App selbst antwortet, führt die
+Schale an einer Stelle: bleibt die Antwort aus (kein Netz, der Vorschaltdienst meldet 502 bis 504, oder nach einer
+überschrittenen Zeitgrenze kommt auch die Probe nicht durch), steht im Kopf "Keine Verbindung zur App" oder "Die App
+antwortet nicht" statt der Verbindungen und darunter ein Band mit "Erneut versuchen". Eine Probe fragt dann mit
+wachsender Pause nach (2 s, jeweils doppelt so lange, höchstens 60 s); die regelmäßigen Abfragen der Schale
+(Verbindungen alle 30 s, Fassung jede Minute, nie zwei gleichzeitig) ruhen so lange, und die Zahlen der Aufträge holt
+eine Anfrage höchstens einmal je Sekunde. Sobald die App wieder antwortet, holen Kopf, Aufträge, Protokoll und
+Einstellungen von selbst nach, eigene Seiten mit `beiRueckkehr(fn)`. Antwortet die App schon beim Start nicht, zeigt
+die Schale das mit "Erneut versuchen" und macht weiter, sobald sie antwortet. Seiten zeigen diesen Zustand nicht noch
+einmal: `seitenFehler(f)` ist der Text eines Fehlers für die Seite, leer, wenn die App nicht antwortete
+(`ApiFehler.ohneAntwort`) oder die Seite selbst abgebrochen hat. Dazu stehen `verbindung` (`ok`, `meldung`, `prueft`)
+und `verbindungPruefen()` bereit.
+
 Breiten: ab 1280 Pixel wie im Entwurf (Navigation mit Text, Leiste daneben); darunter wird die Leiste eine Tafel, die
 über den Inhalt fährt (Schleier, Knopf zum Schließen, Escape); unter 1000 Pixel wird die Navigation eine Symbolleiste;
 bis 600 Pixel gilt die eigene Telefonansicht (mit dem Finger bis 760 Pixel oder flach im Querformat; ein schmales oder

@@ -12,6 +12,7 @@ export interface AppInfo {
   besitzer: string | null;
   kellerwolke: string;
   oberflaeche: string | null;
+  auftraege_laufend?: number;
 }
 
 export interface Konto {
@@ -62,6 +63,9 @@ export interface Seite<T> {
   eintraege: T[];
   gesamt: number;
 }
+
+// Wie viele Aufträge in jedem Zustand sind (`/auftraege/zahlen`).
+export type Zahlen = Record<Zustand, number>;
 
 export type FeldArt = "text" | "zahl" | "schalter" | "auswahl" | "geheimnis" | "liste" | "wert";
 

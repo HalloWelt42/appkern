@@ -3,9 +3,12 @@
   // (/einstellungen/<gruppe>), Herkunft je Wert, Geheimnisse verdeckt (das Auge deckt auf, kopieren geht immer),
   // Speichern in einer Leiste über alle Reiter; dazu die Anzeige auf diesem Gerät. Volle Breite; schmal stehen
   // Beschreibung und Eingabe untereinander. Auswahlen mit vielen oder langen Optionen klappen auf. Eigene Reiter der App
-  // (`reiter`) stehen zwischen den erzeugten Gruppen und der Anzeige und bringen ihre Seite selbst mit.
+  // (`reiter`) stehen zwischen den erzeugten Gruppen und der Anzeige und bringen ihre Seite selbst mit. Antwortet die
+  // App nicht, sagt das allein die Schale; sobald sie wieder antwortet, lädt die Seite die Einstellungen neu.
+  import { onDestroy } from "svelte";
   import { anzeige, anzeigeSetzen, type Schrift, type Thema } from "../lib/anzeige.svelte";
-  import { hole, json } from "../lib/api.svelte";
+  import { hole, json, seitenFehler, seitenSignal } from "../lib/api.svelte";
+  import { beiRueckkehr } from "../lib/erreichbar.svelte";
   import { gehe, navigation } from "../lib/navigation.svelte";
   import { sitzung } from "../lib/sitzung.svelte";
   import type { Angebot, EinstellungsReiter, Feld } from "../lib/typen";
@@ -18,17 +21,21 @@
   let aufgedeckt = $state<Record<string, string>>({});
   let neuerEintrag = $state<Record<string, string>>({});
   let fehler = $state("");
+  let ladeFehler = $state("");
   let laeuft = $state(false);
   let wertFelder: Record<string, HTMLElement> = $state({});
+  const signal = seitenSignal();
 
   async function laden() {
     try {
-      felder = await hole<Feld[]>("/einstellungen");
+      felder = await hole<Feld[]>("/einstellungen", { signal });
+      ladeFehler = "";
     } catch (f) {
-      fehler = (f as Error).message;
+      ladeFehler = seitenFehler(f);
     }
   }
   laden();
+  onDestroy(beiRueckkehr(() => void laden()));
 
   const ANZEIGE = "Anzeige auf diesem Gerät";
   const gruppen = $derived([...new Set(felder.map((f) => f.gruppe ?? sitzung.app!.name)), ...reiter.map((r) => r.titel), ANZEIGE]);
@@ -48,7 +55,7 @@
   async function angeboteLaden(g: string) {
     for (const f of felder.filter((x) => x.angebot && (x.gruppe ?? sitzung.app!.name) === g)) {
       try {
-        angebote[f.name] = await hole<Angebot>(`/einstellungen/angebot/${f.name}`);
+        angebote[f.name] = await hole<Angebot>(`/einstellungen/angebot/${f.name}`, { signal });
       } catch {
         angebote[f.name] = { optionen: [], eigener_wert: true, stand: "" };
       }
@@ -144,7 +151,7 @@
       aenderungen = {};
       aufgedeckt = {};
     } catch (f) {
-      fehler = (f as Error).message;
+      fehler = seitenFehler(f);
     } finally {
       laeuft = false;
     }
@@ -178,6 +185,7 @@
     {/each}
   </nav>
   <div class="rollfeld">
+    {#if ladeFehler}<div class="fehlertext">{ladeFehler}</div>{/if}
     {#if aktivEigen}
       <aktivEigen.seite />
     {:else if aktiv && aktiv !== ANZEIGE}

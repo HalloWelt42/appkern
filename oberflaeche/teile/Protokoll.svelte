@@ -1,7 +1,9 @@
 <script lang="ts">
   // Protokoll: Stufe, Zeitraum und Suche fest oben, Einträge seitenweise. Breit als Tabelle, schmal (und am Telefon)
   // als Liste; Ereignisse stehen mit Namen da, nie als Schlüssel.
-  import { hole } from "../lib/api.svelte";
+  import { onDestroy } from "svelte";
+  import { hole, seitenFehler, seitenSignal } from "../lib/api.svelte";
+  import { beiRueckkehr } from "../lib/erreichbar.svelte";
   import { ereignisName } from "../lib/ereignisse";
   import { isoTag, tagAusText, wann } from "../lib/format";
   import type { ProtokollEintrag, Seite, Stufe } from "../lib/typen";
@@ -20,6 +22,7 @@
   let takt: ReturnType<typeof setTimeout> | null = null;
   let breite = $state(0);
   const alsListe = $derived(kompakt || (breite > 0 && breite < 980));
+  const signal = seitenSignal();
 
   async function laden() {
     const p = new URLSearchParams({ grenze: String(GROESSE), versatz: String(versatz) });
@@ -36,12 +39,13 @@
     if (suche.trim()) p.set("suche", suche.trim());
     fehler = "";
     try {
-      seite = await hole<Seite<ProtokollEintrag>>(`/protokoll?${p}`);
+      seite = await hole<Seite<ProtokollEintrag>>(`/protokoll?${p}`, { signal });
     } catch (f) {
-      fehler = (f as Error).message;
+      fehler = seitenFehler(f);
     }
   }
   laden();
+  onDestroy(beiRueckkehr(() => void laden()));
 
   function neu(spaeter = false) {
     versatz = 0;

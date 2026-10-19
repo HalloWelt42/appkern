@@ -10,7 +10,9 @@ export { default as AnfrageBand } from "./teile/AnfrageBand.svelte";
 export { default as Dateiwahl } from "./teile/Dateiwahl.svelte";
 export { default as Rekorder } from "./teile/Rekorder.svelte";
 export { leiste, leisteOeffnen, leisteSchliessen } from "./lib/leiste.svelte";
-export { abfrage, ApiFehler, hole, json, ereignisse, token, verbindung } from "./lib/api.svelte";
+export { abfrage, anfragenEinstellen, ApiFehler, ereignisse, hole, json, seitenFehler, seitenSignal, token, verbindung,
+         type AnfrageOptionen, type FehlerArt } from "./lib/api.svelte";
+export { beiRueckkehr, pruefen as verbindungPruefen } from "./lib/erreichbar.svelte";
 export { auftraege, beiAuftrag } from "./lib/auftraege.svelte";
 export { geraet } from "./lib/geraet.svelte";
 export { sitzung } from "./lib/sitzung.svelte";

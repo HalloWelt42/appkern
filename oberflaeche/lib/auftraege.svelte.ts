@@ -1,6 +1,9 @@
 // Aufträge der App: Liste nach Filter, Zähler für Kopf und Navigation, laufend nachgeführt über den Ereignisstrom.
+// Gezählt wird in einer Anfrage (`/auftraege/zahlen`), nur wenn ein Auftrag seinen Zustand wechselt, und höchstens
+// einmal je Sekunde (Ereignisse dazwischen werden gesammelt).
 import { ereignisse, hole, json } from "./api.svelte";
-import type { Auftrag, Seite, Zustand } from "./typen";
+import { rueckkehr, verbindung } from "./erreichbar.svelte";
+import type { Auftrag, Seite, Zahlen, Zustand } from "./typen";
 
 export type Filter = "alle" | "offen" | "fertig" | "fehler";
 const ZUSTAENDE: Record<Filter, Zustand[]> = {
@@ -10,6 +13,9 @@ const ZUSTAENDE: Record<Filter, Zustand[]> = {
   fehler: ["fehler", "abgebrochen", "unterbrochen"],
 };
 const SEITE = 50;
+const ZAEHLEN_MS = 1000;
+const ERSTE_PAUSE_MS = 2000;
+const LAENGSTE_PAUSE_MS = 60000;
 
 export const auftraege = $state<{
   liste: Auftrag[];
@@ -29,36 +35,67 @@ function abfrage(filter: Filter, grenze: number, versatz = 0): string {
   return `/auftraege?${p}`;
 }
 
-export async function laden(): Promise<void> {
-  const seite = await hole<Seite<Auftrag>>(abfrage(auftraege.filter, SEITE));
+// `signal`: etwa `seitenSignal()` der Seite, die lädt.
+export async function laden(signal?: AbortSignal): Promise<void> {
+  const seite = await hole<Seite<Auftrag>>(abfrage(auftraege.filter, SEITE), { signal });
   auftraege.liste = seite.eintraege;
   auftraege.gesamt = seite.gesamt;
   if (!seite.eintraege.some((a) => a.id === auftraege.gewaehlt)) auftraege.gewaehlt = seite.eintraege[0]?.id ?? null;
 }
 
-export async function mehrLaden(): Promise<void> {
-  const seite = await hole<Seite<Auftrag>>(abfrage(auftraege.filter, SEITE, auftraege.liste.length));
+export async function mehrLaden(signal?: AbortSignal): Promise<void> {
+  const seite = await hole<Seite<Auftrag>>(abfrage(auftraege.filter, SEITE, auftraege.liste.length), { signal });
   auftraege.liste = [...auftraege.liste, ...seite.eintraege.filter((a) => !auftraege.liste.some((b) => b.id === a.id))];
   auftraege.gesamt = seite.gesamt;
 }
 
 async function zaehlen(): Promise<void> {
-  const anzahl = async (z: Zustand[]) => {
-    const p = new URLSearchParams({ grenze: "1" });
-    z.forEach((x) => p.append("zustand", x));
-    return (await hole<Seite<Auftrag>>(`/auftraege?${p}`)).gesamt;
-  };
-  [auftraege.laufen, auftraege.warten, auftraege.fehler] = await Promise.all([
-    anzahl(["laeuft"]),
-    anzahl(["wartet"]),
-    anzahl(["fehler"]),
-  ]);
+  const z = await hole<Zahlen>("/auftraege/zahlen");
+  [auftraege.laufen, auftraege.warten, auftraege.fehler] = [z.laeuft, z.wartet, z.fehler];
 }
 
-let zaehlTakt: ReturnType<typeof setTimeout> | null = null;
-function spaeterZaehlen(): void {
-  if (zaehlTakt) clearTimeout(zaehlTakt);
-  zaehlTakt = setTimeout(() => zaehlen().catch(() => {}), 400);
+// Höchstens eine Zählung je Sekunde und nie zwei gleichzeitig; was dazwischen kommt, zählt die nächste mit.
+let zuletzt = 0;
+let geplant: ReturnType<typeof setTimeout> | null = null;
+let zaehlung: Promise<void> | null = null;
+let nochmal = false;
+
+function zaehlenBald(): void {
+  if (zaehlung) {
+    nochmal = true;
+    return;
+  }
+  if (geplant) return;
+  geplant = setTimeout(() => {
+    geplant = null;
+    void zaehlenJetzt();
+  }, Math.max(0, zuletzt + ZAEHLEN_MS - Date.now()));
+}
+
+async function zaehlenJetzt(): Promise<void> {
+  if (zaehlung) {
+    nochmal = true;
+    return zaehlung;
+  }
+  if (geplant) clearTimeout(geplant);
+  geplant = null;
+  zuletzt = Date.now();
+  zaehlung = zaehlen().catch(() => {});
+  await zaehlung;
+  zaehlung = null;
+  if (nochmal) {
+    nochmal = false;
+    zaehlenBald();
+  }
+}
+
+// Zuletzt gesehener Zustand je Auftrag: Fortschritt allein ändert keine Zahl.
+const gesehen = new Map<string, Zustand>();
+function zustandGesehen(a: Auftrag): boolean {
+  if (gesehen.get(a.id) === a.zustand) return false;
+  if (gesehen.size > 2000) gesehen.clear();
+  gesehen.set(a.id, a.zustand);
+  return true;
 }
 
 // Seiten der App hören mit, um ihren eigenen Stand nachzuführen (etwa eine Aufnahme als "transkribiert").
@@ -87,41 +124,45 @@ function einpflegen(a: Auftrag): void {
   }
 }
 
-// Folgt dem Ereignisstrom, bis die zurückgegebene Funktion ihn beendet; nach einem Abriss mit wachsender Pause neu.
+// Folgt dem Ereignisstrom, bis die zurückgegebene Funktion ihn beendet; nach einem Abriss mit wachsender Pause neu
+// (2 s, doppelt so lange, höchstens 60 s), und solange die App nicht antwortet, erst nach ihrer Rückkehr.
 // Verlässt man die Seite, schließt der Strom: eine Seite im Zwischenspeicher für Zurück hielte ihn sonst offen und
 // belegte eine der wenigen Verbindungen je Server (gemessen: neue Seiten warteten dann bis zu 30 s). Kommt sie aus dem
 // Zwischenspeicher zurück, folgt sie wieder und zählt neu.
 export function verfolgen(): () => void {
   let beendet = false;
-  let verbindung: AbortController | null = null;
+  let strom: AbortController | null = null;
   let laeuft = false;
 
   async function folgen() {
     if (laeuft) return;
     laeuft = true;
-    let pause = 1000;
+    let pause = ERSTE_PAUSE_MS;
     while (!beendet) {
-      const diese = (verbindung = new AbortController());
+      const diese = (strom = new AbortController());
       try {
-        await zaehlen();
+        gesehen.clear();
+        await zaehlenJetzt();
         for await (const e of ereignisse("/auftraege/ereignisse", diese.signal)) {
-          pause = 1000;
+          pause = ERSTE_PAUSE_MS;
           if (e.art === "auftrag") {
-            einpflegen(JSON.parse(e.daten) as Auftrag);
-            spaeterZaehlen();
+            const a = JSON.parse(e.daten) as Auftrag;
+            einpflegen(a);
+            if (zustandGesehen(a)) zaehlenBald();
           }
         }
       } catch {
         // Verbindung weg oder abgebrochen
       }
       if (beendet || diese.signal.aborted) break;      // beendet oder Seite verlassen
-      await new Promise((r) => setTimeout(r, pause));
-      pause = Math.min(pause * 2, 30000);
+      if (!verbindung.ok) await rueckkehr(diese.signal);
+      else await new Promise((r) => setTimeout(r, pause));
+      pause = Math.min(pause * 2, LAENGSTE_PAUSE_MS);
     }
     laeuft = false;
   }
 
-  const verlassen = () => verbindung?.abort();
+  const verlassen = () => strom?.abort();
   const wieder = (e: PageTransitionEvent) => {
     if (e.persisted) void folgen();
   };
@@ -130,7 +171,7 @@ export function verfolgen(): () => void {
   void folgen();
   return () => {
     beendet = true;
-    verbindung?.abort();
+    strom?.abort();
     removeEventListener("pagehide", verlassen);
     removeEventListener("pageshow", wieder);
   };

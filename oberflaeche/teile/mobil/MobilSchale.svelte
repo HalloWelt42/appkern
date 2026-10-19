@@ -2,6 +2,8 @@
   // Eigene Ansicht fürs Telefon: Reiter unten (Bereiche der App, Aufträge, Mehr), Band bei fehlender Verbindung.
   import { onMount } from "svelte";
   import AnfrageOeffnen from "../AnfrageOeffnen.svelte";
+  import AppWeg from "../AppWeg.svelte";
+  import { verbindung } from "../../lib/erreichbar.svelte";
   import { auftraege, verfolgen } from "../../lib/auftraege.svelte";
   import { fassung } from "../../lib/fassung.svelte";
   import { gehe, navigation } from "../../lib/navigation.svelte";
@@ -43,12 +45,14 @@
     {#if navigation.kennzeichen}<span class="pille"><i class="fa-solid {navigation.kennzeichen.symbol}"></i>{navigation.kennzeichen.text}</span>{/if}
     {#if offen && seite !== "auftraege"}<button class="pille aktiv" style="border:0" onclick={() => gehe("auftraege")}><i class="fa-solid fa-gears"></i>{offen}</button>{/if}
   </div>
-  {#if fassung.neu}
+  {#if !verbindung.ok}
+    <AppWeg kompakt />
+  {:else if fassung.neu}
     <div class="t-band"><i class="fa-solid fa-rotate" style="margin-top:3px"></i>
       <span style="flex:1">Neue Fassung {fassung.neu}; lädt beim nächsten Wechsel von selbst.</span>
       <button class="rund" aria-label="Jetzt neu laden" onclick={() => location.reload()}><i class="fa-solid fa-rotate"></i></button></div>
   {/if}
-  {#if fehlend.length}
+  {#if verbindung.ok && fehlend.length}
     <div class="t-band"><i class="fa-solid fa-triangle-exclamation" style="margin-top:3px"></i>
       <span>{#each fehlend as v, i (v.name)}{i ? " " : ""}{v.meldung === "nicht eingerichtet"
         ? `${v.name} nicht eingerichtet; unter Mehr, Einstellungen eintragen.`
