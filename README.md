@@ -370,7 +370,13 @@ Telefon mit Reitern. Barlow und die Symbole kommen über npm.
 ```
 
 In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`; im Einstieg
-`import "appkern-oberflaeche/stil.css"`. Die Schale bekommt die Fassung, mit der die Oberfläche gebaut wurde
+`import "appkern-oberflaeche/stil.css"`.
+
+Eine App mit eigener Gestaltung (Fundus in der Gestaltung der Leitstelle) nimmt statt der Schale ihre Bausteine und
+zeichnet selbst; die Logik bleibt im Appkern: `sitzungStarten`, `anmelden`, `koppeln`, `einrichtenMit`, `abmelden`,
+`auftraegeVerfolgen`, `auftragAbbrechen`, `auftragWiederholen`, `fassungVerfolgen`, `navigationStarten`,
+`verbindungen` mit `verbindungenVerfolgen` und `verbindungenPruefen`, `takt`, die Hilfen zum Koppeln und die Texte
+`KEINE_VERBINDUNG` und `ANTWORTET_NICHT`. Sie lädt dann `stil.css` nicht. Die Schale bekommt die Fassung, mit der die Oberfläche gebaut wurde
 (`<Schale {bereiche} fassung={__APP_FASSUNG__} />`, eingebaut über `define` in `vite.config.ts` aus `version.json`).
 Meldet der Server eine andere, lädt die Seite von selbst neu: beim Start sofort, sonst beim nächsten Seitenwechsel
 oder wenn das Fenster wieder nach vorn kommt, je Fassung nur einmal; solange `ruhig()` der App nein sagt (etwa

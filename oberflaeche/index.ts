@@ -29,3 +29,15 @@ export { alsDatei as aufnahmeAlsDatei, aufnahme, aufnahmeEinrichten, geraeteLade
          type NachDerAufnahme } from "./lib/aufnahme.svelte";
 export { farbe, genau, groesse, lesen, marke, sprache, SPRACHEN } from "./lib/zeit";
 export type * from "./lib/typen";
+
+// Bausteine für eine App mit eigener Schale (eigene Gestaltung statt der gemeinsamen): Start der Sitzung, Anmeldung,
+// Koppeln, erste Einrichtung, Abmelden, Verfolgen von Aufträgen, Fassung, Weg und Verbindungen. Die Logik bleibt hier,
+// die App zeichnet nur; Fundus nutzt das für die Gestaltung der Leitstelle.
+export { abmelden, anmelden, einrichtenMit, koppeln, starten as sitzungStarten } from "./lib/sitzung.svelte";
+export { abbrechen as auftragAbbrechen, verfolgen as auftraegeVerfolgen, wiederholen as auftragWiederholen } from "./lib/auftraege.svelte";
+export { fassungVerfolgen } from "./lib/fassung.svelte";
+export { navigationStarten } from "./lib/navigation.svelte";
+export { pruefen as verbindungenPruefen, verbindungen, verbindungenVerfolgen } from "./lib/verbindungen.svelte";
+export { ANTWORTET_NICHT, KEINE_VERBINDUNG } from "./lib/erreichbar.svelte";
+export { takt, type Takt } from "./lib/takt";
+export { CODE_LAENGE, codeAusLinkNehmen, codeNormal, geraeteArt, namensvorschlag } from "./lib/kopplung";
