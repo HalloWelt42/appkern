@@ -297,6 +297,13 @@ pflicht = Depends(angemeldet(anmeldung))                       # für alle eigen
 lesen = Depends(angemeldet(anmeldung, cookie=True))           # für Inhaltsadressen unter /api/v1/inhalt
 ```
 
+Ist die Kellerwolke gerade nicht erreichbar, gilt eine Anmeldung, die sie früher bestätigt hat, aus dem Merker weiter,
+bis "Anmeldung bei Ausfall" (Einstellungen, Zugang, Vorgabe 24 Stunden, 0 schaltet es ab) nach der letzten Bestätigung;
+nachgefragt wird dann im Hintergrund, keine Anfrage wartet darauf. Das gilt ebenso für App-Schlüssel anderer Apps. So
+bleibt die App bedienbar, und eine falsche Adresse der Kellerwolke lässt sich in den Einstellungen berichtigen; die
+Verbindungen zeigen die Kellerwolke dabei als nicht erreichbar. Neue Anmeldungen und nie bestätigte Token brauchen die
+Kellerwolke (503). Der Merker lebt im Speicher der App, ein Neustart leert ihn.
+
 Auf dem iPhone hat jede Web-App vom Home-Bildschirm ihren eigenen Speicher; ein Telefon wird deshalb je App einmal
 gekoppelt, immer mit dem Kellerwolke-Konto.
 
@@ -327,7 +334,7 @@ geruest.oberflaeche_ausliefern(app)                         # zuletzt
 
 | Teil | Inhalt |
 |---|---|
-| Einstellungen | `Grundeinstellungen` (Kellerwolke, Leitstelle, Zertifikatsstelle, weitere Konten) plus die der App; Zugänge werden nach jeder Änderung neu aufgebaut |
+| Einstellungen | `Grundeinstellungen` (Kellerwolke, Leitstelle, Zertifikatsstelle, weitere Konten, Anmeldung bei Ausfall) plus die der App; Zugänge werden nach jeder Änderung neu aufgebaut |
 | Erste Einrichtung | `POST /api/v1/einrichtung` mit Kellerwolke und App-Schlüssel, nur vom Rechner der App und nur, solange nichts eingetragen ist |
 | Anmeldung | Besitzer ist das Konto des App-Schlüssels; Anmelden, Koppeln, Abweisungen und Abmelden stehen im Protokoll |
 | Schnittstellen | `/api/v1/app`, `/api/v1/ich`, `/api/v1/verbindungen`, Anmeldung, Aufträge, Einstellungen, Protokoll |

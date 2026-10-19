@@ -38,3 +38,9 @@ class Grundeinstellungen(BaseModel):
     weitere_konten: list[str] = Field(default_factory=list, title="Weitere Konten", json_schema_extra=ZUGANG,
                                       description="Wer außer dem Konto des App-Schlüssels diese App nutzen darf "
                                                   "(Namen von Konten der Kellerwolke).")
+    anmeldung_ausfall_h: int = Field(24, ge=0, le=168, title="Anmeldung bei Ausfall",
+                                     json_schema_extra={**ZUGANG, "einheit": "Stunden"},
+                                     description="So lange nach der letzten Bestätigung durch die Kellerwolke gilt eine "
+                                                 "Anmeldung weiter, wenn die Kellerwolke gerade nicht erreichbar ist; so "
+                                                 "bleibt die App bedienbar, und ihre Adresse lässt sich hier berichtigen. "
+                                                 "Neue Anmeldungen brauchen die Kellerwolke immer. 0: keine.")

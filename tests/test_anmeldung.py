@@ -1,6 +1,8 @@
 """Anmeldung mit dem Kellerwolke-Konto gegen eine nachgestellte Kellerwolke: Passwort, Kopplung, Prüfen mit Merken,
-erlaubte Konten (fremde Sitzung wird sofort beendet), Abmelden, Kellerwolke weg, Schnittstelle mit Cookie."""
+erlaubte Konten (fremde Sitzung wird sofort beendet), Abmelden, Kellerwolke weg (bestätigte Anmeldungen gelten aus dem
+Merker weiter), Schnittstelle mit Cookie."""
 
+import asyncio
 import json
 
 import httpx
@@ -23,8 +25,10 @@ class Schein:
         self.ich_abrufe = 0
         self.abmeldungen: list[str] = []
         self.weg = False
+        self.versuche = 0
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
+        self.versuche += 1
         if self.weg:
             raise httpx.ConnectError("weg")
         pfad = request.url.path
@@ -190,3 +194,53 @@ async def test_schnittstelle_fuer_andere_apps_ohne_oberflaechen_eigenes():
         assert (await c.get("/api/v1/arbeit", headers={"Authorization": "Bearer kw_app_fremd"})).status_code == 401
         r = await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})
         assert (await c.get("/api/v1/einstellungen", headers={"X-Kellerwolke-Sitzung": r.json()["token"]})).status_code == 200
+
+
+async def test_im_ausfall_gilt_eine_bestaetigte_anmeldung_aus_dem_merker():
+    """Ist die Kellerwolke weg, gilt eine früher bestätigte Sitzung und ein bestätigter App-Schlüssel weiter, bis
+    `ausfall_s` nach der letzten Bestätigung; nachgefragt wird im Hintergrund, frühestens nach `merken_s`. Nie
+    bestätigte Token und neue Anmeldungen brauchen die Kellerwolke."""
+    s = Schein()
+    jetzt = [1000.0]
+    a = anmeldung(s, merken_s=60, ausfall_s=3600, uhr=lambda: jetzt[0])
+    token, _ = await a.anmelden("chef", "geheim")
+    assert (await a.pruefen("kw_app_vertonung")).app == "Vertonung"
+    s.weg = True
+    jetzt[0] += 61                                                    # gemerkt abgelaufen: Rückfrage nötig
+    assert (await a.pruefen(token)).name == "chef"                    # Kellerwolke weg: aus dem Merker
+    assert (await a.pruefen("kw_app_vertonung")).app == "Vertonung"
+    with pytest.raises(KellerwolkeWeg):
+        await a.pruefen("tok_nie_bestaetigt")
+    with pytest.raises(KellerwolkeWeg):
+        await a.anmelden("chef", "geheim")
+    versuche = s.versuche
+    jetzt[0] += 30
+    assert (await a.pruefen(token)).name == "chef" and s.versuche == versuche      # im Ausfall nicht bei jeder Anfrage
+    jetzt[0] += 31
+    assert (await a.pruefen(token)).name == "chef"                    # sofort aus dem Merker, Rückfrage im Hintergrund
+    await asyncio.sleep(0.01)
+    assert s.versuche == versuche + 1
+
+    s.weg = False
+    s.sitzungen.pop(token)                                            # inzwischen in der Kellerwolke beendet
+    jetzt[0] += 61
+    assert (await a.pruefen(token)).name == "chef"                    # noch aus dem Merker, die Rückfrage läuft
+    await asyncio.sleep(0.01)
+    assert await a.pruefen(token) is None                             # die Kellerwolke sagt: vorbei
+    jetzt[0] += 61
+    assert (await a.pruefen("kw_app_vertonung")).app == "Vertonung"   # wieder bestätigt
+
+    s.weg = True
+    jetzt[0] += 3601                                                  # länger weg, als eine Bestätigung trägt
+    with pytest.raises(KellerwolkeWeg):
+        await a.pruefen("kw_app_vertonung")
+    await a.schliessen()
+
+
+async def test_ohne_ausfallzeit_gilt_im_ausfall_nichts():
+    s = Schein()
+    a = anmeldung(s, merken_s=0.0, ausfall_s=0)
+    token, _ = await a.anmelden("chef", "geheim")
+    s.weg = True
+    with pytest.raises(KellerwolkeWeg):
+        await a.pruefen(token)

@@ -285,12 +285,16 @@ class Geruest(Generic[E]):
         return self.app_name
 
     async def _besitzer_bestimmen(self) -> None:
+        """Besitzer und Name des Zugangs aus der Kellerwolke. Ist sie gerade nicht erreichbar, bleibt der zuletzt
+        bekannte Stand; sonst wiese die App im Ausfall auch die Anmeldungen ab, die aus dem Merker weiter gelten."""
         if self.kellerwolke is None:
             self.besitzer = self.app_name = None
             return
         try:
             ich = await self.kellerwolke.ich()
             self.besitzer, self.app_name = ich.konto, ich.app
+        except NichtErreichbar as f:
+            logger.warning("Kellerwolke: Besitzer nicht bestimmbar (%s); es gilt der zuletzt bekannte", f)
         except KellerwolkeFehler as f:
             logger.warning("Kellerwolke: Besitzer nicht bestimmbar (%s)", f)
             self.besitzer = self.app_name = None
@@ -330,6 +334,7 @@ class Geruest(Generic[E]):
         await self.einstellungen.starten()
         await self.protokoll.starten()
         geduld_setzen(self.einstellungen.stand.leitstelle_geduld_min * 60)
+        self.anmeldung.ausfall_s = self.einstellungen.stand.anmeldung_ausfall_h * 3600
         await self._zugaenge_bauen()
         self.einstellungen.bei_aenderung(self._nach_aenderung)
         self._laeuft = True
@@ -364,6 +369,7 @@ class Geruest(Generic[E]):
         await self.auftraege.stoppen()
         await self._begleiter_rufen("stoppen", list(reversed(self._begleiter)))
         self._laeuft = False
+        await self.anmeldung.schliessen()
         await self.verzeichnis.schliessen()
         for c in self._clients:
             await c.aclose()
@@ -382,6 +388,8 @@ class Geruest(Generic[E]):
             self.leitstelle.extern = tuple(stand.leitstelle_extern)
         if "leitstelle_geduld_min" in geaendert:
             geduld_setzen(stand.leitstelle_geduld_min * 60)
+        if "anmeldung_ausfall_h" in geaendert:
+            self.anmeldung.ausfall_s = stand.anmeldung_ausfall_h * 3600
 
     async def _taeglich(self) -> None:
         while True:

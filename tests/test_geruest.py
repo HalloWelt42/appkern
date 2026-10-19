@@ -21,10 +21,11 @@ class Wolke:
 
     def __init__(self):
         self.sitzungen: dict[str, str] = {}
+        self.kellerwolke_weg = False
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         pfad = request.url.path
-        if request.url.host == "weg.test":
+        if request.url.host == "weg.test" or (request.url.host == "kw.test" and self.kellerwolke_weg):
             raise httpx.ConnectError("All connection attempts failed")
         if request.url.host == "kw.test":
             if pfad == "/api/v1/ablage/ich":
@@ -277,3 +278,31 @@ def test_einrichtungscode_sperrt_nach_falschen_versuchen(tmp_path):
     assert e.pruefen(richtig)
     e.entfernen()
     assert not (tmp_path / "code").exists() and not e.aktiv and e.pruefen(richtig) is False
+
+
+async def test_anmeldung_traegt_durch_einen_ausfall_der_kellerwolke(umgebung):
+    """Ist die Kellerwolke weg, bleibt die App mit einer früher bestätigten Anmeldung bedienbar (sonst wäre man
+    ausgesperrt und könnte nicht einmal ihre Adresse berichtigen): Einstellungen lesen und ändern, Verbindungen zeigen
+    die Kellerwolke als nicht erreichbar. Neue Anmeldungen und nie bestätigte Token gehen nicht."""
+    geruest, app, c = umgebung
+    wolke = geruest._transport.handler
+    await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
+    assert geruest.anmeldung.ausfall_s == 24 * 3600                       # Vorgabe der Einstellung: 24 Stunden
+    geruest.anmeldung.merken_s = 0                                        # jede Anfrage fragt die Kellerwolke
+    h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
+    wolke.kellerwolke_weg = True
+    assert (await c.get("/api/v1/einstellungen", headers=h)).status_code == 200
+    kw = {v["name"]: v for v in (await c.get("/api/v1/verbindungen", headers=h)).json()}["Kellerwolke"]
+    assert not kw["ok"] and "nicht erreichbar" in kw["meldung"]
+    r = await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"kellerwolke_adresse": "http://weg.test"}})
+    assert r.status_code == 200                                          # auch eine falsche Adresse sperrt nicht aus
+    assert (await c.get("/api/v1/ich", headers=h)).json()["name"] == "chef"
+    assert (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).status_code == 503
+    assert (await c.get("/api/v1/ich", headers={"X-Kellerwolke-Sitzung": "t_nie"})).status_code == 503
+    wolke.kellerwolke_weg = False
+    r = await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"kellerwolke_adresse": "http://kw.test"}})
+    assert r.status_code == 200
+    kw = {v["name"]: v for v in (await c.get("/api/v1/verbindungen", headers=h)).json()}["Kellerwolke"]
+    assert kw["ok"]
+    await geruest.einstellungen.aendern({"anmeldung_ausfall_h": 2})
+    assert geruest.anmeldung.ausfall_s == 2 * 3600
