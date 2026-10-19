@@ -35,7 +35,7 @@
       <div class="rolle"><i class="fa-solid fa-wave-square"></i>{app.rolle}</div>
       <div class="hinweis-kw">
         <i class="fa-solid fa-cloud"></i>
-        <span>Anmelden mit deinem Konto der Kellerwolke unter <b>{app.kellerwolke}</b>.{#if app.besitzer} Diese App gehört
+        <span>Anmelden mit deinem Konto der Kellerwolke unter <b>{app.kellerwolke}</b>.{#if app.besitzer}{" "}Diese App gehört
           dem Konto <b>{app.besitzer}</b>.{/if}</span>
       </div>
       <label>Name oder Kürzel<span class="eingabe"><input bind:value={kennung} autocomplete="username" /></span></label>
