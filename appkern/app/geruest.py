@@ -79,6 +79,9 @@ E = TypeVar("E", bound=Grundeinstellungen)
 LOKAL = {"127.0.0.1", "::1", "localhost"}
 TAG_S = 24 * 3600
 JA = {"1", "ja", "an", "true", "yes", "on"}
+# Endet der letzte Teil eines Wegs wie ein Dateiname (Punkt, dann Buchstabe, dann Buchstaben oder Ziffern), ist es eine
+# Datei und nie eine Seite; Zahlen wie /transkripte/<kennung>/12.5 bleiben Seiten.
+DATEIENDUNG = re.compile(r"\.[A-Za-z][A-Za-z0-9]*$")
 
 
 def schnittstellen_doku(kennung: str) -> bool:
@@ -532,8 +535,9 @@ class Geruest(Generic[E]):
         return app
 
     def oberflaeche_ausliefern(self, app: FastAPI) -> None:
-        """Die gebaute Oberfläche; zuletzt einbinden (fängt alle übrigen Pfade). Unbekannte Pfade bekommen index.html,
-        Pfade unter /api nie."""
+        """Die gebaute Oberfläche; zuletzt einbinden (fängt alle übrigen Pfade). Unbekannte Seiten bekommen index.html
+        (die Oberfläche liest ihren Weg selbst); Pfade unter /api und fehlende Dateien (ein Weg mit Dateiendung, etwa
+        /manifest.webmanifest) bekommen 404, damit der Browser nie eine Seite als Datei nimmt."""
         wurzel = self.oberflaeche.resolve() if self.oberflaeche else None
 
         @app.api_route("/{pfad:path}", methods=["GET", "HEAD"], include_in_schema=False)
@@ -547,4 +551,6 @@ class Geruest(Generic[E]):
                 kopf = {"Cache-Control": "public, max-age=31536000, immutable"} if pfad.startswith("assets/") \
                     else {"Cache-Control": "no-cache"}
                 return FileResponse(datei, headers=kopf)
+            if DATEIENDUNG.search(pfad.rsplit("/", 1)[-1]):
+                return JSONResponse({"detail": "Nicht gefunden"}, status_code=404)
             return FileResponse(wurzel / "index.html", headers={"Cache-Control": "no-cache"})

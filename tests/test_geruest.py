@@ -134,6 +134,11 @@ async def test_oberflaeche_ausliefern(umgebung):
     r = await c.get("/assets/a.js")
     assert r.text == "1" and "immutable" in r.headers["cache-control"]
     assert (await c.get("/api/v1/gibtsnicht")).status_code == 404
+    for datei in ("/manifest.webmanifest", "/assets/fehlt.js", "/favicon.ico", "/irgendwo/bild.PNG"):
+        assert (await c.get(datei)).status_code == 404, datei          # fehlende Datei, nie die Startseite
+    for seite in ("/transkripte/abc/12.5", "/einstellungen/verbindungen", "/a.b/c"):
+        r = await c.get(seite)
+        assert r.status_code == 200 and "Probe" in r.text, seite        # Seiten ohne Dateiendung bleiben Seiten
     assert (await c.get("/../../etc/passwd")).status_code in (200, 404)        # nie außerhalb der Oberfläche
     assert "root:" not in (await c.get("/%2e%2e/%2e%2e/etc/passwd")).text
 
