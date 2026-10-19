@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 import pytest
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from appkern.auftraege import Art, AuftragAbgebrochen, AuftragFehler, Auftraege, FalscherZustand, Kontext, Phase, UnbekannteArt
 from appkern.auftraege.api import auftrags_router
@@ -178,6 +178,19 @@ async def test_wiederholen_setzt_am_zwischenstand_an(dienst):
     assert fertig.ergebnis == {"abschnitte": [0, 1, 2, 3]}                    # 0 und 1 nicht noch einmal
     with pytest.raises(FalscherZustand):
         await dienst.wiederholen(neu.id)
+
+
+async def test_wiederholen_mit_geaenderter_eingabe(dienst):
+    """Hat sich seit dem ersten Lauf etwas geändert (etwa eine Adresse), wiederholt der Auftrag mit dem neuen Wert;
+    geprüft wie beim Einreihen."""
+    a = await dienst.einreihen("zaehlen", Texte(texte=["ab"]))
+    await bis(dienst, a.id, "fertig")
+    await dienst.db.ausfuehren("UPDATE auftrag SET zustand='fehler' WHERE id=?", (a.id,))
+    neu = await dienst.wiederholen(a.id, {"texte": ["abc", "de"]})
+    assert (await bis(dienst, neu.id, "fertig")).ergebnis == {"zeichen": 5}
+    await dienst.db.ausfuehren("UPDATE auftrag SET zustand='fehler' WHERE id=?", (neu.id,))
+    with pytest.raises(ValidationError):
+        await dienst.wiederholen(neu.id, {"texte": "kein Feld"})
 
 
 async def test_neustart_haelt_an_oder_setzt_fort(tmp_path: Path):

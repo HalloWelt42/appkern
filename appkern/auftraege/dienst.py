@@ -277,8 +277,10 @@ class Auftraege:
             await self._eintragen(auftrag)
         return auftrag
 
-    async def wiederholen(self, auftrag_id: str) -> Auftrag:
-        """Neuer Auftrag mit derselben Eingabe; bei fortsetzbaren Arten mit dem Zwischenstand des alten."""
+    async def wiederholen(self, auftrag_id: str, aenderungen: dict[str, Any] | None = None) -> Auftrag:
+        """Neuer Auftrag mit derselben Eingabe; bei fortsetzbaren Arten mit dem Zwischenstand des alten. `aenderungen`
+        ersetzen einzelne Felder der Eingabe (etwa eine Adresse, die sich seitdem geändert hat), geprüft wie beim
+        Einreihen."""
         alt = await self.db.zeile("SELECT * FROM auftrag WHERE id=?", (auftrag_id,))
         if alt is None:
             raise NichtGefunden(f"Auftrag {auftrag_id} nicht gefunden")
@@ -289,10 +291,13 @@ class Auftraege:
             raise UnbekannteArt(f"Unbekannte Art: {alt['art']}")
         neu_id = str(uuid.uuid4())
         zwischen = alt["zwischenstand"] if art.fortsetzbar else "{}"
+        eingabe = alt["eingabe"]
+        if aenderungen:
+            eingabe = json.dumps(self._eingabe_json(art, {**json.loads(eingabe or "{}"), **aenderungen}), ensure_ascii=False)
         await self.db.ausfuehren(
             "INSERT INTO auftrag (id, art, titel, zustand, eingabe, zwischenstand, stapel, wiederholung_von, erstellt_am) "
             "VALUES (?,?,?,?,?,?,?,?,?)",
-            (neu_id, alt["art"], alt["titel"], "wartet", alt["eingabe"], zwischen, alt["stapel"], auftrag_id, _jetzt()))
+            (neu_id, alt["art"], alt["titel"], "wartet", eingabe, zwischen, alt["stapel"], auftrag_id, _jetzt()))
         auftrag = await self.holen(neu_id)
         self._melden(auftrag)
         self._wecker.set()
