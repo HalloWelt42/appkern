@@ -4,6 +4,7 @@ Aufräumen, Schnittstelle mit SSE."""
 
 import asyncio
 import json
+import logging
 from pathlib import Path
 
 import httpx
@@ -11,7 +12,7 @@ import pytest
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from appkern.auftraege import Art, AuftragAbgebrochen, Auftraege, FalscherZustand, Kontext, Phase, UnbekannteArt
+from appkern.auftraege import Art, AuftragAbgebrochen, AuftragFehler, Auftraege, FalscherZustand, Kontext, Phase, UnbekannteArt
 from appkern.auftraege.api import auftrags_router
 from appkern.datenbank import Datenbank
 
@@ -49,6 +50,15 @@ def arten(freigabe: asyncio.Event | None = None, gestartet: asyncio.Event | None
     async def kaputt(k: Kontext):
         raise ValueError()
 
+    class SeiteWeg(AuftragFehler):
+        pass
+
+    async def erwartet(k: Kontext):
+        try:
+            raise KeyError("404")
+        except KeyError as f:
+            raise SeiteWeg("Die Seite gibt es nicht mehr (404)") from f
+
     async def abschnitte(k: Kontext):
         fertig = list(k.zwischenstand.get("fertig", []))
         for n in range(len(fertig), 4):
@@ -65,6 +75,7 @@ def arten(freigabe: asyncio.Event | None = None, gestartet: asyncio.Event | None
         Art("warten", "Warten", warten, nach_neustart="anhalten"),
         Art("warten_fortsetzen", "Warten", warten, nach_neustart="fortsetzen"),
         Art("kaputt", "Kaputt", kaputt),
+        Art("erwartet", "Erwartet", erwartet),
         Art("abschnitte", "Abschnitte", abschnitte, fortsetzbar=True),
     ]
 
@@ -137,6 +148,24 @@ async def test_fehler_traegt_die_ursache_auch_ohne_text(dienst):
     assert f.fehler == "ValueError"
     zeile = await dienst.db.zeile("SELECT fehler_spur FROM auftrag WHERE id=?", (a.id,))
     assert "raise ValueError" in zeile["fehler_spur"]
+
+
+async def test_erwarteter_fehlschlag_ohne_spur_unerwarteter_mit(dienst, caplog):
+    """Ein AuftragFehler (auch eine abgeleitete Art) ist ein erwarteter, fachlicher Fehlschlag: Warnung mit der
+    Meldung, keine Spur im Log und im Auftrag. Jeder andere Fehler steht mit Spur als Fehler im Log."""
+    caplog.set_level(logging.WARNING, logger="appkern.auftraege")
+    a = await dienst.einreihen("erwartet")
+    f = await bis(dienst, a.id, "fehler")
+    assert f.fehler == "Die Seite gibt es nicht mehr (404)"
+    assert (await dienst.db.zeile("SELECT fehler_spur FROM auftrag WHERE id=?", (a.id,)))["fehler_spur"] is None
+    eintrag = next(r for r in caplog.records if a.id[:8] in r.getMessage())
+    assert eintrag.levelno == logging.WARNING and eintrag.exc_info is None
+    assert "Die Seite gibt es nicht mehr (404)" in eintrag.getMessage() and "Traceback" not in caplog.text
+    caplog.clear()
+    b = await dienst.einreihen("kaputt")
+    await bis(dienst, b.id, "fehler")
+    eintrag = next(r for r in caplog.records if b.id[:8] in r.getMessage())
+    assert eintrag.levelno == logging.ERROR and eintrag.exc_info is not None and "Traceback" in caplog.text
 
 
 async def test_wiederholen_setzt_am_zwischenstand_an(dienst):

@@ -8,6 +8,10 @@ Auftrag still: was lief, wird je Art fortgesetzt (Zwischenstand bleibt) oder als
 dann ein Klick.
 
 Fortschritt wird gedrosselt geschrieben (höchstens alle `DROSSEL_S`), ein Phasenwechsel immer.
+
+Ein erwarteter, fachlicher Fehlschlag (die Quelle antwortet 404, die Datei passt nicht) ist ein `AuftragFehler`: der
+Auftrag endet mit genau dieser Meldung, im Log steht eine Warnung ohne Spur. Jeder andere Fehler gilt als unerwartet und
+steht mit seiner Spur im Log und im Auftrag.
 """
 
 from __future__ import annotations
@@ -63,6 +67,11 @@ SCHEMA = [
 
 class AuftragAbgebrochen(Exception):
     """Wird von `Kontext.pruefen()` geworfen, wenn der Mensch abgebrochen hat."""
+
+
+class AuftragFehler(Exception):
+    """Erwarteter Fehlschlag der Arbeit mit einer Meldung für den Menschen, etwa `AuftragFehler("Die Seite gibt es
+    nicht mehr (404)")`. Eine App leitet ihre fachlichen Fehler davon ab oder wirft ihn mit `from` über einen fremden."""
 
 
 class UnbekannteArt(ValueError):
@@ -391,6 +400,10 @@ class Auftraege:
                 await self._beenden(auftrag_id, "abgebrochen")
             except asyncio.CancelledError:
                 raise
+            except AuftragFehler as f:
+                meldung = str(f).strip() or type(f).__name__
+                logger.warning("Auftrag %s (%s) fehlgeschlagen: %s", auftrag_id[:8], zeile["art"], meldung)
+                await self._beenden(auftrag_id, "fehler", fehler=meldung)
             except Exception as f:  # noqa: BLE001 - jeder Fehler der Arbeit gehört in den Auftrag, nie ins Leere
                 meldung = f"{type(f).__name__}: {f}".strip().rstrip(":").strip() or type(f).__name__
                 logger.exception("Auftrag %s (%s) fehlgeschlagen", auftrag_id[:8], zeile["art"])

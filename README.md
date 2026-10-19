@@ -139,6 +139,11 @@ await auftraege.einreihen("transkribieren", {"datei": "Apps/Transkription/Folge 
 | Neustart | je Art `nach_neustart="fortsetzen"` (wieder einreihen, Zwischenstand bleibt) oder `"anhalten"` (unterbrochen, Wiederholen ist ein Klick) |
 | Schnittstelle | `GET /api/v1/auftraege` (seitenweise, Filter), `GET .../{id}`, `POST .../{id}/abbrechen`, `POST .../{id}/wiederholen`, `DELETE .../{id}`, `GET .../ereignisse` (Server-Sent Events) |
 
+Ein erwarteter, fachlicher Fehlschlag (die Quelle antwortet 404, die Datei passt nicht) geht als `AuftragFehler` oder
+eine eigene Art davon (`raise QuelleWeg("Die Seite gibt es nicht mehr (404)") from f`): der Auftrag endet mit genau
+dieser Meldung, im Log steht eine Warnung ohne Spur. Jeder andere Fehler gilt als unerwartet und steht mit Spur im Log
+und im Auftrag.
+
 Die Datenbank schreibt nacheinander über eine Verbindung (`ausfuehren`, `transaktion`, `einrichten`) und liest über
 eigene Verbindungen, die nur lesen dürfen (`zeile`, `zeilen`; `leser`, Vorgabe 4). Im WAL-Modus sieht jedes Lesen den
 zuletzt bestätigten Stand: eine lange Abfrage hält weder andere Seiten noch das Schreiben auf, eine laufende
