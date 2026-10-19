@@ -89,8 +89,12 @@ export async function koppeln(code: string, name: string, art: "webapp" | "brows
   await angemeldet(await hole("/anmeldung/koppeln", { method: "POST", ...json({ code, name, art }) }));
 }
 
-export async function einrichtenMit(kellerwolke_adresse: string, kellerwolke_schluessel: string): Promise<void> {
-  sitzung.app = await hole<AppInfo>("/einrichtung", { method: "POST", ...json({ kellerwolke_adresse, kellerwolke_schluessel }) });
+// Erste Einrichtung; `einrichtungscode` nur von anderswo als dem Rechner der App nötig (er liegt dort in einer Datei).
+export async function einrichtenMit(kellerwolke_adresse: string, kellerwolke_schluessel: string,
+                                    einrichtungscode = ""): Promise<void> {
+  sitzung.app = await hole<AppInfo>("/einrichtung", {
+    method: "POST", ...json({ kellerwolke_adresse, kellerwolke_schluessel, einrichtungscode }),
+  });
 }
 
 // Abmelden; auf einem gekoppelten Gerät heißt das: es trennt sich.

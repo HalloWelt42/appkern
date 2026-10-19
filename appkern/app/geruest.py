@@ -9,8 +9,8 @@
 Was das Gerüst übernimmt: Datenbank, Einstellungen (Grundeinstellungen plus die der App), Protokoll, Aufträge,
 Anmeldung mit dem Kellerwolke-Konto (Besitzer ist das Konto des App-Schlüssels), Zugänge zu Kellerwolke und Leitstelle
 (nach jeder Änderung der Einstellungen neu aufgebaut), App-Verzeichnis, Prüfung der Verbindungen, erste Einrichtung
-(nur vom Rechner selbst, solange keine Kellerwolke eingetragen ist), tägliches Aufräumen, Auslieferung der gebauten
-Oberfläche.
+(solange keine Kellerwolke eingetragen ist: vom Rechner selbst, von anderswo mit dem Einrichtungscode aus einer Datei am
+Rechner, Lehre 34), tägliches Aufräumen, Auslieferung der gebauten Oberfläche.
 
 Die Schnittstellendoku zum Ausprobieren (/docs, /redoc, /openapi.json) gibt es nur in der Entwicklung, mit
 `<KENNUNG>_SCHNITTSTELLEN_DOKU=1` in der Umgebung; sonst zeigt die App ihren Aufbau niemandem ohne Anmeldung.

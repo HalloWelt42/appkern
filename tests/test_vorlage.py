@@ -76,6 +76,9 @@ def test_ohne_ton(tmp_path: Path):
     assert ziel["ton"] is False and ziel["kennung"] == "transkription" and ziel["adresse"].endswith(":8601")
     assert "TRANSKRIPTION_DATEN" in (ordner / "backend" / "app" / "main.py").read_text(encoding="utf-8")
     assert (ordner / ".dockerignore").is_file() and not (ordner / "dockerignore").exists()
+    compose = (ordner / "compose.pi.yml").read_text(encoding="utf-8")       # Lehre 34: Code im eingebundenen Datenordner
+    assert "TRANSKRIPTION_EINRICHTUNGSCODE_DATEI: /app/daten/einrichtungscode" in compose
+    assert "TRANSKRIPTION_EINRICHTUNGSCODE_ORT" in compose and "./daten:/app/daten" in compose
     for werkzeug in ("tools/version.sh", "tools/appkern.sh", "tools/ausrollen.sh", "tools/git-hooks/pre-commit", "einrichten.sh"):
         assert os.access(ordner / werkzeug, os.X_OK), werkzeug
 

@@ -13,6 +13,8 @@ export interface AppInfo {
   kellerwolke: string;
   oberflaeche: string | null;
   auftraege_laufend?: number;
+  // solange die erste Einrichtung nötig ist: wo der Einrichtungscode am Rechner der App liegt (nie der Code selbst)
+  einrichtungscode?: string | null;
 }
 
 export interface Konto {

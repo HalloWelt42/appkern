@@ -16,6 +16,9 @@ services:
     environment:
       __UMGEBUNG___DATEN: /app/daten
       __UMGEBUNG___CA_DATEI: /zertifikate/rootCA.pem
+      # erste Einrichtung von anderswo (Lehre 34): der Code liegt im eingebundenen Datenordner, gefunden auf dem Pi
+      __UMGEBUNG___EINRICHTUNGSCODE_DATEI: /app/daten/einrichtungscode
+      __UMGEBUNG___EINRICHTUNGSCODE_ORT: "pi@192.168.178.49:/mnt/data/__KENNUNG__/daten/einrichtungscode"
     volumes:
       - ./daten:/app/daten
       - ./zertifikate:/zertifikate:ro
