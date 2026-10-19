@@ -181,6 +181,7 @@ async def test_protokoll_bereiche_fuer_sichten(db):
     assert (await p.liste(ereignisse=["quelle.", "regeln."])).gesamt == 2
     assert [e.text for e in (await p.liste(ereignisse=["auftrag."], arten=["einlesen"])).eintraege] == ["weg"]
     assert (await p.liste(stufen=["info", "warnung"])).gesamt == 3
+    assert (await p.liste(stufen=["info"], ohne=["auftrag.fertig"])).gesamt == 2
     bis = (await p.liste()).eintraege[0].zeit
     await p.eintragen("quelle.entfernt", "danach")
     assert (await p.liste(bis=bis.isoformat())).gesamt == 4 and (await p.liste()).gesamt == 5

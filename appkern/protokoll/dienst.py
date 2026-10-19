@@ -62,17 +62,21 @@ class Protokoll:
     async def liste(self, *, ereignis: str | None = None, stufe: Stufe | None = None, bezug_id: str | None = None,
                     tag: str | None = None, ab: str | None = None, suche: str | None = None, grenze: int = 100,
                     versatz: int = 0, ereignisse: Sequence[str] = (), stufen: Sequence[Stufe] = (),
-                    arten: Sequence[str] = (), bis: str | None = None) -> Seite:
+                    arten: Sequence[str] = (), ohne: Sequence[str] = (), bis: str | None = None) -> Seite:
         """Neueste zuerst, seitenweise. `ereignis` als Anfang (`auftrag.` trifft alle Auftragsereignisse), `tag` als
         JJJJ-MM-TT (UTC) für genau diesen Tag, `ab` für alles ab diesem Tag, `suche` in Name und Text.
 
         Für Sichten, die mehrere Ereignisse zu einem Bereich zusammenfassen: `ereignisse` (einer dieser Anfänge),
-        `stufen` (eine dieser Stufen), `arten` (`daten.art` eines Auftrags ist eine davon) und `bis` (ISO-Zeitpunkt,
-        nichts Neueres: die Liste bleibt beim Blättern stehen, auch wenn Neues dazukommt)."""
+        `stufen` (eine dieser Stufen), `arten` (`daten.art` eines Auftrags ist eine davon), `ohne` (keiner dieser
+        Anfänge) und `bis` (ISO-Zeitpunkt, nichts Neueres: die Liste bleibt beim Blättern stehen, auch wenn Neues
+        dazukommt)."""
         bedingungen, werte = [], []
         if ereignisse:
             bedingungen.append("(" + " OR ".join(["ereignis LIKE ? ESCAPE '\\'"] * len(ereignisse)) + ")")
             werte += [_like(e) + "%" for e in ereignisse]
+        for o in ohne:
+            bedingungen.append("ereignis NOT LIKE ? ESCAPE '\\'")
+            werte.append(_like(o) + "%")
         if stufen:
             bedingungen.append(f"stufe IN ({','.join('?' * len(stufen))})")
             werte += list(stufen)
