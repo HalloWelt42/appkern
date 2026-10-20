@@ -1,6 +1,6 @@
 <script lang="ts">
   // Mehr am Telefon: weitere Bereiche, Protokoll, Einstellungen, Verbindungen, Anzeige, Konto.
-  import { anzeige, anzeigeSetzen, SCHRIFTEN as SCHRIFT, THEMEN } from "../../lib/anzeige.svelte";
+  import { anzeige, anzeigeSetzen, THEMEN } from "../../lib/anzeige.svelte";
   import { gehe } from "../../lib/navigation.svelte";
   import { abmelden, sitzung } from "../../lib/sitzung.svelte";
   import type { Bereich } from "../../lib/typen";
@@ -29,8 +29,8 @@
 
 <div class="t-gruppe">Anzeige auf diesem Telefon</div>
 <div class="t-liste" style="padding: 10px 14px">
-  <div class="t-meta" style="color:var(--text-2)">Schriftgröße</div>
-  <div class="segment" style="margin-top:6px">{#each SCHRIFT as [s, t] (s)}<button class:aktiv={anzeige.schrift === s} onclick={() => anzeigeSetzen({ schrift: s })}>{t}</button>{/each}</div>
+  <div class="t-meta" style="color:var(--text-2)">Thema</div>
+  <div class="segment" style="margin-top:6px">{#each THEMEN as [s, t] (s)}<button class:aktiv={anzeige.thema === s} onclick={() => anzeigeSetzen({ thema: s })}>{t}</button>{/each}</div>
 </div>
 
 <div class="t-gruppe">Konto</div>

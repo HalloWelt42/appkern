@@ -6,7 +6,7 @@
   // (`reiter`) stehen zwischen den erzeugten Gruppen und der Anzeige und bringen ihre Seite selbst mit. Antwortet die
   // App nicht, sagt das allein die Schale; sobald sie wieder antwortet, lädt die Seite die Einstellungen neu.
   import { onDestroy } from "svelte";
-  import { anzeige, anzeigeSetzen, SCHRIFTEN as SCHRIFT, THEMEN as THEMA } from "../lib/anzeige.svelte";
+  import { anzeige, anzeigeSetzen, THEMEN as THEMA } from "../lib/anzeige.svelte";
   import { hole, json, seitenFehler, seitenSignal } from "../lib/api.svelte";
   import { beiRueckkehr } from "../lib/erreichbar.svelte";
   import { gehe, navigation } from "../lib/navigation.svelte";
@@ -288,10 +288,6 @@
     {:else if aktiv === ANZEIGE}
     <div class="karte breit">
       <p class="karte-unter" style="margin-top:14px">Gilt nur für diesen Browser.</p>
-      <div class="feld">
-        <div class="was"><div class="name">Schriftgröße</div></div>
-        <span class="segment">{#each SCHRIFT as [s, t] (s)}<button class:aktiv={anzeige.schrift === s} onclick={() => anzeigeSetzen({ schrift: s })}>{t}</button>{/each}</span>
-      </div>
       <div class="feld">
         <div class="was"><div class="name">Thema</div></div>
         <span class="segment">{#each THEMA as [s, t] (s)}<button class:aktiv={anzeige.thema === s} onclick={() => anzeigeSetzen({ thema: s })}>{t}</button>{/each}</span>

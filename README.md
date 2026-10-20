@@ -369,7 +369,7 @@ Die Oberflächen der Apps teilen Gestaltung und Schale aus einer Quelle, dem npm
 Repo (Ordner `oberflaeche`, Entwurf in `oberflaeche/mockups`, freigegeben am 17.10.2026). Die Schale bringt mit:
 erste Einrichtung, Anmeldung mit dem Kellerwolke-Konto (Passwort oder Code), Kopf mit Rolle, Verbindungen und
 laufenden Aufträgen, Band bei fehlender Verbindung, Navigation, Aufträge mit Schritten und Leiste, erzeugte
-Einstellungen (Geheimnisse verdeckt mit Auge), Protokoll, Schriftgröße und Thema je Gerät, eine eigene Ansicht fürs
+Einstellungen (Geheimnisse verdeckt mit Auge), Protokoll, Thema je Gerät (die Schrift ist fest: 15 px, klein 13 px, Marken 12 px), eine eigene Ansicht fürs
 Telefon mit Reitern. Barlow und die Symbole kommen über npm.
 
 ```svelte

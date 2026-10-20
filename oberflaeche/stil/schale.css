@@ -1,27 +1,24 @@
-/* Schale der eigenen Apps (freigegeben 17.10.2026, Entwurf in mockups/; Gestaltung der Leitstelle seit 20.10.2026). Barlow, Schriftstufen dicht bis sehr groß.
+/* Schale der eigenen Apps (freigegeben 17.10.2026, Entwurf in mockups/; Gestaltung der Leitstelle seit 20.10.2026). Barlow, Grundschrift 15 px, klein 13 px, Marken 12 px.
    Kopf fest, Inhalte in eigenen Rollfeldern, Einstellungen in Leisten statt Aufklappern. */
 
 /* Farben, Ecken und Dichte wie die Leitstelle (Nutzer 20.10.2026, Entwurf des Assistenten, Frage F12: für alle Apps):
-   Flächen blaugrau, Bernstein als Akzent, kantige Ecken, Zahlen in der Zahlenschrift. Die Schriftstufe wählt jeder
-   Browser in der Ansicht; welche Stufe und welches Thema gelten, bis er wählt, gibt die App der Schale mit. */
+   Flächen blaugrau, Bernstein als Akzent, kantige Ecken, Zahlen in der Zahlenschrift. Eine feste Schrift; das Thema
+   wählt jeder Browser in der Ansicht, die Vorgabe gibt die App der Schale mit. */
 :root {
   --schrift-zahl: "Chakra Petch", "Barlow", ui-monospace, monospace;
   --r1: 2px;
   --r2: 3px;
   --r3: 4px;
-  /* Stufe "normal" (Anzeige: Mittel) */
-  --gross: 17px;
-  --klein: 15px;
-  --marke: 13px;
-  --kopf-hoehe: 56px;
-  --zeile: 40px;
-  --nav-breite: 248px;
+  /* eine feste, dichte Schrift für alle Apps (Nutzer 20.10.2026: keine Schriftstufen mehr) */
+  --gross: 15px;
+  --klein: 13px;
+  --marke: 12px;
+  --kopf-hoehe: 50px;
+  --zeile: 34px;
+  --nav-breite: 232px;
   --fuss-hoehe: 30px;
-  --knopf-hoehe: 36px;
+  --knopf-hoehe: 32px;
 }
-:root[data-schrift="dicht"] { --gross: 15px; --klein: 13px; --marke: 12px; --kopf-hoehe: 50px; --zeile: 34px; --nav-breite: 232px; --knopf-hoehe: 32px; }
-:root[data-schrift="gross"] { --gross: 19px; --klein: 17px; --marke: 14px; --kopf-hoehe: 60px; --zeile: 44px; --nav-breite: 264px; --knopf-hoehe: 38px; }
-:root[data-schrift="sehr_gross"] { --gross: 21px; --klein: 19px; --marke: 16px; --kopf-hoehe: 64px; --zeile: 48px; --nav-breite: 280px; --knopf-hoehe: 42px; }
 
 /* Mildes Hell der Leitstelle */
 :root, :root[data-theme="hell"] {

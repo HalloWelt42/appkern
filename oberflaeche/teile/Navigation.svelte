@@ -1,8 +1,8 @@
 <script lang="ts">
   // Navigation: Bereiche der App, dann Aufträge, Protokoll, Einstellungen; darunter was die App dort zeigt (`zusatz`,
-  // etwa ihre Chats), unten Ansicht (Thema, Schrift), Konto und Fassung. Einklappbar auf Symbole (gemerkt je Browser).
+  // etwa ihre Chats), unten Ansicht (Thema), Konto und Fassung. Einklappbar auf Symbole (gemerkt je Browser).
   import type { Snippet } from "svelte";
-  import { anzeige, anzeigeSetzen, SCHRIFTEN } from "../lib/anzeige.svelte";
+  import { anzeige, anzeigeSetzen } from "../lib/anzeige.svelte";
   import { auftraege } from "../lib/auftraege.svelte";
   import { gehe } from "../lib/navigation.svelte";
   import { abmelden, sitzung } from "../lib/sitzung.svelte";
@@ -45,9 +45,6 @@
       <div class="segment">
         <button class:aktiv={dunkel} onclick={() => anzeigeSetzen({ thema: "dunkel" })}>Dunkel</button>
         <button class:aktiv={!dunkel} onclick={() => anzeigeSetzen({ thema: "hell" })}>Hell</button>
-      </div>
-      <div class="segment" title="Schriftgröße: macht die ganze App größer oder dichter">
-        {#each SCHRIFTEN as [s, t] (s)}<button class:aktiv={anzeige.schrift === s} onclick={() => anzeigeSetzen({ schrift: s })}>{t}</button>{/each}
       </div>
     </div>
     <div class="konto">

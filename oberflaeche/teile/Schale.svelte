@@ -20,7 +20,7 @@
   // lädt die Seite von selbst neu. `ruhig`: ob die App gerade neu laden darf (etwa nicht während einer Aufnahme).
   // `oeffnen`: wohin eine Anfrage zum Öffnen aus der Kellerwolke führt (Weg /anfrage/<id>), etwa die Ansicht der Datei.
   // `einstellungen`: eigene Reiter der App in den Einstellungen (neben den erzeugten Gruppen).
-  // `ansicht`: Schriftstufe und Thema, bis der Mensch in diesem Browser wählt. `kopf`, `navigation`, `fuss`: eigene
+  // `ansicht`: das Thema, bis der Mensch in diesem Browser wählt. `kopf`, `navigation`, `fuss`: eigene
   // Teile der App in Kopf (rechts), Seitenleiste (unter den Bereichen) und Fußleiste am Rechner.
   let { bereiche = [], fassung, ruhig, oeffnen, einstellungen = [], ansicht = {}, kopf, navigation: navZusatz, fuss }: {
     bereiche?: Bereich[]; fassung: string; ruhig?: () => boolean; oeffnen?: (a: Anfrage) => Promise<string> | string;
