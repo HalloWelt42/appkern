@@ -263,7 +263,7 @@ button { font: inherit; color: inherit; }
 .mobil .t-kopf { display: flex; align-items: center; gap: 10px; padding: 10px 16px; }
 .mobil .t-kopf h1 { margin: 0; font-size: calc(var(--gross) + 9px); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mobil .t-inhalt { flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; padding: 0 16px 16px; }
-.mobil .t-reiter { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--leiste); box-shadow: 0 -1px 0 var(--rand); padding: 6px 0 calc(8px + env(safe-area-inset-bottom)); }
+.mobil .t-reiter { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--leiste); box-shadow: 0 -1px 0 var(--rand); padding: 6px 0 8px; } /* kein Abstand über dem Home-Balken (Nutzervorgabe 20.10.2026) */
 .mobil .t-reiter button { border: 0; background: transparent; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: var(--marke); color: var(--text-3); padding: 6px 0; min-height: 48px; }
 .mobil .t-reiter button i { font-size: 21px; }
 .mobil .t-reiter button.aktiv { color: var(--akzent); font-weight: 600; }
