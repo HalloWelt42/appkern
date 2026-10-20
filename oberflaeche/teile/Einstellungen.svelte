@@ -6,7 +6,7 @@
   // (`reiter`) stehen zwischen den erzeugten Gruppen und der Anzeige und bringen ihre Seite selbst mit. Antwortet die
   // App nicht, sagt das allein die Schale; sobald sie wieder antwortet, lädt die Seite die Einstellungen neu.
   import { onDestroy } from "svelte";
-  import { anzeige, anzeigeSetzen, type Schrift, type Thema } from "../lib/anzeige.svelte";
+  import { anzeige, anzeigeSetzen, SCHRIFTEN as SCHRIFT, THEMEN as THEMA } from "../lib/anzeige.svelte";
   import { hole, json, seitenFehler, seitenSignal } from "../lib/api.svelte";
   import { beiRueckkehr } from "../lib/erreichbar.svelte";
   import { gehe, navigation } from "../lib/navigation.svelte";
@@ -170,8 +170,6 @@
   }
 
   const HERKUNFT = { gespeichert: "gespeichert", umgebung: "aus der Umgebung", vorgabe: "Vorgabe" } as const;
-  const SCHRIFT: [Schrift, string][] = [["normal", "Normal"], ["gross", "Groß"], ["sehr_gross", "Sehr groß"]];
-  const THEMA: [Thema, string][] = [["hell", "Hell"], ["dunkel", "Dunkel"], ["system", "wie das System"]];
 </script>
 
 <section class="seite einstellungen">

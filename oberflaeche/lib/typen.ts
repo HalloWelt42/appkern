@@ -6,6 +6,7 @@ export interface AppInfo {
   kennung: string;
   rolle: string;
   symbol: string;
+  farbe?: string;                 // Flächenfarbe des Symbols (ab Appkern 0.40)
   fassung: string;
   appkern: string;
   einrichtung_noetig: boolean;
@@ -126,6 +127,7 @@ export interface Bereich {
   seite: Component;
   reiter?: boolean;
   geraete?: "beide" | "rechner" | "telefon";   // wo der Bereich erscheint (Vorgabe: beide)
+  zahl?: () => number;                          // kleine Zahl in der Navigation (etwa offene Vorgänge); 0 zeigt nichts
 }
 
 // Ein eigener Reiter der App in den Einstellungen, neben den aus der Beschreibung erzeugten Gruppen: für Einstellungen,

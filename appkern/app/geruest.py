@@ -24,7 +24,7 @@ import logging
 import os
 import re
 import ssl
-from collections.abc import Awaitable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Generic, TypeVar
@@ -104,6 +104,7 @@ class AppInfo(BaseModel):
     kennung: str
     rolle: str
     symbol: str
+    farbe: str = "#2f7ce0"      # Flächenfarbe des Symbols (Kopf, Startbild, Telefon)
     fassung: str
     appkern: str
     einrichtung_noetig: bool
@@ -141,13 +142,15 @@ async def _begrenzt(name: str, adresse: str, pruefung: Awaitable[Verbindung]) ->
 
 class Geruest(Generic[E]):
     def __init__(self, *, name: str, kennung: str, rolle: str, fassung: str, daten: Path, einstellungen: type[E],
-                 arten: Sequence[Art] = (), symbol: str = "fa-cube", oberflaeche: Path | None = None,
+                 arten: Sequence[Art] = (), symbol: str = "fa-cube", farbe: str = "#2f7ce0", oberflaeche: Path | None = None,
                  gleichzeitig: int = 1, angebote: Sequence[AppAngebot] = (), leseverbindungen: int = LESER,
                  transport: httpx.AsyncBaseTransport | None = None) -> None:
         """`angebote`: was die App mit Dateien der Kellerwolke kann (Aktionen im Dateimenü, Dateiwahl in der App).
         `leseverbindungen`: so viele Lesungen der Datenbank laufen nebeneinander (neben dem Schreiben).
         `transport` nur für Tests: alle Verbindungen nach außen gehen dann über ihn."""
         self.name, self.kennung, self.rolle, self.symbol, self.fassung = name, kennung, rolle, symbol, fassung
+        self.farbe = farbe
+        self._weitere_verbindungen: list[tuple[str, Callable[[], Awaitable[Verbindung]]]] = []
         self.daten = Path(daten)
         self.oberflaeche = oberflaeche
         self._transport = transport
@@ -334,13 +337,27 @@ class Geruest(Generic[E]):
         stand = self.einstellungen.stand
         return not (stand.kellerwolke_adresse and stand.kellerwolke_schluessel.get_secret_value())
 
+    def verbindung_anmelden(self, name: str, pruefung: Callable[[], Awaitable[Verbindung]]) -> None:
+        """Eine weitere Verbindung der App (etwa zu einer anderen App oder einem Dienst am Mac); sie steht dann mit
+        Kellerwolke und Leitstelle in `/api/v1/verbindungen` und in der Fußleiste der Schale."""
+        self._weitere_verbindungen.append((name, pruefung))
+
     async def verbindungen(self) -> list[Verbindung]:
-        """Kellerwolke und Leitstelle nebeneinander geprüft, jede höchstens `PRUEFEN_S`: auch wenn beide hängen,
-        antwortet die App rasch."""
+        """Kellerwolke, Leitstelle und die weiteren Verbindungen nebeneinander geprüft, jede höchstens `PRUEFEN_S`:
+        auch wenn alle hängen, antwortet die App rasch."""
         stand = self.einstellungen.stand
         return list(await asyncio.gather(
             _begrenzt("Kellerwolke", stand.kellerwolke_adresse, self._kellerwolke_pruefen()),
-            _begrenzt("Leitstelle", stand.leitstelle_adresse, self._leitstelle_pruefen())))
+            _begrenzt("Leitstelle", stand.leitstelle_adresse, self._leitstelle_pruefen()),
+            *(_begrenzt(name, "", self._weitere_pruefen(name, pruefung)) for name, pruefung in self._weitere_verbindungen)))
+
+    @staticmethod
+    async def _weitere_pruefen(name: str, pruefung: Callable[[], Awaitable[Verbindung]]) -> Verbindung:
+        try:
+            return await pruefung()
+        except Exception as f:  # noqa: BLE001 - eine Prüfung sagt immer etwas, nie eine Ausnahme nach oben
+            logger.warning("Verbindung %s: %s", name, f)
+            return Verbindung(name=name, ok=False, meldung=f"Prüfung gescheitert: {type(f).__name__}")
 
     async def _kellerwolke_pruefen(self) -> Verbindung:
         stand = self.einstellungen.stand
@@ -440,7 +457,7 @@ class Geruest(Generic[E]):
     # --- Schnittstelle ----------------------------------------------------------------------------------------
 
     def info(self) -> AppInfo:
-        return AppInfo(name=self.name, kennung=self.kennung, rolle=self.rolle, symbol=self.symbol, fassung=self.fassung,
+        return AppInfo(name=self.name, kennung=self.kennung, rolle=self.rolle, symbol=self.symbol, farbe=self.farbe, fassung=self.fassung,
                        appkern=appkern.__version__, einrichtung_noetig=self.einrichtung_noetig, besitzer=self.besitzer,
                        kellerwolke=self.einstellungen.stand.kellerwolke_adresse.rstrip("/"),
                        oberflaeche=self.oberflaeche_fassung(),

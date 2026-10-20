@@ -16,9 +16,14 @@
   import Kopf from "./Kopf.svelte";
   import Navigation from "./Navigation.svelte";
   import Protokoll from "./Protokoll.svelte";
+  import Fuss from "./Fuss.svelte";
+  import type { Snippet } from "svelte";
+  import { anzeige } from "../lib/anzeige.svelte";
 
-  let { bereiche, oeffnen, einstellungen = [] }: { bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string;
-                                                 einstellungen?: EinstellungsReiter[] } = $props();
+  // `kopf`, `navigation`, `fuss`: was die App in Kopf (rechts), Seitenleiste (unter den Bereichen) und Fußleiste zeigt
+  let { bereiche, oeffnen, einstellungen = [], kopf, navigation: navZusatz, fuss }: {
+    bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string; einstellungen?: EinstellungsReiter[];
+    kopf?: Snippet; navigation?: Snippet; fuss?: Snippet } = $props();
 
   onMount(() => {
     const auftraegeStoppen = verfolgen();
@@ -35,7 +40,7 @@
 </script>
 
 <div class="fenster-voll">
-  <Kopf />
+  <Kopf rechts={kopf} />
   {#if !verbindung.ok}
     <AppWeg />
   {:else if fassung.neu}
@@ -46,8 +51,8 @@
       <button class="knopf" onclick={() => location.reload()}><i class="fa-solid fa-rotate"></i> Jetzt neu laden</button>
     </div>
   {:else if fehlend.length}<Band verbindungen={fehlend} />{:else}<div></div>{/if}
-  <div class="geruest" class:mit-leiste={!bereich && seite === "auftraege"}>
-    <Navigation {bereiche} {seite} />
+  <div class="geruest" class:mit-leiste={!bereich && seite === "auftraege"} class:eingeklappt={anzeige.eingeklappt}>
+    <Navigation {bereiche} {seite} zusatz={navZusatz} />
     {#if bereich}
       <section class="seite"><bereich.seite /></section>
     {:else if seite === "anfrage" && oeffnen}
@@ -60,4 +65,5 @@
       <Auftraege />
     {/if}
   </div>
+  <Fuss rechts={fuss} />
 </div>

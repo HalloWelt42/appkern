@@ -362,3 +362,26 @@ async def test_verbindungen_antworten_rasch_auch_wenn_eine_haengt(umgebung, monk
     assert verbindungen["Kellerwolke"]["ok"]
     assert not verbindungen["Leitstelle"]["ok"] and "antwortet nicht binnen" in verbindungen["Leitstelle"]["meldung"]
     assert verbindungen["Leitstelle"]["adresse"] == "http://haengt.test"
+
+
+async def test_weitere_verbindungen_und_farbe(umgebung):
+    """Eine App meldet weitere Verbindungen (andere Apps, Dienste am Mac); sie stehen neben Kellerwolke und Leitstelle,
+    eine scheiternde Prüfung wird eine gestörte Verbindung statt eines Fehlers."""
+    from appkern.app.geruest import Verbindung
+    geruest, _, c = umgebung
+
+    async def fundus() -> Verbindung:
+        return Verbindung(name="Fundus", ok=True, adresse="https://fundus.test", meldung="21 Werkzeuge")
+
+    async def kaputt() -> Verbindung:
+        raise RuntimeError("weg")
+
+    geruest.verbindung_anmelden("Fundus", fundus)
+    geruest.verbindung_anmelden("Befehlsdienst", kaputt)
+    assert (await c.get("/api/v1/app")).json()["farbe"] == "#2f7ce0"
+    await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
+    h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
+    liste = (await c.get("/api/v1/verbindungen", headers=h)).json()
+    assert [v["name"] for v in liste] == ["Kellerwolke", "Leitstelle", "Fundus", "Befehlsdienst"]
+    assert liste[2]["ok"] and liste[2]["meldung"] == "21 Werkzeuge"
+    assert not liste[3]["ok"] and "RuntimeError" in liste[3]["meldung"]

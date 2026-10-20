@@ -22,7 +22,7 @@ from .fassung import FASSUNG, WURZEL
 
 def app_bauen(daten: Path, transport: httpx.AsyncBaseTransport | None = None) -> FastAPI:
     """`transport` nur für Tests (Kellerwolke und Leitstelle nachgestellt)."""
-    geruest = Geruest(name="__NAME__", kennung="__KENNUNG__", rolle="__ROLLE__", symbol="__SYMBOL__", fassung=FASSUNG,
+    geruest = Geruest(name="__NAME__", kennung="__KENNUNG__", rolle="__ROLLE__", symbol="__SYMBOL__", farbe="__FARBE__", fassung=FASSUNG,
                       daten=daten, einstellungen=AppEinstellungen, oberflaeche=WURZEL / "frontend" / "dist",
                       transport=transport)
     geruest.auftraege.anmelden(*arten(geruest))

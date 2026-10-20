@@ -91,11 +91,22 @@ async with Leitstelle("http://192.168.178.49:8530", schluessel, "Transkription")
 | Dienste | `dienst(name)` mit `anfrage`, `json`, `strom`, `herunterladen` (nie halb) |
 | Aufträge | Titel `"<App>: <Titel>"`, Priorität `hintergrund`, `normal`, `hoch`, `dringend` (senkt die Vorgabe der App, hebt sie nie) |
 
+**Werkzeugschleife** (`appkern.leitstelle.schleife`, eine Stelle für alle Apps): `Schleife(runden=8).laufen(ls, nachrichten,
+werkzeuge, nachladbar=..., modell=..., titel=...)` liefert `RundeBeginnt`, `Warten`, `TextStueck`, `RundeEnde` (die Runde ruft
+Werkzeuge, der Text war Vorrede), `Aufruf`, `Ergebnis`, `Antwort`, `Grenze`. Werkzeuge sind `Werkzeug` (Name, Beschreibung,
+JSON-Schema, `ausfuehren`) oder `ModellWerkzeug` mit einem Pydantic-Modell als Argumenten; lesende laufen bis drei nebeneinander,
+die übrigen der Reihe nach, Ergebnisse in der Reihenfolge der Aufrufe; `weitere_werkzeuge` lädt `nachladbar` bei Bedarf.
+**Bilder** über die Fähigkeit bild_erzeugen: `ls.bilder_erzeugen(beschreibung, groesse=, startwert=, modell=)` liefert `Wartet`
+und zuletzt `Bilder` (PNG, Startwert).
+
 Was der Zugang bewusst nicht tut: keine Lese-Zeitgrenze für Arbeit (nur 10 s für den Verbindungsaufbau), keine
 Wiederholung von selbst, kein Laden oder Entladen von Modellen. Fehler kommen nach dem Grundwort der Leitstelle als
 eigene Arten: `SchluesselUngueltig`, `NichtErlaubt`, `KeinModell`, `Gesperrt` und `Halt` (mit `nochmal_in` aus
 `Retry-After`), `DienstWeg`, `DienstFehler`, `Abgebrochen`, `Ungueltig`, `NichtGefunden`, `NichtErreichbar`. Die Tests
 laufen gegen eine nachgestellte Fassade, nie gegen die echte Leitstelle.
+
+Weitere Verbindungen einer App (andere Apps, Dienste am Mac) meldet sie mit `geruest.verbindung_anmelden(name, pruefung)` an;
+sie stehen neben Kellerwolke und Leitstelle in `/api/v1/verbindungen` und in der Fußleiste der Schale.
 
 ## Aufträge
 

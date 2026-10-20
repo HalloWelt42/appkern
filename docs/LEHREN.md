@@ -65,3 +65,12 @@ frisch erzeugte App hat sie.
 | Nr | Was geschah | Ursache | Gegenmaßnahme | Art | Stand |
 |---|---|---|---|---|---|
 | 34 | Die erste Einrichtung ging im Browser nie, die App blieb uneingerichtet | Erlaubt war sie nur vom Rechner der App selbst; hinter einem Vorschaltdienst (er reicht die Adresse des Browsers weiter) oder in Docker sieht aber keine Anfrage lokal aus | Solange die App nicht eingerichtet ist, legt sie bei jedem Start einen einmaligen Einrichtungscode in eine Datei am Rechner (Modus 0600); von anderswo braucht die Einrichtung diesen Code, vom Rechner selbst geht sie wie bisher ohne. App-Angaben, Protokoll und das Feld in der Einrichtung der Schale nennen nur den Ort, nie den Code; falsche Codes sperren, nach der Einrichtung ist die Datei weg. Bereitstellungen setzen `<KENNUNG>_EINRICHTUNGSCODE_DATEI` (wo die App schreibt) und `<KENNUNG>_EINRICHTUNGSCODE_ORT` (wie ein Mensch die Datei am Rechner findet) und binden den Ordner ein; die Vorlage legt sie in den eingebundenen Datenordner und nennt den Ort auf dem Pi | Baustein, Vorlage | erledigt (0.36.0) |
+
+## Aus dem Bau des Assistenten (20.10.2026)
+
+| Nr | Was geschah | Ursache | Gegenmaßnahme | Art | Stand |
+|---|---|---|---|---|---|
+| 35 | Eine App ohne Ton (Zusatz `web`) startete nicht: `ModuleNotFoundError: numpy` | `app/fehler.py` lud das ganze Paket `appkern.ton`, dessen Tonarbeit numpy beim Laden braucht | Tonarbeit lädt numpy erst beim Rechnen (`_Spaet`); der Fehler kommt aus `appkern.ton.ton` | Baustein | erledigt (0.40.0) |
+| 36 | Die Gestaltung der Leitstelle stand nur in Entwürfen einer App, die Schale kannte keine Fußleiste, keine dichte Stufe, keine App-Farbe; der Kopf lief mit vielen Verbindungen über | Gestaltung je App statt in der Schale | Leitstil in der Schale (Farben, Ecken, Stufen dicht bis sehr groß als Variablen), Fußleiste mit allen Verbindungen, eine Pille im Kopf, `farbe` der App, Teile der App in Kopf, Seitenleiste und Fuß (Snippets), Vorgabe der Ansicht je App | Baustein (Schale) | erledigt (0.40.0) |
+| 37 | Die Werkzeugschleife gab es nur im Fundus | gewachsen in einer App | `appkern.leitstelle.schleife` für alle | Baustein | erledigt (0.40.0); Fundus stellt bei Gelegenheit um |
+| 38 | Das eingebettete App-Symbol (`symbol-einbetten.mjs`, iPhone über das Hauszertifikat) fehlte der Vorlage | nur in den Apps nachgezogen | in die Vorlage übernehmen | Vorlage | offen |

@@ -1,6 +1,6 @@
 <script lang="ts">
   // Mehr am Telefon: weitere Bereiche, Protokoll, Einstellungen, Verbindungen, Anzeige, Konto.
-  import { anzeige, anzeigeSetzen, type Schrift } from "../../lib/anzeige.svelte";
+  import { anzeige, anzeigeSetzen, SCHRIFTEN as SCHRIFT, THEMEN } from "../../lib/anzeige.svelte";
   import { gehe } from "../../lib/navigation.svelte";
   import { abmelden, sitzung } from "../../lib/sitzung.svelte";
   import type { Bereich } from "../../lib/typen";
@@ -9,7 +9,6 @@
   let { weitere }: { weitere: Bereich[] } = $props();
   const konto = $derived(sitzung.konto!);
   const app = $derived(sitzung.app!);
-  const SCHRIFT: [Schrift, string][] = [["normal", "Normal"], ["gross", "Groß"], ["sehr_gross", "Sehr groß"]];
 </script>
 
 <div class="t-liste">

@@ -17,6 +17,7 @@ Der Schlüssel erscheint nie in Ausgaben (auch nicht in `repr`).
 from __future__ import annotations
 
 import asyncio
+import base64
 import contextlib
 import json
 import os
@@ -30,7 +31,8 @@ import httpx
 
 from .fehler import LeitstellenFehler, NichtErreichbar, fehler_aus
 from .modelle import (
-    ChatAntwort, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Stueck, Verbrauch, Wartet, Werkzeugaufruf,
+    Bild, Bilder, Bildereignis, ChatAntwort, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Stueck, Verbrauch,
+    Wartet, Werkzeugaufruf,
 )
 from .arbeit import KOPF as ARBEIT_KOPF, LAUFENDE_ARBEIT
 from .bindung import GEBUNDEN, KOPF as INSTANZ_KOPF, Bindung
@@ -254,6 +256,45 @@ class Leitstelle:
         reihe = sorted(daten.get("data") or [], key=lambda d: d.get("index", 0))
         return Einbettungen(vektoren=[d["embedding"] for d in reihe], modell=daten.get("model"),
                             lage=antwort.headers.get("x-leitstelle-lage"), verbrauch=_verbrauch(daten.get("usage")))
+
+    async def bilder_erzeugen(self, beschreibung: str, *, groesse: str = "1024x1024", anzahl: int = 1,
+                              startwert: int | None = None, modell: str | None = None, titel: str = "",
+                              prioritaet: Prioritaet | None = None) -> AsyncIterator[Bildereignis]:
+        """Bilder über die Fähigkeit bild_erzeugen (`/v1/images/generations` als Strom): `Wartet`, solange der Auftrag
+        wartet (etwa weil der Bilddienst erst startet), zuletzt `Bilder`. Wie der Dienst das Bild rechnet, weiß nur die
+        Leitstelle."""
+        koerper: dict[str, Any] = {"prompt": beschreibung, "size": groesse, "n": anzahl, "response_format": "b64_json",
+                                   "stream": True}
+        if startwert is not None:
+            koerper["seed"] = startwert
+        if modell:
+            koerper["model"] = modell
+        try:
+            async with self._client.stream("POST", f"{self.adresse}/v1/images/generations", json=koerper,
+                                           headers=self.koepfe(titel, prioritaet), timeout=ARBEIT) as antwort:
+                if antwort.status_code >= 400:
+                    raise _fehler(antwort, (await antwort.aread()).decode("utf-8", "replace"))
+                auftrag = antwort.headers.get("x-leitstelle-auftrag")
+                async for zeile in antwort.aiter_lines():
+                    if zeile.startswith(":"):
+                        treffer = _WARTET.match(zeile)
+                        if treffer:
+                            s = treffer.group("s")
+                            yield Wartet(grund=treffer.group("grund"), sekunden=int(s) if s else None)
+                        continue
+                    if not zeile.startswith("data:") or zeile[5:].strip() == "[DONE]":
+                        continue
+                    daten = json.loads(zeile[5:].strip())
+                    if isinstance(daten.get("error"), dict):
+                        f = daten["error"]
+                        raise fehler_aus(502, f.get("code") or "", f.get("message") or "Fehler im Strom", rechner=_rechner(f))
+                    zusatz = daten.get("x-leitstelle") or {}
+                    yield Bilder(bilder=[Bild(daten=base64.b64decode(b["b64_json"]), beschreibung=b.get("revised_prompt") or "")
+                                         for b in daten.get("data") or [] if b.get("b64_json")],
+                                 startwert=zusatz.get("seed"), modell=zusatz.get("modell"), dauer_ms=zusatz.get("dauer_ms"),
+                                 auftrag=auftrag)
+        except httpx.TransportError as f:
+            raise NichtErreichbar(f"Leitstelle nicht erreichbar: {type(f).__name__}") from f
 
     # --- Dienste mit eigener Schnittstelle -----------------------------------------------------------------------
 

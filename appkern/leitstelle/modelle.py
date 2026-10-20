@@ -161,6 +161,28 @@ class Ende(_Modell):
 Ereignis = Stueck | Wartet | Ende
 
 
+class Bild(_Modell):
+    """Ein erzeugtes Bild (PNG), wie die Leitstelle es liefert."""
+
+    daten: bytes
+    beschreibung: str = ""                 # wie der Dienst die Beschreibung umgesetzt hat, falls er sie ändert
+
+
+class Bilder(_Modell):
+    """Ergebnis von `bilder_erzeugen`: die Bilder, der Startwert (gleiche Beschreibung und gleicher Startwert ergeben
+    das gleiche Bild) und wer rechnete."""
+
+    art: Literal["bilder"] = "bilder"
+    bilder: list[Bild]
+    startwert: int | None = None
+    modell: str | None = None
+    dauer_ms: int | None = None
+    auftrag: str | None = None
+
+
+Bildereignis = Wartet | Bilder
+
+
 class Einbettungen(_Modell):
     vektoren: list[list[float]]
     modell: str | None = None

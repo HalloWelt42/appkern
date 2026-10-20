@@ -12,7 +12,7 @@ from ..kellerwolke import (
     Gesperrt, KeinRecht, KellerwolkeFehler, NichtErreichbar, NichtGefunden, SchluesselUngueltig, StandVeraltet, ZuGross,
 )
 from ..leitstelle import LeitstellenFehler
-from ..ton import TonFehler
+from ..ton.ton import TonFehler          # ohne numpy: Apps ohne Ton laden die Tonarbeit nicht
 
 
 def antwort(status: int, meldung: str, kopf: dict[str, str] | None = None) -> JSONResponse:

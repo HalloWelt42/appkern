@@ -6,7 +6,7 @@
 }
 .spieler { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; gap: 14px; align-items: center;
            padding: 10px 22px 12px; background: var(--flaeche); box-shadow: 0 1px 0 var(--rand); }
-.spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent-flaeche); color: #fff; font-size: 18px; }
+.spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent-flaeche); color: var(--auf-akzent); font-size: 18px; }
 .spieler .zeitangabe { font-family: ui-monospace, monospace; font-size: var(--klein); color: var(--text-2); white-space: nowrap; }
 .welle { position: relative; height: 54px; }
 .welle .saeulen { position: absolute; inset: 8px 0 8px 0; display: flex; align-items: center; gap: 1px; }
@@ -23,7 +23,7 @@
 }
 .mobil .t-spieler { flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 16px;
                     background: var(--flaeche); box-shadow: 0 -1px 0 var(--rand); }
-.mobil .t-spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent-flaeche); color: #fff; font-size: 18px; }
+.mobil .t-spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent-flaeche); color: var(--auf-akzent); font-size: 18px; }
 .mobil .t-spieler .welle { height: 40px; }
 .mobil .t-spieler .zeitangabe { font-family: ui-monospace, monospace; font-size: var(--marke); color: var(--text-2); }
 .upload { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px;
@@ -106,7 +106,7 @@
 .rek-leiste .pause { grid-area: pause; }
 .rek-leiste .marken { grid-area: marken; position: relative; }
 .rek-leiste .marken .zahl { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px;
-  background: var(--akzent-flaeche); color: #fff; font-size: 11px; display: grid; place-items: center; }
+  background: var(--akzent-flaeche); color: var(--auf-akzent); font-size: 11px; display: grid; place-items: center; }
 .rek-pegel { grid-area: pegel; display: flex; align-items: center; justify-content: flex-end; gap: 2px; height: 40px; min-width: 0; overflow: hidden; }
 .rek-pegel span { flex: 0 0 3px; border-radius: 2px; background: var(--gefahr); transition: height .1s; }
 .rek-leiste:has(.rek-zeit.angehalten) .rek-pegel span { background: var(--text-3); }

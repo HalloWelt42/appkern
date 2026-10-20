@@ -1,9 +1,10 @@
 <script lang="ts">
   // Wurzel jeder App-Oberfläche: Einrichtung, Anmeldung, dann Rechner- oder Telefonansicht.
   // Entwurf (freigegeben 17.10.2026): oberflaeche/mockups/schale.html und schale-mobil.html.
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { einzelton, nurEinTon } from "../lib/wiedergabe.svelte";
-  import { anzeigeStarten } from "../lib/anzeige.svelte";
+  import { anzeigeStarten, type AnzeigeVorgabe } from "../lib/anzeige.svelte";
+  import type { Snippet } from "svelte";
   import { fassungVerfolgen } from "../lib/fassung.svelte";
   import { geraet, geraetStarten } from "../lib/geraet.svelte";
   import { navigation, navigationStarten } from "../lib/navigation.svelte";
@@ -19,11 +20,22 @@
   // lädt die Seite von selbst neu. `ruhig`: ob die App gerade neu laden darf (etwa nicht während einer Aufnahme).
   // `oeffnen`: wohin eine Anfrage zum Öffnen aus der Kellerwolke führt (Weg /anfrage/<id>), etwa die Ansicht der Datei.
   // `einstellungen`: eigene Reiter der App in den Einstellungen (neben den erzeugten Gruppen).
-  let { bereiche = [], fassung, ruhig, oeffnen, einstellungen = [] }: {
+  // `ansicht`: Schriftstufe und Thema, bis der Mensch in diesem Browser wählt. `kopf`, `navigation`, `fuss`: eigene
+  // Teile der App in Kopf (rechts), Seitenleiste (unter den Bereichen) und Fußleiste am Rechner.
+  let { bereiche = [], fassung, ruhig, oeffnen, einstellungen = [], ansicht = {}, kopf, navigation: navZusatz, fuss }: {
     bereiche?: Bereich[]; fassung: string; ruhig?: () => boolean; oeffnen?: (a: Anfrage) => Promise<string> | string;
-    einstellungen?: EinstellungsReiter[] } = $props();
+    einstellungen?: EinstellungsReiter[]; ansicht?: AnzeigeVorgabe; kopf?: Snippet; navigation?: Snippet; fuss?: Snippet } = $props();
 
-  anzeigeStarten();
+  anzeigeStarten(untrack(() => ansicht));     // nur die Vorgabe beim Start; danach gilt die Wahl im Browser
+  // Flächenfarbe des Symbols aus der App-Angabe (Kopf, Anmeldung)
+  $effect(() => {
+    const farbe = sitzung.app?.farbe;
+    if (farbe) {
+      document.documentElement.style.setProperty("--app-farbe", farbe);
+      document.documentElement.style.setProperty("--app-farbe-tief", `color-mix(in srgb, ${farbe} 72%, #000)`);
+      document.documentElement.style.setProperty("--symbol-flaeche", `linear-gradient(135deg, ${farbe}, color-mix(in srgb, ${farbe} 72%, #000))`);
+    }
+  });
   geraetStarten();
   // Ein Seitenwechsel beendet kurze Wiedergaben (Abschnitt, Probe); der große Spieler hält von selbst an
   $effect(() => {
@@ -55,5 +67,5 @@
 {:else if geraet.mobil}
   <MobilSchale bereiche={bereiche.filter((b) => b.geraete !== "rechner")} {oeffnen} {einstellungen} />
 {:else}
-  <Rechner bereiche={bereiche.filter((b) => b.geraete !== "telefon")} {oeffnen} {einstellungen} />
+  <Rechner bereiche={bereiche.filter((b) => b.geraete !== "telefon")} {oeffnen} {einstellungen} {kopf} navigation={navZusatz} {fuss} />
 {/if}

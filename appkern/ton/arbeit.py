@@ -17,15 +17,34 @@ macht (Prüfen eines Sprechstücks, Zeitlage, Wahl einer Referenzstelle), bleibt
 from __future__ import annotations
 
 import abc
+import importlib
 from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
+from types import ModuleType
+from typing import Any
 
-import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..leitstelle.geduld import geduldig
 from ..leitstelle.modelle import Prioritaet
-from . import rechnen
+
+
+class _Spaet:
+    """Ein Modul, das erst beim ersten Gebrauch geladen wird: numpy braucht nur, wer selbst rechnet (`TonHier`); Apps
+    ohne Ton (Zusatz `web` allein) laden das Paket ohne numpy."""
+
+    def __init__(self, name: str) -> None:
+        self._name = name
+        self._modul: ModuleType | None = None
+
+    def __getattr__(self, attr: str) -> Any:
+        if self._modul is None:
+            self._modul = importlib.import_module(self._name, __package__)
+        return getattr(self._modul, attr)
+
+
+np = _Spaet("numpy")
+rechnen = _Spaet(".rechnen")
 from .ton import Eigenschaften, Pause, Ton, TonFehler, Tonformat
 
 ENDUNG = r"^\.[a-z0-9]{2,5}$"
