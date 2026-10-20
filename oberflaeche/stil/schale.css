@@ -260,8 +260,9 @@ button { font: inherit; color: inherit; }
 /* Vom Home-Bildschirm (iOS 26): unmittelbar unter Uhr und Kamera-Insel fängt das System Berührungen für die
    Mitteilungszentrale ab, Knöpfe dort waren nicht mehr erreichbar; darum etwas Luft unter dem sicheren Rand. */
 @media (display-mode: standalone) and (pointer: coarse) { .mobil { --oben-luft: 14px; } }
-.mobil .t-kopf { display: flex; align-items: center; gap: 10px; padding: 10px 16px; }
-.mobil .t-kopf h1 { margin: 0; font-size: calc(var(--gross) + 9px); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Kopf kompakt (Nutzervorgabe 20.10.2026): eine Zeile, etwa 44 px, Titel einzeilig mit Auslassung */
+.mobil .t-kopf { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 12px; }
+.mobil .t-kopf h1 { margin: 0; font-size: calc(var(--gross) + 4px); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mobil .t-inhalt { flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; padding: 0 16px 16px; }
 .mobil .t-reiter { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--leiste); box-shadow: 0 -1px 0 var(--rand); padding: 6px 0 8px; } /* kein Abstand über dem Home-Balken (Nutzervorgabe 20.10.2026) */
 .mobil .t-reiter button { border: 0; background: transparent; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: var(--marke); color: var(--text-3); padding: 6px 0; min-height: 48px; }
