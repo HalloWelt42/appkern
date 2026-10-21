@@ -8,7 +8,12 @@ eigenen Ports); aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim e
 3. Zertifikat der Hausstelle für den Vorschaltdienst, noch mindestens 60 Tage gültig, sonst neu ausgestellt
 4. Stand holen, Abbild bauen (der alte Stand läuft weiter)
 5. warten, bis die App keinen laufenden Auftrag hat, dann Datenbank sichern (die letzten zehn bleiben) und neu starten;
-   der Vorschaltdienst startet jedes Mal neu (geänderte eingehängte Dateien bemerkt Docker nicht)
+   der Vorschaltdienst startet jedes Mal neu (geänderte eingehängte Dateien bemerkt Docker nicht).
+   Mit `--auslaufen` (für Apps, die tagelang durcharbeiten, Angaben unter [auslaufen] in deploy/ausrollen.toml): statt
+   auf eine Lücke zu warten, hält die App an, der laufende Schritt läuft aus (Wartendes bleibt in der Warteschlange),
+   dann wird ausgerollt und danach der Zustand von vorher hergestellt und geprüft, dass die Arbeit wieder läuft. Der
+   Zustand von vorher liegt bis dahin in deploy/.auslaufen-vorher.json; bricht etwas ab, stellt ihn der nächste Lauf
+   mit --auslaufen zuerst wieder her.
 6. über HTTPS melden Server, gebaute Oberfläche und version.json dieselbe Fassung; die Seite kommt über HTTP/2; Symbole
    für Tab, Startbildschirm und Web-App sowie das Manifest antworten mit 200 und dem richtigen Typ, die Symbole des
    Startbildschirms sind deckend (sonst zeigt iOS keins)
@@ -23,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 from pathlib import Path
 
@@ -46,6 +52,7 @@ class Ziel(BaseModel):
     compose: str = "compose.pi.yml"    # Compose-Datei im Ordner der App; das Projekt heißt wie der Ordner
     ton: bool = False       # die App nutzt die Tonarbeit über den Tondienst: die Leitstelle muss ihn melden
     leitstelle: str | None = None   # Adresse der Leitstelle, vom Pi aus erreichbar (nötig mit Ton)
+    auslaufen: Auslaufen | None = None   # Weg für --auslaufen (Apps, die tagelang durcharbeiten)
 
     @model_validator(mode="after")
     def _ton_braucht_leitstelle(self) -> "Ziel":
@@ -56,6 +63,16 @@ class Ziel(BaseModel):
     @property
     def datenbank(self) -> str:
         return f"daten/{self.kennung}.sqlite"
+
+
+class Auslaufen(BaseModel):
+    """Befehle im Container der App (docker compose exec) für das Ausrollen mit --auslaufen."""
+
+    anhalten: str           # hält die App an und gibt ihren Zustand davor aus (eine Zeile JSON)
+    ruhig: str              # Rückgabe 0, wenn nichts mehr in Arbeit ist; sonst 1 und der Grund
+    fortsetzen: str         # liest den Zustand davor von der Eingabe und stellt ihn her
+    laeuft: str | None = None   # Rückgabe 0, wenn die Arbeit wieder läuft (geprüft nach dem Fortsetzen)
+    hoechstens_s: int = 1800    # so lange darf der laufende Schritt auslaufen
 
 
 class Abbruch(Exception):
@@ -219,6 +236,73 @@ def ruhe_abwarten(z: Ziel, sofort: bool) -> None:
         raise Abbruch(f"Nach {RUHE_HOECHSTENS_S // 3600} Stunden laufen noch Aufträge; mit --sofort trotzdem ausrollen") from f
 
 
+VORHER = Path("deploy") / ".auslaufen-vorher.json"
+NACHLAUF_S = 180                 # so lange darf die Arbeit nach dem Fortsetzen brauchen, bis sie wieder läuft
+
+
+def _im_container(z: Ziel, befehl: str, eingabe: str | None = None) -> subprocess.CompletedProcess:
+    """Ein Befehl im Container der App; Rückgabe und Ausgabe kommen zurück, ohne abzubrechen."""
+    c = shlex.quote(z.compose)
+    skript = f"cd {shlex.quote(z.wurzel)} && docker compose -f {c} exec -T {shlex.quote(z.kennung)} sh -c {shlex.quote(befehl)}"
+    return subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", z.rechner, skript], input=eingabe,
+                          capture_output=True, text=True)
+
+
+def fortsetzen(z: Ziel, wurzel: Path) -> None:
+    """Den Zustand von vor dem Auslaufen herstellen und prüfen, dass die Arbeit wieder läuft."""
+    a = z.auslaufen
+    datei = wurzel / VORHER
+    if a is None or not datei.exists():
+        return
+    _schritt("Fortsetzen wie vorher")
+    erg = _im_container(z, a.fortsetzen, datei.read_text())
+    print((erg.stdout + erg.stderr).strip())
+    if erg.returncode != 0:
+        raise Abbruch(f"Fortsetzen ging nicht; der Zustand von vorher liegt in {VORHER}, der nächste Lauf mit --auslaufen stellt ihn her")
+    datei.unlink()
+    if a.laeuft:
+        ende = time.monotonic() + NACHLAUF_S
+        while True:
+            erg = _im_container(z, a.laeuft)
+            if erg.returncode == 0 or time.monotonic() > ende:
+                break
+            time.sleep(10)
+        print((erg.stdout + erg.stderr).strip())
+        if erg.returncode != 0:
+            print(f"Warnung: nach {NACHLAUF_S} s arbeitet die App noch nicht wieder (siehe oben); bitte nachsehen")
+
+
+def auslaufen(z: Ziel, wurzel: Path) -> None:
+    """Anhalten und den laufenden Schritt auslaufen lassen; der Zustand davor bleibt in deploy/.auslaufen-vorher.json."""
+    a = z.auslaufen
+    if a is None:
+        raise Abbruch("--auslaufen braucht [auslaufen] in deploy/ausrollen.toml (anhalten, ruhig, fortsetzen)")
+    _schritt("Anhalten und auslaufen lassen")
+    datei = wurzel / VORHER
+    if not datei.exists():
+        erg = _im_container(z, a.anhalten)
+        if erg.returncode != 0:
+            raise Abbruch(f"Anhalten ging nicht: {(erg.stdout + erg.stderr).strip()}")
+        datei.write_text(erg.stdout.strip().splitlines()[-1] if erg.stdout.strip() else "{}")
+    print(f"Zustand vorher: {datei.read_text().strip()}")
+    ende = time.monotonic() + a.hoechstens_s
+    zuletzt = ""
+    while True:
+        erg = _im_container(z, a.ruhig)
+        grund = (erg.stdout + erg.stderr).strip()
+        if erg.returncode == 0:
+            print(grund or "nichts mehr in Arbeit")
+            return
+        if grund != zuletzt:
+            print(f"läuft aus: {grund}", flush=True)
+            zuletzt = grund
+        if time.monotonic() > ende:
+            fortsetzen(z, wurzel)
+            raise Abbruch(f"Nach {a.hoechstens_s // 60} Minuten ist noch etwas in Arbeit ({grund}); nichts ausgerollt, "
+                          "der Zustand von vorher ist wieder hergestellt")
+        time.sleep(5)
+
+
 def bauen(z: Ziel) -> None:
     """Das neue Abbild entsteht, während der alte Stand weiterläuft."""
     _schritt("Bauen")
@@ -267,7 +351,7 @@ def pruefen(z: Ziel, wurzel: Path) -> None:
     print("HTTP/2 über den Vorschaltdienst, Symbole deckend, Manifest in Ordnung")
 
 
-def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI) -> int:
+def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI, auslaufen_lassen: bool = False) -> int:
     z = laden(wurzel, datei)
     try:
         stand_und_tests(z, wurzel)
@@ -275,10 +359,14 @@ def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI) -> i
         zertifikat(z)
         stand_holen(z)
         bauen(z)
-        ruhe_abwarten(z, sofort)
+        if auslaufen_lassen:
+            auslaufen(z, wurzel)
+        else:
+            ruhe_abwarten(z, sofort)
         sichern(z)
         starten(z)
         pruefen(z, wurzel)
+        fortsetzen(z, wurzel)
     except Abbruch as f:
         print(f"\nAbbruch: {f}", file=sys.stderr)
         return 1
