@@ -1,6 +1,9 @@
 // Wer gerade da ist: App-Angaben, Anmeldung (Kellerwolke-Konto), erste Einrichtung. Antwortet die App beim Start
 // nicht, zeigt die Schale das mit "Erneut versuchen"; sobald sie wieder antwortet, geht der Start von selbst weiter.
-import { ApiFehler, einrichten, hole, json, setzeToken } from "./api.svelte";
+// Die Anmeldung erscheint an der Adresse, die geöffnet wurde (etwa ein Verweis aus einer anderen App mit Seite und
+// Suchbegriff); nach dem Anmelden zeigt die App genau diese Stelle. Meldet sich ein anderer Tab derselben App an, ist
+// dieser ohne weiteres Zutun auch angemeldet.
+import { ApiFehler, beiTokenWechsel, einrichten, hole, json, setzeToken } from "./api.svelte";
 import { beiRueckkehr } from "./erreichbar.svelte";
 import { fassungVergleichen } from "./fassung.svelte";
 import type { AppInfo, Konto } from "./typen";
@@ -43,6 +46,10 @@ export function starten(): Promise<void> {
     rueckkehrGemeldet = true;
     beiRueckkehr(() => {
       if (!sitzung.app) void starten();
+    });
+    beiTokenWechsel((wert) => {
+      if (wert && !sitzung.angemeldet) void starten();
+      else if (!wert && sitzung.angemeldet) vorbei();
     });
   }
   start ??= anfangen().finally(() => (start = null));

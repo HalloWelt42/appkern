@@ -58,6 +58,7 @@ class Konto(BaseModel):
     rolle: str = "mitglied"
     geraet: bool = False             # mit einem gekoppelten Gerät angemeldet
     app: str | None = None           # eine andere App, angemeldet mit ihrem App-Schlüssel der Kellerwolke
+    im_auftrag: str | None = None    # ein Mensch, dessen Sitzung eine andere App auf seinen Klick mitschickt
 
     @property
     def mensch(self) -> bool:
@@ -196,7 +197,9 @@ class Anmeldung:
         raise NichtErlaubt(f"Das Konto {konto.name} darf diese App nicht nutzen")
 
     def _merken(self, token: str, konto: Konto) -> None:
-        schluessel = self._schluessel(token)
+        self._ablegen(self._schluessel(token), konto)
+
+    def _ablegen(self, schluessel: str, konto: Konto) -> None:
         if schluessel not in self._gemerkt and len(self._gemerkt) >= _HOECHSTENS:
             self._gemerkt.pop(next(iter(self._gemerkt)))
         jetzt = self._uhr()
@@ -307,20 +310,48 @@ class Anmeldung:
         ich = antwort.json()
         return Konto(id=str(ich.get("konto_id") or ich["konto"]), name=ich["konto"], app=ich["app"])
 
-    async def _sitzung_pruefen(self, token: str) -> Konto | None:
+    async def _status(self, token: str) -> tuple[Konto, str | None] | None:
+        """Konto und App-Bindung einer Sitzung laut Kellerwolke; None, wenn sie nicht (mehr) gilt. Die Bindung ist ""
+        für eine volle Sitzung und None, wenn die Kellerwolke keine Bindung kennt (vor 0.81)."""
         antwort = await self._senden("GET", "/api/v1/auth/status", headers={"X-Kellerwolke-Sitzung": token})
         if antwort.status_code >= 400:
             raise KellerwolkeWeg(f"Die Kellerwolke antwortet mit {antwort.status_code}")
         daten = antwort.json()
         if not daten.get("angemeldet") or not daten.get("benutzer"):
             return None
-        eigene = await self._eigener_name()
-        if eigene and "app" in daten and (daten.get("app") or "").lower() != eigene.lower():
-            # Gilt nicht für diese App (eine volle Sitzung der Kellerwolke oder die einer anderen App): beenden.
-            await self.abmelden(token)
-            return None
         b = daten["benutzer"]
-        return Konto(**{**b, "id": str(b["id"])}, geraet=token.startswith(GERAET_PRAEFIX))
+        return Konto(**{**b, "id": str(b["id"])}, geraet=token.startswith(GERAET_PRAEFIX)), (
+            (daten.get("app") or "") if "app" in daten else None)
+
+    async def _sitzung_pruefen(self, token: str) -> Konto | None:
+        stand = await self._status(token)
+        if stand is None:
+            return None
+        konto, gebunden = stand
+        eigene = await self._eigener_name()
+        if eigene and gebunden is not None and gebunden.lower() != eigene.lower():
+            if not gebunden:
+                await self.abmelden(token)     # volle Sitzung der Kellerwolke: gehört in keine App
+            return None                        # Sitzung einer anderen App: gilt hier nicht und bleibt dort gültig
+        return konto
+
+    async def im_auftrag(self, token: str, app: str) -> Konto | None:
+        """Die Sitzung eines Menschen, die die App `app` (mit ihrem App-Schlüssel angemeldet) auf seinen Klick
+        mitschickt: gilt, wenn die Kellerwolke sie für genau diese App bestätigt und das Konto die App hier nutzen
+        darf. Gemerkt wie jede Prüfung; beendet wird sie hier nie."""
+        if not token or not app or token.startswith(APP_PRAEFIX):
+            return None
+        schluessel = self._schluessel(f"{app.lower()}\n{token}")
+        gemerkt = self._gemerkt.get(schluessel)
+        if gemerkt and gemerkt.frisch_bis > self._uhr():
+            return self._erlaubtes(gemerkt.konto)
+        stand = await self._status(token)
+        if stand is None or (stand[1] or "").lower() != app.lower() or not self._darf(stand[0]):
+            self._gemerkt.pop(schluessel, None)
+            return None
+        konto = stand[0].model_copy(update={"im_auftrag": app})
+        self._ablegen(schluessel, konto)
+        return konto
 
     async def abmelden(self, token: str) -> None:
         schluessel = self._schluessel(token)

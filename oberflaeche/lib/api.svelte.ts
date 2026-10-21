@@ -1,6 +1,8 @@
 // Anfragen an das Backend der eigenen App. Der Token der Kellerwolke liegt im Gerät (localStorage) und geht im Kopf
-// X-Kellerwolke-Sitzung mit; endet die Sitzung (401), meldet sich die Anmeldung. Ereignisströme laufen über fetch,
-// damit auch dort der Kopf mitgeht.
+// X-Kellerwolke-Sitzung mit; weist die App die Sitzung ab (401 mit dem Kopf WWW-Authenticate: Kellerwolke-Sitzung),
+// meldet sich die Anmeldung. Ein 401 ohne dieses Kennzeichen (etwa von einem anderen Dienst weitergereicht) ist nur ein
+// Fehler dieser Anfrage und meldet nie ab. Meldet sich ein anderer Tab derselben App an oder ab, folgt dieser
+// (`beiTokenWechsel`). Ereignisströme laufen über fetch, damit auch dort der Kopf mitgeht.
 //
 // Jede Anfrage hat eine Zeitgrenze (Vorgabe 20 s, `anfragenEinstellen`, je Anfrage `zeitgrenzeMs`, 0 heißt ohne).
 // Gleiche GET-Anfragen, die schon unterwegs sind, gehen nur einmal hinaus; jeder Aufrufer bekommt sein eigenes
@@ -69,6 +71,15 @@ export function token(): string {
   }
 }
 
+// Ein anderer Tab derselben App hat sich an- oder abgemeldet (localStorage ist je Herkunft geteilt).
+export function beiTokenWechsel(tun: (wert: string) => void): () => void {
+  const hoeren = (e: StorageEvent) => {
+    if (e.key === schluessel) tun(e.newValue ?? "");
+  };
+  addEventListener("storage", hoeren);
+  return () => removeEventListener("storage", hoeren);
+}
+
 export function setzeToken(wert: string): void {
   try {
     if (wert) localStorage.setItem(schluessel, wert);
@@ -98,6 +109,7 @@ interface Antwort {
   ok: boolean;
   statusText: string;
   text: string;
+  abgewiesen?: boolean;     // die App selbst weist die Anmeldung ab (Kennzeichen im Kopf)
 }
 
 function fehlerAus(antwort: Antwort): ApiFehler {
@@ -132,7 +144,8 @@ async function senden(pfad: string, init: AnfrageOptionen, signal: AbortSignal):
       throw new ApiFehler(antwort.status, ANTWORTET_NICHT, "weg");
     }
     geantwortet();
-    return { status: antwort.status, ok: antwort.ok, statusText: antwort.statusText, text };
+    const abgewiesen = antwort.status === 401 && (antwort.headers.get("www-authenticate") ?? "").includes("Kellerwolke-Sitzung");
+    return { status: antwort.status, ok: antwort.ok, statusText: antwort.statusText, text, abgewiesen };
   } catch (f) {
     if (f instanceof ApiFehler) throw f;
     if (abgelaufen) {
@@ -195,7 +208,7 @@ function warten(u: Unterwegs, signal: AbortSignal | undefined): Promise<Antwort>
 export async function hole<T>(pfad: string, init: AnfrageOptionen = {}): Promise<T> {
   const lesend = (init.method ?? "GET").toUpperCase() === "GET" && !init.body;
   const antwort = lesend ? await gemeinsam(pfad, init) : await senden(pfad, init, init.signal ?? new AbortController().signal);
-  if (antwort.status === 401 && token()) {
+  if (antwort.abgewiesen && token()) {
     setzeToken("");
     beiSitzungsende?.();
   }

@@ -245,3 +245,62 @@ async def test_ohne_ausfallzeit_gilt_im_ausfall_nichts():
     s.weg = True
     with pytest.raises(KellerwolkeWeg):
         await a.pruefen(token)
+
+
+class ScheinMitBindung(Schein):
+    """Kellerwolke ab 0.81: jede Sitzung ist an eine App gebunden ("" für eine volle Sitzung)."""
+
+    def __init__(self):
+        super().__init__()
+        self.bindung: dict[str, str] = {}
+
+    def __call__(self, request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/v1/auth/status":
+            self.statusabrufe += 1
+            token = request.headers.get("x-kellerwolke-sitzung", "")
+            name = self.sitzungen.get(token)
+            return httpx.Response(200, json={"angemeldet": bool(name), "benutzer": self._b(name) if name else None,
+                                             "app": self.bindung.get(token, "")})
+        return super().__call__(request)
+
+
+async def test_fremde_sitzung_gilt_nicht_und_bleibt_gueltig_volle_wird_beendet():
+    s = ScheinMitBindung()
+    s.sitzungen.update({"tok_assistent": "chef", "tok_voll": "chef"})
+    s.bindung.update({"tok_assistent": "Assistent", "tok_voll": ""})
+    a = anmeldung(s, app_name=lambda: _wert("Fundus"))
+    assert await a.pruefen("tok_assistent") is None
+    assert "tok_assistent" in s.sitzungen and "tok_assistent" not in s.abmeldungen     # die andere App bleibt angemeldet
+    assert await a.pruefen("tok_voll") is None and "tok_voll" in s.abmeldungen
+
+
+async def test_im_auftrag_eines_menschen_ueber_eine_andere_app():
+    s = ScheinMitBindung()
+    s.sitzungen.update({"tok_vertonung": "chef", "tok_andere": "chef"})
+    s.bindung.update({"tok_vertonung": "Vertonung", "tok_andere": "Assistent"})
+    a = anmeldung(s, app_name=lambda: _wert("Fundus"))
+    app = FastAPI()
+    app.include_router(anmeldungs_router(a))
+
+    @app.get("/api/v1/zeigen")
+    async def zeigen(konto=Depends(angemeldet(a))):
+        return {"mensch": konto.mensch, "auftrag": konto.im_auftrag, "app": konto.app}
+
+    @app.get("/api/v1/einstellungen")
+    async def einstellungen(konto=Depends(angemeldet(a, nur_menschen=True))):
+        return {"konto": konto.name}
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        h = {"Authorization": "Bearer kw_app_vertonung", "X-Kellerwolke-Sitzung": "tok_vertonung"}
+        assert (await c.get("/api/v1/zeigen", headers=h)).json() == {"mensch": True, "auftrag": "Vertonung", "app": None}
+        assert (await c.get("/api/v1/einstellungen", headers=h)).status_code == 403
+        # eine Sitzung, die nicht der rufenden App gehört: der Aufruf gilt nur als der der App
+        h2 = {"Authorization": "Bearer kw_app_vertonung", "X-Kellerwolke-Sitzung": "tok_andere"}
+        assert (await c.get("/api/v1/zeigen", headers=h2)).json() == {"mensch": False, "auftrag": None, "app": "Vertonung"}
+        assert not s.abmeldungen
+        r = await c.get("/api/v1/zeigen", headers={"X-Kellerwolke-Sitzung": "tok_andere"})
+        assert r.status_code == 401 and r.headers["www-authenticate"] == "Kellerwolke-Sitzung"
+
+
+async def _wert(w):
+    return w
