@@ -55,7 +55,7 @@ async def test_fehlerarten_und_meldung():
         await kw.schreiben("Apps/Test/a.txt", b"x", stand="v0")
     assert info.value.status == 412 and "geändert" in info.value.meldung
     with pytest.raises(NichtErreichbar):
-        await kw.ich()
+        await kw.mit_geduld(0).ich()
 
 
 async def test_ohne_verbindung():
@@ -63,7 +63,34 @@ async def test_ohne_verbindung():
         raise httpx.ConnectError("weg", request=anfrage)
 
     with pytest.raises(NichtErreichbar):
-        await wolke(handler).ich()
+        await wolke(handler).mit_geduld(0).ich()
+
+
+async def test_wartet_auf_die_kellerwolke(monkeypatch):
+    """Startet die Kellerwolke noch (Neustart des Rechners), wartet ein Aufruf und versucht es erneut, statt abzubrechen."""
+    import appkern.kellerwolke.zugang as z
+    monkeypatch.setattr(z, "WARTEN_S", 0.01)
+    versuche = []
+
+    def handler(anfrage):
+        versuche.append(anfrage.method)
+        if len(versuche) < 3:
+            raise httpx.ConnectError("startet noch", request=anfrage)
+        return httpx.Response(200, json={"konto": "admin", "app": "Probe", "rechte": []})
+
+    ich = await wolke(handler).ich()
+    assert len(versuche) == 3 and ich.app == "Probe"
+
+
+async def test_geduld_endet_mit_fehler(monkeypatch):
+    import appkern.kellerwolke.zugang as z
+    monkeypatch.setattr(z, "WARTEN_S", 0.01)
+
+    def handler(anfrage):
+        raise httpx.ConnectError("weg", request=anfrage)
+
+    with pytest.raises(NichtErreichbar):
+        await wolke(handler).mit_geduld(0.05).ich()
 
 
 async def test_schreiben_aus_datei_mit_laenge_und_stand(tmp_path: Path):

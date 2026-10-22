@@ -324,7 +324,7 @@ class Geruest(Generic[E]):
             self.besitzer = self.app_name = None
             return
         try:
-            ich = await self.kellerwolke.ich()
+            ich = await self.kellerwolke.mit_geduld(0).ich()     # der Start wartet nicht; der Merker gilt weiter
             self.besitzer, self.app_name = ich.konto, ich.app
         except NichtErreichbar as f:
             logger.warning("Kellerwolke: Besitzer nicht bestimmbar (%s); es gilt der zuletzt bekannte", f)
@@ -364,7 +364,7 @@ class Geruest(Generic[E]):
         if self.kellerwolke is None:
             return Verbindung(name="Kellerwolke", ok=False, meldung="nicht eingerichtet")
         try:
-            ich = await self.kellerwolke.ich()
+            ich = await self.kellerwolke.mit_geduld(0).ich()     # die Anzeige meldet sofort, sie wartet nicht
         except KellerwolkeFehler as f:
             return Verbindung(name="Kellerwolke", ok=False, adresse=stand.kellerwolke_adresse, meldung=f.meldung)
         self.besitzer, self.app_name = ich.konto, ich.app
@@ -516,7 +516,7 @@ class Geruest(Generic[E]):
                 raise HTTPException(status_code=422, detail=f"Zertifikatsstelle nicht lesbar: {f}")
             async with httpx.AsyncClient(timeout=httpx.Timeout(15.0), verify=pruefung,
                                          transport=self._transport) as client:
-                probe = Kellerwolke(eingabe.kellerwolke_adresse, eingabe.kellerwolke_schluessel, client=client)
+                probe = Kellerwolke(eingabe.kellerwolke_adresse, eingabe.kellerwolke_schluessel, client=client, geduld_s=0)
                 try:
                     ich = await probe.ich()
                 except NichtErreichbar as f:

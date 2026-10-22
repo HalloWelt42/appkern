@@ -14,7 +14,9 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
+import logging
 import os
+import time
 from collections.abc import AsyncIterable, AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -69,15 +71,31 @@ def _meldung(antwort: httpx.Response) -> str:
     return antwort.text[:300] or antwort.reason_phrase
 
 
+GEDULD_S = 900.0
+"""So lange wartet ein Aufruf auf eine nicht erreichbare Kellerwolke (ein Neustart des Rechners dauert wenige Minuten)."""
+WARTEN_S = 5.0
+log = logging.getLogger("appkern.kellerwolke")
+
+
+def _wiederholbar(f: httpx.TransportError, methode: str, weiter: dict[str, Any]) -> bool:
+    inhalt = weiter.get("content")
+    if inhalt is not None and not isinstance(inhalt, (bytes, str)):
+        return False                       # ein Strom ist schon gelesen und lässt sich nicht noch einmal senden
+    if isinstance(f, (httpx.ConnectError, httpx.ConnectTimeout)):
+        return True                        # die Anfrage hat die Kellerwolke nie erreicht
+    return methode in ("GET", "HEAD") and isinstance(f, (httpx.ReadError, httpx.RemoteProtocolError))
+
+
 class Kellerwolke:
     def __init__(self, adresse: str, schluessel: str, *, client: httpx.AsyncClient | None = None,
-                 stueck: int = _STUECK) -> None:
+                 stueck: int = _STUECK, geduld_s: float = GEDULD_S) -> None:
         self.adresse = adresse.rstrip("/")
         self._basis = f"{self.adresse}/api/v1/ablage"
         self._kopf = {"Authorization": f"Bearer {schluessel}"}
         self._client = client or httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=300.0))
         self._eigener_client = client is None
         self._stueck = stueck
+        self._geduld_s = geduld_s
 
     def __repr__(self) -> str:
         return f"Kellerwolke({self.adresse!r})"
@@ -87,6 +105,14 @@ class Kellerwolke:
         Datei lesen und ihre Begleiter schreiben, solange die Anfrage offen ist. Teilt sich die Verbindung."""
         zugang = copy.copy(self)
         zugang._kopf = {**self._kopf, "X-Kellerwolke-Anfrage": str(anfrage_id)}
+        zugang._eigener_client = False
+        return zugang
+
+    def mit_geduld(self, geduld_s: float) -> Kellerwolke:
+        """Derselbe Zugang mit anderer Geduld bei fehlender Verbindung; 0 für Prüfungen, die sofort antworten müssen
+        (Verbindungsanzeige, Einrichtung, Start der App). Teilt sich die Verbindung."""
+        zugang = copy.copy(self)
+        zugang._geduld_s = geduld_s
         zugang._eigener_client = False
         return zugang
 
@@ -103,11 +129,23 @@ class Kellerwolke:
     # --- Anfragen -------------------------------------------------------------------------------------------------
 
     async def _anfrage(self, methode: str, pfad: str, *, kopf: dict[str, str] | None = None, **weiter: Any) -> httpx.Response:
-        try:
-            antwort = await self._client.request(methode, self._basis + pfad, headers={**self._kopf, **(kopf or {})},
-                                                 **weiter)
-        except httpx.TransportError as f:
-            raise NichtErreichbar(f"Kellerwolke nicht erreichbar: {f}") from f
+        """Kommt keine Verbindung zustande (Kellerwolke startet noch, Rechner neu gestartet), wird bis zur Geduld
+        gewartet und erneut versucht, statt die Arbeit abzubrechen. Wiederholt wird nur, was die Kellerwolke sicher nicht
+        erreicht hat (Verbindungsaufbau), bei Lesen auch abgerissene Antworten; ein Strom als Inhalt nie."""
+        beginn, zuletzt = time.monotonic(), ""
+        while True:
+            try:
+                antwort = await self._client.request(methode, self._basis + pfad, headers={**self._kopf, **(kopf or {})},
+                                                     **weiter)
+                break
+            except httpx.TransportError as f:
+                if not _wiederholbar(f, methode, weiter) or time.monotonic() - beginn >= self._geduld_s:
+                    raise NichtErreichbar(f"Kellerwolke nicht erreichbar: {f}") from f
+                text = f"Kellerwolke nicht erreichbar ({type(f).__name__}); neuer Versuch in {WARTEN_S:.0f} s"
+                if text != zuletzt:
+                    zuletzt = text
+                    log.info(text)
+                await asyncio.sleep(WARTEN_S)
         if antwort.status_code >= 400:
             raise fehler_aus(antwort.status_code, _meldung(antwort))
         return antwort
