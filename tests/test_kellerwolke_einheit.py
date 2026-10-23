@@ -78,7 +78,7 @@ async def test_wartet_auf_die_kellerwolke(monkeypatch):
             raise httpx.ConnectError("startet noch", request=anfrage)
         return httpx.Response(200, json={"konto": "admin", "app": "Probe", "rechte": []})
 
-    ich = await wolke(handler).ich()
+    ich = await wolke(handler).mit_geduld(5).ich()
     assert len(versuche) == 3 and ich.app == "Probe"
 
 

@@ -18,6 +18,10 @@ from collections.abc import Iterable
 from pathlib import Path
 from uuid import UUID
 
+# In Tests fällt eine fehlende Kellerwolke sofort auf, statt dass jeder Aufruf die Geduld des Betriebs (15 min) abwartet;
+# muss vor dem Laden des Zugangs gesetzt sein, darum hier beim Import der Testhilfen.
+os.environ.setdefault("APPKERN_KELLERWOLKE_GEDULD_S", "0")
+
 import httpx
 
 from .kellerwolke import Kellerwolke, NichtGefunden

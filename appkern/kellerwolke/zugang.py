@@ -72,7 +72,8 @@ def _meldung(antwort: httpx.Response) -> str:
 
 
 GEDULD_S = 900.0
-"""So lange wartet ein Aufruf auf eine nicht erreichbare Kellerwolke (ein Neustart des Rechners dauert wenige Minuten)."""
+"""So lange wartet ein Aufruf auf eine nicht erreichbare Kellerwolke (ein Neustart des Rechners dauert wenige Minuten).
+Tests setzen APPKERN_KELLERWOLKE_GEDULD_S=0 (über appkern.testen), damit eine fehlende Kellerwolke sofort auffällt."""
 WARTEN_S = 5.0
 log = logging.getLogger("appkern.kellerwolke")
 
@@ -88,14 +89,14 @@ def _wiederholbar(f: httpx.TransportError, methode: str, weiter: dict[str, Any])
 
 class Kellerwolke:
     def __init__(self, adresse: str, schluessel: str, *, client: httpx.AsyncClient | None = None,
-                 stueck: int = _STUECK, geduld_s: float = GEDULD_S) -> None:
+                 stueck: int = _STUECK, geduld_s: float | None = None) -> None:
         self.adresse = adresse.rstrip("/")
         self._basis = f"{self.adresse}/api/v1/ablage"
         self._kopf = {"Authorization": f"Bearer {schluessel}"}
         self._client = client or httpx.AsyncClient(timeout=httpx.Timeout(30.0, read=300.0))
         self._eigener_client = client is None
         self._stueck = stueck
-        self._geduld_s = geduld_s
+        self._geduld_s = geduld_s if geduld_s is not None else float(os.environ.get("APPKERN_KELLERWOLKE_GEDULD_S", GEDULD_S))
 
     def __repr__(self) -> str:
         return f"Kellerwolke({self.adresse!r})"
