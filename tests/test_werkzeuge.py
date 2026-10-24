@@ -45,10 +45,13 @@ def test_stil_findet_streifen_und_important(tmp_path):
         ".x { border-bottom: 1px solid var(--akzent); }",                  # 8 farbige Linie
         ".x { border-width: 0 0 0 4px; }",                                 # 9 einseitig über border-width
         ".x { border: 1px solid var(--rand); }",                           # 10 rundum: erlaubt
+        ".x { border-top: 1px solid var(--rand-stark); }",                 # 11 Trennlinie in starker Randfarbe: erlaubt
+        ".x { border-top: 1px solid var(--ls-rand); }",                    # 12 in Entwürfen der Leitstelle: erlaubt
+        ".x { border-top: 1px solid var(--randfarbe-x); }",                # 13 keine Randfarbe
     ]))
     assert _regeln_der(stil_pruefen([css], tmp_path)) == [
         (1, "!important"), (2, "einseitiger Rahmen"), (4, "einseitiger Schatten"), (7, "einseitiger Rahmen"),
-        (8, "einseitiger Rahmen"), (9, "einseitiger Rahmen")]
+        (8, "einseitiger Rahmen"), (9, "einseitiger Rahmen"), (13, "einseitiger Rahmen")]
 
 
 def test_stil_regeln_auf_klassen_der_schale(tmp_path):

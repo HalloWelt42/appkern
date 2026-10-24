@@ -2,8 +2,8 @@
 
 - kein `!important` (die Kaskade löst Konflikte über Spezifität und Reihenfolge)
 - keine einseitigen Streifen: Rahmen oder Schatten mit Versatz zu einer Seite ohne Unschärfe (`border-left`,
-  `inset 3px 0 0`, Unterstreichung des aktiven Reiters); erlaubt sind nur Trennlinien von 1px in der Randfarbe
-  (`var(--rand)`) zwischen Flächen
+  `inset 3px 0 0`, Unterstreichung des aktiven Reiters); erlaubt sind nur Trennlinien von 1px in einer Randfarbe
+  (`var(--rand)`, `var(--rand-stark)`) zwischen Flächen
 - keine Regeln auf Klassen der Schale: eine App-Regel muss eine eigene Klasse tragen (auch als Erweiterung wie
   `.knopf.klein`); sonst ändert sie Teile der Schale mit (so lief die Statuszeile der Einstellungen über)
 
@@ -121,9 +121,13 @@ def _rahmenbreite(wert: str) -> float:
     return 0 if wert.strip() in OHNE else 1
 
 
+RANDFARBE = re.compile(r"var\(--(?:ls-)?rand(?:-stark)?\b")
+
+
 def _trennlinie(wert: str, breite: float) -> bool:
-    """Neutrale Trennlinie zwischen Flächen: höchstens 1px, in der Randfarbe oder unsichtbar."""
-    return breite <= 1 and ("var(--rand" in wert or "transparent" in wert)
+    """Neutrale Trennlinie zwischen Flächen: höchstens 1px, in einer Randfarbe (--rand, --rand-stark; in Entwürfen der
+    Leitstelle --ls-rand) oder unsichtbar."""
+    return breite <= 1 and (bool(RANDFARBE.search(wert)) or "transparent" in wert)
 
 
 def _streifen_im_schatten(wert: str) -> str | None:
