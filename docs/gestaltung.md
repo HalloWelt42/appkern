@@ -711,6 +711,19 @@ Warum: Kopf in Versalien und fest beim Rollen; Zahlen rechts in der Zahlenschrif
 <tr><td>Einbettung</td><td class="zahl">1,2 GB</td><td><span class="zustand laeuft">lädt</span></td></tr></tbody></table>
 ```
 
+#### Tabelle, die schmal Karten wird
+
+Klassen: `tabellen-raum`, `tabelle karten`, `data-titel`
+
+Wann: Tabellen mit vielen Spalten in Spalten, die schmal werden können (neben einer Leiste, am Tablet).
+
+Warum: Unter 900 Pixeln Breite des Raums wird jede Zeile eine Karte mit Etiketten aus data-titel: nichts wird abgeschnitten, nichts rollt seitlich.
+
+```html
+<div class="tabellen-raum" style="max-width: 420px"><table class="tabelle karten"><thead><tr><th>Dienst</th><th>Rechner</th><th>Zustand</th><th>Plätze</th></tr></thead><tbody>
+<tr><td><b>Modell-Läufer</b></td><td data-titel="Rechner">Mac Studio</td><td data-titel="Zustand"><span class="zustand fertig">bereit</span></td><td data-titel="Plätze" class="zahl">2</td></tr></tbody></table></div>
+```
+
 #### Etikett und Punkt
 
 Klassen: `etikett`, `punkt`, `punkt warnung`, `punkt lebt`, `leise`, `schwach`

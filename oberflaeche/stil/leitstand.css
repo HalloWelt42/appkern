@@ -458,6 +458,22 @@ select.eingabe { padding-right: var(--a5); }
 .tabelle td { padding: 10px var(--a3); border-top: 1px solid var(--rand); vertical-align: middle; }
 .tabelle tr:hover td { background: var(--karte); }
 .tabelle td.zahl, .tabelle th.zahl { text-align: right; }
+/* Tabelle, die in schmalem Raum je Zeile eine Karte wird, statt abgeschnitten zu werden oder seitlich zu rollen: der
+   Behälter trägt die Klasse tabellen-raum, die Tabelle die Klasse karten, jede Zelle ihr Etikett in data-titel. Die erste
+   Zelle (Name) und Zellen über alle Spalten stehen über die volle Breite. */
+.tabellen-raum { container: tabelle / inline-size; }
+@container tabelle (max-width: 900px) {
+  .tabelle.karten, .tabelle.karten tbody { display: block; }
+  .tabelle.karten thead { display: none; }
+  .tabelle.karten tr { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: var(--a2) var(--a4);
+                       padding: var(--a3); border-top: 1px solid var(--rand); }
+  .tabelle.karten tr:hover { background: var(--karte); }
+  .tabelle.karten tr:hover td { background: none; }
+  .tabelle.karten td { display: block; padding: 0; border: 0; min-width: 0; text-align: left; overflow-wrap: anywhere; }
+  .tabelle.karten td:first-child, .tabelle.karten td[colspan] { grid-column: 1 / -1; }
+  .tabelle.karten td[data-titel]::before { content: attr(data-titel); display: block; margin-bottom: 2px; font-size: var(--marke); font-weight: 700;
+                                           letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+}
 
 /* Schwebendes Fenster (Protokoll, Hilfe, Bestätigungen) */
 .fenster { position: fixed; z-index: 30; display: flex; flex-direction: column; background: var(--leiste);
