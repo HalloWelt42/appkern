@@ -327,3 +327,15 @@ def test_gestaltung_des_appkerns_ist_aktuell():
     from appkern.werkzeuge import gestaltung
 
     assert gestaltung.veraltet(Path(__file__).resolve().parents[1]) == []
+
+
+def test_klassen_der_schale_nur_aus_dem_geladenen_stil(tmp_path):
+    """Die Bausteine des Leitstands liegen neben der Schale, werden von Apps in der Schale aber nicht geladen: ihre
+    Klassen zählen nicht als Klassen der Schale."""
+    from appkern.werkzeuge import schalen_klassen
+
+    _datei(tmp_path, "stil/alles.css", '@import "@fontsource/barlow/400.css";\n@import "./schale.css";\n')
+    _datei(tmp_path, "stil/schale.css", '@import "./teil.css";\n.knopf { color: var(--text); }\n')
+    _datei(tmp_path, "stil/teil.css", ".karte { padding: 0; }\n")
+    _datei(tmp_path, "stil/leitstand.css", ".verlauf { display: block; }\n")
+    assert schalen_klassen(tmp_path / "stil") == {"knopf", "karte"}

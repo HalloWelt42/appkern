@@ -166,10 +166,29 @@ def _klassen(selektor: str) -> set[str]:
     return set(KLASSE.findall(re.sub(r"\[[^\]]*\]", "", selektor)))
 
 
+def _geladene_stile(stil: Path) -> list[Path]:
+    """Die Stile, die eine App in der Schale lädt: alles.css und was es einbindet (nicht etwa die Bausteine des
+    Leitstands, die nur Apps mit eigener Schale laden)."""
+    einstieg = stil / "alles.css"
+    if not einstieg.is_file():
+        return sorted(stil.glob("*.css"))
+    gefunden: list[Path] = []
+    offen = [einstieg]
+    while offen:
+        datei = offen.pop(0)
+        if datei in gefunden or not datei.is_file():
+            continue
+        gefunden.append(datei)
+        for name in re.findall(r'@import\s+"\./([^"]+\.css)"', datei.read_text(encoding="utf-8")):
+            offen.append(stil / name)
+    return gefunden
+
+
 def schalen_klassen(stil: Path, teile: Path | None = None) -> set[str]:
-    """Klassen der Schale: aus ihren Stilen und aus den Vorlagen ihrer Teile (dort benutzt, auch ohne eigene Regel)."""
+    """Klassen der Schale: aus den Stilen, die stil.css lädt, und aus den Vorlagen ihrer Teile (dort benutzt, auch ohne
+    eigene Regel)."""
     klassen: set[str] = set()
-    for css in sorted(stil.glob("*.css")):
+    for css in _geladene_stile(stil):
         for r in regeln(css.read_text(encoding="utf-8")):
             for s in r.selektoren:
                 klassen |= _klassen(s)
