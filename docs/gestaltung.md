@@ -185,20 +185,20 @@ Immer mit Wort, nie Farbe allein: gut, Warnung, Gefahr, Hinweis; je eine weiche 
 
 ### Palette
 
-Zwischenfarben zwischen Blau und Bernstein für Arten und Zonen (Fähigkeiten, Modelle, Reihen in Diagrammen); immer mit Wort. Kräftig und Königsblau (Nutzer 16.10.2026). Im hellen Thema stehen sie auch als Schrift auf ihrer eigenen Tönung, dort mindestens 3 : 1 (Türkis, Minze und Honig darum dunkler als ihre Füllfarbe im Dunkeln vermuten ließe).
+Zwischenfarben zwischen Blau und Bernstein für Arten und Zonen (Fähigkeiten, Modelle, Reihen in Diagrammen); immer mit Wort. Kräftig und Königsblau (Nutzer 16.10.2026). Sie stehen auch als Schrift auf ihrer eigenen Tönung über dem Grund; im hellen Thema darum so tief, dass sie dort wie die Bedeutungsfarben mindestens 3,4 : 1 erreichen (auf Weiß über 5 : 1).
 
 | Marke | hell | dunkel | Zweck |
 |---|---|---|---|
 | `--himmel` | `#1f55d6` | `#3a7dff` | Text und Chat |
-| `--petrol` | `#0a8aa3` | `#10b3c9` | Einbettung und Suche |
+| `--petrol` | `#08758b` | `#10b3c9` | Einbettung und Suche |
 | `--tuerkis` | `#087870` | `#14d8c8` | Übersetzung |
 | `--minze` | `#0c7a54` | `#22e39a` | Hören, Transkription |
 | `--flieder` | `#5b45e6` | `#8f7bff` | Bild: beschreiben und erzeugen |
 | `--violett` | `#8e2fe0` | `#c45cff` | Musik |
-| `--rose` | `#e0186e` | `#ff3f8e` | Stimme: sprechen und klonen |
-| `--koralle` | `#e04a1a` | `#ff6a3d` | Zone extern, Kosten |
+| `--rose` | `#c61561` | `#ff3f8e` | Stimme: sprechen und klonen |
+| `--koralle` | `#bc3e16` | `#ff6a3d` | Zone extern, Kosten |
 | `--honig` | `#856700` | `#ffd21f` | wartet, angehalten, Vorwarnung |
-| `--sand` | `#9a7a2e` | `#e2b96a` | passiv, Reserve, Werkzeug |
+| `--sand` | `#846827` | `#e2b96a` | passiv, Reserve, Werkzeug |
 | `--stahl` | `#4f6d93` | `#8aa9c9` | Zone Heimnetz, neutral |
 
 ### Codehervorhebung
