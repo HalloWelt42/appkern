@@ -1384,11 +1384,13 @@
    "name": "Tabelle",
    "klassen": [
     "tabelle",
-    "zahl"
+    "zahl",
+    "tabellen-raum",
+    "karten"
    ],
    "wann": "Listen mit vielen Spalten.",
-   "warum": "Kopf in Versalien und fest beim Rollen; Zahlen rechts in der Zahlenschrift.",
-   "html": "<table class=\"tabelle\"><thead><tr><th>Modell</th><th class=\"zahl\">Größe</th><th>Zustand</th></tr></thead><tbody>\n<tr><td>Qwen 80B</td><td class=\"zahl\">46 GB</td><td><span class=\"zustand fertig\">geladen</span></td></tr>\n<tr><td>Einbettung</td><td class=\"zahl\">1,2 GB</td><td><span class=\"zustand laeuft\">lädt</span></td></tr></tbody></table>"
+   "warum": "Kopf in Versalien und fest beim Rollen; Zahlen rechts in der Zahlenschrift. Im Raum tabellen-raum und mit karten wird sie schmal zu Karten (siehe unten).",
+   "html": "<div class=\"tabellen-raum\"><table class=\"tabelle karten\"><thead><tr><th>Modell</th><th class=\"zahl\">Größe</th><th>Zustand</th></tr></thead><tbody>\n<tr><td>Qwen 80B</td><td data-titel=\"Größe\" class=\"zahl\">46 GB</td><td data-titel=\"Zustand\"><span class=\"zustand fertig\">geladen</span></td></tr>\n<tr><td>Einbettung</td><td data-titel=\"Größe\" class=\"zahl\">1,2 GB</td><td data-titel=\"Zustand\"><span class=\"zustand laeuft\">lädt</span></td></tr></tbody></table></div>"
   },
   {
    "familie": "leitstand",

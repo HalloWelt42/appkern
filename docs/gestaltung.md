@@ -699,16 +699,16 @@ Warum: Werte stehen immer an derselben Stelle; Stufen für kleine Wertebereiche 
 
 #### Tabelle
 
-Klassen: `tabelle`, `zahl`
+Klassen: `tabelle`, `zahl`, `tabellen-raum`, `karten`
 
 Wann: Listen mit vielen Spalten.
 
-Warum: Kopf in Versalien und fest beim Rollen; Zahlen rechts in der Zahlenschrift.
+Warum: Kopf in Versalien und fest beim Rollen; Zahlen rechts in der Zahlenschrift. Im Raum tabellen-raum und mit karten wird sie schmal zu Karten (siehe unten).
 
 ```html
-<table class="tabelle"><thead><tr><th>Modell</th><th class="zahl">Größe</th><th>Zustand</th></tr></thead><tbody>
-<tr><td>Qwen 80B</td><td class="zahl">46 GB</td><td><span class="zustand fertig">geladen</span></td></tr>
-<tr><td>Einbettung</td><td class="zahl">1,2 GB</td><td><span class="zustand laeuft">lädt</span></td></tr></tbody></table>
+<div class="tabellen-raum"><table class="tabelle karten"><thead><tr><th>Modell</th><th class="zahl">Größe</th><th>Zustand</th></tr></thead><tbody>
+<tr><td>Qwen 80B</td><td data-titel="Größe" class="zahl">46 GB</td><td data-titel="Zustand"><span class="zustand fertig">geladen</span></td></tr>
+<tr><td>Einbettung</td><td data-titel="Größe" class="zahl">1,2 GB</td><td data-titel="Zustand"><span class="zustand laeuft">lädt</span></td></tr></tbody></table></div>
 ```
 
 #### Tabelle, die schmal Karten wird
