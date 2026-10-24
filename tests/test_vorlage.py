@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from appkern.vorlage import GITHUB_NPM, GITHUB_PY, PLATZHALTER, VorlagenFehler, erzeugen, symbol_svg
-from appkern.werkzeuge import stil_pruefen, zeichen_pruefen
+from appkern.werkzeuge import marken_pruefen, stil_pruefen, strenge, zeichen_pruefen
 
 
 def neu(tmp_path: Path, **art) -> Path:
@@ -110,6 +110,7 @@ def test_neue_app_besteht_die_eigenen_pruefungen(tmp_path: Path):
     ordner = neu(tmp_path, ton=True)
     dateien = [d for d in ordner.rglob("*") if d.is_file()]
     assert zeichen_pruefen(dateien, ordner) == [] and stil_pruefen(dateien, ordner) == []
+    assert marken_pruefen(dateien, ordner) == [] and strenge(ordner) == "scharf"     # neue Apps nur mit Marken
 
 
 def test_hook_zaehlt_hoch_und_haelt_auf(tmp_path: Path):

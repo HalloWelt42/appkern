@@ -1,0 +1,3 @@
+# Prüfung der Gestaltung (python -m appkern.werkzeuge): "scharf" lässt einen Commit mit festen Farben, Schriften oder
+# Schriftgrößen außerhalb der Marken scheitern (Ausnahme nur mit Kommentar und Grund), "melden" zählt sie nur.
+marken = "scharf"

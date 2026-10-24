@@ -498,10 +498,22 @@ Arbeitskopie zeigen statt auf GitHub.
 | Befehl | Was |
 |---|---|
 | `vor-dem-commit` | Fassung hochzählen (nur neue Kennung, wenn `version.json` schon vorgemerkt ist), vormerken, vorgemerkte Dateien prüfen; aufgerufen vom Hook `tools/git-hooks/pre-commit` |
-| `pruefen [PFAD ...]` | nur gerade Zeichen; Stil ohne `!important`, ohne einseitige Streifen (erlaubt nur 1px-Trennlinien in `var(--rand)`), ohne Regeln, die nur Klassen der Schale treffen (Svelte-Blöcke nur mit `:global`; entfällt für eine App mit eigener Schale, die den Stil des Appkerns nicht lädt) |
+| `pruefen [PFAD ...]` | nur gerade Zeichen; Stil ohne `!important`, ohne einseitige Streifen (erlaubt nur 1px-Trennlinien in `var(--rand)`), ohne Regeln, die nur Klassen der Schale treffen (Svelte-Blöcke nur mit `:global`; entfällt für eine App mit eigener Schale, die den Stil des Appkerns nicht lädt); dazu die Marken der Gestaltung (unten) |
+| `marken [PFAD ...]` | nur die Marken der Gestaltung: jeder Befund, Zahl je Datei und Regel, die Strenge des Repos |
 | `fassung [patch\|minor\|major\|id]` | `version.json` hochzählen |
 | `appkern` | Appkern in Oberfläche (package-lock) und Backend (requirements, Archiv des Commits) auf denselben neuesten Commit |
 | `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`); `--ziel DATEI` für einen Probestand in eigenem Ordner, `compose` darin nennt die Compose-Datei; `--ergaenzung DATEI` bringt die Angaben des Hauses (Rechner, Ordner, Adresse, Namen, Leitstelle) aus einer privaten Datei und füllt nur, was das Ziel nicht nennt; `<kennung>.local` steht immer in den Namen des Zertifikats (Vorgabe des Vorschaltdienstes ohne Servernamen) |
+
+**Nur Marken** (Nutzer 24.10.2026: "Nur Marken, Ausnahme begründet"): im Stil einer App (CSS, Svelte, HTML außerhalb
+von Entwürfen unter `mockups` und `docs`) stehen keine festen Farben, Schriften und Schriftgrößen, nur Marken des
+Appkerns (`var(--...)`, Mischungen daraus mit `color-mix`, Rechnungen mit Marken, relative Größen wie `em`). Befunde:
+feste Farbe (auch als Rückfall in `var(--x, #fff)` und in `fill`/`stroke` im Markup), feste Schrift, feste
+Schriftgröße (Symbole auf `i`, `svg` und `.fa-...` dürfen feste Größen haben), eine Marke des Appkerns mit festem
+Wert überschrieben. Ausnahme nur mit Kommentar und Grund (mindestens drei Wörter) in derselben Zeile, darüber oder über
+der Regel: `/* Ausnahme: 16 Pixel verhindern das Vergrößern am iPhone */`, im Markup `<!-- Ausnahme: ... -->`. Wie
+streng, sagt `gestaltung.toml` im Wurzelordner: `marken = "scharf"` lässt den Commit scheitern, ohne Datei oder mit
+`"melden"` zählt der Haken die Befunde nur. Eine App wird erst sauber und dann scharf geschaltet; die Vorlage bringt
+`scharf` mit. Die Namen der Marken liest die Prüfung aus dem eingebundenen Paket (`frontend/node_modules/appkern-oberflaeche`).
 
 `appkern.testen` hilft den Tests der Apps: Werte des eigenen Testzugangs aus `backend/.env.test`, `aufraeumen`
 (Dateien vor Ordnern, mit Wiederholung) und `aktionen_zurueckziehen`. Die Ansichtsprüfung liegt bei der Oberfläche

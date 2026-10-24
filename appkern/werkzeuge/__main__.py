@@ -2,7 +2,8 @@
 
     python -m appkern.werkzeuge vor-dem-commit       Fassung hochzählen (nur neue Kennung, wenn version.json schon
                                                      vorgemerkt ist), vormerken, vorgemerkte Dateien prüfen
-    python -m appkern.werkzeuge pruefen [PFAD ...]   Zeichen und Stil prüfen (ohne Pfade: alle Dateien im Repo)
+    python -m appkern.werkzeuge pruefen [PFAD ...]   Zeichen, Stil und Marken prüfen (ohne Pfade: alle Dateien im Repo)
+    python -m appkern.werkzeuge marken [PFAD ...]    nur die Marken der Gestaltung, mit Zahl je Regel und Datei
     python -m appkern.werkzeuge fassung [patch|minor|major|id]
     python -m appkern.werkzeuge appkern              Appkern in Oberfläche und Backend auf den neuesten Commit heben
     python -m appkern.werkzeuge ausrollen [--ziel DATEI] [--ergaenzung DATEI] [--auslaufen]  auf den Pi nach deploy/ausrollen.toml (oder DATEI)
@@ -15,6 +16,7 @@ from pathlib import Path
 
 from .ausrollen import ZIEL_DATEI, Abbruch, ausrollen
 from .fassung import hochzaehlen
+from .marken import marken_pruefen, strenge, zusammenfassung
 from .stil import schalen_klassen, stil_pruefen
 from .stand import anheben
 from .zeichen import zeichen_pruefen
@@ -51,13 +53,36 @@ def _laedt_stil(quellen: Path) -> bool:
 
 
 def pruefen(wurzel: Path, dateien: list[Path]) -> int:
+    """Zeichen und Stil halten den Commit immer auf; die Marken der Gestaltung nur, wenn gestaltung.toml sie scharf
+    schaltet, sonst werden sie gemeldet (so wird eine App erst sauber und dann scharf geschaltet)."""
     befunde = zeichen_pruefen(dateien, wurzel) + stil_pruefen(dateien, wurzel, _schale(wurzel))
-    for b in befunde:
+    marken = marken_pruefen(dateien, wurzel)
+    scharf = strenge(wurzel) == "scharf"
+    for b in befunde + (marken if scharf else []):
         print(b, file=sys.stderr)
-    if befunde:
-        print(f"Abbruch: {len(befunde)} Befunde (Zeichen nur gerade, Stil ohne !important, einseitige Streifen und "
-              "Regeln auf Klassen der Schale)", file=sys.stderr)
-    return 1 if befunde else 0
+    if marken and not scharf:
+        print(f"Hinweis: {len(marken)} Befunde der Gestaltung gemeldet ({zusammenfassung(marken)}); "
+              "python -m appkern.werkzeuge marken zeigt sie, scharf in gestaltung.toml, sobald keiner mehr da ist",
+              file=sys.stderr)
+    alle = befunde + (marken if scharf else [])
+    if alle:
+        print(f"Abbruch: {len(alle)} Befunde (Zeichen nur gerade, Stil ohne !important, einseitige Streifen und "
+              "Regeln auf Klassen der Schale" + (", nur Marken des Appkerns, Ausnahme mit Kommentar und Grund" if scharf else "")
+              + ")", file=sys.stderr)
+    return 1 if alle else 0
+
+
+def marken_zeigen(wurzel: Path, dateien: list[Path]) -> int:
+    marken = marken_pruefen(dateien, wurzel)
+    je_datei: dict[str, int] = {}
+    for b in marken:
+        print(b)
+        je_datei[b.datei] = je_datei.get(b.datei, 0) + 1
+    for datei, zahl in sorted(je_datei.items(), key=lambda x: -x[1]):
+        print(f"{zahl:5d}  {datei}")
+    stufe = strenge(wurzel)
+    print(f"{len(marken)} Befunde der Gestaltung ({zusammenfassung(marken) or 'keine'}); Strenge: {stufe}")
+    return 1 if marken and stufe == "scharf" else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -66,6 +91,8 @@ def main(argv: list[str] | None = None) -> int:
     befehle.add_parser("vor-dem-commit")
     p = befehle.add_parser("pruefen")
     p.add_argument("pfade", nargs="*", type=Path)
+    m = befehle.add_parser("marken")
+    m.add_argument("pfade", nargs="*", type=Path)
     f = befehle.add_parser("fassung")
     f.add_argument("art", nargs="?", default="patch", choices=["patch", "minor", "major", "id"])
     befehle.add_parser("appkern")
@@ -92,12 +119,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Abbruch: {f}", file=sys.stderr)
             return 1
         return 0
-    if a.befehl == "pruefen":
+    if a.befehl in ("pruefen", "marken"):
         if a.pfade:
             dateien = [q.resolve() for q in a.pfade for q in ([q] if q.is_file() else sorted(q.rglob("*")))]
         else:
             dateien = [wurzel / n for n in _git("ls-files", wurzel=wurzel).splitlines()]
-        return pruefen(wurzel, dateien)
+        return pruefen(wurzel, dateien) if a.befehl == "pruefen" else marken_zeigen(wurzel, dateien)
     # vor dem Commit
     vorgemerkt = _git("diff", "--cached", "--name-only", "--diff-filter=ACM", wurzel=wurzel).splitlines()
     hochzaehlen(wurzel / "version.json", "id" if "version.json" in vorgemerkt else "patch")

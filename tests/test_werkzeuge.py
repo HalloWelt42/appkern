@@ -159,3 +159,122 @@ def test_eigene_schale_ohne_pruefung_auf_klassen_der_schale(tmp_path):
     assert _schale(tmp_path) is None
     (quellen / "main.ts").write_text('import "appkern-oberflaeche/stil.css";\n')
     assert _schale(tmp_path) == {"knopf"}
+
+
+# ----- Marken der Gestaltung (Grunddesign: nur Marken, Ausnahme begründet) -----
+
+MARKEN = {"--gross", "--akzent", "--app-farbe"}
+
+
+def test_marken_findet_feste_werte_und_laesst_marken_frei(tmp_path):
+    from appkern.werkzeuge import marken_pruefen
+
+    css = _datei(tmp_path, "frontend/src/a.css", "\n".join([
+        ".a { color: #fff; }",                                                     # 1 feste Farbe
+        ".a { background: rgba(10, 20, 30, .4); }",                                # 2 feste Farbe
+        ".a { border: 1px solid white; }",                                         # 3 Farbname
+        ".a { color: var(--auf-akzent, #fff); }",                                  # 4 feste Farbe als Rückfall
+        ".a { background: color-mix(in srgb, var(--gut) 20%, transparent); }",     # 5 Mischung aus Marken: frei
+        ".a { background: color-mix(in srgb, var(--gut) 72%, #000); }",            # 6 feste Farbe in der Mischung
+        ".a { background: rgba(var(--ls-akzent-rgb), 0.5); }",                     # 7 Kanäle aus einer Marke: frei
+        ".a { font-family: ui-monospace, monospace; }",                            # 8 feste Schrift
+        ".a { font-family: var(--schrift-code); }",                                # 9 frei
+        ".a { font-size: 14px; }",                                                 # 10 feste Schriftgröße
+        ".a { font-size: calc(var(--gross) + 2px); font-size: .9em; font-size: 0; }",  # 11 frei
+        ".a i, .b > i.fa-x::before { font-size: 14px; }",                          # 12 Symbole: frei
+        ".a .symbol { font-size: 14px; }",                                         # 13 keine erkennbaren Symbole
+        ".a { --gross: 16px; }",                                                   # 14 Marke überschrieben
+        ".a { --eigen: #e8590c; --breite: 440px; --mix: var(--akzent); }",         # 15 eigene Marke mit Farbe
+        ".a { fill: url(#verlauf); content: \"#1\"; grid-template-areas: \"red\"; }",  # 16 frei
+        ".a { font: inherit; }",                                                   # 17 frei
+        ".a { font: 600 14px/1.2 Barlow; }",                                       # 18 feste Schriftgröße
+        ".a { font-size: small; }",                                                # 19 feste Schriftgröße
+        ".a { --app-farbe: var(--akzent); color: transparent; color: currentColor; }",  # 20 frei
+    ]))
+    befunde = marken_pruefen([css], tmp_path, MARKEN)
+    assert _regeln_der(befunde) == [
+        (1, "feste Farbe"), (2, "feste Farbe"), (3, "feste Farbe"), (4, "feste Farbe"), (6, "feste Farbe"),
+        (8, "feste Schrift"), (10, "feste Schriftgröße"), (13, "feste Schriftgröße"), (14, "Marke des Appkerns überschrieben"),
+        (15, "feste Farbe"), (18, "feste Schriftgröße"), (19, "feste Schriftgröße")]
+
+
+def test_marken_ausnahme_nur_mit_grund(tmp_path):
+    from appkern.werkzeuge import marken_pruefen
+
+    css = _datei(tmp_path, "frontend/src/a.css", "\n".join([
+        ".a { color: #fff; } /* Ausnahme: weiß auf dem Foto, unabhängig vom Thema */",   # 1 frei
+        "/* Ausnahme: 16 Pixel verhindern das Vergrößern am iPhone */",
+        ".a { font-size: 16px; }",                                                      # 3 frei
+        "/* Ausnahme: Farben der Codehervorhebung wie im Editor */",
+        ".hljs {",
+        "  color: #8839ef;",                                                            # 6 frei (über der Regel)
+        "  background: #fff;",                                                          # 7 frei
+        "}",
+        ".a { color: #000; } /* Ausnahme: ok */",                                        # 9 Grund zu kurz
+        "/* Ausnahme ohne Doppelpunkt und Grund */",
+        ".a { color: #000; }",                                                          # 11 kein Grund
+    ]))
+    assert _regeln_der(marken_pruefen([css], tmp_path, MARKEN)) == [(9, "feste Farbe"), (11, "feste Farbe")]
+
+
+def test_marken_in_svelte(tmp_path):
+    from appkern.werkzeuge import marken_pruefen
+
+    svelte = _datei(tmp_path, "frontend/src/Teil.svelte", "\n".join([
+        "<script>const farbe = '#fff';</script>",                                       # 1 Skript: nicht Stil
+        '<div style="color: #fff; width: {breite}px">x</div>',                           # 2 feste Farbe
+        '<i class="fa-solid fa-x" style="font-size: 12px; color: var(--gut)"></i>',     # 3 Symbol: frei
+        '<svg><circle fill="#e00" stroke="currentColor" r="2"/><text font-size="11">a</text></svg>',  # 4 zwei Befunde
+        '<span style="background: {farbe}">x</span>',                                    # 5 Ausdruck der App: frei
+        "<!-- Ausnahme: Farbe des Fremdlogos, so vorgegeben -->",
+        '<b style="color: #1db954">x</b>',                                              # 7 frei
+        "<style>",
+        "  .x { font-family: Arial; }",                                                 # 9 feste Schrift
+        "</style>",
+    ]))
+    assert _regeln_der(marken_pruefen([svelte], tmp_path, MARKEN)) == [
+        (2, "feste Farbe"), (4, "feste Farbe"), (4, "feste Schriftgröße"), (9, "feste Schrift")]
+
+
+def test_marken_pruefen_nur_den_stil_der_app(tmp_path):
+    """Entwürfe, Doku, Abhängigkeiten und Gebautes zählen nicht; die Marken des Appkerns sind die Wahrheit."""
+    from appkern.werkzeuge import marken_pruefen
+
+    fest = ".a { color: #fff; }\n"
+    dateien = [_datei(tmp_path, n, fest) for n in (
+        "mockups/stil.css", "docs/prototyp/a.css", "frontend/node_modules/x/a.css", "frontend/dist/a.css",
+        "oberflaeche/stil/marken.css", "daten-vorfuehrung/a.css", "frontend/src/a.css", "oberflaeche/stil/schale.css")]
+    assert [b.datei for b in marken_pruefen(dateien, tmp_path, set())] == ["frontend/src/a.css", "oberflaeche/stil/schale.css"]
+
+
+def test_strenge_und_haken(tmp_path, capsys):
+    """Ohne gestaltung.toml wird gemeldet und der Commit geht durch; scharf hält er an (Gegenprobe)."""
+    import pytest
+
+    from appkern.werkzeuge import strenge
+    from appkern.werkzeuge.__main__ import pruefen
+
+    css = _datei(tmp_path, "frontend/src/a.css", ".a { color: #fff; }\n")
+    assert strenge(tmp_path) == "melden"
+    assert pruefen(tmp_path, [css]) == 0
+    assert "1 Befunde der Gestaltung gemeldet" in capsys.readouterr().err
+    (tmp_path / "gestaltung.toml").write_text('marken = "scharf"\n')
+    assert strenge(tmp_path) == "scharf"
+    assert pruefen(tmp_path, [css]) == 1
+    assert "feste Farbe" in capsys.readouterr().err
+    css.write_text(".a { color: var(--text); }\n")
+    assert pruefen(tmp_path, [css]) == 0
+    (tmp_path / "gestaltung.toml").write_text('marken = "streng"\n')
+    with pytest.raises(ValueError):
+        strenge(tmp_path)
+
+
+def test_der_appkern_selbst_ist_sauber():
+    """Schale, Bausteine und Teile des Appkerns nutzen nur die Marken."""
+    import subprocess
+
+    from appkern.werkzeuge import marken_pruefen
+
+    wurzel = Path(__file__).resolve().parents[1]
+    dateien = [wurzel / n for n in subprocess.run(["git", "ls-files"], cwd=wurzel, capture_output=True, text=True).stdout.splitlines()]
+    assert marken_pruefen(dateien, wurzel) == []
