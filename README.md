@@ -457,7 +457,8 @@ Dazu die Listenstile (`.zeile`, `.stand-pille`, `.optionen`, `.knopfzeile`).
 
 Es entsteht eine lauffähige App: Backend auf dem Gerüst mit einem Probeauftrag, Oberfläche in der Schale,
 Symbolsatz für alle Geräte (aus dem Font-Awesome-Symbol auf der App-Farbe, auch für den iPhone-Startbildschirm),
-`stellwerk.toml`, `einrichten.sh`, Test und Verbundtest mit eigenem Testzugang. Dazu alles, was die Lehren aus den
+`stellwerk.toml`, `einrichten.sh` (mit Probemodus für das Handbuch: `--probe` baut den Betrieb wie auf dem Pi in einem
+Wegwerfordner, abgeschottet nach `deploy/probelauf.compose.yml`), Test und Verbundtest mit eigenem Testzugang. Dazu alles, was die Lehren aus den
 bisherigen Apps verlangen (`docs/LEHREN.md`): Git-Hook mit Fassung und Prüfungen, `tools/appkern.sh`,
 `tools/ausrollen.sh` mit `deploy/ausrollen.toml`, Dockerfile und `compose.pi.yml` mit Caddy davor, Ansichtsprüfung
 (`tools/ansicht.sh`, Seiten in `frontend/ansicht.json`) und die Abnahmeliste `docs/ABNAHME.md`. `--ton` gibt der App die

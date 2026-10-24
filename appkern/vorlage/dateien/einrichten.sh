@@ -1,18 +1,98 @@
 #!/usr/bin/env bash
-# Python-Umgebung, Pakete und Bau der Oberfläche; Appkern in Oberfläche und Backend auf denselben Commit; Git-Hooks
-# (vor jedem Commit Fassung hochzählen und Zeichen und Stil prüfen).
+# Einrichten von __NAME__. Die Schritte der Neueinrichtung mit ihren Proben stehen in docs/handbuch.md.
+#
+#   ./einrichten.sh                                       Entwicklung am Mac: Python-Umgebung, Pakete und Bau der
+#                                                         Oberfläche, Appkern in Oberfläche und Backend auf denselben
+#                                                         Commit, Git-Haken (das Ausrollen prüft mit dieser Umgebung)
+#   ./einrichten.sh --probe --ziel DIR --port-versatz N   Probelauf des Handbuchs: DIR enthält einen Stand der App; daraus
+#                                                         entsteht der Betrieb wie auf dem Pi (compose.pi.yml) mit
+#                                                         Wegwerfzertifikat, abgeschottet von jeder echten Gegenstelle
+#                                                         (deploy/probelauf.compose.yml), Port um N verschoben und nur an
+#                                                         127.0.0.1
+#   ./einrichten.sh --probe --ziel DIR --abbauen          entfernt alles, was der Probelauf angelegt hat
+#
+# Der Betrieb auf dem Pi entsteht mit tools/ausrollen.sh (deploy/ausrollen.toml).
 set -euo pipefail
 HIER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$HIER/backend"
-[ -x .venv/bin/python ] || python3 -m venv .venv
-.venv/bin/pip install -q --upgrade pip
-.venv/bin/pip install -q -r requirements.txt
-cd "$HIER/frontend"
-npm install --no-audit --no-fund
-cd "$HIER"
-# frisch aus der Vorlage zeigt das Backend auf den Zweig main des Appkerns; festgelegt wird ein Commit (Lehre 5)
-if grep -q "appkern/archive/refs/heads/main.tar.gz" backend/requirements.txt; then tools/appkern.sh; fi
-if git rev-parse --git-dir >/dev/null 2>&1; then git config core.hooksPath tools/git-hooks; fi
-cd "$HIER/frontend"
-npm run build
-echo "__NAME__ eingerichtet. Start: im Stellwerk oder backend/.venv/bin/uvicorn app.main:app --port __PORT__"
+KENNUNG="__KENNUNG__"
+PROBE_COMPOSE=(-f compose.pi.yml -f deploy/probelauf.compose.yml)
+PROBE_WARTEN_S=300
+
+entwicklung() {
+  cd "$HIER/backend"
+  [ -x .venv/bin/python ] || python3 -m venv .venv
+  .venv/bin/pip install -q --upgrade pip
+  .venv/bin/pip install -q -r requirements.txt
+  cd "$HIER/frontend"
+  npm install --no-audit --no-fund
+  cd "$HIER"
+  # frisch aus der Vorlage zeigt das Backend auf den Zweig main des Appkerns; festgelegt wird ein Commit (Lehre 5)
+  if grep -q "appkern/archive/refs/heads/main.tar.gz" backend/requirements.txt; then tools/appkern.sh; fi
+  # Haken nur, wenn dieser Ordner selbst das Repo ist (nie in einem Repo, in dem er zufällig liegt)
+  if [ "$(git -C "$HIER" rev-parse --show-toplevel 2>/dev/null)" = "$HIER" ]; then
+    git -C "$HIER" config core.hooksPath tools/git-hooks
+  fi
+  cd "$HIER/frontend"
+  npm run build
+  echo "__NAME__ eingerichtet. Start: im Stellwerk oder backend/.venv/bin/uvicorn app.main:app --port __PORT__"
+}
+
+# veröffentlichter Port des Vorschaltdienstes laut compose.pi.yml (er steht nur dort)
+grundport() {
+  docker compose -f "$1/compose.pi.yml" config --format json | python3 -c '
+import json, sys
+print(json.load(sys.stdin)["services"]["vorne"]["ports"][0]["published"])'
+}
+
+probe_aufbauen() {
+  local ziel="$1" versatz="$2" port
+  port=$(( $(grundport "$ziel") + versatz ))
+  cd "$ziel"
+  mkdir -p daten zertifikate
+  # Wegwerf-Hausstelle in DIR, nie die echte: das Blattzertifikat gilt nur für diesen Rechner
+  CAROOT="$ziel/hausstelle" mkcert -cert-file "zertifikate/$KENNUNG.pem" -key-file "zertifikate/$KENNUNG-schluessel.pem" \
+    127.0.0.1 localhost >/dev/null 2>&1
+  cp hausstelle/rootCA.pem zertifikate/rootCA.pem
+  ( umask 077; printf 'PROBE_PORT=%s\nHAUPTADRESSE=127.0.0.1\nAPPKERN_KELLERWOLKE_GEDULD_S=0\n' "$port" > .env )
+  docker compose "${PROBE_COMPOSE[@]}" up -d --build --quiet-pull
+  local ende=$(( $(date +%s) + PROBE_WARTEN_S ))
+  while [ "$(date +%s)" -lt "$ende" ]; do
+    if curl -sf --cacert zertifikate/rootCA.pem "https://127.0.0.1:$port/api/v1/app" >/dev/null; then
+      echo "ANTWORTET https://127.0.0.1:$port/api/v1/app"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "__NAME__ antwortet nach $PROBE_WARTEN_S s nicht" >&2
+  docker compose "${PROBE_COMPOSE[@]}" logs --tail 40 >&2 || true
+  return 1
+}
+
+probe_abbauen() {
+  cd "$1"
+  [ -f .env ] || return 0
+  docker compose "${PROBE_COMPOSE[@]}" down --volumes --remove-orphans
+  docker image rm -f "${COMPOSE_PROJECT_NAME:?}-$KENNUNG" >/dev/null 2>&1 || true
+}
+
+probe=0; abbauen=0; ziel=""; versatz=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --probe) probe=1 ;;
+    --abbauen) abbauen=1 ;;
+    --ziel) ziel="${2:?--ziel braucht einen Ordner}"; shift ;;
+    --port-versatz) versatz="${2:?--port-versatz braucht eine Zahl}"; shift ;;
+    *) echo "unbekannte Angabe: $1" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+if [ "$probe" = 0 ]; then
+  entwicklung
+elif [ -z "$ziel" ] || [ ! -d "$ziel" ]; then
+  echo "--probe braucht --ziel mit einem vorhandenen Ordner" >&2; exit 2
+elif [ "$abbauen" = 1 ]; then
+  probe_abbauen "$(cd "$ziel" && pwd)"
+else
+  probe_aufbauen "$(cd "$ziel" && pwd)" "${versatz:?--port-versatz fehlt}"
+fi

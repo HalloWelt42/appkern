@@ -1,0 +1,90 @@
+---
+zweck: "Der gemeinsame Unterbau der Apps des Verbunds: Anmeldung mit dem Kellerwolke-Konto, Zugang zu Kellerwolke und Leitstelle, Aufträge, Einstellungen, Protokoll, Tonarbeit, die Oberflächen-Schale und die Vorlage für neue Apps."
+geraet: [mac]
+abhaengigkeiten: []
+daten:
+  - "keine eigenen Daten: Code und Vorlage liegen im Repo, die Apps beziehen den Appkern als Archiv eines Commits von GitHub (Backend) und als npm-Paket (Oberfläche)"
+sicherung:
+  - "nichts zu sichern außer dem Repo auf GitHub"
+schluessel_orte:
+  - "Mac: `.env.test` im Klon (nicht im Repo): Adresse und App-Schlüssel des Testzugangs AppkernTest an der Kellerwolke der Entwicklung, nur für den Verbundtest"
+einrichten: einrichten.sh
+stand: 4b60701
+---
+
+# Appkern
+
+## Zweck
+
+Der Appkern ist kein Dienst, sondern der Unterbau, auf dem die Neubau-Apps stehen ([[Fundus]], [[Assistent]],
+[[Vertonung]], [[Transkription]] und weitere). Er bringt die Bausteine, die jede App gleich braucht: Anmeldung mit dem
+Konto der [[Kellerwolke]], Zugang zur Ablage mit App-Schlüssel, die Fassade zur [[Leitstelle]], Aufträge mit Phasen
+und Fortsetzung nach einem Neustart, Einstellungen mit verdeckten Schlüsseln, Protokoll, Tonarbeit über den Tondienst
+des [[Klangwerk]], das Gerüst einer App, die Oberflächen-Schale mit der gemeinsamen Gestaltung und die Werkzeuge für
+Commit und Ausrollen (`python -m appkern.werkzeuge`).
+
+Mit der Vorlage (`python -m appkern.vorlage`) entsteht eine neue App, die all das schon mitbringt, dazu Dockerfile,
+`compose.pi.yml` mit Vorschaltdienst, Ausrollen, Git-Haken und ein Einrichtungsskript mit Probemodus für das Handbuch
+(`deploy/probelauf.compose.yml`: eigene Namen, abgeschottetes Netz, Port nur an 127.0.0.1).
+
+Die Apps legen den Appkern auf einen Commit fest (`tools/appkern.sh` in der App), in Backend und Oberfläche gleich;
+das Ausrollen bricht ab, wenn beide verschieden sind.
+
+## Was sie braucht
+
+- Mac nach [[Grundlage Mac]]: Python ab 3.11, Node.js für die Schale und die Vorlage; für den Symbolsatz neuer Apps
+  ein Python mit cairosvg und Pillow (das Python 3.13 aus Homebrew).
+- Das Repo auf GitHub: die Apps holen den Appkern beim Bau von dort.
+- Für den Verbundtest eine Kellerwolke der Entwicklung mit einem Testzugang (sonst wird er übersprungen).
+
+## Neu einrichten
+
+Der Appkern hat keine Daten; ein Weg genügt. Aus der Sicherung kommt höchstens `.env.test` zurück, sonst den
+Testzugang in der Kellerwolke der Entwicklung neu anlegen.
+
+### 1. Klon und Entwicklungsumgebung
+
+```
+git clone {{repo}} {{ordner}}
+cd {{ordner}} && ./einrichten.sh
+```
+
+`./einrichten.sh` legt `.venv` mit allen Extras und den Testpaketen an, holt die Pakete der Oberfläche (`npm ci`) und
+setzt die Git-Haken (Fassung hochzählen, Zeichen und Stil prüfen).
+
+Probe: `.venv/bin/python -m pytest -q` ist grün (der Verbundtest ist ohne `.env.test` übersprungen).
+
+### 2. Testzugang für den Verbundtest
+
+Nur für die Arbeit am Appkern selbst: in der Kellerwolke der Entwicklung einen App-Schlüssel "AppkernTest" anlegen und
+mit ihrer Adresse in `.env.test` schreiben (`KELLERWOLKE_ADRESSE`, `KELLERWOLKE_SCHLUESSEL`, Modus 0600).
+
+Probe: `.venv/bin/python -m pytest -q tests/test_kellerwolke_verbund.py` läuft, statt übersprungen zu werden.
+
+### 3. Eine App aus der Vorlage
+
+```
+.venv/bin/python -m appkern.vorlage --name <Name> --kennung <kennung> --rolle "<macht etwas>" \
+    --symbol fa-<symbol> --port <port> --ziel <ordner> [--ton]
+```
+
+Danach in der neuen App `./einrichten.sh`; ihre Seite für das Handbuch legt `handbuch anlegen <app>` an.
+
+Probe: die neue App startet mit `backend/.venv/bin/uvicorn app.main:app --port <port>` und antwortet auf
+`/api/v1/app`; so prüft es auch der Probelauf des Handbuchs.
+
+## Sicherung und Rückspielen
+
+Es gibt nichts zu sichern außer dem Repo; jeder Stand, den eine App nutzt, liegt als Commit auf GitHub. Zurückspielen
+heißt klonen (Schritt 1). `.env.test` enthält nur einen Testzugang zur Kellerwolke der Entwicklung und lässt sich neu
+anlegen.
+
+## Wenn etwas klemmt
+
+- Das Ausrollen einer App bricht mit "Appkern in Oberfläche und Backend verschieden" ab: in der App `tools/appkern.sh`
+  laufen lassen, committen, pushen.
+- Eine App baut mit einem alten Appkern: sie nennt den Zweig statt eines Commits; `tools/appkern.sh` legt den Commit fest.
+- Der Symbolsatz einer neuen App fehlt: kein Python mit cairosvg und Pillow gefunden; `python3 tools/symbole.py` in der
+  App mit dem Python 3.13 aus Homebrew.
+- Der Commit bricht mit einer Zeichen- oder Stilprüfung ab: `python -m appkern.werkzeuge pruefen <datei>` nennt die
+  Stelle.

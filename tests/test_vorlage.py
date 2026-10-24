@@ -127,3 +127,15 @@ def test_hook_zaehlt_hoch_und_haelt_auf(tmp_path: Path):
     subprocess.run(["git", "add", "-A"], cwd=ordner, check=True)
     zweit = subprocess.run([*git, "commit", "-q", "-m", "Stil"], cwd=ordner, capture_output=True, text=True)
     assert zweit.returncode != 0 and "!important" in zweit.stderr
+
+
+def test_probemodus_fuer_das_handbuch(tmp_path: Path):
+    """Jede neue App bringt den Probemodus mit: Einrichtungsskript mit --probe und --abbauen, abgeschottete
+    Compose-Ergänzung mit eigenen Namen und verschobenem Port nur an 127.0.0.1."""
+    ordner = neu(tmp_path)
+    skript = (ordner / "einrichten.sh").read_text(encoding="utf-8")
+    assert "--probe" in skript and "--abbauen" in skript and "ANTWORTET" in skript and 'KENNUNG="transkription"' in skript
+    probe = (ordner / "deploy" / "probelauf.compose.yml").read_text(encoding="utf-8")
+    assert "${COMPOSE_PROJECT_NAME:?}-transkription" in probe and "internal: true" in probe
+    assert '"127.0.0.1:${PROBE_PORT:?}:8601"' in probe
+    assert os.access(ordner / "einrichten.sh", os.X_OK)
