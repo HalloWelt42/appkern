@@ -1375,7 +1375,7 @@
     "schalter",
     "stufen"
    ],
-   "wann": "Einstellungen: links was und warum, rechts das Bedienelement in fester Spalte.",
+   "wann": "Einstellungen: links was und warum, rechts das Bedienelement in fester Spalte; im schmalen Fenster (unter 760 Pixeln) oder in einem schmalen Rahmen mit Container (unter 600 Pixeln) steht es unter der Erklärung.",
    "warum": "Werte stehen immer an derselben Stelle; Stufen für kleine Wertebereiche statt Auswahlfeld.",
    "html": "<div><div class=\"einstellung\"><div><div class=\"name\">Hintergrund erlaubt</div><div class=\"erklaerung\">Stapelarbeit läuft nur, wenn nichts anderes wartet.</div></div><div class=\"wert\"><button class=\"schalter an\" aria-label=\"an\"></button></div></div>\n<div class=\"einstellung\"><div><div class=\"name\">Schriftgröße</div><div class=\"erklaerung\">Gilt auf diesem Gerät.</div></div><div class=\"wert\"><span class=\"stufen\"><button>Mittel</button><button class=\"an\">Groß</button></span></div></div></div>"
   },

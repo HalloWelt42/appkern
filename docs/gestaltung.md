@@ -688,7 +688,7 @@ Warum: Der laufende Teil lebt sichtbar, Erledigtes ist grün, Offenes blass.
 
 Klassen: `einstellung`, `name`, `erklaerung`, `wert`, `schalter`, `stufen`
 
-Wann: Einstellungen: links was und warum, rechts das Bedienelement in fester Spalte.
+Wann: Einstellungen: links was und warum, rechts das Bedienelement in fester Spalte; im schmalen Fenster (unter 760 Pixeln) oder in einem schmalen Rahmen mit Container (unter 600 Pixeln) steht es unter der Erklärung.
 
 Warum: Werte stehen immer an derselben Stelle; Stufen für kleine Wertebereiche statt Auswahlfeld.
 
