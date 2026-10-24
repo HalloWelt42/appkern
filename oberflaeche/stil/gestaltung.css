@@ -4,7 +4,7 @@
 .gs { display: flex; flex-direction: column; gap: var(--a4); max-width: 1180px; min-width: 0; padding-bottom: var(--a5); }
 .gs h3 { margin: 0; font-size: var(--titel); font-weight: 600; }
 /* Code der Seite selbst; in den Proben gilt allein der Stil der Bausteine */
-.gs-name, .gs-wert, .gs-klassen code, .gs-quelle code, .gs-liste code { font-family: var(--schrift-code); font-size: 0.9em; overflow-wrap: anywhere; }
+.gs-name, .gs-wert, .gs-code, .gs-klassen code, .gs-quelle code { font-family: var(--schrift-code); font-size: 0.9em; overflow-wrap: anywhere; }
 .gs-einleitung { display: flex; flex-direction: column; gap: var(--a2); color: var(--text-2); }
 .gs-einleitung p { margin: 0; max-width: 900px; }
 .gs-quelle { font-size: var(--klein); color: var(--text-3); display: inline-flex; gap: var(--a2); align-items: baseline; }

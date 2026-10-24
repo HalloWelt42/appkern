@@ -418,11 +418,14 @@ Themen: hell ist die Vorgabe, dunkel über `data-theme="dunkel"`. Schriftstufen:
 die Schriftgröße mit `font-size: var(--gross)` neu setzen. Mischungen gehen über `color-mix` statt eigener
 RGB-Werte: `color-mix(in srgb, var(--gefahr) var(--toenung), transparent)`.
 
-Eine App mit eigener Gestaltung (Fundus in der Gestaltung der Leitstelle) nimmt statt der Schale ihre Bausteine und
+Eine App, die ihre Schale selbst zeichnet (Fundus in der Gestaltung der Leitstelle), nimmt statt der Schale ihre Bausteine und
 zeichnet selbst; die Logik bleibt im Appkern: `sitzungStarten`, `anmelden`, `koppeln`, `einrichtenMit`, `abmelden`,
 `auftraegeVerfolgen`, `auftragAbbrechen`, `auftragWiederholen`, `fassungVerfolgen`, `navigationStarten`,
 `verbindungen` mit `verbindungenVerfolgen` und `verbindungenPruefen`, `takt`, die Hilfen zum Koppeln und die Texte
-`KEINE_VERBINDUNG` und `ANTWORTET_NICHT`. Sie lädt dann `stil.css` nicht. Die Schale bekommt die Fassung, mit der die Oberfläche gebaut wurde
+`KEINE_VERBINDUNG` und `ANTWORTET_NICHT`. Sie lädt dann statt `stil.css` die Bausteine des Leitstands
+(`appkern-oberflaeche/leitstand.css`: Schriften, Marken, Bausteine der Leitstelle wie `knopf`, `zustand`, `karte`, `kette`,
+mit Schriftstufen über `data-schrift`, Vorgabe `gross`), dazu `anmeldung.css` und `auswahl.css`; auch die Leitstelle
+selbst lädt sie. Die Schale bekommt die Fassung, mit der die Oberfläche gebaut wurde
 (`<Schale {bereiche} fassung={__APP_FASSUNG__} />`, eingebaut über `define` in `vite.config.ts` aus `version.json`).
 Meldet der Server eine andere, lädt die Seite von selbst neu: beim Start sofort, sonst beim nächsten Seitenwechsel
 oder wenn das Fenster wieder nach vorn kommt, je Fassung nur einmal; solange `ruhig()` der App nein sagt (etwa

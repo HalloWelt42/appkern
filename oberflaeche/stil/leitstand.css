@@ -1,0 +1,558 @@
+/* Bausteine des Leitstands: die Gestaltung der Leitstelle für Apps, die ihre Schale selbst zeichnen (Leitstelle,
+   Fundus). Eine Stelle für beide (vorher Leitstelle/frontend/src/stil/stil.css und die Kopie in Fundus); gebaut nur aus
+   den Marken (marken.css), mit Schriftstufen (data-schrift am html, Vorgabe gross). Eigenes einer App (Netzbild der
+   Leitstelle, fu-Bausteine in Fundus) bleibt in der App. Laden: import "appkern-oberflaeche/leitstand.css". */
+@import "@fontsource/barlow/400.css";
+@import "@fontsource/barlow/500.css";
+@import "@fontsource/barlow/600.css";
+@import "@fontsource/barlow/700.css";
+@import "@fontsource/chakra-petch/400.css";
+@import "@fontsource/chakra-petch/500.css";
+@import "@fontsource/chakra-petch/600.css";
+@import "@fontsource/chakra-petch/700.css";
+@import "./marken.css";
+@import "./gestaltung.css";
+
+/* ═══ Grund ══════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--schrift); font-size: var(--gross); line-height: 1.5;
+  color: var(--text); background: var(--hg);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--akzent); text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+h1, h2, h3 { margin: 0; font-weight: 700; letter-spacing: 0.005em; }
+h1 { font-size: var(--seitentitel); line-height: 1.15; }
+h2 { font-size: var(--titel); }
+h3 { font-size: var(--gross); font-weight: 600; }
+p { margin: 0; }
+.leise { color: var(--text-2); }
+.schwach { color: var(--text-3); }
+.klein { font-size: var(--klein); }
+.akzent { color: var(--akzent); }
+/* Zahlen in der technischen Zahlenschrift */
+.zahl, .zaehler, .zeit { font-family: var(--schrift-zahl); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+code, .code { font-family: var(--schrift-code); font-size: 0.92em; background: var(--mulde); padding: 1px 6px; border-radius: var(--r1); }
+
+/* Kleine Überschrift über Gruppen: Versalien, gesperrt */
+.etikett {
+  font-size: var(--marke); font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-3);
+}
+
+/* Fokus sichtbar, ohne Leuchtrand: ruhiger Bernstein-Ring */
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--akzent-flaeche) 70%, transparent); outline-offset: 2px; }
+
+/* ═══ Schale: Kopf, Seitenleiste, Hauptbereich, Fußleiste ════════════════ */
+
+.schale {
+  display: grid; height: 100vh;
+  grid-template: "kopf kopf" var(--kopf-hoehe) "seite haupt" 1fr "fuss fuss" var(--fuss-hoehe)
+               / var(--nav-breite) 1fr;
+}
+.kopf {
+  grid-area: kopf; display: flex; align-items: center; gap: var(--a4);
+  padding: 0 var(--a4); background: var(--leiste); border-bottom: 1px solid var(--rand);
+}
+.marke { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: var(--appname); letter-spacing: 0.02em; min-width: calc(var(--nav-breite) - var(--a4)); flex-shrink: 0; }
+.marke-bild { width: 36px; height: 36px; display: block; }   /* freigestelltes Symbol, kein Kasten */
+.marke .zahl { font-size: var(--marke); font-weight: 600; color: var(--text-3); margin-left: 2px; align-self: flex-end; padding-bottom: 3px; }
+/* Rolle im Verbund neben der Marke, damit man auf einen Blick sieht, wofür dieses Programm da ist */
+.rolle { display: inline-flex; align-items: center; gap: var(--a2); color: var(--text-2); font-size: var(--klein); white-space: nowrap; }
+.rolle i { color: var(--akzent); }
+.suche {
+  flex: 1; max-width: 560px; min-width: 220px; display: flex; align-items: center; gap: var(--a2);
+  height: 42px; padding: 0 var(--a3); background: var(--karte); border: 1px solid var(--rand);
+  border-radius: var(--r2); color: var(--text-3);
+}
+.suche input { flex: 1; background: none; border: 0; outline: 0; color: var(--text); min-width: 0; }
+.suche:focus-within { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
+.kopf-aktionen { margin-left: auto; display: flex; gap: var(--a1); align-items: center; }
+
+/* Hauptregler: auf jeder Seite im Kopf, greift sofort in den ganzen Verbund ein.
+   Normal = alles läuft. Auslaufen = laufende Aufträge enden sanft, nichts Neues wird angenommen.
+   Halt = harter Schnitt, alles stoppt sofort (mit Bestätigung). Dazu Hintergrund an oder aus. */
+.hauptregler { display: inline-flex; align-items: center; gap: var(--a3); height: 44px; padding: 0 var(--a3) 0 var(--a4);
+               border-radius: var(--r2); background: var(--bereich); border: 1px solid var(--rand); flex: none; }
+.hauptregler .etikett { font-size: var(--marke); }
+.hauptregler .stufen button { min-width: 0; padding: 0 var(--a3); display: inline-flex; align-items: center; gap: 7px; }
+.hauptregler .stufen button i { font-size: 14px; }
+.hauptregler .stufen button.an.normal { color: var(--gut); }
+.hauptregler .stufen button.an.auslaufen { color: var(--warn); background: color-mix(in srgb, var(--warn) var(--toenung), transparent); }
+.hauptregler .stufen button.an.halt { color: var(--auf-farbe); background: var(--gefahr); }
+.hauptregler .hintergrund { display: inline-flex; align-items: center; gap: var(--a2); font-size: var(--klein); color: var(--text-2); padding-left: var(--a3); border-left: 1px solid var(--rand); }
+.hauptregler .hintergrund .schalter { width: 42px; height: 24px; }
+.hauptregler .hintergrund .schalter::after { width: 18px; height: 18px; }
+.hauptregler .hintergrund .schalter.an::after { left: 21px; }
+.hauptregler[data-modus="auslaufen"] { border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.hauptregler[data-modus="halt"] { border-color: color-mix(in srgb, var(--gefahr) 60%, transparent); background: color-mix(in srgb, var(--gefahr) 8%, transparent); }
+/* Bestätigung des harten Schnitts: Leiste direkt unter dem Kopf, kein Fenster */
+.hauptregler-leiste { position: absolute; left: var(--nav-breite); right: 0; top: var(--kopf-hoehe); z-index: 45;
+                      display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; padding: var(--a3) var(--a5);
+                      background: var(--karte); border: 1px solid color-mix(in srgb, var(--gefahr) 50%, transparent); box-shadow: var(--schatten-schwebend); }
+.hauptregler-leiste i.fa-hand { color: var(--gefahr); font-size: 20px; }
+.hauptregler-leiste .folgen { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hauptregler-leiste .folgen span { font-size: var(--klein); color: var(--text-2); }
+.hauptregler-leiste .rechts { margin-left: auto; display: flex; gap: var(--a2); }
+.hauptregler-leiste.auslaufen { border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.hauptregler-leiste.auslaufen i { color: var(--warn); }
+.lage.halt { color: var(--gefahr); }
+.lage.halt .punkt { background: var(--gefahr); animation: none; }
+.lage.auslaufen { color: var(--warn); }
+.lage.auslaufen .punkt { background: var(--warn); }
+
+/* Lage im Kopf: drei Worte, die den Zustand des ganzen Verbunds sagen */
+.lage { display: inline-flex; align-items: center; gap: var(--a2); height: 40px; padding: 0 var(--a3); margin-right: var(--a2);
+        border-radius: var(--r2); background: var(--bereich); font-size: var(--klein); font-weight: 600; color: var(--text-2); }
+.lage .punkt { margin: 0; }
+.lage.ruhig .punkt { background: var(--gut); }
+.lage.angespannt { color: var(--warn); }
+.lage.angespannt .punkt { background: var(--warn); }
+.lage.engpass { color: var(--gefahr); }
+.lage.engpass .punkt { background: var(--gefahr); }
+
+.seite {
+  grid-area: seite; overflow-y: auto; padding: var(--a3) var(--a2);
+  background: var(--leiste); border-right: 1px solid var(--rand);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.seite .etikett { padding: var(--a4) var(--a3) var(--a2); }
+.navi {
+  display: flex; align-items: center; gap: var(--a3); padding: 10px var(--a3);
+  border-radius: var(--r2); color: var(--text-2); font-weight: 500;
+}
+.navi i { width: 22px; text-align: center; color: var(--symbolfarbe, var(--text-3)); }
+.navi:hover { background: var(--bereich); color: var(--text); }
+.navi.aktiv { background: var(--karte-2); color: var(--text); }
+.navi.aktiv i { color: var(--symbolfarbe, var(--akzent)); }
+.navi .zaehler { margin-left: auto; }
+.navi .zaehler.warnung { background: color-mix(in srgb, var(--warn) var(--toenung), transparent); color: var(--warn); }
+.navi .zaehler.gefahr { background: color-mix(in srgb, var(--gefahr) var(--toenung), transparent); color: var(--gefahr); }
+
+.schale > .haupt { grid-area: haupt; overflow-y: auto; padding: var(--a5) var(--a6) var(--a6); min-width: 0; }
+.fuss {
+  grid-area: fuss; display: flex; align-items: center; gap: var(--a5); padding: 0 var(--a4);
+  background: var(--leiste); border-top: 1px solid var(--rand); font-size: var(--klein); color: var(--text-2);
+}
+.fuss .rechts { margin-left: auto; display: flex; gap: var(--a4); align-items: center; }
+.punkt { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: var(--gut); margin-right: 6px; flex: none; }
+.punkt.warnung { background: var(--warn); }
+.punkt.gefahr { background: var(--gefahr); }
+.punkt.aus { background: var(--text-3); opacity: 0.55; }
+.punkt.lebt { animation: puls 2.4s ease-in-out infinite; }
+@keyframes puls { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--gut) 18%, transparent); } }
+
+/* Kopf einer Seite: Titel, Zahl, Aktionen */
+.seitenkopf { display: flex; align-items: flex-end; gap: var(--a4); margin-bottom: var(--a5); flex-wrap: wrap; }
+.seitenkopf .zahl { color: var(--text-3); font-size: var(--titel); font-weight: 500; }
+.seitenkopf .aktionen { margin-left: auto; display: flex; gap: var(--a2); flex-wrap: wrap; }
+/* eigene Zeile unter dem Titel (volle Breite erzwingt den Umbruch), Text höchstens 900 px breit */
+.seitenkopf .unterzeile { width: 100%; margin-top: calc(-1 * var(--a2)); color: var(--text-2); padding-right: max(0px, calc(100% - 900px)); }
+
+/* ═══ Seitenrahmen: fester Kopf, eigenes Rollfeld ════════════════════════ */
+
+.schale > .haupt.rahmen { overflow: hidden; padding: 0; display: flex; flex-direction: column; }
+.rahmen-kopf { flex: none; padding: var(--a5) var(--a6) var(--a3); }
+.rahmen-kopf .seitenkopf { margin-bottom: var(--a4); }
+.rollfeld { flex: 1; min-height: 0; overflow-y: auto; padding: var(--a2) var(--a6) var(--a6); }
+.spalten { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: var(--a4); padding: 0 var(--a6); }
+.spalten > .rollfeld { padding: var(--a2) var(--a1) var(--a6); }
+.spalten.breit-rechts { grid-template-columns: minmax(0, 1fr) 520px; }
+
+/* ═══ Bausteine ══════════════════════════════════════════════════════════ */
+
+/* Knöpfe: alle gleich gebaut; "haupt" nur für die eine Hauptsache einer Ansicht */
+.knopf {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--a2);
+  height: 42px; padding: 0 var(--a4); white-space: nowrap; cursor: pointer;
+  background: var(--karte-2); color: var(--text); border: 1px solid var(--rand-stark);
+  border-radius: var(--r2); font-weight: 600; font-size: var(--klein);
+  transition: background var(--schnell), border-color var(--schnell);
+}
+.knopf:hover { background: var(--karte-3); }
+.knopf.aktiv { background: var(--karte-3); border-color: color-mix(in srgb, var(--akzent-flaeche) 70%, transparent); color: var(--akzent); }
+.knopf.haupt { background: var(--akzent-flaeche); color: var(--auf-akzent); border-color: transparent; }
+.knopf.haupt:hover { filter: brightness(1.06); }
+.knopf.ohne { background: transparent; border-color: transparent; color: var(--text-2); }
+.knopf.ohne:hover { background: var(--karte); color: var(--text); }
+.knopf.gefahr { color: var(--gefahr); }
+.knopf.gefahr-voll { background: var(--gefahr); color: var(--auf-farbe); border-color: transparent; }
+.knopf.warnung { color: var(--warn); }
+.knopf.klein { height: 36px; padding: 0 var(--a3); }
+.knopf.symbol { width: 42px; padding: 0; }
+.knopf.symbol.klein { width: 36px; }
+.knopf[disabled], .knopf.gesperrt { opacity: 0.45; cursor: not-allowed; }
+
+/* Zähler und Etiketten */
+.zaehler {
+  min-width: 28px; height: 24px; padding: 0 8px; display: inline-grid; place-items: center;
+  font-size: var(--marke); font-weight: 700; font-variant-numeric: tabular-nums;
+  background: var(--karte-2); color: var(--text-2); border-radius: var(--r1);
+}
+.zaehler.akzent { background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), transparent); color: var(--akzent); }
+/* Pillen: Zahl, wo etwas Bedeutsames passiert (Seitenleiste, Reiter); Farbe nach Bedeutung, nie Gesamtzahlen */
+.pille { border-radius: 11px; min-width: 24px; height: 22px; padding: 0 7px; }
+.zaehler.gefahr { background: color-mix(in srgb, var(--gefahr) var(--toenung), transparent); color: var(--gefahr); }
+.zaehler.warnung { background: color-mix(in srgb, var(--warn) var(--toenung), transparent); color: var(--warn); }
+.zaehler.info { background: color-mix(in srgb, var(--info) var(--toenung), transparent); color: var(--info); }
+.zaehler.erfolg { background: color-mix(in srgb, var(--gut) var(--toenung), transparent); color: var(--gut); }
+.zaehler.honig { background: color-mix(in srgb, var(--honig) var(--toenung), transparent); color: var(--honig); }
+.zaehler.neutral { background: var(--karte-2); color: var(--text-2); }
+.reiter button .zaehler.pille { margin-left: 2px; }
+
+/* Fähigkeiten-Marke: Wort plus Farbe, nie Farbe allein */
+.faehigkeit {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; white-space: nowrap;
+  font-size: var(--marke); font-weight: 700; letter-spacing: 0.04em;
+  border-radius: var(--r1); background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung), transparent); color: var(--f, var(--stahl));
+}
+.faehigkeit i { font-size: 13px; }
+.faehigkeit.text      { --f: var(--himmel); }
+.faehigkeit.einbettung{ --f: var(--petrol); }
+.faehigkeit.uebersetzen{ --f: var(--tuerkis); }
+.faehigkeit.hoeren    { --f: var(--minze); }
+.faehigkeit.bild      { --f: var(--flieder); }
+.faehigkeit.musik     { --f: var(--violett); }
+.faehigkeit.stimme    { --f: var(--rose); }
+.faehigkeit.werkzeug  { --f: var(--sand); }
+
+/* Zonen-Marke: wo läuft es */
+.zone { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; border-radius: var(--r1);
+        font-size: var(--marke); font-weight: 700; background: var(--karte-2); color: var(--text-2); white-space: nowrap; }
+.zone.heim { color: var(--stahl); }
+.zone.fern { color: var(--petrol); }
+.zone.extern { color: var(--koralle); background: color-mix(in srgb, var(--koralle) var(--toenung), transparent); }
+
+/* Zustandsmarke: immer mit Wort */
+.zustand {
+  display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 9px; white-space: nowrap;
+  font-size: var(--marke); font-weight: 700; border-radius: var(--r1);
+  background: var(--karte-2); color: var(--text-2);
+}
+.zustand.laeuft { background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), transparent); color: var(--akzent); }
+.zustand.fertig { background: color-mix(in srgb, var(--gut) var(--toenung), transparent); color: var(--gut); }
+.zustand.fehler { background: color-mix(in srgb, var(--gefahr) var(--toenung), transparent); color: var(--gefahr); }
+.zustand.wartet { background: color-mix(in srgb, var(--info) var(--toenung), transparent); color: var(--info); }
+.zustand.pausiert { background: color-mix(in srgb, var(--honig) var(--toenung), transparent); color: var(--honig); }
+.zustand.auslaufend { background: color-mix(in srgb, var(--warn) var(--toenung), transparent); color: var(--warn); }
+.zustand.aus { background: var(--karte); color: var(--text-3); }
+.zustand.wartung { background: color-mix(in srgb, var(--sand) var(--toenung), transparent); color: var(--sand); }
+.zustand i.fa-spin, .zustand .dreht { animation: drehen 1.6s linear infinite; }
+@keyframes drehen { to { transform: rotate(360deg); } }
+
+/* Filterleiste und Chips */
+.filter {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--a2) var(--a3);
+  padding: var(--a3) var(--a4); background: var(--bereich); border-radius: var(--r2);
+  margin-bottom: var(--a3);
+}
+.filter .etikett { margin-right: var(--a1); }
+.filter .trenner { width: 1px; align-self: stretch; background: var(--rand); margin: 0 var(--a1); }
+.filter .rechts { margin-left: auto; display: flex; gap: var(--a2); align-items: center; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 var(--a3);
+  background: var(--karte); border: 1px solid var(--rand); border-radius: var(--r2);
+  color: var(--text-2); font-size: var(--klein); font-weight: 500; cursor: pointer;
+}
+.chip:hover { color: var(--text); border-color: var(--rand-stark); }
+.chip.aktiv { background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), transparent); border-color: color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); color: var(--akzent); }
+.chip .zaehler { height: 22px; min-width: 24px; background: var(--karte-2); }
+
+.eingabe {
+  height: 42px; padding: 0 var(--a3); background: var(--karte); border: 1px solid var(--rand);
+  border-radius: var(--r2); color: var(--text); outline: 0; min-width: 0;
+}
+.eingabe::placeholder { color: var(--text-3); }
+.eingabe:focus { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
+textarea.eingabe { height: auto; padding: var(--a2) var(--a3); line-height: 1.45; resize: vertical; }
+select.eingabe { padding-right: var(--a5); }
+
+/* Bereiche, Karten, Reiter */
+.bereich { background: var(--bereich); border-radius: var(--r2); padding: var(--a4) var(--a5); }
+.karte { background: var(--karte); border-radius: var(--r2); padding: var(--a4); }
+.karte + .karte { margin-top: var(--a3); }
+.karte h3 { display: flex; align-items: center; gap: var(--a2); margin-bottom: var(--a3); }
+.karte h3 i { color: var(--akzent); }
+.karte h3 .rechts { margin-left: auto; font-weight: 500; font-size: var(--klein); color: var(--text-3); }
+.karte.gewaehlt { outline: 1px solid color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); }
+.karte.klickbar { cursor: pointer; transition: background var(--schnell); }
+.karte.klickbar:hover { background: var(--karte-2); }
+.reiter { display: flex; gap: var(--a1); flex-wrap: wrap; margin-bottom: var(--a3); }
+.reiter button {
+  display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 var(--a4);
+  background: transparent; border: 1px solid transparent; border-radius: var(--r2);
+  color: var(--text-2); font-weight: 600; font-size: var(--klein); cursor: pointer;
+}
+.reiter button:hover { background: var(--bereich); color: var(--text); }
+.reiter button.aktiv { background: var(--bereich); border-color: var(--rand-stark); color: var(--text); }
+.reiter button.aktiv i { color: var(--akzent); }
+
+/* Untergruppen einer langen Einstellungsseite: Reiter oben, eine Gruppe sichtbar, kein langes Rollen */
+.untergruppen { display: flex; gap: var(--a1); flex-wrap: wrap; margin-top: var(--a3); }
+.untergruppen button { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 var(--a4); background: transparent;
+                       border: 1px solid transparent; border-radius: var(--r2); color: var(--text-2); font-weight: 600; font-size: var(--klein); cursor: pointer; }
+.untergruppen button:hover { background: var(--bereich); color: var(--text); }
+.untergruppen button.aktiv { background: var(--bereich); border-color: var(--rand-stark); color: var(--text); }
+.untergruppen button.aktiv i { color: var(--akzent); }
+.untergruppen button.gefahr { color: var(--gefahr); }
+[data-untergruppe] { display: none; }
+[data-untergruppe].sichtbar { display: block; }
+
+/* Zeilen in Listen */
+.zeile { display: flex; align-items: center; gap: var(--a3); padding: 10px var(--a3); border-radius: var(--r2); }
+.zeile:hover { background: var(--karte); }
+.zeile.gewaehlt { background: var(--karte); outline: 1px solid color-mix(in srgb, var(--akzent-flaeche) 50%, transparent); }
+.zeit { font-weight: 600; color: var(--text-3); min-width: 60px; }
+
+/* Hinweise */
+.hinweis {
+  display: flex; gap: var(--a3); align-items: flex-start; padding: var(--a3) var(--a4);
+  border-radius: var(--r2); background: color-mix(in srgb, var(--info) 10%, transparent); color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--info) 30%, transparent); font-size: var(--klein);
+}
+.hinweis i { color: var(--info); margin-top: 4px; }
+.hinweis.warnung { background: color-mix(in srgb, var(--warn) 10%, transparent); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.hinweis.warnung i { color: var(--warn); }
+.hinweis.gefahr { background: color-mix(in srgb, var(--gefahr) 10%, transparent); border-color: color-mix(in srgb, var(--gefahr) 35%, transparent); }
+.hinweis.gefahr i { color: var(--gefahr); }
+.hinweis.erfolg { background: color-mix(in srgb, var(--gut) 10%, transparent); border-color: color-mix(in srgb, var(--gut) 35%, transparent); }
+.hinweis.erfolg i { color: var(--gut); }
+.hinweis .rechts { margin-left: auto; display: flex; gap: var(--a2); align-self: center; }
+
+/* Bestätigung direkt auf der Seite (kein Browser-Dialog) */
+.bestaetigen { display: flex; align-items: center; gap: var(--a3); flex-wrap: wrap; margin-top: var(--a3);
+               padding: var(--a3) var(--a4); background: color-mix(in srgb, var(--gefahr) 8%, transparent);
+               border: 1px solid color-mix(in srgb, var(--gefahr) 40%, transparent); border-radius: var(--r2); }
+.bestaetigen i { color: var(--gefahr); }
+.bestaetigen .rechts { margin-left: auto; display: flex; gap: var(--a2); }
+
+/* Schwebende Meldung unten rechts */
+.meldung {
+  position: fixed; right: var(--a5); bottom: calc(var(--fuss-hoehe) + var(--a4)); z-index: 40;
+  display: flex; align-items: center; gap: var(--a3); padding: var(--a3) var(--a4);
+  background: var(--karte-2); border: 1px solid var(--rand-stark); border-radius: var(--r2);
+  box-shadow: var(--schatten-schwebend); font-size: var(--klein);
+}
+.meldung i { color: var(--akzent); }
+
+/* Kennzahlen */
+.kennzahlen { display: flex; gap: var(--a3); flex-wrap: wrap; }
+.kennzahl { min-width: 140px; padding: var(--a2) var(--a4); background: var(--bereich); border-radius: var(--r2); }
+.kennzahl b { display: block; font-family: var(--schrift-zahl); font-size: var(--kennzahl); font-weight: 600; line-height: 1.2; }
+.kennzahl span { font-size: var(--marke); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-3); }
+.kennzahl.laeuft b { color: var(--akzent); }
+.kennzahl.fehler b { color: var(--gefahr); }
+.kennzahl.wartet b { color: var(--info); }
+.kennzahl.erfolg b { color: var(--gut); }
+.kennzahl small { display: block; font-size: var(--marke); color: var(--text-3); font-weight: 500; margin-top: 2px; }
+
+/* Fortschritt */
+.balken { height: 7px; background: var(--mulde); border-radius: 1px; overflow: hidden; position: relative; }
+.balken b { display: block; height: 100%; background: var(--akzent-flaeche); transition: width var(--ruhig); }
+.balken.fertig b { background: var(--gut); }
+.balken.fehler b { background: var(--gefahr); }
+.balken.info b { background: var(--info); }
+.balken.dick { height: 10px; }
+/* lebendig: ein heller Schimmer wandert über den laufenden Balken */
+.balken.lebt b::after { content: ""; position: absolute; inset: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--licht) 28%, transparent), transparent); animation: schimmer 1.8s linear infinite; }
+@keyframes schimmer { from { transform: translateX(-120%); } to { transform: translateX(300%); } }
+/* unbestimmt: pendelnder Abschnitt */
+.balken.unbestimmt b { width: 30%; animation: pendeln 1.6s ease-in-out infinite alternate; }
+@keyframes pendeln { from { margin-left: 0; } to { margin-left: 70%; } }
+
+/* Speicherbalken mit Segmenten (Modelle im Speicher) */
+/* Fugen zwischen den Teilen als Lücke statt Strich an einer Seite */
+.speicher { height: 14px; display: flex; gap: 1px; background: var(--mulde); border-radius: 1px; overflow: hidden; }
+.speicher span { height: 100%; display: block; position: relative; }
+.speicher .modell { background: var(--himmel); }
+.speicher .modell.vision { background: var(--flieder); }
+.speicher .modell.einbettung { background: var(--petrol); }
+.speicher .modell.hoeren { background: var(--minze); }
+.speicher .modell.stimme { background: var(--rose); }
+.speicher .system { background: var(--stahl); opacity: 0.7; }
+.speicher .reserve { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--sand) 50%, transparent) 0 4px, transparent 4px 8px); }
+.speicher-legende { display: flex; flex-wrap: wrap; gap: var(--a2) var(--a4); margin-top: var(--a2); font-size: var(--klein); color: var(--text-2); }
+.speicher-legende i { font-size: 10px; margin-right: 6px; vertical-align: 1px; }
+
+/* Auslastungs-Ring (CPU, Grafik, Speicher) */
+.ring { --wert: 0; --farbe: var(--himmel); width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; position: relative;
+        background: conic-gradient(var(--farbe) calc(var(--wert) * 1%), var(--mulde) 0); }
+.ring::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: var(--karte); }
+.ring b { position: relative; font-family: var(--schrift-zahl); font-size: var(--klein); font-weight: 700; }
+.ring.gross { width: 92px; height: 92px; }
+.ring.gross::before { inset: 9px; }
+.ring.gross b { font-size: var(--titel); }
+.ring.warnung { --farbe: var(--warn); }
+.ring.gefahr { --farbe: var(--gefahr); }
+.ring.erfolg { --farbe: var(--gut); }
+.ring.akzent { --farbe: var(--akzent-flaeche); }
+.ringe { display: flex; gap: var(--a4); flex-wrap: wrap; }
+.ringe > div { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: var(--marke); color: var(--text-3); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* Verlauf: kleine Linien (Sparkline) aus SVG */
+.verlauf { display: block; width: 100%; height: 40px; overflow: visible; }
+.verlauf path.linie { fill: none; stroke: var(--v-farbe, var(--himmel)); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.verlauf path.flaeche { fill: var(--v-farbe, var(--himmel)); opacity: 0.14; }
+.verlauf .jetzt { fill: var(--v-farbe, var(--himmel)); animation: blinken 1.6s ease-in-out infinite; }
+@keyframes blinken { 50% { opacity: 0.3; } }
+
+/* Schritte eines Ablaufs (Prozesskette) */
+.kette { display: flex; align-items: center; gap: 0; flex-wrap: wrap; row-gap: var(--a3); }
+.kette .schritt { display: inline-flex; align-items: center; gap: var(--a2); height: 36px; padding: 0 var(--a3); border-radius: var(--r2);
+                  background: var(--karte-2); color: var(--text-2); font-size: var(--klein); font-weight: 600; white-space: nowrap; }
+.kette .schritt i { width: 18px; text-align: center; }
+.kette .schritt.erledigt { color: var(--text-2); }
+.kette .schritt.erledigt i { color: var(--gut); }
+.kette .schritt.jetzt { background: color-mix(in srgb, var(--akzent-flaeche) var(--toenung), transparent); color: var(--akzent); }
+.kette .schritt.jetzt i { color: var(--akzent); }
+.kette .schritt.offen { opacity: 0.6; }
+.kette .schritt.fehler { background: color-mix(in srgb, var(--gefahr) 14%, transparent); color: var(--gefahr); }
+.kette .pfeil { width: 28px; height: 2px; position: relative; background: var(--rand-stark); flex: none; }
+.kette .pfeil.laeuft { background: repeating-linear-gradient(90deg, var(--akzent-flaeche) 0 6px, transparent 6px 12px); background-size: 12px 2px;
+                       animation: laufen 0.8s linear infinite; }
+.kette .pfeil.erledigt { background: var(--gut); opacity: 0.6; }
+@keyframes laufen { to { background-position: 12px 0; } }
+
+/* Einstellungszeilen: Bezeichnung links, Bedienelement in fester Spalte rechts */
+.einstellung {
+  display: grid; grid-template-columns: minmax(0, 1fr) 280px; align-items: center; gap: var(--a4);
+  padding: var(--a3) var(--a4); border-top: 1px solid var(--rand);
+}
+.einstellung:first-of-type { border-top: 0; }
+.einstellung .name { font-weight: 600; display: flex; align-items: center; gap: var(--a2); }
+.einstellung .erklaerung { font-size: var(--klein); color: var(--text-3); margin-top: 2px; }
+.einstellung .wert { display: flex; gap: var(--a2); justify-content: flex-end; align-items: center; }
+.einstellung .wert .eingabe { width: 130px; text-align: right; font-family: var(--schrift-zahl); }
+.einstellung .wert select.eingabe { width: 180px; text-align: left; font-family: var(--schrift); }
+.einstellung .einheit { color: var(--text-3); font-size: var(--klein); min-width: 34px; }
+
+.schalter { width: 50px; height: 28px; border-radius: var(--r2); background: var(--karte-3); position: relative; border: 0; cursor: pointer; flex: none; }
+.schalter::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: var(--r1); background: var(--text-2); transition: left var(--schnell); }
+.schalter.an { background: var(--akzent-flaeche); }
+.schalter.an::after { left: 25px; background: var(--auf-akzent); }
+
+/* Stufenknöpfe für kleine Wertebereiche */
+.stufen { display: inline-flex; background: var(--karte); border: 1px solid var(--rand); border-radius: var(--r2); overflow: hidden; }
+.stufen button { height: 36px; min-width: 44px; padding: 0 var(--a3); border: 0; background: none; color: var(--text-2); font-weight: 600; font-size: var(--klein); cursor: pointer; }
+.stufen button + button { box-shadow: inset 1px 0 0 var(--rand); }
+.stufen button.an { background: var(--karte-3); color: var(--akzent); }
+
+/* Mini-i-Knopf: Tiefenlink in die Hilfe.
+   Ausnahme: das i im Kreis von 22 Pixeln ist ein Zeichen wie ein Symbol, kein Lesetext */
+.hilfepunkt { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--rand-stark);
+              color: var(--text-3); font-size: 12px; font-weight: 700; font-style: normal; cursor: help; background: transparent; }
+.hilfepunkt:hover { color: var(--akzent); border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
+
+/* Tabellen */
+.tabelle { width: 100%; border-collapse: collapse; font-size: var(--klein); }
+.tabelle th { text-align: left; font-size: var(--marke); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3);
+              padding: var(--a2) var(--a3); position: sticky; top: 0; background: var(--bereich); }
+.tabelle td { padding: 10px var(--a3); border-top: 1px solid var(--rand); vertical-align: middle; }
+.tabelle tr:hover td { background: var(--karte); }
+.tabelle td.zahl, .tabelle th.zahl { text-align: right; }
+
+/* Schwebendes Fenster (Protokoll, Hilfe, Bestätigungen) */
+.fenster { position: fixed; z-index: 30; display: flex; flex-direction: column; background: var(--leiste);
+           border: 1px solid var(--rand-stark); border-radius: var(--r2); box-shadow: var(--schatten-schwebend); overflow: hidden; }
+.fenster-kopf { display: flex; align-items: center; gap: var(--a3); height: 50px; padding: 0 var(--a2) 0 var(--a4);
+                background: var(--bereich); cursor: move; flex: none; }
+.fenster-kopf .titel { font-weight: 700; display: flex; align-items: center; gap: var(--a2); }
+.fenster-kopf .titel i { color: var(--akzent); }
+.fenster-kopf .rechts { margin-left: auto; display: flex; gap: 2px; }
+.fenster-inhalt { flex: 1; min-height: 0; overflow-y: auto; }
+.fenster-fuss { display: flex; align-items: center; gap: var(--a4); height: 42px; padding: 0 var(--a2) 0 var(--a4);
+                border-top: 1px solid var(--rand); font-size: var(--klein); color: var(--text-2); flex: none; }
+.fenster-fuss .rechts { margin-left: auto; display: flex; gap: var(--a2); }
+.griff { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize;
+         background: linear-gradient(135deg, transparent 50%, var(--rand-stark) 50%); }
+.schleier { position: fixed; inset: 0; z-index: 25; background: var(--schleier); }
+.dialog { position: fixed; z-index: 35; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(640px, calc(100vw - 48px));
+          background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r2); box-shadow: var(--schatten-schwebend); padding: var(--a5); }
+.dialog h2 { display: flex; align-items: center; gap: var(--a3); margin-bottom: var(--a3); }
+.dialog h2 i { color: var(--akzent); }
+.dialog .knoepfe { display: flex; gap: var(--a2); justify-content: flex-end; margin-top: var(--a5); flex-wrap: wrap; }
+.dialog .knoepfe .links { margin-right: auto; }
+
+/* Wahlkarten: eine Entscheidung aus wenigen, mit Folgen beschrieben */
+.wahl { display: grid; gap: var(--a3); }
+.wahl label { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: var(--a3); padding: var(--a3) var(--a4);
+              border: 1px solid var(--rand); border-radius: var(--r2); background: var(--bereich); cursor: pointer; }
+.wahl label.an { border-color: color-mix(in srgb, var(--akzent-flaeche) 70%, transparent); background: color-mix(in srgb, var(--akzent-flaeche) 8%, transparent); }
+.wahl .kreis { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--text-3); margin-top: 2px; }
+.wahl label.an .kreis { border-color: var(--akzent-flaeche); background: radial-gradient(circle, var(--akzent-flaeche) 45%, transparent 50%); }
+.wahl b { display: block; }
+.wahl label > div > span { display: block; font-size: var(--klein); color: var(--text-2); margin-top: 2px; }
+.wahl label > div > span.faehigkeit, .wahl label > div > span.zone, .wahl label > div > span.zustand { display: inline-flex; margin-top: 0; }
+
+/* Protokollzeilen */
+.zeile-log { display: grid; grid-template-columns: 84px 128px 24px minmax(0, 1fr); gap: var(--a3); align-items: baseline;
+             padding: 6px var(--a4); }
+.zeile-log:hover { background: var(--bereich); }
+.zeile-log .zeit { color: var(--text-3); font-size: var(--klein); min-width: 0; font-weight: 500; }
+.zeile-log .gebiet { font-size: var(--marke); font-weight: 700; color: var(--farbe, var(--text-2)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zeile-log i.stufe { text-align: center; font-size: 14px; color: var(--text-3); }
+.zeile-log .text { color: var(--text); overflow-wrap: anywhere; font-size: var(--klein); }
+.zeile-log .text .quelle { color: var(--text-3); margin-right: 6px; }
+.zeile-log.warnung { background: color-mix(in srgb, var(--warn) 6%, transparent); }
+.zeile-log.warnung .stufe { color: var(--warn); }
+.zeile-log.fehler { background: color-mix(in srgb, var(--gefahr) 8%, transparent); }
+.zeile-log.fehler .stufe { color: var(--gefahr); }
+.zeile-log.erfolg .stufe { color: var(--gut); }
+
+/* Leerer Zustand */
+.leer { display: grid; place-items: center; text-align: center; padding: var(--a7) var(--a5); color: var(--text-2); gap: var(--a3); }
+.leer i { font-size: 44px; color: var(--text-3); }
+.leer h2 { color: var(--text); }
+.leer p { max-width: 560px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .balken.lebt b::after, .punkt.lebt, .kette .pfeil.laeuft, .verlauf .jetzt, .zustand .dreht { animation: none; }
+}
+/* Einstellung "Bewegung reduzieren" der App wirkt wie die Systemvorgabe */
+:root[data-bewegung="reduziert"] .balken.lebt b::after,
+:root[data-bewegung="reduziert"] .punkt.lebt, :root[data-bewegung="reduziert"] .kette .pfeil.laeuft, :root[data-bewegung="reduziert"] .verlauf .jetzt,
+:root[data-bewegung="reduziert"] .zustand .dreht { animation: none; }
+
+/* ═══ Breitenstufen: großer Schreibtisch (Vorgabe), schmaler Schreibtisch, Tablet ═══
+   Die Desktop-Ansicht bleibt eine Desktop-Ansicht; sie wird ab 1440 px dichter, ab 1240 px
+   einspaltig mit Symbol-Seitenleiste, ab 980 px ohne Nebenbedienelemente. Telefone bekommen
+   eine eigene, reduzierte Ansicht (mobil.html), keine gequetschte Fassung dieser Seiten. */
+@media (max-width: 1440px) {
+  .schale > .haupt { padding: var(--a4) var(--a5) var(--a5); }
+  .rahmen-kopf { padding: var(--a4) var(--a5) var(--a3); }
+  .rollfeld { padding-left: var(--a5); padding-right: var(--a5); }
+  .spalten { padding: 0 var(--a5); grid-template-columns: minmax(0, 1fr) 380px; }
+  .spalten.breit-rechts { grid-template-columns: minmax(0, 1fr) 440px; }
+  .hauptregler .stufen button span { display: none; }
+  .hauptregler .stufen button { padding: 0 var(--a3); }
+  .suche { max-width: 420px; }
+}
+@media (max-width: 1240px) {
+  :root { --nav-breite: 72px; }   /* Ausnahme: die Seitenleiste wird eine Symbolleiste von 72 Pixeln */
+  .marke { min-width: 0; gap: 0; }
+  .marke .marke-name, .marke .zahl { display: none; }
+  .rolle { display: none; }
+  .seite { padding: var(--a3) var(--a2); align-items: stretch; }
+  .seite .etikett { display: none; }
+  .seite .navi { font-size: 0; justify-content: center; padding: 11px 0; }
+  .seite .navi i { width: auto; font-size: 20px; }
+  .seite .navi .zaehler { display: none; }
+  .spalten, .spalten.breit-rechts, .spalten.schmal-rechts { grid-template-columns: minmax(0, 1fr); overflow-y: auto; gap: var(--a5); padding-bottom: var(--a5); }
+  .spalten > .rollfeld { overflow: visible; min-height: auto; flex: none; padding: 0; }
+  .einstellung { grid-template-columns: minmax(0, 1fr) 240px; }
+  .suche { max-width: 320px; }
+  .hauptregler-leiste { left: var(--nav-breite); }
+}
+@media (max-width: 980px) {
+  .hauptregler .etikett, .hauptregler .hintergrund { display: none; }
+  .hauptregler { padding: 0 var(--a2); gap: 0; }
+  .kopf-aktionen .knopf { display: none; }
+  .lage { padding: 0 var(--a2); margin-right: 0; }
+  .fuss > span:nth-child(2), .fuss > span:nth-child(3) { display: none; }
+  .suche { display: none; }
+  .kennzahl { min-width: 120px; }
+}

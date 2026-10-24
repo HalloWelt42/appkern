@@ -24,6 +24,7 @@
     },
     "./stil.css": "./oberflaeche/stil/alles.css",
     "./marken.css": "./oberflaeche/stil/marken.css",
+    "./leitstand.css": "./oberflaeche/stil/leitstand.css",
     "./anmeldung.css": "./oberflaeche/stil/anmeldung.css",
     "./auswahl.css": "./oberflaeche/stil/auswahl.css",
     "./gestaltung": {

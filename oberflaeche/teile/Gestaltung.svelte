@@ -40,6 +40,8 @@
   const stuecke = (z: string) => z.split("`").map((text, i) => ({ text, code: i % 2 === 1 }));
 </script>
 
+{#snippet text(z: string)}{#each stuecke(z) as s, i (i)}{#if s.code}<code class="gs-code">{s.text}</code>{:else}{s.text}{/if}{/each}{/snippet}
+
 <div class="gs">
   <div class="gs-einleitung">
     <p>Alle eigenen Apps teilen eine Gestaltung: Farben, Schriften und Größen stehen als Marken im Appkern, die
@@ -64,7 +66,7 @@
           <div class="gs-klassen">{#each b.klassen as k (k)}<code>.{k.replaceAll(" ", ".")}</code>{/each}
             {#if b.svelte}<span class="gs-svelte">Svelte: {b.svelte}</span>{/if}</div>
         </div>
-        <dl class="gs-grund"><dt>Wann</dt><dd>{b.wann}</dd><dt>Warum</dt><dd>{b.warum}</dd></dl>
+        <dl class="gs-grund"><dt>Wann</dt><dd>{@render text(b.wann)}</dd><dt>Warum</dt><dd>{@render text(b.warum)}</dd></dl>
         <div class="gs-paar">
           {#each THEMEN as [t, titel] (t)}
             <div class="gs-probe" data-theme={t} aria-label="{b.name}, {titel}">
@@ -160,14 +162,14 @@
     <section class="gs-gruppe">
       <h3>Muster mit Grund</h3>
       <dl class="gs-muster-liste">
-        {#each muster as m (m.regel)}<dt>{m.regel}</dt><dd>{m.grund}</dd>{/each}
+        {#each muster as m (m.regel)}<dt>{@render text(m.regel)}</dt><dd>{@render text(m.grund)}</dd>{/each}
       </dl>
     </section>
   {:else}
     <section class="gs-gruppe">
       <h3>So nutzt eine App die Gestaltung</h3>
       <ul class="gs-liste">
-        {#each nutzen as z (z)}<li>{#each stuecke(z) as s, i (i)}{#if s.code}<code>{s.text}</code>{:else}{s.text}{/if}{/each}</li>{/each}
+        {#each nutzen as z (z)}<li>{@render text(z)}</li>{/each}
       </ul>
     </section>
   {/if}

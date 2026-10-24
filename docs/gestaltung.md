@@ -510,6 +510,220 @@ Warum: Versalien gliedern ohne Gewicht; Zahlen bleiben als Werte erkennbar.
 <div class="abschnitt">Phasen</div><p>Dauer <span class="zahl">00:42:17</span>, <span class="zahl">1.284</span> Wörter</p>
 ```
 
+### Leitstand
+
+#### Knöpfe
+
+Klassen: `knopf`, `knopf haupt`, `knopf ohne`, `knopf gefahr`, `knopf gefahr-voll`, `knopf klein`, `knopf symbol`
+
+Wann: Haupt nur für die eine Hauptsache einer Ansicht; ohne für Nebensachen; gefahr-voll nur für den harten Schnitt (Halt).
+
+Warum: Alle Knöpfe gleich gebaut und gleich hoch; die Fläche sagt, was wichtig ist.
+
+```html
+<div style="display:flex; flex-wrap:wrap; gap:8px"><button class="knopf haupt"><i class="fa-solid fa-play"></i> Starten</button>
+<button class="knopf"><i class="fa-solid fa-rotate-right"></i> Wiederholen</button>
+<button class="knopf ohne">Abbrechen</button>
+<button class="knopf gefahr">Entfernen</button>
+<button class="knopf gefahr-voll"><i class="fa-solid fa-hand"></i> Halt</button>
+<button class="knopf symbol klein" title="Mehr"><i class="fa-solid fa-ellipsis"></i></button></div>
+```
+
+#### Zähler und Pillen
+
+Klassen: `zaehler`, `zaehler pille`, `zaehler warnung`, `zaehler gefahr`, `zaehler akzent`
+
+Wann: Zahl dort, wo etwas Bedeutsames passiert (Seitenleiste, Reiter); Farbe nach Bedeutung.
+
+Warum: Nie Gesamtzahlen als Pille: nur was Aufmerksamkeit braucht, fällt auf.
+
+```html
+<div style="display:flex; gap:8px; align-items:center"><span class="zaehler">12</span><span class="zaehler pille warnung">3</span>
+<span class="zaehler pille gefahr">1</span><span class="zaehler akzent">2 laufen</span><span class="zaehler pille honig">4</span></div>
+```
+
+#### Zustände
+
+Klassen: `zustand laeuft`, `zustand wartet`, `zustand fertig`, `zustand fehler`, `zustand pausiert`, `zustand auslaufend`, `zustand aus`
+
+Wann: Zustand eines Auftrags, Dienstes oder Rechners, immer mit Wort.
+
+Warum: Wort und Farbe zugleich; die Hinterlegung mischt die Farbe der Bedeutung mit der Marke `--toenung`.
+
+```html
+<div style="display:flex; flex-wrap:wrap; gap:8px"><span class="zustand laeuft"><i class="fa-solid fa-circle-notch dreht"></i> läuft</span><span class="zustand wartet">wartet</span>
+<span class="zustand fertig">fertig</span><span class="zustand fehler">Fehler</span><span class="zustand pausiert">angehalten</span>
+<span class="zustand auslaufend">läuft aus</span><span class="zustand aus">aus</span></div>
+```
+
+#### Fähigkeiten und Zonen
+
+Klassen: `faehigkeit text`, `faehigkeit einbettung`, `faehigkeit hoeren`, `faehigkeit bild`, `faehigkeit stimme`, `zone heim`, `zone extern`
+
+Wann: Art einer Arbeit (Fähigkeit) und wo sie läuft (Zone).
+
+Warum: Die Farben der Palette unterscheiden Arten; das Wort steht immer dabei.
+
+```html
+<div style="display:flex; flex-wrap:wrap; gap:8px"><span class="faehigkeit text"><i class="fa-solid fa-comment-dots"></i> Text</span><span class="faehigkeit einbettung"><i class="fa-solid fa-diagram-project"></i> Einbettung</span>
+<span class="faehigkeit hoeren"><i class="fa-solid fa-ear-listen"></i> Hören</span><span class="faehigkeit bild"><i class="fa-solid fa-image"></i> Bild</span><span class="faehigkeit stimme"><i class="fa-solid fa-microphone-lines"></i> Stimme</span>
+<span class="zone heim"><i class="fa-solid fa-house"></i> Heimnetz</span><span class="zone extern"><i class="fa-solid fa-cloud"></i> extern</span></div>
+```
+
+#### Filter und Chips
+
+Klassen: `filter`, `etikett`, `chip`, `chip aktiv`, `trenner`
+
+Wann: Filterleiste über Listen: Etikett, Chips zum Umschalten, rechts die Suche.
+
+Warum: Was gefiltert ist, bleibt sichtbar; aktive Chips in Akzent.
+
+```html
+<div class="filter"><span class="etikett">Zustand</span><button class="chip aktiv">Läuft <span class="zaehler">2</span></button>
+<button class="chip">Wartet</button><span class="trenner"></span><button class="chip">Fehler</button></div>
+```
+
+#### Eingaben
+
+Klassen: `eingabe`, `suche`
+
+Wann: Werte und Suchfelder.
+
+Warum: Gleiche Höhe wie Knöpfe; Fokus mit ruhigem Bernstein-Rahmen.
+
+```html
+<div style="display:flex; flex-direction:column; gap:8px"><input class="eingabe" value="http://192.168.1.20:8530">
+<label class="suche"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Suchen"></label></div>
+```
+
+#### Bereich und Karten
+
+Klassen: `bereich`, `karte`, `karte klickbar`, `karte gewaehlt`
+
+Wann: Bereich gruppiert Karten; Karten tragen je einen Gegenstand, klickbar mit Fläche beim Überfahren.
+
+Warum: Drei Flächenstufen (Bereich, Karte, Knopf) ordnen von hinten nach vorn.
+
+```html
+<div class="bereich"><div class="karte"><h3><i class="fa-solid fa-server"></i> Mac Studio <span class="rechts">128 GB</span></h3><p class="leise">Läufer und Dienste dieses Rechners.</p></div>
+<div class="karte klickbar gewaehlt"><h3><i class="fa-solid fa-microchip"></i> Pi</h3><p class="leise">gewählt</p></div></div>
+```
+
+#### Reiter
+
+Klassen: `reiter`, `aktiv`
+
+Wann: Teile einer Ansicht mit gleichem Gegenstand.
+
+Warum: Der aktive Reiter ist eine Fläche mit Rahmen rundum, nie eine Linie an einer Seite.
+
+```html
+<div class="reiter"><button class="aktiv"><i class="fa-solid fa-list"></i> Laufend <span class="zaehler pille">2</span></button><button>Fertig</button><button>Fehler</button></div>
+```
+
+#### Hinweise
+
+Klassen: `hinweis`, `hinweis warnung`, `hinweis gefahr`, `hinweis erfolg`
+
+Wann: Hinweis im Ablauf mit Bedeutung; rechts die Handlung.
+
+Warum: Steht dort, wo er gilt, statt in einem Fenster.
+
+```html
+<div style="display:flex; flex-direction:column; gap:8px"><div class="hinweis"><i class="fa-solid fa-circle-info"></i><span>Der Mac schläft; Aufträge warten, bis er wach ist.</span></div>
+<div class="hinweis warnung"><i class="fa-solid fa-triangle-exclamation"></i><span>Speicher knapp: 4 GB frei.</span></div>
+<div class="hinweis gefahr"><i class="fa-solid fa-circle-xmark"></i><span>Dienst nicht erreichbar.</span><span class="rechts"><button class="knopf klein">Prüfen</button></span></div></div>
+```
+
+#### Bestätigung auf der Seite
+
+Klassen: `bestaetigen`, `rechts`
+
+Wann: Vor Schritten ohne Rückweg, direkt an der Stelle.
+
+Warum: Kein Browser-Dialog; die Folgen stehen in der Frage.
+
+```html
+<div class="bestaetigen"><i class="fa-solid fa-trash-can"></i><span>Quelle entfernen? Ihre Abschnitte verschwinden aus der Suche.</span><span class="rechts"><button class="knopf ohne">Abbrechen</button><button class="knopf gefahr">Entfernen</button></span></div>
+```
+
+#### Kennzahlen
+
+Klassen: `kennzahlen`, `kennzahl`, `kennzahl laeuft`, `kennzahl fehler`
+
+Wann: Wenige große Zahlen oben auf einer Übersicht.
+
+Warum: In der Zahlenschrift, die Farbe nur für Bedeutsames.
+
+```html
+<div class="kennzahlen"><div class="kennzahl laeuft"><b>2</b><span>Läuft</span></div><div class="kennzahl wartet"><b>5</b><span>Wartet</span></div>
+<div class="kennzahl erfolg"><b>128</b><span>Heute fertig</span></div><div class="kennzahl fehler"><b>1</b><span>Fehler heute</span></div></div>
+```
+
+#### Fortschritt und Ablauf
+
+Klassen: `balken`, `balken fertig`, `balken lebt`, `kette`, `schritt`, `pfeil`
+
+Wann: Fortschritt einer Arbeit; Schritte eines Ablaufs als Kette.
+
+Warum: Der laufende Teil lebt sichtbar, Erledigtes ist grün, Offenes blass.
+
+```html
+<div style="display:flex; flex-direction:column; gap:12px"><div class="balken lebt"><b style="width:62%"></b></div><div class="balken fertig"><b style="width:100%"></b></div>
+<div class="kette"><span class="schritt erledigt"><i class="fa-solid fa-check"></i> Lesen</span><span class="pfeil erledigt"></span><span class="schritt jetzt"><i class="fa-solid fa-circle-notch dreht"></i> Einbetten</span><span class="pfeil laeuft"></span><span class="schritt offen">Ablegen</span></div></div>
+```
+
+#### Einstellung mit Schalter und Stufen
+
+Klassen: `einstellung`, `name`, `erklaerung`, `wert`, `schalter`, `stufen`
+
+Wann: Einstellungen: links was und warum, rechts das Bedienelement in fester Spalte.
+
+Warum: Werte stehen immer an derselben Stelle; Stufen für kleine Wertebereiche statt Auswahlfeld.
+
+```html
+<div><div class="einstellung"><div><div class="name">Hintergrund erlaubt</div><div class="erklaerung">Stapelarbeit läuft nur, wenn nichts anderes wartet.</div></div><div class="wert"><button class="schalter an" aria-label="an"></button></div></div>
+<div class="einstellung"><div><div class="name">Schriftgröße</div><div class="erklaerung">Gilt auf diesem Gerät.</div></div><div class="wert"><span class="stufen"><button>Mittel</button><button class="an">Groß</button></span></div></div></div>
+```
+
+#### Tabelle
+
+Klassen: `tabelle`, `zahl`
+
+Wann: Listen mit vielen Spalten.
+
+Warum: Kopf in Versalien und fest beim Rollen; Zahlen rechts in der Zahlenschrift.
+
+```html
+<table class="tabelle"><thead><tr><th>Modell</th><th class="zahl">Größe</th><th>Zustand</th></tr></thead><tbody>
+<tr><td>Qwen 80B</td><td class="zahl">46 GB</td><td><span class="zustand fertig">geladen</span></td></tr>
+<tr><td>Einbettung</td><td class="zahl">1,2 GB</td><td><span class="zustand laeuft">lädt</span></td></tr></tbody></table>
+```
+
+#### Etikett und Punkt
+
+Klassen: `etikett`, `punkt`, `punkt warnung`, `punkt lebt`, `leise`, `schwach`
+
+Wann: Kleine Überschrift über Gruppen; Punkt für den Zustand einer Verbindung.
+
+Warum: Versalien gliedern ohne Gewicht; der Punkt lebt nur, wenn etwas läuft.
+
+```html
+<div><div class="etikett">Wo was läuft</div><p><span class="punkt lebt"></span>Pi <span class="schwach">immer an</span></p><p><span class="punkt warnung"></span>Mac Studio <span class="schwach">schläft</span></p></div>
+```
+
+#### Leerer Zustand
+
+Klassen: `leer`
+
+Wann: Leere Liste oder fehlende Verbindung, mit einem Satz, was zu tun ist.
+
+Warum: Nie nur "nichts da": der nächste Schritt steht dabei.
+
+```html
+<div class="leer"><i class="fa-solid fa-satellite-dish"></i><h2>Noch keine Dienste</h2><p>Unter Anschluss einen Rechner und seinen Dienst eintragen.</p></div>
+```
+
 ## Prüfung
 
 Der Haken jeder App prüft bei jedem Commit die vorgemerkten Dateien; `python -m appkern.werkzeuge marken` zeigt alle Befunde eines Repos. Befunde: feste Farbe (auch als Rückfall `var(--x, #fff)` und in `fill`/`stroke`), feste Schrift, feste Schriftgröße (Symbole auf `i`, `svg`, `.fa-...` ausgenommen), überschriebene Marke. Dazu wie bisher: keine einseitigen Streifen, kein `!important`, keine Regeln auf Klassen der Schale, nur gerade Zeichen. Entwürfe (`mockups`, `docs`) zählen nicht.
