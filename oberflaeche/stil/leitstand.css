@@ -78,7 +78,9 @@ code, .code { font-family: var(--schrift-code); font-size: 0.92em; background: v
 .hauptregler { display: inline-flex; align-items: center; gap: var(--a3); height: 44px; padding: 0 var(--a3) 0 var(--a4);
                border-radius: var(--r2); background: var(--bereich); border: 1px solid var(--rand); flex: none; }
 .hauptregler .etikett { font-size: var(--marke); }
-.hauptregler .stufen button { min-width: 0; padding: 0 var(--a3); display: inline-flex; align-items: center; gap: 7px; }
+/* im Kopf bleiben die Stufen in einer Zeile; schmal fallen erst die Wörter weg */
+.hauptregler .stufen { flex-wrap: nowrap; }
+.hauptregler .stufen button { flex: 0 1 auto; min-width: 0; padding: 0 var(--a3); display: inline-flex; align-items: center; gap: 7px; }
 .hauptregler .stufen button i { font-size: 14px; }
 .hauptregler .stufen button.an.normal { color: var(--gut); }
 .hauptregler .stufen button.an.auslaufen { color: var(--warn); background: color-mix(in srgb, var(--warn) var(--toenung), transparent); }
@@ -161,6 +163,7 @@ code, .code { font-family: var(--schrift-code); font-size: 0.92em; background: v
 .spalten { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: var(--a4); padding: 0 var(--a6); }
 .spalten > .rollfeld { padding: var(--a2) var(--a1) var(--a6); }
 .spalten.breit-rechts { grid-template-columns: minmax(0, 1fr) 520px; }
+.spalten.schmal-rechts { grid-template-columns: minmax(0, 1fr) 400px; }
 
 /* ═══ Bausteine ══════════════════════════════════════════════════════════ */
 
@@ -436,8 +439,9 @@ select.eingabe { padding-right: var(--a5); }
 .schalter.an::after { left: 25px; background: var(--auf-akzent); }
 
 /* Stufenknöpfe für kleine Wertebereiche */
-.stufen { display: inline-flex; background: var(--karte); border: 1px solid var(--rand); border-radius: var(--r2); overflow: hidden; }
-.stufen button { height: 36px; min-width: 44px; padding: 0 var(--a3); border: 0; background: none; color: var(--text-2); font-weight: 600; font-size: var(--klein); cursor: pointer; }
+/* wird es eng, brechen die Stufen in die nächste Zeile um, statt ihre Knöpfe unter den Text zu stauchen */
+.stufen { display: inline-flex; flex-wrap: wrap; max-width: 100%; background: var(--karte); border: 1px solid var(--rand); border-radius: var(--r2); overflow: hidden; }
+.stufen button { flex: none; height: 36px; min-width: 44px; padding: 0 var(--a3); border: 0; background: none; color: var(--text-2); font-weight: 600; font-size: var(--klein); cursor: pointer; }
 .stufen button + button { box-shadow: inset 1px 0 0 var(--rand); }
 .stufen button.an { background: var(--karte-3); color: var(--akzent); }
 
