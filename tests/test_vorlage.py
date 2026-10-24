@@ -3,6 +3,7 @@ Abhängigkeiten auf GitHub oder lokal), falsche Angaben werden abgewiesen."""
 
 import json
 import os
+import re
 import subprocess
 import sys
 import tomllib
@@ -75,11 +76,12 @@ def test_ohne_ton(tmp_path: Path):
     ziel = tomllib.loads((ordner / "deploy" / "ausrollen.toml").read_text(encoding="utf-8"))
     assert ziel["ton"] is False and ziel["kennung"] == "transkription"
     # Angaben des Hauses (Rechner, Ordner, Adresse, Namen, Leitstelle) stehen nicht in der Vorlage, sie kommen aus der
-    # privaten Wahrheit; keine Heimadresse in den Dateien der neuen App
+    # privaten Wahrheit; in den Dateien der neuen App stehen nur Beispieladressen aus 192.168.1.0/24
     assert not {"rechner", "wurzel", "adresse", "namen", "leitstelle"} & set(ziel)
+    heimnetz = re.compile(r"\b(?:192\.168\.(?!1\.)\d{1,3}|10\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3})\.\d{1,3}\b")
     for datei in ordner.rglob("*"):
         if datei.is_file() and datei.suffix not in (".png", ".ico"):
-            assert "192.168.178" not in datei.read_text(encoding="utf-8"), datei
+            assert not heimnetz.search(datei.read_text(encoding="utf-8")), datei
     assert "default_sni transkription.local" in (ordner / "deploy" / "Caddyfile").read_text(encoding="utf-8")
     assert "TRANSKRIPTION_DATEN" in (ordner / "backend" / "app" / "main.py").read_text(encoding="utf-8")
     assert (ordner / ".dockerignore").is_file() and not (ordner / "dockerignore").exists()
