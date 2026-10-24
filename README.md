@@ -25,7 +25,7 @@ Zweig, Lesen unter `Apps` und alles, was das Konto zusätzlich freigibt (etwa ei
 from pathlib import Path
 from appkern.kellerwolke import Kellerwolke, StandVeraltet, pfad_aus
 
-async with Kellerwolke("http://192.168.178.49:39277", schluessel) as kw:
+async with Kellerwolke("http://192.168.1.20:39277", schluessel) as kw:
     ich = await kw.ich()                                   # App, Konto, freigegebene Ordner
     ordner = await kw.ordner(pfad_aus(ich.zweig, "Aufnahmen"))
     ton = await kw.schreiben(pfad_aus(ordner.pfad, "termin.wav"), Path("termin.wav"), nur_neu=True)
@@ -69,7 +69,7 @@ wählt Dienst, Modell und Rechner. Jeder Auftrag trägt den Namen der App und ei
 from pathlib import Path
 from appkern.leitstelle import Ende, Halt, Leitstelle, Nachricht, Stueck, Wartet
 
-async with Leitstelle("http://192.168.178.49:8530", schluessel, "Transkription") as ls:
+async with Leitstelle("http://192.168.1.20:8530", schluessel, "Transkription") as ls:
     antwort = await ls.chat([Nachricht.system("Korrigiere nur Rechtschreibung."), text], titel="Korrektur")
 
     async for e in ls.chat_strom([frage], titel="Zusammenfassung", prioritaet="hintergrund"):
@@ -178,7 +178,7 @@ from appkern.einstellungen import Einstellungen
 from appkern.einstellungen.api import einstellungs_router
 
 class AppEinstellungen(BaseModel):
-    leitstelle_adresse: str = Field("http://192.168.178.49:8530", title="Leitstelle", json_schema_extra={"gruppe": "Verbindungen"})
+    leitstelle_adresse: str = Field("http://192.168.1.20:8530", title="Leitstelle", json_schema_extra={"gruppe": "Verbindungen"})
     leitstelle_schluessel: SecretStr = Field(SecretStr(""), title="Schlüssel der Leitstelle")
     sprache: Literal["de", "en"] = Field("de", title="Sprache",
                                          json_schema_extra={"beschriftungen": {"de": "Deutsch", "en": "Englisch"}})
@@ -309,7 +309,7 @@ from appkern.anmeldung import Anmeldung
 from appkern.anmeldung.api import angemeldet, anmeldungs_router
 
 ich = await kellerwolke.ich()                                   # Konto des App-Schlüssels
-anmeldung = Anmeldung("https://192.168.178.49:39280", lambda: {ich.konto, *einstellungen.stand.weitere_konten})
+anmeldung = Anmeldung("https://192.168.1.20:39280", lambda: {ich.konto, *einstellungen.stand.weitere_konten})
 app.include_router(anmeldungs_router(anmeldung))               # POST /api/v1/anmeldung, .../koppeln, .../abmelden, .../zugang
 pflicht = Depends(angemeldet(anmeldung))                       # für alle eigenen Endpunkte
 lesen = Depends(angemeldet(anmeldung, cookie=True))           # für Inhaltsadressen unter /api/v1/inhalt
@@ -476,7 +476,7 @@ Arbeitskopie zeigen statt auf GitHub.
 | `pruefen [PFAD ...]` | nur gerade Zeichen; Stil ohne `!important`, ohne einseitige Streifen (erlaubt nur 1px-Trennlinien in `var(--rand)`), ohne Regeln, die nur Klassen der Schale treffen (Svelte-Blöcke nur mit `:global`; entfällt für eine App mit eigener Schale, die den Stil des Appkerns nicht lädt) |
 | `fassung [patch\|minor\|major\|id]` | `version.json` hochzählen |
 | `appkern` | Appkern in Oberfläche (package-lock) und Backend (requirements, Archiv des Commits) auf denselben neuesten Commit |
-| `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`); `--ziel DATEI` für einen Probestand in eigenem Ordner, `compose` darin nennt die Compose-Datei |
+| `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`); `--ziel DATEI` für einen Probestand in eigenem Ordner, `compose` darin nennt die Compose-Datei; `--ergaenzung DATEI` bringt die Angaben des Hauses (Rechner, Ordner, Adresse, Namen, Leitstelle) aus einer privaten Datei und füllt nur, was das Ziel nicht nennt; `<kennung>.local` steht immer in den Namen des Zertifikats (Vorgabe des Vorschaltdienstes ohne Servernamen) |
 
 `appkern.testen` hilft den Tests der Apps: Werte des eigenen Testzugangs aus `backend/.env.test`, `aufraeumen`
 (Dateien vor Ordnern, mit Wiederholung) und `aktionen_zurueckziehen`. Die Ansichtsprüfung liegt bei der Oberfläche

@@ -9,7 +9,7 @@ sicherung:
 schluessel_orte:
   - "Mac: `.env.test` im Klon (nicht im Repo): Adresse und App-Schlüssel des Testzugangs AppkernTest an der Kellerwolke der Entwicklung, nur für den Verbundtest"
 einrichten: einrichten.sh
-stand: 4b60701
+stand: 782e156
 ---
 
 # Appkern
@@ -28,7 +28,9 @@ Mit der Vorlage (`python -m appkern.vorlage`) entsteht eine neue App, die all da
 (`deploy/probelauf.compose.yml`: eigene Namen, abgeschottetes Netz, Port nur an 127.0.0.1).
 
 Die Apps legen den Appkern auf einen Commit fest (`tools/appkern.sh` in der App), in Backend und Oberfläche gleich;
-das Ausrollen bricht ab, wenn beide verschieden sind.
+das Ausrollen bricht ab, wenn beide verschieden sind. Was beim Ausrollen dem Haus gehört (Rechner, Ordner, Adresse,
+Namen im Zertifikat, Leitstelle), steht nicht in den Repos: `tools/ausrollen.sh` einer App holt es mit
+`handbuch ziel <app> --toml` aus der privaten Wahrheit im Handbuch und gibt es dem Ausrollen als `--ergaenzung`.
 
 ## Was sie braucht
 

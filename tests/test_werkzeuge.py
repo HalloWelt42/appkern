@@ -102,7 +102,7 @@ def test_ausrollen_prueft_den_tondienst_statt_ffmpeg():
     assert tondienst(json.dumps(gemeldet)) == "Tondienst: klangwerk-ton"
     assert tondienst(json.dumps({"data": gemeldet["data"][1:]})).startswith("WARNUNG")
     assert tondienst("").startswith("WARNUNG")
-    angaben = {"kennung": "probe", "rechner": "pi@pi", "wurzel": "/mnt/data/probe", "adresse": "https://pi:1",
+    angaben = {"kennung": "probe", "rechner": "pi@pi", "wurzel": "/srv/probe", "adresse": "https://pi:1",
                "repo": "x", "namen": ["pi"]}
     with pytest.raises(ValidationError):
         Ziel.model_validate({**angaben, "ton": True})
@@ -116,11 +116,34 @@ def test_ausrollen_mit_eigener_zieldatei(tmp_path):
 
     (tmp_path / "deploy").mkdir()
     gemeinsam = 'kennung = "probe"\nrechner = "pi@pi"\nadresse = "https://pi:1"\nrepo = "x"\nnamen = ["pi"]\n'
-    (tmp_path / "deploy" / "ausrollen.toml").write_text(gemeinsam + 'wurzel = "/mnt/data/probe"\n')
-    (tmp_path / "deploy" / "probe.toml").write_text(gemeinsam + 'wurzel = "/mnt/data/probe-test"\ncompose = "compose.test.yml"\n')
-    assert (laden(tmp_path).wurzel, laden(tmp_path).compose) == ("/mnt/data/probe", "compose.pi.yml")
+    (tmp_path / "deploy" / "ausrollen.toml").write_text(gemeinsam + 'wurzel = "/srv/probe"\n')
+    (tmp_path / "deploy" / "probe.toml").write_text(gemeinsam + 'wurzel = "/srv/probe-test"\ncompose = "compose.test.yml"\n')
+    assert (laden(tmp_path).wurzel, laden(tmp_path).compose) == ("/srv/probe", "compose.pi.yml")
     z = laden(tmp_path, Path("deploy/probe.toml"))
-    assert (z.wurzel, z.compose) == ("/mnt/data/probe-test", "compose.test.yml")
+    assert (z.wurzel, z.compose) == ("/srv/probe-test", "compose.test.yml")
+
+
+def test_ergaenzung_fuellt_nur_was_fehlt(tmp_path):
+    """Was dem Haus gehört (Rechner, Ordner, Adresse, Namen, Leitstelle), kommt aus einer privaten Ergänzung; was die
+    Zieldatei selbst nennt, gilt (ein Probestand behält seinen Ordner). Der Name <kennung>.local steht immer in den
+    Namen, weil der Vorschaltdienst ihn ohne Servernamen nimmt."""
+    import pytest
+    from pydantic import ValidationError
+
+    from appkern.werkzeuge.ausrollen import laden
+
+    (tmp_path / "deploy").mkdir()
+    (tmp_path / "deploy" / "ausrollen.toml").write_text('kennung = "probe"\nrepo = "x"\nton = true\n')
+    (tmp_path / "deploy" / "probe.toml").write_text('kennung = "probe"\nrepo = "x"\nwurzel = "/srv/probe-test"\n')
+    (tmp_path / "haus.toml").write_text('rechner = "pi@pi"\nwurzel = "/srv/probe"\nadresse = "https://pi:1"\n'
+                                        'namen = ["pi"]\nleitstelle = "http://pi:8530"\n')
+    z = laden(tmp_path, ergaenzung=tmp_path / "haus.toml")
+    assert (z.rechner, z.wurzel, z.adresse, z.leitstelle) == ("pi@pi", "/srv/probe", "https://pi:1", "http://pi:8530")
+    assert z.namen == ["pi", "probe.local"]
+    assert z.einrichtungscode_ort == "pi@pi:/srv/probe/daten/einrichtungscode"
+    assert laden(tmp_path, Path("deploy/probe.toml"), tmp_path / "haus.toml").wurzel == "/srv/probe-test"
+    with pytest.raises(ValidationError):
+        laden(tmp_path)            # ohne Ergänzung fehlen die Angaben des Hauses
 
 
 def test_eigene_schale_ohne_pruefung_auf_klassen_der_schale(tmp_path):

@@ -50,10 +50,11 @@ probe_aufbauen() {
   cd "$ziel"
   mkdir -p daten zertifikate
   # Wegwerf-Hausstelle in DIR, nie die echte: das Blattzertifikat gilt nur für diesen Rechner
+  # mit dem Namen, den der Vorschaltdienst ohne Servernamen nimmt (Zugriff über die Adresse prüft genau das)
   CAROOT="$ziel/hausstelle" mkcert -cert-file "zertifikate/$KENNUNG.pem" -key-file "zertifikate/$KENNUNG-schluessel.pem" \
-    127.0.0.1 localhost >/dev/null 2>&1
+    127.0.0.1 localhost "$KENNUNG.local" >/dev/null 2>&1
   cp hausstelle/rootCA.pem zertifikate/rootCA.pem
-  ( umask 077; printf 'PROBE_PORT=%s\nHAUPTADRESSE=127.0.0.1\nAPPKERN_KELLERWOLKE_GEDULD_S=0\n' "$port" > .env )
+  ( umask 077; printf 'PROBE_PORT=%s\nAPPKERN_KELLERWOLKE_GEDULD_S=0\n' "$port" > .env )
   docker compose "${PROBE_COMPOSE[@]}" up -d --build --quiet-pull
   local ende=$(( $(date +%s) + PROBE_WARTEN_S ))
   while [ "$(date +%s)" -lt "$ende" ]; do

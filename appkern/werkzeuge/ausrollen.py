@@ -1,6 +1,8 @@
 """Ausrollen einer App auf den Pi, für jede App gleich (Lehren 3 bis 6 der Transkription). Angaben in
 `deploy/ausrollen.toml` (oder einer anderen Datei mit `--ziel`, etwa für einen Probestand in eigenem Ordner mit
-eigenen Ports); aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim ersten Fehler ab:
+eigenen Ports); was das Haus angeht (Rechner, Ordner, Adresse, Namen im Zertifikat, Leitstelle), steht nicht im Repo,
+sondern kommt mit `--ergaenzung` aus einer privaten Datei und füllt nur, was die Angaben selbst nicht nennen.
+Aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim ersten Fehler ab:
 
 1. nur gepushte Stände, Tests hier grün, Appkern in Oberfläche und Backend auf demselben Commit
 2. auf dem Pi: Docker mit Compose; nutzt die App Ton, meldet die Leitstelle den Tondienst (gerechnet wird auf dem Mac,
@@ -43,7 +45,7 @@ DECKEND = ("icon-192.png", "icon-512.png", "apple-touch-icon.png")
 
 class Ziel(BaseModel):
     kennung: str            # Name des App-Dienstes in compose.pi.yml, der Zertifikate und der Datenbank
-    rechner: str            # ssh-Ziel, etwa pi@192.168.178.49
+    rechner: str            # ssh-Ziel, etwa pi@192.168.1.20
     wurzel: str             # Ordner der App auf dem Pi
     adresse: str            # https://... des Vorschaltdienstes
     repo: str               # woher der Pi den Stand holt
@@ -57,8 +59,21 @@ class Ziel(BaseModel):
     @model_validator(mode="after")
     def _ton_braucht_leitstelle(self) -> "Ziel":
         if self.ton and not self.leitstelle:
-            raise ValueError("Mit ton = true gehört leitstelle in deploy/ausrollen.toml (Prüfung des Tondienstes)")
+            raise ValueError("Mit ton = true braucht das Ziel leitstelle (Prüfung des Tondienstes)")
         return self
+
+    @model_validator(mode="after")
+    def _eigener_name(self) -> "Ziel":
+        """<kennung>.local steht in jedem Zertifikat: der Vorschaltdienst nimmt ihn als Vorgabe, wenn ein Gerät ohne
+        Servernamen anfragt (Zugriff über die Adresse), so steht keine Heimadresse in seiner Einstellung."""
+        name = f"{self.kennung}.local"
+        if name not in self.namen:
+            self.namen = [*self.namen, name]
+        return self
+
+    @property
+    def einrichtungscode_ort(self) -> str:
+        return f"{self.rechner}:{self.wurzel}/daten/einrichtungscode"
 
     @property
     def datenbank(self) -> str:
@@ -82,8 +97,13 @@ class Abbruch(Exception):
 ZIEL_DATEI = Path("deploy") / "ausrollen.toml"
 
 
-def laden(wurzel: Path, datei: Path = ZIEL_DATEI) -> Ziel:
-    return Ziel.model_validate(tomllib.loads((wurzel / datei).read_text(encoding="utf-8")))
+def laden(wurzel: Path, datei: Path = ZIEL_DATEI, ergaenzung: Path | None = None) -> Ziel:
+    """Die Angaben des Ziels; eine Ergänzung (TOML) füllt nur Felder, die die Angaben nicht selbst nennen."""
+    roh = tomllib.loads((wurzel / datei).read_text(encoding="utf-8"))
+    if ergaenzung is not None:
+        for schluessel, wert in tomllib.loads(Path(ergaenzung).read_text(encoding="utf-8")).items():
+            roh.setdefault(schluessel, wert)
+    return Ziel.model_validate(roh)
 
 
 def _lauf(befehl: list[str], *, ort: Path | None = None) -> str:
@@ -310,9 +330,12 @@ def bauen(z: Ziel) -> None:
 
 
 def starten(z: Ziel) -> None:
+    """Startet mit dem Ort des Einrichtungscodes in der Umgebung (die Compose-Datei nennt ihn nicht, er gehört dem Haus)."""
     _schritt("Starten")
     c = shlex.quote(z.compose)
-    _ssh(z, f"cd {shlex.quote(z.wurzel)} && docker compose -f {c} up -d --remove-orphans && docker compose -f {c} restart vorne")
+    ort = shlex.quote(z.einrichtungscode_ort)
+    _ssh(z, f"cd {shlex.quote(z.wurzel)} && EINRICHTUNGSCODE_ORT={ort} docker compose -f {c} up -d --remove-orphans && "
+            f"docker compose -f {c} restart vorne")
 
 
 def _curl(z: Ziel, *args: str) -> str:
@@ -351,8 +374,13 @@ def pruefen(z: Ziel, wurzel: Path) -> None:
     print("HTTP/2 über den Vorschaltdienst, Symbole deckend, Manifest in Ordnung")
 
 
-def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI, auslaufen_lassen: bool = False) -> int:
-    z = laden(wurzel, datei)
+def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI, auslaufen_lassen: bool = False,
+              ergaenzung: Path | None = None) -> int:
+    try:
+        z = laden(wurzel, datei, ergaenzung)
+    except (OSError, ValueError) as f:
+        print(f"\nAbbruch: Ziel nicht lesbar: {f}", file=sys.stderr)
+        return 1
     try:
         stand_und_tests(z, wurzel)
         pi_pruefen(z)

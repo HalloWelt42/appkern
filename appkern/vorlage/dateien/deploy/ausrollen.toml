@@ -1,10 +1,7 @@
-# Ausrollen auf den Pi mit tools/ausrollen.sh (Ablauf und Prüfungen im Appkern: appkern.werkzeuge.ausrollen)
+# Ausrollen auf den Pi mit tools/ausrollen.sh (Ablauf und Prüfungen im Appkern: appkern.werkzeuge.ausrollen).
+# Rechner, Ordner, Adresse, Namen im Zertifikat und Leitstelle gehören dem Haus und stehen nicht im Repo:
+# tools/ausrollen.sh holt sie aus der privaten Wahrheit (handbuch ziel __KENNUNG__ --toml) als Ergänzung.
 kennung = "__KENNUNG__"
-rechner = "pi@192.168.178.49"
-wurzel = "/mnt/data/__KENNUNG__"
-adresse = "https://192.168.178.49:__PORT__"
 repo = "https://github.com/HalloWelt42/__KENNUNG__.git"
-namen = ["192.168.178.49", "raspberrypi-3.fritz.box", "raspberrypi-3", "__KENNUNG__.fritz.box", "__KENNUNG__.local"]
 # ton: die App nutzt den Tondienst (Tonarbeit auf dem Mac über die Leitstelle); geprüft wird, ob die Leitstelle ihn meldet
 ton = __TON__
-leitstelle = "http://192.168.178.49:8530"

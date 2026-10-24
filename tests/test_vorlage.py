@@ -73,7 +73,14 @@ def test_ohne_ton(tmp_path: Path):
     assert "TonDienst" not in (ordner / "backend" / "app" / "main.py").read_text(encoding="utf-8")
     assert not (ordner / "deploy" / "ffmpeg-vom-pi").exists()
     ziel = tomllib.loads((ordner / "deploy" / "ausrollen.toml").read_text(encoding="utf-8"))
-    assert ziel["ton"] is False and ziel["kennung"] == "transkription" and ziel["adresse"].endswith(":8601")
+    assert ziel["ton"] is False and ziel["kennung"] == "transkription"
+    # Angaben des Hauses (Rechner, Ordner, Adresse, Namen, Leitstelle) stehen nicht in der Vorlage, sie kommen aus der
+    # privaten Wahrheit; keine Heimadresse in den Dateien der neuen App
+    assert not {"rechner", "wurzel", "adresse", "namen", "leitstelle"} & set(ziel)
+    for datei in ordner.rglob("*"):
+        if datei.is_file() and datei.suffix not in (".png", ".ico"):
+            assert "192.168.178" not in datei.read_text(encoding="utf-8"), datei
+    assert "default_sni transkription.local" in (ordner / "deploy" / "Caddyfile").read_text(encoding="utf-8")
     assert "TRANSKRIPTION_DATEN" in (ordner / "backend" / "app" / "main.py").read_text(encoding="utf-8")
     assert (ordner / ".dockerignore").is_file() and not (ordner / "dockerignore").exists()
     compose = (ordner / "compose.pi.yml").read_text(encoding="utf-8")       # Lehre 34: Code im eingebundenen Datenordner
@@ -91,7 +98,7 @@ def test_mit_ton(tmp_path: Path):
     assert not (ordner / "deploy" / "ffmpeg-vom-pi").exists()
     assert "appkern[web,ton] @" in (ordner / "backend" / "requirements.txt").read_text(encoding="utf-8")
     ziel = tomllib.loads((ordner / "deploy" / "ausrollen.toml").read_text(encoding="utf-8"))
-    assert ziel["ton"] is True and ziel["leitstelle"].startswith("http")
+    assert ziel["ton"] is True and "leitstelle" not in ziel
     app = (ordner / "backend" / "app" / "main.py").read_text(encoding="utf-8")
     assert "TonDienst(" in app and "ton:" not in app
     assert 'dienst_ton: str = Field("klangwerk-ton"' in (ordner / "backend" / "app" / "einstellungen.py").read_text(encoding="utf-8")

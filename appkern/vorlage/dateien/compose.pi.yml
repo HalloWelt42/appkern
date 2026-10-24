@@ -1,5 +1,5 @@
-# __NAME__ auf dem Pi: https://192.168.178.49:__PORT__. Vorne Caddy mit dem Zertifikat der Hausstelle (tools/ausrollen.sh
-# stellt es aus), dahinter die App ohne TLS, nur im eigenen Netz erreichbar. Daten in ./daten.
+# __NAME__ auf dem Pi, Port __PORT__. Vorne Caddy mit dem Zertifikat der Hausstelle (tools/ausrollen.sh stellt es aus),
+# dahinter die App ohne TLS, nur im eigenen Netz erreichbar. Daten in ./daten.
 services:
   __KENNUNG__:
     build: .
@@ -18,7 +18,8 @@ services:
       __UMGEBUNG___CA_DATEI: /zertifikate/rootCA.pem
       # erste Einrichtung von anderswo (Lehre 34): der Code liegt im eingebundenen Datenordner, gefunden auf dem Pi
       __UMGEBUNG___EINRICHTUNGSCODE_DATEI: /app/daten/einrichtungscode
-      __UMGEBUNG___EINRICHTUNGSCODE_ORT: "pi@192.168.178.49:/mnt/data/__KENNUNG__/daten/einrichtungscode"
+      # wo der Code für den Menschen zu finden ist; das Ausrollen setzt rechner:ordner aus der privaten Wahrheit
+      __UMGEBUNG___EINRICHTUNGSCODE_ORT: ${EINRICHTUNGSCODE_ORT:-daten/einrichtungscode im Ordner der App}
     volumes:
       - ./daten:/app/daten
       - ./zertifikate:/zertifikate:ro
@@ -33,8 +34,6 @@ services:
     depends_on: [__KENNUNG__]
     ports:
       - "__PORT__:__PORT__"
-    environment:
-      HAUPTADRESSE: ${HAUPTADRESSE:-192.168.178.49}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./zertifikate:/zertifikate:ro

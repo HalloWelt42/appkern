@@ -1,11 +1,13 @@
 # Vorschaltdienst (Lehre 4): TLS mit dem Blattzertifikat der Hausstelle und HTTP/2 auf __PORT__, die App dahinter ohne
 # TLS und von außen nicht erreichbar; jeder Zugriff als JSON im Protokoll (docker compose -f compose.pi.yml logs vorne),
 # damit sich messen lässt, was Geräte wirklich abfragen. Beim Zugriff per IP steht kein Servername im Handschlag, darum
-# default_sni. Kein HSTS: unter einem Rechnernamen würde es alle Ports des Pi auf HTTPS zwingen.
+# default_sni: der Name __KENNUNG__.local steht in jedem Zertifikat der App (das Ausrollen nimmt ihn immer auf), so
+# braucht der Vorschaltdienst keine Heimadresse. Kein HSTS: unter einem Rechnernamen würde es alle Ports des Pi auf
+# HTTPS zwingen.
 {
 	admin off
 	auto_https off
-	default_sni {$HAUPTADRESSE}
+	default_sni __KENNUNG__.local
 }
 
 :__PORT__ {

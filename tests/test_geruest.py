@@ -89,7 +89,7 @@ async def test_einrichtung_anmeldung_verbindungen_protokoll(umgebung):
     assert (await c.get("/api/v1/verbindungen")).status_code == 401
     assert (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).status_code == 503
 
-    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=("192.168.178.57", 5)), base_url="http://t") as fremd:
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=("192.168.1.57", 5)), base_url="http://t") as fremd:
         r = await fremd.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
         assert r.status_code == 403
     r = await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test/", "kellerwolke_schluessel": "kw_app_falsch"})
