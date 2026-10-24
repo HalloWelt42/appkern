@@ -193,12 +193,14 @@ def test_marken_findet_feste_werte_und_laesst_marken_frei(tmp_path):
         ".a { font: 600 14px/1.2 Barlow; }",                                       # 18 feste Schriftgröße
         ".a { font-size: small; }",                                                # 19 feste Schriftgröße
         ".a { --app-farbe: var(--akzent); color: transparent; color: currentColor; }",  # 20 frei
+        ".a { --mono: \"JetBrains Mono\", ui-monospace, monospace; }",     # 21 eigene Marke mit Schriftliste
+        ".a { --raster: \"kopf kopf\"; --zeilen: 2; }",                    # 22 frei
     ]))
     befunde = marken_pruefen([css], tmp_path, MARKEN)
     assert _regeln_der(befunde) == [
         (1, "feste Farbe"), (2, "feste Farbe"), (3, "feste Farbe"), (4, "feste Farbe"), (6, "feste Farbe"),
         (8, "feste Schrift"), (10, "feste Schriftgröße"), (13, "feste Schriftgröße"), (14, "Marke des Appkerns überschrieben"),
-        (15, "feste Farbe"), (18, "feste Schriftgröße"), (19, "feste Schriftgröße")]
+        (15, "feste Farbe"), (18, "feste Schriftgröße"), (19, "feste Schriftgröße"), (21, "feste Schrift")]
 
 
 def test_marken_ausnahme_nur_mit_grund(tmp_path):

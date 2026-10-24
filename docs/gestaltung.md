@@ -200,6 +200,17 @@ Zwischenfarben zwischen Blau und Bernstein für Arten und Zonen (Fähigkeiten, M
 | `--sand` | `#9a7a2e` | `#e2b96a` | passiv, Reserve, Werkzeug |
 | `--stahl` | `#4f6d93` | `#8aa9c9` | Zone Heimnetz, neutral |
 
+### Codehervorhebung
+
+Farben für Code in Antworten und Belegen (Assistent): wie verbreitete Editoren, je Thema lesbar; Kommentare in --text-3.
+
+| Marke | hell | dunkel | Zweck |
+|---|---|---|---|
+| `--code-schluesselwort` | `#8839ef` | `#c4a7ff` | Schlüsselwörter und eingebaute Namen |
+| `--code-zeichenkette` | `#2e7d32` | `#8ee3a0` | Zeichenketten und Attribute |
+| `--code-zahl` | `#c2410c` | `#ffb38a` | Zahlen und feste Werte |
+| `--code-titel` | `#1d64c8` | `#7cc0ff` | Namen von Funktionen und Abschnitten |
+
 ### Schatten und Schleier
 
 Karten heben sich leicht ab; Schwebendes (Fenster, Menüs, Meldungen) deutlich.

@@ -780,6 +780,48 @@
    ]
   },
   {
+   "name": "Codehervorhebung",
+   "text": "Farben für Code in Antworten und Belegen (Assistent): wie verbreitete Editoren, je Thema lesbar; Kommentare in --text-3.",
+   "marken": [
+    {
+     "name": "--code-schluesselwort",
+     "art": "farbe",
+     "zweck": "Schlüsselwörter und eingebaute Namen",
+     "werte": {
+      "hell": "#8839ef",
+      "dunkel": "#c4a7ff"
+     }
+    },
+    {
+     "name": "--code-zeichenkette",
+     "art": "farbe",
+     "zweck": "Zeichenketten und Attribute",
+     "werte": {
+      "hell": "#2e7d32",
+      "dunkel": "#8ee3a0"
+     }
+    },
+    {
+     "name": "--code-zahl",
+     "art": "farbe",
+     "zweck": "Zahlen und feste Werte",
+     "werte": {
+      "hell": "#c2410c",
+      "dunkel": "#ffb38a"
+     }
+    },
+    {
+     "name": "--code-titel",
+     "art": "farbe",
+     "zweck": "Namen von Funktionen und Abschnitten",
+     "werte": {
+      "hell": "#1d64c8",
+      "dunkel": "#7cc0ff"
+     }
+    }
+   ]
+  },
+  {
    "name": "Schatten und Schleier",
    "text": "Karten heben sich leicht ab; Schwebendes (Fenster, Menüs, Meldungen) deutlich.",
    "marken": [

@@ -8,7 +8,8 @@ dorthin. Befunde:
 - feste Farbe: `#rgb` bis `#rrggbbaa`, Farbfunktionen (`rgb`, `hsl`, `hwb`, `lab`, `lch`, `oklab`, `oklch`, `color`)
   ohne Marke in den Kanälen, Farbnamen (`white`, `red`, ...) in Farbeigenschaften. Erlaubt sind Marken (`var(...)`),
   `currentColor`, `transparent` und Mischungen aus Marken (`color-mix(in srgb, var(--gut) 20%, transparent)`).
-- feste Schrift: `font-family` oder `font` mit einem Schriftnamen statt `var(--schrift...)` oder `inherit`.
+- feste Schrift: `font-family` oder `font` mit einem Schriftnamen statt `var(--schrift...)` oder `inherit`; auch eine
+  eigene Marke mit einer Schriftliste (`--mono: "Name", monospace`).
 - feste Schriftgröße: `font-size` oder `font` mit absoluter Größe (`px`, `pt`, `rem`, ...) oder einem Schlüsselwort
   wie `small`. Erlaubt sind Marken, Rechnungen mit Marken (`calc(var(--gross) + 2px)`), relative Größen (`em`, `%`,
   `smaller`) und `0`. Symbole (Regeln, deren Ziel ein `i`, eine Klasse `fa-...` oder ein `svg` ist) dürfen feste
@@ -74,6 +75,7 @@ FARBFUNKTION = re.compile(r"\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(")
 ABSOLUT = re.compile(r"(?<![\w.-])(\d*\.?\d+)(px|pt|pc|cm|mm|in|q|rem|vw|vh|vmin|vmax|svh|lvh|dvh|svw|lvw|dvw)\b", re.I)
 GROESSEN_WORTE = {"xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large", "xxx-large"}
 AUSNAHME = re.compile(r"Ausnahme:\s*(\S+(?:\s+\S+){2,})")
+SCHRIFTFAMILIE = re.compile(r"(?<![\w-])(sans-serif|serif|monospace|cursive|fantasy|system-ui|ui-monospace|ui-sans-serif|ui-serif)(?![\w-])")
 SYMBOL_ZIEL = re.compile(r"(^|[\s>+~])(i|svg)(?=$|[.:\[#])|\.fa-[\w-]+")
 MARKUP_FARBE = ("fill", "stroke", "stop-color", "flood-color", "color")
 MARKUP_SCHRIFT = ("font-size", "font-family")
@@ -213,7 +215,10 @@ def deklaration_pruefen(name: str, wert: str, marken: set[str], symbol: bool = F
     if name.startswith("--"):
         if name in marken and _ohne_klammer(_gesaeubert(wert), "var").replace(",", " ").strip() not in ("", *FREIE_WERTE):
             return "Marke des Appkerns überschrieben"
-        return "feste Farbe" if feste_farbe(name, wert) else None
+        if feste_farbe(name, wert):
+            return "feste Farbe"
+        # eine eigene Marke mit einer Schriftliste ("Name", ..., monospace) ist eine feste Schrift
+        return "feste Schrift" if SCHRIFTFAMILIE.search(_ohne_klammer(wert, "var")) else None
     if name == "font-family":
         return "feste Schrift" if feste_schrift(wert) else None
     if name == "font-size":
