@@ -5,7 +5,7 @@
    meldet feste Werte). Jede Marke trägt ihren Zweck als Kommentar; daraus entstehen die Seite Gestaltung in jeder App
    und die Seite im Handbuch (python -m appkern.werkzeuge gestaltung).
 
-   Themen: hell ist die Vorgabe, dunkel über data-theme="dunkel" am <html> oder an einem Teil der Seite.
+   Themen: hell ist die Vorgabe, dunkel über data-theme="dunkel" am Wurzelelement (html) oder an einem Teil der Seite.
    Schriftstufen: dicht ist die Vorgabe (Schale des Appkerns, Nutzer 20.10.2026: eine feste, dichte Schrift); klein,
    mittel und gross über data-schrift für Apps mit eigener Schale und Schriftstufen (Leitstelle, Fundus; Groß ist dort
    die Vorgabe). Wie die Themen gilt eine Stufe auch für einen Teil der Seite. */
