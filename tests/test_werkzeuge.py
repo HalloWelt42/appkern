@@ -278,3 +278,47 @@ def test_der_appkern_selbst_ist_sauber():
     wurzel = Path(__file__).resolve().parents[1]
     dateien = [wurzel / n for n in subprocess.run(["git", "ls-files"], cwd=wurzel, capture_output=True, text=True).stdout.splitlines()]
     assert marken_pruefen(dateien, wurzel) == []
+
+
+def test_gestaltung_aus_der_wahrheit(tmp_path):
+    """Marken mit Gruppe, Zweck und Werten je Thema und Stufe; die erzeugten Dateien gelten als veraltet, sobald sich
+    die Marken ändern (Gegenprobe), und passen nach dem Schreiben wieder."""
+    from appkern.werkzeuge import gestaltung
+
+    _datei(tmp_path, "oberflaeche/stil/marken.css", "\n".join([
+        "/* Kopf der Marken */",
+        "/* == Schriftgrößen == Dicht als Vorgabe. */",
+        ':root, [data-schrift="dicht"] {',
+        "  --gross: 15px;   /* Grundschrift */",
+        "}",
+        "/* Stufe gross: groß für eigene Schalen */",
+        '[data-schrift="gross"] { --gross: 18px; }',
+        "/* == Flächen == Von hinten nach vorn. */",
+        ':root, [data-theme="hell"] {',
+        "  --hg: #e4eaf2;   /* Seitengrund */",
+        "}",
+        '[data-theme="dunkel"] { --hg: #16202c; }',
+    ]))
+    _datei(tmp_path, "oberflaeche/gestaltung/katalog.json", json.dumps({"muster": [{"regel": "Nur Marken", "grund": "eine Wahrheit"}],
+        "bausteine": [{"familie": "schale", "name": "Knopf", "klassen": ["knopf"], "wann": "immer", "warum": "gleich",
+                       "html": '<button class="knopf">Los</button>'}], "nutzen": ["stil.css laden"], "pruefung": "Haken"}))
+    m = gestaltung.marken_lesen((tmp_path / "oberflaeche/stil/marken.css").read_text())
+    assert m.einleitung == "Kopf der Marken" and m.stufen["gross"] == "groß für eigene Schalen"
+    gross, hg = m.alle()
+    assert (gross.gruppe, gross.zweck, gross.werte, gross.art) == ("Schriftgrößen", "Grundschrift",
+                                                                   {"alle": "15px", "stufe:gross": "18px"}, "schriftgroesse")
+    assert (hg.gruppe, hg.werte, hg.art) == ("Flächen", {"hell": "#e4eaf2", "dunkel": "#16202c"}, "farbe")
+    assert gestaltung.ist_quelle(tmp_path) and set(gestaltung.veraltet(tmp_path)) == {gestaltung.DATEN, gestaltung.SEITE}
+    gestaltung.schreiben(tmp_path)
+    assert gestaltung.veraltet(tmp_path) == []
+    seite = (tmp_path / "docs/gestaltung.md").read_text()
+    assert "| `--gross` | `15px` | `15px` | `15px` | `18px` | Grundschrift |" in seite   # ohne eigenen Wert gilt dicht and '<button class="knopf">Los</button>' in seite
+    css = tmp_path / "oberflaeche/stil/marken.css"
+    css.write_text(css.read_text().replace("#16202c", "#16202d"))
+    assert gestaltung.veraltet(tmp_path) == [gestaltung.DATEN, gestaltung.SEITE]
+
+
+def test_gestaltung_des_appkerns_ist_aktuell():
+    from appkern.werkzeuge import gestaltung
+
+    assert gestaltung.veraltet(Path(__file__).resolve().parents[1]) == []

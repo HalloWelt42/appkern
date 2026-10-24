@@ -12,6 +12,7 @@ export { default as Rueckfrage } from "./teile/Rueckfrage.svelte";
 export { default as AnfrageBand } from "./teile/AnfrageBand.svelte";
 export { default as Dateiwahl } from "./teile/Dateiwahl.svelte";
 export { default as Rekorder } from "./teile/Rekorder.svelte";
+export { default as Gestaltung } from "./teile/Gestaltung.svelte";
 export { leiste, leisteOeffnen, leisteSchliessen } from "./lib/leiste.svelte";
 export { abfrage, anfragenEinstellen, ApiFehler, ereignisse, hole, json, seitenFehler, seitenSignal, token, verbindung,
          type AnfrageOptionen, type FehlerArt } from "./lib/api.svelte";

@@ -404,6 +404,14 @@ App nutzen nur diese Marken; eine neue Farbe kommt zuerst dorthin. `stil.css` l�
 | Palette | `--himmel`, `--petrol`, `--tuerkis`, `--minze`, `--flieder`, `--violett`, `--rose`, `--koralle`, `--honig`, `--sand`, `--stahl` |
 | Feste Farben, Schatten | `--licht`, `--auf-farbe`, `--schattenfarbe`, `--app-farbe`, `--symbol-flaeche`, Sprecherfarben `--s1` bis `--s6`, `--schatten`, `--schatten-schwebend`, `--schleier` |
 
+Seite **Gestaltung**: in jeder App unter Einstellungen (`teile/Gestaltung.svelte`; Apps mit eigener Schale
+`import Gestaltung from "appkern-oberflaeche/gestaltung"`, `<Gestaltung familie="leitstand" />`): Marken und
+Bausteine echt gerendert, hell und dunkel nebeneinander, mit Zweck, wann und warum, dazu die Muster mit Grund. Sie
+liest `oberflaeche/gestaltung/marken.json`; das und die Seite für das Handbuch (`docs/gestaltung.md`) schreibt
+`python -m appkern.werkzeuge gestaltung` aus den Marken und dem Katalog (`oberflaeche/gestaltung/katalog.json`:
+Muster, Bausteine mit Markup, wann und warum). Der Haken des Appkerns schreibt beides bei jedem Commit mit, `pruefen`
+meldet einen veralteten Stand.
+
 Themen: hell ist die Vorgabe, dunkel über `data-theme="dunkel"`. Schriftstufen: dicht ist die Vorgabe der Schale;
 `data-schrift="klein"`, `"mittel"` oder `"gross"` heben Schrift und Maße für Apps mit eigener Schale und Schriftstufen
 (Leitstelle, Fundus). Beides gilt auch für einen Teil der Seite (etwa eine Probe in hell neben einer in dunkel); dort

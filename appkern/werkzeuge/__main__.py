@@ -4,6 +4,8 @@
                                                      vorgemerkt ist), vormerken, vorgemerkte Dateien prüfen
     python -m appkern.werkzeuge pruefen [PFAD ...]   Zeichen, Stil und Marken prüfen (ohne Pfade: alle Dateien im Repo)
     python -m appkern.werkzeuge marken [PFAD ...]    nur die Marken der Gestaltung, mit Zahl je Regel und Datei
+    python -m appkern.werkzeuge gestaltung [--pruefen]   (nur im Appkern) Daten der Seite Gestaltung und Seite im
+                                                     Handbuch aus Marken und Katalog neu schreiben oder prüfen
     python -m appkern.werkzeuge fassung [patch|minor|major|id]
     python -m appkern.werkzeuge appkern              Appkern in Oberfläche und Backend auf den neuesten Commit heben
     python -m appkern.werkzeuge ausrollen [--ziel DATEI] [--ergaenzung DATEI] [--auslaufen]  auf den Pi nach deploy/ausrollen.toml (oder DATEI)
@@ -14,6 +16,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from . import gestaltung
+from .befund import Befund
 from .ausrollen import ZIEL_DATEI, Abbruch, ausrollen
 from .fassung import hochzaehlen
 from .marken import marken_pruefen, strenge, zusammenfassung
@@ -64,6 +68,11 @@ def pruefen(wurzel: Path, dateien: list[Path]) -> int:
         print(f"Hinweis: {len(marken)} Befunde der Gestaltung gemeldet ({zusammenfassung(marken)}); "
               "python -m appkern.werkzeuge marken zeigt sie, scharf in gestaltung.toml, sobald keiner mehr da ist",
               file=sys.stderr)
+    if gestaltung.ist_quelle(wurzel):
+        for rel in gestaltung.veraltet(wurzel):
+            befunde.append(Befund(datei=str(rel), zeile=1, regel="Gestaltung veraltet",
+                                  text="aus Marken und Katalog neu schreiben: python -m appkern.werkzeuge gestaltung"))
+            print(befunde[-1], file=sys.stderr)
     alle = befunde + (marken if scharf else [])
     if alle:
         print(f"Abbruch: {len(alle)} Befunde (Zeichen nur gerade, Stil ohne !important, einseitige Streifen und "
@@ -96,6 +105,8 @@ def main(argv: list[str] | None = None) -> int:
     f = befehle.add_parser("fassung")
     f.add_argument("art", nargs="?", default="patch", choices=["patch", "minor", "major", "id"])
     befehle.add_parser("appkern")
+    g = befehle.add_parser("gestaltung")
+    g.add_argument("--pruefen", action="store_true")
     aus = befehle.add_parser("ausrollen")
     aus.add_argument("--sofort", action="store_true", help="nicht auf laufende Aufträge warten (bricht sie ab)")
     aus.add_argument("--auslaufen", action="store_true",
@@ -112,6 +123,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if a.befehl == "ausrollen":
         return ausrollen(wurzel, a.sofort, a.ziel, a.auslaufen, a.ergaenzung)
+    if a.befehl == "gestaltung":
+        if not gestaltung.ist_quelle(wurzel):
+            print("Abbruch: die Gestaltung entsteht nur im Appkern (Marken und Katalog fehlen hier)", file=sys.stderr)
+            return 2
+        if a.pruefen:
+            veraltet = gestaltung.veraltet(wurzel)
+            for rel in veraltet:
+                print(f"veraltet: {rel}", file=sys.stderr)
+            return 1 if veraltet else 0
+        for rel in gestaltung.schreiben(wurzel):
+            print(f"geschrieben: {rel}")
+        return 0
     if a.befehl == "appkern":
         try:
             print(f"Appkern auf {anheben(wurzel)[:7]} (Oberfläche und Backend)")
@@ -129,6 +152,11 @@ def main(argv: list[str] | None = None) -> int:
     vorgemerkt = _git("diff", "--cached", "--name-only", "--diff-filter=ACM", wurzel=wurzel).splitlines()
     hochzaehlen(wurzel / "version.json", "id" if "version.json" in vorgemerkt else "patch")
     _git("add", "version.json", wurzel=wurzel)
+    if gestaltung.ist_quelle(wurzel):
+        # die erzeugte Gestaltung (Seite in den Apps, Seite im Handbuch) zieht mit Marken und Katalog mit
+        for rel in gestaltung.schreiben(wurzel):
+            _git("add", str(rel), wurzel=wurzel)
+            vorgemerkt.append(str(rel))
     return pruefen(wurzel, [wurzel / n for n in vorgemerkt])
 
 

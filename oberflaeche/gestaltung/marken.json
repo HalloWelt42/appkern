@@ -1,0 +1,1171 @@
+{
+ "quelle": "oberflaeche/stil/marken.css",
+ "einleitung": "Marken des Appkerns: die eine Wahrheit für Farben, Schriften, Schriftgrößen, Abstände, Ecken und Schatten aller eigenen Apps (Grunddesign, Nutzer 24.10.2026: \"Appkern, alle ziehen um\"; \"Nur Marken, Ausnahme begründet\"). Der Stil einer App nutzt nur diese Marken; eine neue Farbe kommt zuerst hierher (python -m appkern.werkzeuge pruefen meldet feste Werte). Jede Marke trägt ihren Zweck als Kommentar; daraus entstehen die Seite Gestaltung in jeder App und die Seite im Handbuch (python -m appkern.werkzeuge gestaltung). Themen: hell ist die Vorgabe, dunkel über data-theme=\"dunkel\" am <html> oder an einem Teil der Seite. Schriftstufen: dicht ist die Vorgabe (Schale des Appkerns, Nutzer 20.10.2026: eine feste, dichte Schrift); klein, mittel und gross über data-schrift für Apps mit eigener Schale und Schriftstufen (Leitstelle, Fundus; Groß ist dort die Vorgabe). Wie die Themen gilt eine Stufe auch für einen Teil der Seite.",
+ "stufen": [
+  {
+   "name": "dicht",
+   "text": "Vorgabe der Schale: eine feste, dichte Schrift"
+  },
+  {
+   "name": "klein",
+   "text": "kleinste Stufe der Leitstelle; Etiketten unterschreiten dort bewusst 14 Pixel"
+  },
+  {
+   "name": "mittel",
+   "text": "Grundschrift 17 Pixel, nichts unter 15"
+  },
+  {
+   "name": "gross",
+   "text": "Grundschrift 18 Pixel (Vorgabe von Leitstelle und Fundus, Nutzer 16.10.2026: \"das was jetzt normal ist, sollte das größte sein\"), Etiketten 15 Pixel wie in Fundus"
+  }
+ ],
+ "gruppen": [
+  {
+   "name": "Schriften",
+   "text": "Barlow liest sich ruhig und breit; Zahlen stehen in Chakra Petch, damit Werte, Zeiten und Zähler als solche erkennbar sind und Ziffern gleich breit stehen; Code in der Schrift des Systems mit fester Breite.",
+   "marken": [
+    {
+     "name": "--schrift",
+     "art": "schrift",
+     "zweck": "Grundschrift aller Texte",
+     "werte": {
+      "alle": "\"Barlow\", system-ui, sans-serif"
+     }
+    },
+    {
+     "name": "--schrift-zahl",
+     "art": "schrift",
+     "zweck": "Zahlen, Zeiten, Zähler, Fassungen",
+     "werte": {
+      "alle": "\"Chakra Petch\", \"Barlow\", ui-monospace, monospace"
+     }
+    },
+    {
+     "name": "--schrift-code",
+     "art": "schrift",
+     "zweck": "Code, Pfade, Ereignisnamen, Kopplungscodes",
+     "werte": {
+      "alle": "ui-monospace, \"SF Mono\", Menlo, monospace"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Schriftgrößen",
+   "text": "Stufe dicht (Vorgabe der Schale): Grundschrift 15, klein 13, Etiketten 12 Pixel. Größer wird nur über eine Stufe, nie über feste Werte in einer App; data-schrift=\"dicht\" stellt sie für einen Teil der Seite her.",
+   "marken": [
+    {
+     "name": "--gross",
+     "art": "schriftgroesse",
+     "zweck": "Grundschrift: Fließtext, Eingaben, Listen",
+     "werte": {
+      "alle": "15px",
+      "stufe:klein": "16px",
+      "stufe:mittel": "17px",
+      "stufe:gross": "18px"
+     }
+    },
+    {
+     "name": "--klein",
+     "art": "schriftgroesse",
+     "zweck": "Nebenangaben, Knöpfe, Beschreibungen",
+     "werte": {
+      "alle": "13px",
+      "stufe:klein": "14px",
+      "stufe:mittel": "15px",
+      "stufe:gross": "16px"
+     }
+    },
+    {
+     "name": "--marke",
+     "art": "schriftgroesse",
+     "zweck": "Etiketten, Zähler, Versalien-Überschriften: nie kleiner",
+     "werte": {
+      "alle": "12px",
+      "stufe:klein": "13px",
+      "stufe:mittel": "15px",
+      "stufe:gross": "15px"
+     }
+    },
+    {
+     "name": "--titel",
+     "art": "schriftgroesse",
+     "zweck": "Überschrift einer Karte, Leiste oder Gruppe",
+     "werte": {
+      "alle": "17px",
+      "stufe:klein": "19px",
+      "stufe:mittel": "21px",
+      "stufe:gross": "22px"
+     }
+    },
+    {
+     "name": "--seitentitel",
+     "art": "schriftgroesse",
+     "zweck": "Überschrift einer Seite",
+     "werte": {
+      "alle": "20px",
+      "stufe:klein": "27px",
+      "stufe:mittel": "30px",
+      "stufe:gross": "32px"
+     }
+    },
+    {
+     "name": "--kennzahl",
+     "art": "schriftgroesse",
+     "zweck": "große Zahlen und Codes zum Ablesen (Kennzahlen, Kopplungscode)",
+     "werte": {
+      "alle": "24px",
+      "stufe:klein": "24px",
+      "stufe:mittel": "27px",
+      "stufe:gross": "30px"
+     }
+    },
+    {
+     "name": "--appname",
+     "art": "schriftgroesse",
+     "zweck": "Name der App im Kopf",
+     "werte": {
+      "alle": "18px",
+      "stufe:klein": "21px",
+      "stufe:mittel": "21px",
+      "stufe:gross": "21px"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Maße",
+   "text": "Feste Höhen und Breiten der Rahmen, je Schriftstufe (oben bei den Stufen); die Seite selbst rollt nie, nur ihre Felder.",
+   "marken": [
+    {
+     "name": "--kopf-hoehe",
+     "art": "mass",
+     "zweck": "Kopf mit Marke, Rolle und Verbindungen",
+     "werte": {
+      "alle": "50px",
+      "stufe:klein": "58px",
+      "stufe:mittel": "62px",
+      "stufe:gross": "62px"
+     }
+    },
+    {
+     "name": "--nav-breite",
+     "art": "mass",
+     "zweck": "Seitenleiste mit Bereichen",
+     "werte": {
+      "alle": "232px",
+      "stufe:klein": "232px",
+      "stufe:mittel": "248px",
+      "stufe:gross": "264px"
+     }
+    },
+    {
+     "name": "--fuss-hoehe",
+     "art": "mass",
+     "zweck": "Fußleiste mit Verbindungen und laufender Arbeit",
+     "werte": {
+      "alle": "30px",
+      "stufe:klein": "44px",
+      "stufe:mittel": "44px",
+      "stufe:gross": "44px"
+     }
+    },
+    {
+     "name": "--zeile",
+     "art": "mass",
+     "zweck": "Eintrag der Seitenleiste",
+     "werte": {
+      "alle": "34px"
+     }
+    },
+    {
+     "name": "--knopf-hoehe",
+     "art": "mass",
+     "zweck": "Knöpfe, Suche, runde Knöpfe",
+     "werte": {
+      "alle": "32px",
+      "stufe:klein": "42px",
+      "stufe:mittel": "42px",
+      "stufe:gross": "42px"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Abstände",
+   "text": "Eine Leiter für Lücken und Innenabstände; ungerade Werte nur, wo ein Rahmen sie ausgleicht.",
+   "marken": [
+    {
+     "name": "--a1",
+     "art": "mass",
+     "zweck": "zwischen Symbol und Wort",
+     "werte": {
+      "alle": "4px"
+     }
+    },
+    {
+     "name": "--a2",
+     "art": "mass",
+     "zweck": "zwischen Teilen einer Zeile",
+     "werte": {
+      "alle": "8px"
+     }
+    },
+    {
+     "name": "--a3",
+     "art": "mass",
+     "zweck": "Innenabstand kleiner Flächen",
+     "werte": {
+      "alle": "12px"
+     }
+    },
+    {
+     "name": "--a4",
+     "art": "mass",
+     "zweck": "Innenabstand von Karten und Feldern",
+     "werte": {
+      "alle": "16px"
+     }
+    },
+    {
+     "name": "--a5",
+     "art": "mass",
+     "zweck": "Abstand zwischen Abschnitten",
+     "werte": {
+      "alle": "24px"
+     }
+    },
+    {
+     "name": "--a6",
+     "art": "mass",
+     "zweck": "Rand großer Seiten",
+     "werte": {
+      "alle": "32px"
+     }
+    },
+    {
+     "name": "--a7",
+     "art": "mass",
+     "zweck": "große Leerräume",
+     "werte": {
+      "alle": "48px"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Ecken",
+   "text": "Kantig wie die Leitstelle: kleine Rundungen wirken ruhig und technisch.",
+   "marken": [
+    {
+     "name": "--r1",
+     "art": "mass",
+     "zweck": "Marken, Segmente, kleine Flächen",
+     "werte": {
+      "alle": "2px"
+     }
+    },
+    {
+     "name": "--r2",
+     "art": "mass",
+     "zweck": "Knöpfe, Eingaben, Pillen",
+     "werte": {
+      "alle": "3px"
+     }
+    },
+    {
+     "name": "--r3",
+     "art": "mass",
+     "zweck": "Karten, Leisten, Tafeln",
+     "werte": {
+      "alle": "4px"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Bewegung",
+   "text": "Kurz und ruhig; nie länger, als das Auge folgt.",
+   "marken": [
+    {
+     "name": "--schnell",
+     "art": "zeit",
+     "zweck": "Überfahren, Schalter",
+     "werte": {
+      "alle": "120ms"
+     }
+    },
+    {
+     "name": "--ruhig",
+     "art": "zeit",
+     "zweck": "Balken, Ein- und Ausblenden",
+     "werte": {
+      "alle": "320ms"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Feste Farben",
+   "text": "Gelten in beiden Themen.",
+   "marken": [
+    {
+     "name": "--licht",
+     "art": "farbe",
+     "zweck": "reines Licht: Schimmer über Balken, Grundlage von auf-farbe",
+     "werte": {
+      "alle": "#ffffff"
+     }
+    },
+    {
+     "name": "--auf-farbe",
+     "art": "farbe",
+     "zweck": "Schrift und Symbole auf satten Farbflächen (App-Farbe, Gefahr)",
+     "werte": {
+      "alle": "var(--licht)"
+     }
+    },
+    {
+     "name": "--schattenfarbe",
+     "art": "farbe",
+     "zweck": "Grundton für Schatten und Schleier, gemischt mit Durchsicht",
+     "werte": {
+      "alle": "#0a121c"
+     }
+    },
+    {
+     "name": "--app-farbe",
+     "art": "farbe",
+     "zweck": "Flächenfarbe der App im Symbol; die Schale setzt die Farbe der App",
+     "werte": {
+      "alle": "#2f7ce0"
+     }
+    },
+    {
+     "name": "--app-farbe-tief",
+     "art": "farbe",
+     "zweck": "zweite Farbe des Verlaufs im Symbol",
+     "werte": {
+      "alle": "#6a5ae0"
+     }
+    },
+    {
+     "name": "--symbol-flaeche",
+     "art": "farbe",
+     "zweck": "Fläche hinter dem Symbol der App",
+     "werte": {
+      "alle": "linear-gradient(135deg, var(--app-farbe), var(--app-farbe-tief))"
+     }
+    },
+    {
+     "name": "--s1",
+     "art": "farbe",
+     "zweck": "Sprecherfarbe 1: in beiden Themen unterscheidbar (Transkription, Vertonung)",
+     "werte": {
+      "alle": "#12938a"
+     }
+    },
+    {
+     "name": "--s2",
+     "art": "farbe",
+     "zweck": "Sprecherfarbe 2",
+     "werte": {
+      "alle": "#c2410c"
+     }
+    },
+    {
+     "name": "--s3",
+     "art": "farbe",
+     "zweck": "Sprecherfarbe 3",
+     "werte": {
+      "alle": "#7c3aed"
+     }
+    },
+    {
+     "name": "--s4",
+     "art": "farbe",
+     "zweck": "Sprecherfarbe 4",
+     "werte": {
+      "alle": "#2f7ce0"
+     }
+    },
+    {
+     "name": "--s5",
+     "art": "farbe",
+     "zweck": "Sprecherfarbe 5",
+     "werte": {
+      "alle": "#b45309"
+     }
+    },
+    {
+     "name": "--s6",
+     "art": "farbe",
+     "zweck": "Sprecherfarbe 6",
+     "werte": {
+      "alle": "#db2777"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Flächen",
+   "text": "Mildes Hell (Vorgabe): blaugrau von hinten nach vorn. Die Schale nutzt flaeche und flaeche-2, die Bausteine des Leitstands (Apps mit eigener Schale) bereich und karte bis karte-3.",
+   "marken": [
+    {
+     "name": "--hg",
+     "art": "farbe",
+     "zweck": "Seitengrund",
+     "werte": {
+      "hell": "#e4eaf2",
+      "dunkel": "#16202c"
+     }
+    },
+    {
+     "name": "--leiste",
+     "art": "farbe",
+     "zweck": "Kopf, Seitenleiste, Fußleiste",
+     "werte": {
+      "hell": "#f2f5f9",
+      "dunkel": "#101822"
+     }
+    },
+    {
+     "name": "--flaeche",
+     "art": "farbe",
+     "zweck": "Karten und Felder der Schale",
+     "werte": {
+      "hell": "#ffffff",
+      "dunkel": "#1d2937"
+     }
+    },
+    {
+     "name": "--flaeche-2",
+     "art": "farbe",
+     "zweck": "abgehobene Fläche: Knöpfe, Segmente, Pillen",
+     "werte": {
+      "hell": "#e8edf4",
+      "dunkel": "#243344"
+     }
+    },
+    {
+     "name": "--mulde",
+     "art": "farbe",
+     "zweck": "eingelassen: Fortschritt, Diagrammgrund, Code",
+     "werte": {
+      "hell": "#d2dbe6",
+      "dunkel": "#0c121a"
+     }
+    },
+    {
+     "name": "--bereich",
+     "art": "farbe",
+     "zweck": "Bereich im Leitstand: Filter, Felder um Karten",
+     "werte": {
+      "hell": "#f7f9fc",
+      "dunkel": "#1d2937"
+     }
+    },
+    {
+     "name": "--karte",
+     "art": "farbe",
+     "zweck": "Karte und Eingabe im Leitstand",
+     "werte": {
+      "hell": "#ffffff",
+      "dunkel": "#243344"
+     }
+    },
+    {
+     "name": "--karte-2",
+     "art": "farbe",
+     "zweck": "Knopf und gewählter Eintrag im Leitstand",
+     "werte": {
+      "hell": "#e8edf4",
+      "dunkel": "#2c3d50"
+     }
+    },
+    {
+     "name": "--karte-3",
+     "art": "farbe",
+     "zweck": "überfahren und gedrückt im Leitstand",
+     "werte": {
+      "hell": "#d9e2ec",
+      "dunkel": "#35485d"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Schrift und Ränder",
+   "text": "Drei Abstufungen der Schrift, Ränder nur als feine Linie oder Rahmen rundum.",
+   "marken": [
+    {
+     "name": "--text",
+     "art": "farbe",
+     "zweck": "Haupttext",
+     "werte": {
+      "hell": "#16222e",
+      "dunkel": "#f1f5fa"
+     }
+    },
+    {
+     "name": "--text-2",
+     "art": "farbe",
+     "zweck": "Nebentext",
+     "werte": {
+      "hell": "#42566b",
+      "dunkel": "#b4c2d3"
+     }
+    },
+    {
+     "name": "--text-3",
+     "art": "farbe",
+     "zweck": "schwacher Text, Etiketten, Symbole in Ruhe",
+     "werte": {
+      "hell": "#5d7187",
+      "dunkel": "#8296ab"
+     }
+    },
+    {
+     "name": "--rand",
+     "art": "farbe",
+     "zweck": "Trennlinien und Rahmen",
+     "werte": {
+      "hell": "rgba(22, 34, 46, 0.12)",
+      "dunkel": "rgba(255, 255, 255, 0.09)"
+     }
+    },
+    {
+     "name": "--rand-stark",
+     "art": "farbe",
+     "zweck": "Rahmen von Knöpfen und schwebenden Teilen im Leitstand",
+     "werte": {
+      "hell": "rgba(22, 34, 46, 0.2)",
+      "dunkel": "rgba(255, 255, 255, 0.16)"
+     }
+    },
+    {
+     "name": "--diagrammlinie",
+     "art": "farbe",
+     "zweck": "Hilfslinien in Diagrammen",
+     "werte": {
+      "hell": "rgba(22, 34, 46, 0.09)",
+      "dunkel": "rgba(255, 255, 255, 0.07)"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Akzent",
+   "text": "Bernstein: Fläche und Schrift getrennt, damit der Kontrast in beiden Themen stimmt; nur für die eine Hauptsache einer Ansicht und für das, was gerade läuft.",
+   "marken": [
+    {
+     "name": "--akzent",
+     "art": "farbe",
+     "zweck": "Bernstein als Schrift, 5,6 : 1 auf Weiß",
+     "werte": {
+      "hell": "#9a5800",
+      "dunkel": "#ffb31a"
+     }
+    },
+    {
+     "name": "--akzent-weich",
+     "art": "farbe",
+     "zweck": "Hinterlegung von Aktivem und Laufendem",
+     "werte": {
+      "hell": "rgba(255, 164, 0, 0.2)",
+      "dunkel": "rgba(255, 164, 0, 0.16)"
+     }
+    },
+    {
+     "name": "--akzent-flaeche",
+     "art": "farbe",
+     "zweck": "Füllung der Hauptknöpfe und Schalter",
+     "werte": {
+      "hell": "#ffa400",
+      "dunkel": "#ffa400"
+     }
+    },
+    {
+     "name": "--auf-akzent",
+     "art": "farbe",
+     "zweck": "Schrift auf der Akzentfläche, 9,2 : 1",
+     "werte": {
+      "hell": "#1f1200",
+      "dunkel": "#1f1200"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Bedeutung",
+   "text": "Immer mit Wort, nie Farbe allein: gut, Warnung, Gefahr, Hinweis; je eine weiche Hinterlegung.",
+   "marken": [
+    {
+     "name": "--gut",
+     "art": "farbe",
+     "zweck": "fertig, verbunden, erfolgreich",
+     "werte": {
+      "hell": "#0b7a52",
+      "dunkel": "#22e39a"
+     }
+    },
+    {
+     "name": "--gut-weich",
+     "art": "farbe",
+     "zweck": "",
+     "werte": {
+      "hell": "rgba(15, 155, 106, 0.14)",
+      "dunkel": "rgba(34, 227, 154, 0.14)"
+     }
+    },
+    {
+     "name": "--warn",
+     "art": "farbe",
+     "zweck": "Warnung, unterbrochen, Auslaufen",
+     "werte": {
+      "hell": "#b54708",
+      "dunkel": "#ff9a62"
+     }
+    },
+    {
+     "name": "--warn-weich",
+     "art": "farbe",
+     "zweck": "",
+     "werte": {
+      "hell": "rgba(217, 83, 15, 0.13)",
+      "dunkel": "rgba(255, 122, 31, 0.16)"
+     }
+    },
+    {
+     "name": "--gefahr",
+     "art": "farbe",
+     "zweck": "Fehler, Löschen, Halt",
+     "werte": {
+      "hell": "#c8243f",
+      "dunkel": "#ff5c74"
+     }
+    },
+    {
+     "name": "--gefahr-weich",
+     "art": "farbe",
+     "zweck": "",
+     "werte": {
+      "hell": "rgba(224, 30, 69, 0.12)",
+      "dunkel": "rgba(255, 59, 92, 0.16)"
+     }
+    },
+    {
+     "name": "--info",
+     "art": "farbe",
+     "zweck": "Hinweis, wartet (Königsblau)",
+     "werte": {
+      "hell": "#1f55d6",
+      "dunkel": "#3a7dff"
+     }
+    },
+    {
+     "name": "--toenung",
+     "art": "wert",
+     "zweck": "Stärke farbiger Hinterlegungen im Leitstand (color-mix mit transparent)",
+     "werte": {
+      "hell": "20%",
+      "dunkel": "26%"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Palette",
+   "text": "Zwischenfarben zwischen Blau und Bernstein für Arten und Zonen (Fähigkeiten, Modelle, Reihen in Diagrammen); immer mit Wort. Kräftig und Königsblau (Nutzer 16.10.2026).",
+   "marken": [
+    {
+     "name": "--himmel",
+     "art": "farbe",
+     "zweck": "Text und Chat",
+     "werte": {
+      "hell": "#1f55d6",
+      "dunkel": "#3a7dff"
+     }
+    },
+    {
+     "name": "--petrol",
+     "art": "farbe",
+     "zweck": "Einbettung und Suche",
+     "werte": {
+      "hell": "#0a8aa3",
+      "dunkel": "#10b3c9"
+     }
+    },
+    {
+     "name": "--tuerkis",
+     "art": "farbe",
+     "zweck": "Übersetzung",
+     "werte": {
+      "hell": "#0a9e94",
+      "dunkel": "#14d8c8"
+     }
+    },
+    {
+     "name": "--minze",
+     "art": "farbe",
+     "zweck": "Hören, Transkription",
+     "werte": {
+      "hell": "#0f9b6a",
+      "dunkel": "#22e39a"
+     }
+    },
+    {
+     "name": "--flieder",
+     "art": "farbe",
+     "zweck": "Bild: beschreiben und erzeugen",
+     "werte": {
+      "hell": "#5b45e6",
+      "dunkel": "#8f7bff"
+     }
+    },
+    {
+     "name": "--violett",
+     "art": "farbe",
+     "zweck": "Musik",
+     "werte": {
+      "hell": "#8e2fe0",
+      "dunkel": "#c45cff"
+     }
+    },
+    {
+     "name": "--rose",
+     "art": "farbe",
+     "zweck": "Stimme: sprechen und klonen",
+     "werte": {
+      "hell": "#e0186e",
+      "dunkel": "#ff3f8e"
+     }
+    },
+    {
+     "name": "--koralle",
+     "art": "farbe",
+     "zweck": "Zone extern, Kosten",
+     "werte": {
+      "hell": "#e04a1a",
+      "dunkel": "#ff6a3d"
+     }
+    },
+    {
+     "name": "--honig",
+     "art": "farbe",
+     "zweck": "wartet, angehalten, Vorwarnung",
+     "werte": {
+      "hell": "#c79a00",
+      "dunkel": "#ffd21f"
+     }
+    },
+    {
+     "name": "--sand",
+     "art": "farbe",
+     "zweck": "passiv, Reserve, Werkzeug",
+     "werte": {
+      "hell": "#9a7a2e",
+      "dunkel": "#e2b96a"
+     }
+    },
+    {
+     "name": "--stahl",
+     "art": "farbe",
+     "zweck": "Zone Heimnetz, neutral",
+     "werte": {
+      "hell": "#4f6d93",
+      "dunkel": "#8aa9c9"
+     }
+    }
+   ]
+  },
+  {
+   "name": "Schatten und Schleier",
+   "text": "Karten heben sich leicht ab; Schwebendes (Fenster, Menüs, Meldungen) deutlich.",
+   "marken": [
+    {
+     "name": "--schatten",
+     "art": "schatten",
+     "zweck": "Karten der Schale",
+     "werte": {
+      "hell": "0 1px 2px rgba(22, 34, 46, 0.06), 0 4px 14px rgba(22, 34, 46, 0.07)",
+      "dunkel": "0 1px 0 rgba(255, 255, 255, 0.03), 0 6px 18px rgba(0, 0, 0, 0.28)"
+     }
+    },
+    {
+     "name": "--schatten-schwebend",
+     "art": "schatten",
+     "zweck": "Fenster, Meldungen, Menüs",
+     "werte": {
+      "hell": "0 16px 40px rgba(22, 34, 46, 0.16), 0 2px 6px rgba(22, 34, 46, 0.1)",
+      "dunkel": "0 16px 40px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.3)"
+     }
+    },
+    {
+     "name": "--schleier",
+     "art": "schatten",
+     "zweck": "hinter Dialogen des Leitstands",
+     "werte": {
+      "hell": "rgba(255, 255, 255, 0.78)",
+      "dunkel": "rgba(6, 11, 18, 0.74)"
+     }
+    }
+   ]
+  }
+ ],
+ "muster": [
+  {
+   "regel": "Nur Marken: Farben, Schriften und Schriftgrößen aus den Marken des Appkerns, nie feste Werte im Stil einer App.",
+   "grund": "Eine Wahrheit: alle Apps sehen gleich aus, Thema und Schriftstufe wirken überall, eine Änderung an einer Stelle reicht (Nutzer 24.10.2026: \"Nur Marken, Ausnahme begründet\")."
+  },
+  {
+   "regel": "Wort und Farbe, nie Farbe allein: Zustände, Fähigkeiten und Zonen tragen immer ein Wort oder Symbol.",
+   "grund": "Die Bedeutung bleibt lesbar, auch für schwache Augen, in Graustufen und auf schlechten Bildschirmen."
+  },
+  {
+   "regel": "Bernstein nur für die eine Hauptsache einer Ansicht (Hauptknopf) und für das, was gerade läuft.",
+   "grund": "Das Auge findet sofort, was zählt; ein Akzent überall ist keiner."
+  },
+  {
+   "regel": "Keine einseitigen Streifen: hervorheben mit Fläche, Rahmen rundum oder einem Punkt, nie mit einem Rand an einer Seite.",
+   "grund": "Nutzer: einseitige Ränder wirken unruhig und \"hässlich\"; die Prüfung erlaubt nur 1-Pixel-Trennlinien in der Randfarbe."
+  },
+  {
+   "regel": "Kein !important; Konflikte über Spezifität, Reihenfolge und eigene Klassen lösen.",
+   "grund": "Die Kaskade bleibt nachvollziehbar, spätere Änderungen brauchen keine weiteren Holzhämmer."
+  },
+  {
+   "regel": "Eigene Klassen für eigene Regeln: eine App ändert keine Klasse der Schale, sie erweitert sie höchstens (`.knopf.klein`).",
+   "grund": "Sonst ändert eine App die Schale mit (so lief einmal die Statuszeile der Einstellungen über)."
+  },
+  {
+   "regel": "Die Seite rollt nie, nur ihre Felder; Kopf und Fußleiste stehen fest.",
+   "grund": "Bedienung und Lage bleiben immer sichtbar; lange Listen rollen in sich."
+  },
+  {
+   "regel": "Keine seitliche Rollerei in keiner Breite (von 1920 bis 375 Pixel): Raster mit `minmax(0, 1fr)`, Text in Flex- und Rasterkindern mit `min-width: 0`, lange Wörter umbrechen.",
+   "grund": "`1fr` allein läuft mit langem Inhalt über; was seitlich rollt, ist am Telefon nicht bedienbar."
+  },
+  {
+   "regel": "Zahlen, Zeiten und Zähler in der Zahlenschrift (`--schrift-zahl`).",
+   "grund": "Werte sind als Werte erkennbar, Ziffern stehen gleich breit und springen beim Zählen nicht."
+  },
+  {
+   "regel": "Fokus nur bei Tastatur sichtbar, als Ring in Akzent.",
+   "grund": "Mit Maus und Finger stört der Ring, mit Tastatur ist er nötig."
+  },
+  {
+   "regel": "Keine Browser-Dialoge (alert, confirm, prompt): Rückfrage im Ablauf, direkt an der Stelle.",
+   "grund": "Kein Bruch im Ablauf, am Telefon bedienbar, gleich gestaltet; die Ansichtsprüfung zählt jeden Dialog als Befund."
+  },
+  {
+   "regel": "Aufklappliste statt nativer Auswahl; keine nativen Farbwähler und Datumsfelder.",
+   "grund": "Native Felder sehen je Browser anders aus und sind teils amerikanisch (Datum); die eigene Liste sieht überall gleich aus."
+  },
+  {
+   "regel": "Kurze Texte, stabile Knöpfe: beim Zustandswechsel verschiebt sich nichts.",
+   "grund": "Ein Knopf, der springt, wird verfehlt; die Ansichtsprüfung misst die Verschiebung fester Teile."
+  },
+  {
+   "regel": "Schrift in Stufen: die Schale ist dicht (15, klein 13, Etiketten 12 Pixel), Apps mit eigener Schale bieten Stufen (Vorgabe groß, 18 Pixel); nichts unter der Marke für Etiketten.",
+   "grund": "Nutzer 20.10.2026: in der Schale eine feste, dichte Schrift; Leitstelle und Fundus groß, weil kleine Schrift schlecht lesbar ist."
+  },
+  {
+   "regel": "Kontrast: Schrift mindestens 4,5 : 1 auf ihrer Fläche; Akzent als Schrift getrennt von der Akzentfläche.",
+   "grund": "Bernstein auf Weiß ist als Fläche schön, als Schrift aber zu blass; darum zwei Marken."
+  },
+  {
+   "regel": "Am Telefon eine eigene Ansicht mit Reitern, keine verkleinerte Rechneransicht; oben Luft unter der Uhr, unten nichts über dem Home-Balken.",
+   "grund": "Jede App wird auch vom Startbildschirm des iPhone genutzt; dort fängt das System oben Berührungen ab."
+  },
+  {
+   "regel": "Hilfe im Ablauf: Fachbegriffe erklären sich beim Überfahren, Hinweise stehen in Leisten statt in Fenstern.",
+   "grund": "Erklärung dort, wo die Frage entsteht, ohne den Ablauf zu verlassen."
+  }
+ ],
+ "bausteine": [
+  {
+   "familie": "schale",
+   "name": "Knöpfe",
+   "klassen": [
+    "knopf",
+    "knopf primaer",
+    "knopf still",
+    "knopf gefahr",
+    "knopf klein"
+   ],
+   "wann": "Primär nur für die eine Hauptsache einer Ansicht; still für Nebensachen in Listen; Gefahr für Löschen und Abbrechen.",
+   "warum": "Ein Hauptknopf je Ansicht führt das Auge; gleiche Höhe und Rundung überall.",
+   "html": "<div class=\"knopfzeile\"><button class=\"knopf primaer\"><i class=\"fa-solid fa-play\"></i> Starten</button>\n<button class=\"knopf\"><i class=\"fa-solid fa-rotate-right\"></i> Wiederholen</button>\n<button class=\"knopf still\">Abbrechen</button>\n<button class=\"knopf gefahr\"><i class=\"fa-solid fa-trash-can\"></i> Löschen</button></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Runde Knöpfe",
+   "klassen": [
+    "rund",
+    "rund aktiv"
+   ],
+   "wann": "Werkzeuge mit Symbol allein (Kopf, Spieler, Leiste); immer mit title.",
+   "warum": "Wenig Platz, klar als Knopf erkennbar; aktiv in Akzent.",
+   "html": "<div class=\"knopfzeile\"><button class=\"rund\" title=\"Zurück\"><i class=\"fa-solid fa-rotate-left\"></i></button>\n<button class=\"rund aktiv\" title=\"Aktiv\"><i class=\"fa-solid fa-microphone\"></i></button></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Pillen im Kopf",
+   "klassen": [
+    "pille",
+    "pille warn",
+    "pille aktiv",
+    "punkt"
+   ],
+   "wann": "Zustand der Verbindungen und laufende Arbeit im Kopf.",
+   "warum": "Ein Blick sagt, ob alles verbunden ist; nur Bedeutsames bekommt eine Pille.",
+   "html": "<div class=\"knopfzeile\"><span class=\"pille\"><span class=\"punkt\"></span>alles verbunden</span>\n<span class=\"pille warn\"><span class=\"punkt\"></span>Leitstelle gestört</span>\n<span class=\"pille aktiv\"><i class=\"fa-solid fa-gears\"></i> 2 laufen</span></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Zustände",
+   "klassen": [
+    "zustand laeuft",
+    "zustand wartet",
+    "zustand fertig",
+    "zustand fehler",
+    "zustand unterbrochen"
+   ],
+   "wann": "Zustand eines Auftrags oder Eintrags, immer als Wort.",
+   "warum": "Wort und Farbe zugleich; gleiche Farben für gleiche Bedeutung in allen Apps.",
+   "html": "<div class=\"knopfzeile\"><span class=\"zustand laeuft\">läuft</span><span class=\"zustand wartet\">wartet</span>\n<span class=\"zustand fertig\">fertig</span><span class=\"zustand fehler\">Fehler</span><span class=\"zustand unterbrochen\">unterbrochen</span></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Stand als Pille",
+   "klassen": [
+    "stand-pille fertig",
+    "stand-pille laeuft",
+    "stand-pille offen",
+    "stand-pille warn"
+   ],
+   "wann": "Stand einer Datei in Listen (transkribiert, läuft, offen).",
+   "warum": "Rund und weich, damit er neben Zuständen von Aufträgen unterscheidbar bleibt.",
+   "html": "<div class=\"knopfzeile\"><span class=\"stand-pille fertig\">fertig</span><span class=\"stand-pille laeuft\">läuft</span>\n<span class=\"stand-pille offen\">offen</span><span class=\"stand-pille warn\">veraltet</span></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Segment",
+   "klassen": [
+    "segment",
+    "aktiv"
+   ],
+   "wann": "Filter und Umschalter mit zwei bis fünf Möglichkeiten.",
+   "warum": "Alle Möglichkeiten sichtbar, das Gewählte hebt sich als Fläche ab (keine Unterstreichung).",
+   "html": "<span class=\"segment\"><button class=\"aktiv\">Alle</button><button>Laufend</button><button>Fehler</button></span>"
+  },
+  {
+   "familie": "schale",
+   "name": "Reiterleiste",
+   "klassen": [
+    "reiterleiste",
+    "aktiv",
+    "reiter-punkt"
+   ],
+   "wann": "Gruppen einer Seite mit eigener Adresse (etwa Einstellungen).",
+   "warum": "Der aktive Reiter hebt sich als Fläche mit Schatten ab, nie mit einseitiger Linie; ein Punkt zeigt Ungespeichertes.",
+   "html": "<nav class=\"reiterleiste\"><button class=\"aktiv\">Verbindungen</button><button>Zugang<span class=\"reiter-punkt\"></span></button><button>Anzeige</button></nav>"
+  },
+  {
+   "familie": "schale",
+   "name": "Suche",
+   "klassen": [
+    "suche"
+   ],
+   "wann": "Suchfeld über Listen.",
+   "warum": "Gleiche Höhe wie Knöpfe, Symbol vorn erklärt das Feld ohne Beschriftung.",
+   "html": "<label class=\"suche\"><i class=\"fa-solid fa-magnifying-glass\"></i><input class=\"eingabe-roh\" placeholder=\"Suchen\"></label>"
+  },
+  {
+   "familie": "schale",
+   "name": "Eingabe",
+   "klassen": [
+    "eingabe",
+    "eingabe geaendert",
+    "auge"
+   ],
+   "wann": "Werte in Einstellungen und Formularen; geändert mit Akzentrahmen, Geheimnisse verdeckt mit Auge.",
+   "warum": "Was geändert, aber nicht gespeichert ist, fällt auf; Schlüssel stehen nie offen.",
+   "html": "<div class=\"eingabe\"><input value=\"http://192.168.1.20:8530\"></div>\n<div class=\"eingabe geaendert\" style=\"margin-top:8px\"><span class=\"wert\">kw_app_••••3f9a</span><button class=\"auge\" title=\"Zeigen\"><i class=\"fa-solid fa-eye\"></i></button></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Schalter und Zähler",
+   "klassen": [
+    "schalter",
+    "schalter an",
+    "zaehler"
+   ],
+   "wann": "Ein und aus; kleine Zahlen mit Schritten.",
+   "warum": "Ein Schalter zeigt den Zustand ohne Wort daneben nur zusammen mit seiner Beschriftung; der Zähler bleibt in seinen Grenzen.",
+   "html": "<div class=\"knopfzeile\"><button class=\"schalter\" aria-label=\"aus\"></button><button class=\"schalter an\" aria-label=\"an\"></button>\n<span class=\"zaehler\"><button>-</button><input value=\"4\"><button>+</button></span></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Chips",
+   "klassen": [
+    "chips",
+    "chip",
+    "chip wahl",
+    "chip wahl an"
+   ],
+   "wann": "Listen kleiner Werte (Konten, Sprachen) und Mehrfachwahl.",
+   "warum": "Kompakt, jeder Wert einzeln entfernbar oder wählbar.",
+   "html": "<div class=\"chips\"><span class=\"chip\">Deutsch <button><i class=\"fa-solid fa-xmark\"></i></button></span>\n<button class=\"chip wahl an\"><i class=\"fa-solid fa-check\"></i> Text</button><button class=\"chip wahl\">Bild</button></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Karte mit Feldern",
+   "klassen": [
+    "karte",
+    "feld",
+    "was",
+    "name",
+    "beschreibung",
+    "herkunft"
+   ],
+   "wann": "Einstellungen und Gruppen von Werten: links was und warum, rechts der Wert.",
+   "warum": "Jeder Wert erklärt sich selbst; die Herkunft (gespeichert, Umgebung, Vorgabe) ist sichtbar.",
+   "html": "<div class=\"karte\"><h2><i class=\"fa-solid fa-plug\"></i> Verbindungen</h2>\n<div class=\"feld\"><div class=\"was\"><div class=\"name\">Leitstelle <span class=\"herkunft gespeichert\">gespeichert</span></div>\n<div class=\"beschreibung\">Wohin die App ihre KI-Aufträge schickt.</div></div>\n<div class=\"eingabe\"><input value=\"http://192.168.1.20:8530\"></div></div></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Auftrag",
+   "klassen": [
+    "auftrag",
+    "art",
+    "titel",
+    "schritte",
+    "schritt",
+    "balken",
+    "unterzeile",
+    "zustand"
+   ],
+   "wann": "Lange Arbeit mit Phasen: Schritte, Balken, Zustand und Aktion.",
+   "warum": "Was läuft, wie weit und was als Nächstes kommt, steht an einer Stelle; Abbrechen ist ein Klick.",
+   "svelte": "AuftragZeile",
+   "html": "<div class=\"auftrag\"><span class=\"art\"><i class=\"fa-solid fa-gears\"></i></span><div style=\"min-width:0\">\n<div class=\"titel\"><span class=\"name\">Folge 12 transkribieren</span><span class=\"wann\">vor 2 Min.</span></div>\n<div class=\"schritte\"><span class=\"schritt fertig\"><i class=\"fa-solid fa-check\"></i> Hören</span><span class=\"linie\"></span><span class=\"schritt jetzt\"><i class=\"fa-solid fa-circle-notch fa-spin\"></i> Schreiben</span><span class=\"linie\"></span><span class=\"schritt\">Ablegen</span></div>\n<div class=\"balken\"><span style=\"width:62%\"></span></div><div class=\"unterzeile\"><span>Abschnitt 31 von 50</span><span class=\"rechts\">62 %</span></div></div>\n<div class=\"aktionen\"><span class=\"zustand laeuft\">läuft</span><button class=\"knopf still\" title=\"Abbrechen\"><i class=\"fa-solid fa-stop\"></i></button></div></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Zeile einer Liste",
+   "klassen": [
+    "zeile",
+    "art",
+    "name",
+    "meta",
+    "stand-pille"
+   ],
+   "wann": "Dateien und Einträge in Listen, gewählt mit Akzentrahmen rundum.",
+   "warum": "Symbol, Name, Eckdaten und Stand in fester Ordnung; lange Namen enden mit Auslassung.",
+   "html": "<div class=\"zeile gewaehlt\"><span class=\"art\"><i class=\"fa-solid fa-file-audio\"></i></span><div style=\"min-width:0\"><div class=\"name\">Hausversammlung Oktober.m4a</div><div class=\"meta\">42 Min. · 38 MB</div></div><span class=\"stand-pille fertig\">fertig</span><span></span></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Optionen über einer Liste",
+   "klassen": [
+    "optionen",
+    "titel"
+   ],
+   "wann": "Einstellungen, die für die folgende Arbeit gelten.",
+   "warum": "Weich hinterlegt, damit sie nicht mit Inhalt verwechselt werden.",
+   "html": "<div class=\"optionen\"><span class=\"titel\">Für die Auswahl</span><label><button class=\"schalter an\" aria-label=\"an\"></button> Sprecher trennen</label></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Hinweisband",
+   "klassen": [
+    "hinweis-band",
+    "knopfzeile"
+   ],
+   "wann": "Ein Hinweis zu dieser Seite mit Handlung (etwa eine aus der Kellerwolke geöffnete Datei).",
+   "warum": "Steht im Ablauf statt in einem Fenster und lässt sich gleich erledigen.",
+   "html": "<div class=\"hinweis-band\"><i class=\"fa-solid fa-cloud\"></i><span>Geöffnet aus der <b>Kellerwolke</b>, die Anfrage gilt noch 10 Minuten.</span><span class=\"knopfzeile\"><button class=\"knopf\">Zurück</button></span></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Rückfrage",
+   "klassen": [
+    "rueckfrage",
+    "frage",
+    "aktionen"
+   ],
+   "wann": "Vor dem Löschen und anderen Schritten ohne Rückweg, direkt an der Stelle.",
+   "warum": "Kein Browser-Dialog; die Frage steht dort, wo geklickt wurde.",
+   "svelte": "Rueckfrage",
+   "html": "<div class=\"rueckfrage\"><span class=\"frage\">Aufnahme in den Papierkorb legen?</span><span class=\"aktionen\"><button class=\"knopf still\">Abbrechen</button><button class=\"knopf gefahr\"><i class=\"fa-solid fa-trash-can\"></i> Löschen</button></span></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Band unter dem Kopf",
+   "klassen": [
+    "band"
+   ],
+   "wann": "Eine Verbindung fehlt oder die App antwortet nicht.",
+   "warum": "Steht über allem, ohne den Inhalt zu verdecken; die Handlung ist im Band.",
+   "html": "<div class=\"band\"><i class=\"fa-solid fa-plug-circle-xmark\"></i><span><b>Leitstelle</b> nicht erreichbar; Aufträge warten.</span><button class=\"knopf\">Erneut versuchen</button></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Fehler und Leere",
+   "klassen": [
+    "fehlertext",
+    "fehlerzeile",
+    "leer"
+   ],
+   "wann": "Fehlermeldung mit Ursache; leere Listen mit einem Satz, was zu tun ist.",
+   "warum": "Ein Fehler nennt immer die Ursache, eine leere Liste nie nur \"nichts da\".",
+   "html": "<div class=\"fehlertext\">Die Kellerwolke antwortet mit 503: der Dienst startet gerade.</div>\n<div class=\"leer\">Noch keine Aufnahmen. Oben rechts aufnehmen oder eine Datei aus der Kellerwolke wählen.</div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Tabelle",
+   "klassen": [
+    "tabelle",
+    "zeit",
+    "stufe"
+   ],
+   "wann": "Protokoll und andere Listen mit vielen Spalten am Rechner (schmal als Liste).",
+   "warum": "Kopf in Versalien, Zeilen mit feiner Trennlinie; Zeiten schwach, Stufen mit Symbol und Farbe.",
+   "html": "<table class=\"tabelle\"><thead><tr><th>Zeit</th><th>Ereignis</th><th>Text</th></tr></thead><tbody>\n<tr><td class=\"zeit\">10:42</td><td class=\"ereignis\"><span class=\"stufe info\"><i class=\"fa-solid fa-circle-info\"></i></span> <code>auftrag.fertig</code></td><td>Folge 12 transkribiert</td></tr>\n<tr><td class=\"zeit\">10:40</td><td class=\"ereignis\"><span class=\"stufe warnung\"><i class=\"fa-solid fa-triangle-exclamation\"></i></span> <code>leitstelle.halt</code></td><td>Leitstelle hält Aufträge an</td></tr></tbody></table>"
+  },
+  {
+   "familie": "schale",
+   "name": "Aufklappliste",
+   "klassen": [
+    "auswahl",
+    "auswahl-knopf",
+    "auswahl-liste"
+   ],
+   "wann": "Auswahl aus mehreren Möglichkeiten, statt des nativen Auswahlfelds.",
+   "warum": "Sieht in jedem Browser gleich aus, zeigt Hinweise je Möglichkeit, nie den technischen Schlüssel.",
+   "svelte": "Auswahl",
+   "html": "<div class=\"auswahl\"><button class=\"auswahl-knopf\"><i class=\"fa-solid fa-microphone\"></i><span class=\"auswahl-text\">Stimme Zeit</span><i class=\"fa-solid fa-chevron-down auswahl-pfeil\"></i></button></div>"
+  },
+  {
+   "familie": "schale",
+   "name": "Etiketten und Zahlen",
+   "klassen": [
+    "abschnitt",
+    "zahl"
+   ],
+   "wann": "Kleine Überschrift über Gruppen; Zahlen in der Zahlenschrift.",
+   "warum": "Versalien gliedern ohne Gewicht; Zahlen bleiben als Werte erkennbar.",
+   "html": "<div class=\"abschnitt\">Phasen</div><p>Dauer <span class=\"zahl\">00:42:17</span>, <span class=\"zahl\">1.284</span> Wörter</p>"
+  }
+ ],
+ "nutzen": [
+  "Apps in der Schale laden `import \"appkern-oberflaeche/stil.css\"` (Schriften, Symbole, Marken, Schale, Bausteine) und schreiben nur, was ihnen eigen ist, in einen eigenen Stil mit eigenen Klassen.",
+  "Apps, die ihre Schale selbst zeichnen (Leitstelle, Fundus), laden `appkern-oberflaeche/leitstand.css` (Schriften, Marken und Bausteine des Leitstands) und setzen `data-schrift` am `<html>` (Vorgabe `gross`).",
+  "Farben, Schriften und Schriftgrößen kommen nur aus den Marken (`var(--...)`); Mischungen mit `color-mix(in srgb, var(--gefahr) var(--toenung), transparent)`, Größen mit Marken oder relativ (`em`, `%`). Eine neue Farbe kommt zuerst in die Marken des Appkerns.",
+  "Ausnahme nur mit Kommentar und Grund in derselben Zeile, darüber oder über der Regel: `/* Ausnahme: <Grund in mindestens drei Wörtern> */`, im Markup `<!-- Ausnahme: ... -->`.",
+  "Prüfen: `python -m appkern.werkzeuge marken` zeigt alle Befunde; der Haken jeder App prüft bei jedem Commit, `gestaltung.toml` (`marken = \"scharf\"`) lässt ihn scheitern.",
+  "Die Seite Gestaltung steht in jeder App unter Einstellungen; Apps mit eigener Schale binden sie mit `import Gestaltung from \"appkern-oberflaeche/gestaltung\"` ein."
+ ]
+}

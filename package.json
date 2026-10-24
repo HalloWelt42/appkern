@@ -9,6 +9,7 @@
     "oberflaeche/lib/",
     "oberflaeche/teile/",
     "oberflaeche/stil/",
+    "oberflaeche/gestaltung/",
     "oberflaeche/werkzeuge/"
   ],
   "dependencies": {
@@ -24,7 +25,11 @@
     "./stil.css": "./oberflaeche/stil/alles.css",
     "./marken.css": "./oberflaeche/stil/marken.css",
     "./anmeldung.css": "./oberflaeche/stil/anmeldung.css",
-    "./auswahl.css": "./oberflaeche/stil/auswahl.css"
+    "./auswahl.css": "./oberflaeche/stil/auswahl.css",
+    "./gestaltung": {
+      "svelte": "./oberflaeche/teile/Gestaltung.svelte",
+      "default": "./oberflaeche/teile/Gestaltung.svelte"
+    }
   },
   "svelte": "./oberflaeche/index.ts",
   "peerDependencies": {

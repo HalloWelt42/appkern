@@ -1,7 +1,8 @@
 <script lang="ts">
   // Einstellungen, erzeugt aus der Beschreibung der App: je Gruppe ein Reiter mit eigener Adresse
   // (/einstellungen/<gruppe>), Herkunft je Wert, Geheimnisse verdeckt (das Auge deckt auf, kopieren geht immer),
-  // Speichern in einer Leiste über alle Reiter; dazu die Anzeige auf diesem Gerät. Volle Breite; schmal stehen
+  // Speichern in einer Leiste über alle Reiter; dazu die Anzeige auf diesem Gerät und die Gestaltung (Grunddesign aller
+  // Apps, teile/Gestaltung.svelte). Volle Breite; schmal stehen
   // Beschreibung und Eingabe untereinander. Auswahlen mit vielen oder langen Optionen klappen auf. Eigene Reiter der App
   // (`reiter`) stehen zwischen den erzeugten Gruppen und der Anzeige und bringen ihre Seite selbst mit. Antwortet die
   // App nicht, sagt das allein die Schale; sobald sie wieder antwortet, lädt die Seite die Einstellungen neu.
@@ -14,6 +15,7 @@
   import type { Angebot, EinstellungsReiter, Feld } from "../lib/typen";
   import { kopieren, markieren } from "../lib/zwischenablage";
   import Auswahl from "./Auswahl.svelte";
+  import Gestaltung from "./Gestaltung.svelte";
 
   let { reiter = [] }: { reiter?: EinstellungsReiter[] } = $props();
   let felder = $state<Feld[]>([]);
@@ -38,10 +40,12 @@
   onDestroy(beiRueckkehr(() => void laden()));
 
   const ANZEIGE = "Anzeige auf diesem Gerät";
-  const gruppen = $derived([...new Set(felder.map((f) => f.gruppe ?? sitzung.app!.name)), ...reiter.map((r) => r.titel), ANZEIGE]);
+  // Grunddesign aller Apps: Marken und Bausteine echt gerendert (dieselbe Seite steht im Handbuch)
+  const GESTALTUNG = "Gestaltung";
+  const gruppen = $derived([...new Set(felder.map((f) => f.gruppe ?? sitzung.app!.name)), ...reiter.map((r) => r.titel), ANZEIGE, GESTALTUNG]);
   const eigenerReiter = (g: string) => reiter.find((r) => r.titel === g);
   // Adresse eines Reiters: technischer Bezeichner aus dem Namen der Gruppe (eigene Reiter nennen ihren selbst)
-  const schluessel = (g: string) => (g === ANZEIGE ? "anzeige" : eigenerReiter(g)?.schluessel ?? g.toLowerCase().replace(/ä/g, "ae")
+  const schluessel = (g: string) => (g === ANZEIGE ? "anzeige" : g === GESTALTUNG ? "gestaltung" : eigenerReiter(g)?.schluessel ?? g.toLowerCase().replace(/ä/g, "ae")
     .replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
   const aktiv = $derived(gruppen.find((g) => schluessel(g) === navigation.teile[0]) ?? gruppen[0]);
   const aktivEigen = $derived(eigenerReiter(aktiv));
@@ -186,6 +190,8 @@
     {#if ladeFehler}<div class="fehlertext">{ladeFehler}</div>{/if}
     {#if aktivEigen}
       <aktivEigen.seite />
+    {:else if aktiv === GESTALTUNG}
+      <Gestaltung />
     {:else if aktiv && aktiv !== ANZEIGE}
       <div class="karte breit">
         {#each felder.filter((f) => (f.gruppe ?? sitzung.app!.name) === aktiv) as f (f.name)}

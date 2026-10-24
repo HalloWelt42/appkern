@@ -32,6 +32,10 @@ das Ausrollen bricht ab, wenn beide verschieden sind. Was beim Ausrollen dem Hau
 Namen im Zertifikat, Leitstelle), steht nicht in den Repos: `tools/ausrollen.sh` einer App holt es mit
 `handbuch ziel <app> --toml` aus der privaten Wahrheit im Handbuch und gibt es dem Ausrollen als `--ergaenzung`.
 
+Der Appkern ist auch die eine Wahrheit der Gestaltung aller Apps: die Marken (`oberflaeche/stil/marken.css`: Farben,
+Schriften, Größen, Abstände) und die Bausteine. Daraus entstehen die Seite Gestaltung in jeder App (Einstellungen,
+Gestaltung) und die Seite [[Gestaltung]] in diesem Handbuch; der Haken jeder App lässt im Stil nur Marken zu.
+
 ## Was sie braucht
 
 - Mac nach [[Grundlage Mac]]: Python ab 3.11, Node.js für die Schale und die Vorlage; für den Symbolsatz neuer Apps

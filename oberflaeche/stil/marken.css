@@ -19,8 +19,8 @@
 }
 
 /* == Schriftgrößen == Stufe dicht (Vorgabe der Schale): Grundschrift 15, klein 13, Etiketten 12 Pixel. Größer wird
-   nur über eine Stufe, nie über feste Werte in einer App. */
-:root {
+   nur über eine Stufe, nie über feste Werte in einer App; data-schrift="dicht" stellt sie für einen Teil der Seite her. */
+:root, [data-schrift="dicht"] {
   --gross: 15px;                  /* Grundschrift: Fließtext, Eingaben, Listen */
   --klein: 13px;                  /* Nebenangaben, Knöpfe, Beschreibungen */
   --marke: 12px;                  /* Etiketten, Zähler, Versalien-Überschriften: nie kleiner */
@@ -31,7 +31,7 @@
 }
 /* == Maße == Feste Höhen und Breiten der Rahmen, je Schriftstufe (oben bei den Stufen); die Seite selbst rollt nie,
    nur ihre Felder. */
-:root {
+:root, [data-schrift="dicht"] {
   --kopf-hoehe: 50px;             /* Kopf mit Marke, Rolle und Verbindungen */
   --nav-breite: 232px;            /* Seitenleiste mit Bereichen */
   --fuss-hoehe: 30px;             /* Fußleiste mit Verbindungen und laufender Arbeit */
