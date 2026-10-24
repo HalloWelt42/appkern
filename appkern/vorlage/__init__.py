@@ -92,6 +92,14 @@ def _python_mit_cairosvg() -> str | None:
     return None
 
 
+def _heimkurz(ordner: Path) -> str:
+    """Ordner unter dem Heimordner mit ~ (das Stellwerk versteht es), damit kein Benutzername in den Dateien steht."""
+    try:
+        return "~/" + ordner.relative_to(Path.home()).as_posix()
+    except ValueError:
+        return str(ordner)
+
+
 def erzeugen(*, name: str, kennung: str, rolle: str, symbol: str, port: int, ziel: Path, devport: int | None = None,
              farbe: str = "#2f7ce0", appkern_lokal: Path | None = None, symbole_ordner: Path | None = None,
              ton: bool = False) -> Path:
@@ -114,7 +122,7 @@ def erzeugen(*, name: str, kennung: str, rolle: str, symbol: str, port: int, zie
     extras = "web,ton" if ton else "web"
     ersetzen = {
         "__NAME__": name, "__KENNUNG__": kennung, "__ROLLE__": rolle, "__SYMBOL__": symbol, "__PORT__": str(port),
-        "__DEVPORT__": str(devport or port + 1000), "__FARBE__": farbe, "__ORDNER__": str(ordner),
+        "__DEVPORT__": str(devport or port + 1000), "__FARBE__": farbe, "__ORDNER__": _heimkurz(ordner),
         "__APPKERN_PY__": f"-e {lokal}[{extras}]" if lokal else GITHUB_PY.format(extras=extras),
         "__APPKERN_NPM__": f"file:{lokal}" if lokal else GITHUB_NPM,
         "__UMGEBUNG__": kennung.upper().replace("-", "_"), "__TON__": "true" if ton else "false",
