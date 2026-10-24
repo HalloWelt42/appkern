@@ -157,7 +157,8 @@
   --auf-akzent: #1f1200;
 }
 
-/* == Bedeutung == Immer mit Wort, nie Farbe allein: gut, Warnung, Gefahr, Hinweis; je eine weiche Hinterlegung. */
+/* == Bedeutung == Immer mit Wort, nie Farbe allein: gut, Warnung, Gefahr, Hinweis; je eine weiche Hinterlegung.
+   Gefahr als Schrift und als Fläche getrennt (wie der Akzent): auf der Fläche steht auf-farbe mindestens 4,5 : 1. */
 :root, [data-theme="hell"] {
   --gut: #0b7a52;                 /* fertig, verbunden, erfolgreich */
   --gut-weich: rgba(15, 155, 106, 0.14);
@@ -165,6 +166,7 @@
   --warn-weich: rgba(217, 83, 15, 0.13);
   --gefahr: #c8243f;              /* Fehler, Löschen, Halt */
   --gefahr-weich: rgba(224, 30, 69, 0.12);
+  --gefahr-flaeche: #c8243f;      /* Füllung von Halt und Löschen, auf-farbe darauf 5,6 : 1 */
   --info: #1f55d6;                /* Hinweis, wartet (Königsblau) */
   --toenung: 20%;                 /* Stärke farbiger Hinterlegungen im Leitstand (color-mix mit transparent) */
 }
@@ -175,22 +177,25 @@
   --warn-weich: rgba(255, 122, 31, 0.16);
   --gefahr: #ff5c74;
   --gefahr-weich: rgba(255, 59, 92, 0.16);
+  --gefahr-flaeche: #d92847;      /* 4,8 : 1 für auf-farbe; die hellere Schriftfarbe hätte nur 3 : 1 */
   --info: #3a7dff;
   --toenung: 26%;
 }
 
 /* == Palette == Zwischenfarben zwischen Blau und Bernstein für Arten und Zonen (Fähigkeiten, Modelle, Reihen in
-   Diagrammen); immer mit Wort. Kräftig und Königsblau (Nutzer 16.10.2026). */
+   Diagrammen); immer mit Wort. Kräftig und Königsblau (Nutzer 16.10.2026). Im hellen Thema stehen sie auch als
+   Schrift auf ihrer eigenen Tönung, dort mindestens 3 : 1 (Türkis, Minze und Honig darum dunkler als ihre Füllfarbe
+   im Dunkeln vermuten ließe). */
 :root, [data-theme="hell"] {
   --himmel: #1f55d6;              /* Text und Chat */
   --petrol: #0a8aa3;              /* Einbettung und Suche */
-  --tuerkis: #0a9e94;             /* Übersetzung */
-  --minze: #0f9b6a;               /* Hören, Transkription */
+  --tuerkis: #087870;             /* Übersetzung */
+  --minze: #0c7a54;               /* Hören, Transkription */
   --flieder: #5b45e6;             /* Bild: beschreiben und erzeugen */
   --violett: #8e2fe0;             /* Musik */
   --rose: #e0186e;                /* Stimme: sprechen und klonen */
   --koralle: #e04a1a;             /* Zone extern, Kosten */
-  --honig: #c79a00;               /* wartet, angehalten, Vorwarnung */
+  --honig: #856700;               /* wartet, angehalten, Vorwarnung */
   --sand: #9a7a2e;                /* passiv, Reserve, Werkzeug */
   --stahl: #4f6d93;               /* Zone Heimnetz, neutral */
 }

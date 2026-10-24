@@ -598,7 +598,7 @@
   },
   {
    "name": "Bedeutung",
-   "text": "Immer mit Wort, nie Farbe allein: gut, Warnung, Gefahr, Hinweis; je eine weiche Hinterlegung.",
+   "text": "Immer mit Wort, nie Farbe allein: gut, Warnung, Gefahr, Hinweis; je eine weiche Hinterlegung. Gefahr als Schrift und als Fläche getrennt (wie der Akzent): auf der Fläche steht auf-farbe mindestens 4,5 : 1.",
    "marken": [
     {
      "name": "--gut",
@@ -655,6 +655,15 @@
      }
     },
     {
+     "name": "--gefahr-flaeche",
+     "art": "farbe",
+     "zweck": "Füllung von Halt und Löschen, auf-farbe darauf 5,6 : 1",
+     "werte": {
+      "hell": "#c8243f",
+      "dunkel": "#d92847"
+     }
+    },
+    {
      "name": "--info",
      "art": "farbe",
      "zweck": "Hinweis, wartet (Königsblau)",
@@ -676,7 +685,7 @@
   },
   {
    "name": "Palette",
-   "text": "Zwischenfarben zwischen Blau und Bernstein für Arten und Zonen (Fähigkeiten, Modelle, Reihen in Diagrammen); immer mit Wort. Kräftig und Königsblau (Nutzer 16.10.2026).",
+   "text": "Zwischenfarben zwischen Blau und Bernstein für Arten und Zonen (Fähigkeiten, Modelle, Reihen in Diagrammen); immer mit Wort. Kräftig und Königsblau (Nutzer 16.10.2026). Im hellen Thema stehen sie auch als Schrift auf ihrer eigenen Tönung, dort mindestens 3 : 1 (Türkis, Minze und Honig darum dunkler als ihre Füllfarbe im Dunkeln vermuten ließe).",
    "marken": [
     {
      "name": "--himmel",
@@ -701,7 +710,7 @@
      "art": "farbe",
      "zweck": "Übersetzung",
      "werte": {
-      "hell": "#0a9e94",
+      "hell": "#087870",
       "dunkel": "#14d8c8"
      }
     },
@@ -710,7 +719,7 @@
      "art": "farbe",
      "zweck": "Hören, Transkription",
      "werte": {
-      "hell": "#0f9b6a",
+      "hell": "#0c7a54",
       "dunkel": "#22e39a"
      }
     },
@@ -755,7 +764,7 @@
      "art": "farbe",
      "zweck": "wartet, angehalten, Vorwarnung",
      "werte": {
-      "hell": "#c79a00",
+      "hell": "#856700",
       "dunkel": "#ffd21f"
      }
     },

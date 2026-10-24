@@ -84,7 +84,7 @@ code, .code { font-family: var(--schrift-code); font-size: 0.92em; background: v
 .hauptregler .stufen button i { font-size: 14px; }
 .hauptregler .stufen button.an.normal { color: var(--gut); }
 .hauptregler .stufen button.an.auslaufen { color: var(--warn); background: color-mix(in srgb, var(--warn) var(--toenung), transparent); }
-.hauptregler .stufen button.an.halt { color: var(--auf-farbe); background: var(--gefahr); }
+.hauptregler .stufen button.an.halt { color: var(--auf-farbe); background: var(--gefahr-flaeche); }
 .hauptregler .hintergrund { display: inline-flex; align-items: center; gap: var(--a2); font-size: var(--klein); color: var(--text-2); padding-left: var(--a3); border-left: 1px solid var(--rand); }
 .hauptregler .hintergrund .schalter { width: 42px; height: 24px; }
 .hauptregler .hintergrund .schalter::after { width: 18px; height: 18px; }
@@ -182,7 +182,7 @@ code, .code { font-family: var(--schrift-code); font-size: 0.92em; background: v
 .knopf.ohne { background: transparent; border-color: transparent; color: var(--text-2); }
 .knopf.ohne:hover { background: var(--karte); color: var(--text); }
 .knopf.gefahr { color: var(--gefahr); }
-.knopf.gefahr-voll { background: var(--gefahr); color: var(--auf-farbe); border-color: transparent; }
+.knopf.gefahr-voll { background: var(--gefahr-flaeche); color: var(--auf-farbe); border-color: transparent; }
 .knopf.warnung { color: var(--warn); }
 .knopf.klein { height: 36px; padding: 0 var(--a3); }
 .knopf.symbol { width: 42px; padding: 0; }

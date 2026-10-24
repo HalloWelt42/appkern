@@ -99,7 +99,7 @@
 .rek-leiste { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto auto; grid-template-areas: "stopp pause pegel zeit marken symbole";
   align-items: center; gap: 14px;
   padding: 10px 16px; background: var(--flaeche); border-radius: var(--r3); box-shadow: var(--schatten); position: relative; }
-.rek-leiste .stopp { grid-area: stopp; width: 52px; height: 52px; border-radius: 26px; border: 0; background: var(--gefahr); color: var(--auf-farbe); cursor: pointer; }
+.rek-leiste .stopp { grid-area: stopp; width: 52px; height: 52px; border-radius: 26px; border: 0; background: var(--gefahr-flaeche); color: var(--auf-farbe); cursor: pointer; }
 .rek-leiste .stopp i { font-size: 20px; }
 .rek-leiste .rund { width: 40px; height: 40px; border-radius: 20px; }
 /* der Knopf heißt pause, die Zeit zeigt den Zustand als angehalten: eine Klasse für beides legte die Zeit in die Zelle des Knopfs */

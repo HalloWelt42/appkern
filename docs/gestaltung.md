@@ -169,7 +169,7 @@ Bernstein: Fläche und Schrift getrennt, damit der Kontrast in beiden Themen sti
 
 ### Bedeutung
 
-Immer mit Wort, nie Farbe allein: gut, Warnung, Gefahr, Hinweis; je eine weiche Hinterlegung.
+Immer mit Wort, nie Farbe allein: gut, Warnung, Gefahr, Hinweis; je eine weiche Hinterlegung. Gefahr als Schrift und als Fläche getrennt (wie der Akzent): auf der Fläche steht auf-farbe mindestens 4,5 : 1.
 
 | Marke | hell | dunkel | Zweck |
 |---|---|---|---|
@@ -179,24 +179,25 @@ Immer mit Wort, nie Farbe allein: gut, Warnung, Gefahr, Hinweis; je eine weiche 
 | `--warn-weich` | `rgba(217, 83, 15, 0.13)` | `rgba(255, 122, 31, 0.16)` |  |
 | `--gefahr` | `#c8243f` | `#ff5c74` | Fehler, Löschen, Halt |
 | `--gefahr-weich` | `rgba(224, 30, 69, 0.12)` | `rgba(255, 59, 92, 0.16)` |  |
+| `--gefahr-flaeche` | `#c8243f` | `#d92847` | Füllung von Halt und Löschen, auf-farbe darauf 5,6 : 1 |
 | `--info` | `#1f55d6` | `#3a7dff` | Hinweis, wartet (Königsblau) |
 | `--toenung` | `20%` | `26%` | Stärke farbiger Hinterlegungen im Leitstand (color-mix mit transparent) |
 
 ### Palette
 
-Zwischenfarben zwischen Blau und Bernstein für Arten und Zonen (Fähigkeiten, Modelle, Reihen in Diagrammen); immer mit Wort. Kräftig und Königsblau (Nutzer 16.10.2026).
+Zwischenfarben zwischen Blau und Bernstein für Arten und Zonen (Fähigkeiten, Modelle, Reihen in Diagrammen); immer mit Wort. Kräftig und Königsblau (Nutzer 16.10.2026). Im hellen Thema stehen sie auch als Schrift auf ihrer eigenen Tönung, dort mindestens 3 : 1 (Türkis, Minze und Honig darum dunkler als ihre Füllfarbe im Dunkeln vermuten ließe).
 
 | Marke | hell | dunkel | Zweck |
 |---|---|---|---|
 | `--himmel` | `#1f55d6` | `#3a7dff` | Text und Chat |
 | `--petrol` | `#0a8aa3` | `#10b3c9` | Einbettung und Suche |
-| `--tuerkis` | `#0a9e94` | `#14d8c8` | Übersetzung |
-| `--minze` | `#0f9b6a` | `#22e39a` | Hören, Transkription |
+| `--tuerkis` | `#087870` | `#14d8c8` | Übersetzung |
+| `--minze` | `#0c7a54` | `#22e39a` | Hören, Transkription |
 | `--flieder` | `#5b45e6` | `#8f7bff` | Bild: beschreiben und erzeugen |
 | `--violett` | `#8e2fe0` | `#c45cff` | Musik |
 | `--rose` | `#e0186e` | `#ff3f8e` | Stimme: sprechen und klonen |
 | `--koralle` | `#e04a1a` | `#ff6a3d` | Zone extern, Kosten |
-| `--honig` | `#c79a00` | `#ffd21f` | wartet, angehalten, Vorwarnung |
+| `--honig` | `#856700` | `#ffd21f` | wartet, angehalten, Vorwarnung |
 | `--sand` | `#9a7a2e` | `#e2b96a` | passiv, Reserve, Werkzeug |
 | `--stahl` | `#4f6d93` | `#8aa9c9` | Zone Heimnetz, neutral |
 
