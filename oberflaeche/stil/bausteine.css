@@ -1,19 +1,17 @@
 /* Gemeinsame Bausteine der Apps: Spieler und Wellenform (Rechner und Telefon), Sprecherfarben, Rückfrage, Hochladen,
    Hinweisband, Listen und Dateiwahl, Rekorder, Gruppen der Seitenleiste. Kommen mit `appkern-oberflaeche/stil.css`; die Apps ergänzen nur, was ihnen eigen ist. */
 
-:root {
-  --s1: #12938a; --s2: #c2410c; --s3: #7c3aed; --s4: #2f7ce0; --s5: #b45309; --s6: #db2777;
-}
 .spieler { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; gap: 14px; align-items: center;
            padding: 10px 22px 12px; background: var(--flaeche); box-shadow: 0 1px 0 var(--rand); }
-.spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent-flaeche); color: var(--auf-akzent); font-size: 18px; }
-.spieler .zeitangabe { font-family: ui-monospace, monospace; font-size: var(--klein); color: var(--text-2); white-space: nowrap; }
+.spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent-flaeche); color: var(--auf-akzent); }
+.spieler .gross i, .mobil .t-spieler .gross i { font-size: 18px; }
+.spieler .zeitangabe { font-family: var(--schrift-code); font-size: var(--klein); color: var(--text-2); white-space: nowrap; }
 .welle { position: relative; height: 54px; }
 .welle .saeulen { position: absolute; inset: 8px 0 8px 0; display: flex; align-items: center; gap: 1px; }
 .welle .saeulen span { flex: 1; min-width: 1px; border-radius: 1px; background: var(--rand); }
 .welle .saeulen span.gespielt { background: var(--akzent); }
 .welle .abspielkopf { position: absolute; top: 2px; bottom: 2px; width: 2px; background: var(--text); }
-.welle .fahne { position: absolute; top: -2px; transform: translateX(-50%); font-size: 12px; color: var(--warn); }
+.welle i.fahne { position: absolute; top: -2px; transform: translateX(-50%); font-size: 12px; color: var(--warn); }
 .welle .sprecherspur { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; display: flex; border-radius: 2px; overflow: hidden; }
 .knopfreihe { display: flex; flex-wrap: wrap; gap: 6px; }
 /* schmaler als 1000 Pixel: der Spieler behält Abspielen, Welle und Zeit */
@@ -23,15 +21,15 @@
 }
 .mobil .t-spieler { flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 16px;
                     background: var(--flaeche); box-shadow: 0 -1px 0 var(--rand); }
-.mobil .t-spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent-flaeche); color: var(--auf-akzent); font-size: 18px; }
+.mobil .t-spieler .gross { width: 46px; height: 46px; border-radius: 23px; border: 0; background: var(--akzent-flaeche); color: var(--auf-akzent); }
 .mobil .t-spieler .welle { height: 40px; }
-.mobil .t-spieler .zeitangabe { font-family: ui-monospace, monospace; font-size: var(--marke); color: var(--text-2); }
+.mobil .t-spieler .zeitangabe { font-family: var(--schrift-code); font-size: var(--marke); color: var(--text-2); }
 .upload { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 14px;
           background: var(--flaeche); border-radius: var(--r2); margin-bottom: 6px; font-size: var(--klein); }
 .upload .balken { grid-column: 2 / -1; }
 .welle .leinwand { position: absolute; inset: 6px 0 8px 0; width: 100%; height: calc(100% - 14px); cursor: pointer; touch-action: none; }
 .welle .sprecherspur { position: absolute; }
-.welle .fahne { pointer-events: none; }
+.welle i.fahne { pointer-events: none; }
 .welle .abspielkopf { pointer-events: none; }
 .mobil .t-spieler { position: sticky; bottom: -16px; margin: 8px -16px -16px; z-index: 2; }
 .rund.aktiv { background: var(--akzent-weich); color: var(--akzent); }
@@ -50,7 +48,8 @@
    nicht wählbare Dateien); am Telefon füllt die Ansicht die Spalte, die Leiste unten bleibt unten. */
 .zeile { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto auto; gap: 14px; align-items: center; cursor: pointer;
          padding: 12px 16px; background: var(--flaeche); border-radius: var(--r3); box-shadow: var(--schatten); margin-bottom: 8px; border: 2px solid transparent; }
-.zeile .art { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--flaeche-2); color: var(--text-2); font-size: 18px; }
+.zeile .art { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--flaeche-2); color: var(--text-2); }
+.zeile .art i { font-size: 18px; }
 .zeile .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .zeile .meta { font-size: var(--klein); color: var(--text-3); margin-top: 2px; }
 .zeile.gewaehlt { border-color: var(--akzent); }
@@ -85,7 +84,7 @@
 .mitschrift-stand { margin-left: auto; font-weight: 400; color: var(--text-3); }
 .mitschrift-text { max-height: 220px; overflow-y: auto; padding: 8px 14px 12px; }
 .mitschrift-text p { margin: 6px 0; line-height: 1.55; }
-.mitschrift-text .zeit { font-family: ui-monospace, monospace; font-size: var(--klein); color: var(--text-3); margin-right: 10px; }
+.mitschrift-text .zeit { font-family: var(--schrift-code); font-size: var(--klein); color: var(--text-3); margin-right: 10px; }
 .mitschrift-leer { color: var(--text-3); font-size: var(--klein); }
 .rekorder-gespeichert { display: flex; gap: 12px; align-items: flex-start; max-width: 760px; margin: 16px auto 0; font-size: var(--gross); }
 .rekorder-gespeichert > i { color: var(--gut); font-size: 22px; margin-top: 2px; }
@@ -100,22 +99,24 @@
 .rek-leiste { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto auto; grid-template-areas: "stopp pause pegel zeit marken symbole";
   align-items: center; gap: 14px;
   padding: 10px 16px; background: var(--flaeche); border-radius: var(--r3); box-shadow: var(--schatten); position: relative; }
-.rek-leiste .stopp { grid-area: stopp; width: 52px; height: 52px; border-radius: 26px; border: 0; background: var(--gefahr); color: #fff; font-size: 20px; cursor: pointer; }
+.rek-leiste .stopp { grid-area: stopp; width: 52px; height: 52px; border-radius: 26px; border: 0; background: var(--gefahr); color: var(--auf-farbe); cursor: pointer; }
+.rek-leiste .stopp i { font-size: 20px; }
 .rek-leiste .rund { width: 40px; height: 40px; border-radius: 20px; }
 /* der Knopf heißt pause, die Zeit zeigt den Zustand als angehalten: eine Klasse für beides legte die Zeit in die Zelle des Knopfs */
 .rek-leiste .pause { grid-area: pause; }
 .rek-leiste .marken { grid-area: marken; position: relative; }
 .rek-leiste .marken .zahl { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px;
-  background: var(--akzent-flaeche); color: var(--auf-akzent); font-size: 11px; display: grid; place-items: center; }
+  background: var(--akzent-flaeche); color: var(--auf-akzent); font-size: var(--marke); display: grid; place-items: center; }
 .rek-pegel { grid-area: pegel; display: flex; align-items: center; justify-content: flex-end; gap: 2px; height: 40px; min-width: 0; overflow: hidden; }
 .rek-pegel span { flex: 0 0 3px; border-radius: 2px; background: var(--gefahr); transition: height .1s; }
 .rek-leiste:has(.rek-zeit.angehalten) .rek-pegel span { background: var(--text-3); }
-.rek-zeit { grid-area: zeit; font-family: ui-monospace, monospace; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.rek-zeit { grid-area: zeit; font-family: var(--schrift-code); font-size: calc(var(--gross) + 5px); font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .rek-zeit .punkt { width: 9px; height: 9px; border-radius: 5px; background: var(--gefahr); }
 .rek-zeit.angehalten .punkt { background: var(--text-3); }
 .rek-symbole { grid-area: symbole; display: flex; gap: 4px; align-items: center; position: relative; }
 .rek-symbol { width: 34px; height: 34px; border-radius: 17px; border: 0; background: var(--flaeche-2); color: var(--text-2);
-  display: grid; place-items: center; cursor: pointer; font-size: 15px; }
+  display: grid; place-items: center; cursor: pointer; }
+.rek-symbol i { font-size: 15px; }
 .rek-symbol.aus { color: var(--text-3); opacity: .6; }
 .rek-symbol.gut { color: var(--gut); }
 .rek-symbol.warn { color: var(--warn); background: var(--warn-weich); }
@@ -129,7 +130,7 @@
 .rek-live .kopf-zeile { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: var(--klein); color: var(--text-3); }
 .rek-live .text { flex: 1; overflow-y: auto; padding: 0 12px 10px; line-height: 1.55; }
 .rek-live .text p { margin: 6px 0; }
-.rek-live .text .zeit { font-family: ui-monospace, monospace; font-size: var(--klein); color: var(--text-3); margin-right: 8px; }
+.rek-live .text .zeit { font-family: var(--schrift-code); font-size: var(--klein); color: var(--text-3); margin-right: 8px; }
 /* Telefon: Text oben, Symbole darüber an die Leiste gerückt, die Leiste unten über den Reitern wie der Spieler */
 .mobil .rek { flex: 1; }
 .mobil .rek-symbole { justify-content: center; gap: 10px; }
@@ -138,7 +139,7 @@
 .mobil .rek-leiste { grid-template-columns: auto minmax(0, 1fr) auto auto auto; grid-template-areas: "stopp pegel zeit pause marken"; gap: 10px; margin: 0 -16px -16px; border-radius: 0;
   box-shadow: 0 -1px 0 var(--rand); position: sticky; bottom: -16px; }
 .mobil .rek-leiste .stopp { width: 48px; height: 48px; }
-.mobil .rek-zeit { font-size: 15px; }
+.mobil .rek-zeit { font-size: var(--gross); }
 /* die laufende Aufnahme füllt die Fläche: am Rechner das Rollfeld, am Telefon die Spalte über die ganze Höhe */
 .rek-flaeche { display: flex; flex-direction: column; }
 .rekorder:has(> .rek) { flex: 1; display: flex; flex-direction: column; min-height: 0; }
@@ -157,7 +158,7 @@
 /* am Telefon sind auch stille Knöpfe als Knopf erkennbar und groß genug zum Tippen */
 .mobil .leiste-inhalt .knopf.still { background: var(--flaeche-2); box-shadow: 0 0 0 1px var(--rand); min-height: 40px; }
 .liste-klein div { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; font-size: var(--klein); }
-.liste-klein .zeit { font-family: ui-monospace, monospace; color: var(--text-3); width: 60px; flex: none; }
+.liste-klein .zeit { font-family: var(--schrift-code); color: var(--text-3); width: 60px; flex: none; }
 
 /* Seite mit eigener Leiste daneben (Liste links, Gewähltes rechts); unter 1280 Pixel wird die Leiste eine
    einschiebbare Tafel (wie in der Schale), ein Knopf "nur-schmal" öffnet sie */

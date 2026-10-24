@@ -369,7 +369,7 @@ Die Oberflächen der Apps teilen Gestaltung und Schale aus einer Quelle, dem npm
 Repo (Ordner `oberflaeche`, Entwurf in `oberflaeche/mockups`, freigegeben am 17.10.2026). Die Schale bringt mit:
 erste Einrichtung, Anmeldung mit dem Kellerwolke-Konto (Passwort oder Code), Kopf mit Rolle, Verbindungen und
 laufenden Aufträgen, Band bei fehlender Verbindung, Navigation, Aufträge mit Schritten und Leiste, erzeugte
-Einstellungen (Geheimnisse verdeckt mit Auge), Protokoll, Thema je Gerät (die Schrift ist fest: 15 px, klein 13 px, Marken 12 px), eine eigene Ansicht fürs
+Einstellungen (Geheimnisse verdeckt mit Auge), Protokoll, Thema je Gerät (die Schrift ist dicht und fest: 15 px, klein 13 px, Etiketten 12 px), eine eigene Ansicht fürs
 Telefon mit Reitern. Barlow und die Symbole kommen über npm.
 
 ```svelte
@@ -384,6 +384,31 @@ Telefon mit Reitern. Barlow und die Symbole kommen über npm.
 
 In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`; im Einstieg
 `import "appkern-oberflaeche/stil.css"`.
+
+### Marken
+
+Farben, Schriften, Schriftgrößen, Abstände, Ecken und Schatten aller Apps stehen an einer Stelle:
+`oberflaeche/stil/marken.css` (CSS-Variablen, je Marke ihr Zweck als Kommentar). Schale, Bausteine und der Stil jeder
+App nutzen nur diese Marken; eine neue Farbe kommt zuerst dorthin. `stil.css` lädt sie mit, einzeln gibt es sie als
+`appkern-oberflaeche/marken.css`.
+
+| Gruppe | Marken |
+|---|---|
+| Schriften | `--schrift` (Barlow), `--schrift-zahl` (Chakra Petch für Zahlen), `--schrift-code` |
+| Schriftgrößen | `--gross`, `--klein`, `--marke`, `--titel`, `--seitentitel`, `--kennzahl`, `--appname` |
+| Maße | `--kopf-hoehe`, `--nav-breite`, `--fuss-hoehe`, `--zeile`, `--knopf-hoehe` |
+| Abstände, Ecken, Bewegung | `--a1` bis `--a7`, `--r1` bis `--r3`, `--schnell`, `--ruhig` |
+| Flächen | `--hg`, `--leiste`, `--flaeche`, `--flaeche-2`, `--mulde`; für Apps mit eigener Schale `--bereich`, `--karte` bis `--karte-3` |
+| Schrift und Ränder | `--text`, `--text-2`, `--text-3`, `--rand`, `--rand-stark`, `--diagrammlinie` |
+| Akzent und Bedeutung | `--akzent`, `--akzent-weich`, `--akzent-flaeche`, `--auf-akzent`, `--gut`, `--warn`, `--gefahr` (je mit `-weich`), `--info`, `--toenung` |
+| Palette | `--himmel`, `--petrol`, `--tuerkis`, `--minze`, `--flieder`, `--violett`, `--rose`, `--koralle`, `--honig`, `--sand`, `--stahl` |
+| Feste Farben, Schatten | `--licht`, `--auf-farbe`, `--schattenfarbe`, `--app-farbe`, `--symbol-flaeche`, Sprecherfarben `--s1` bis `--s6`, `--schatten`, `--schatten-schwebend`, `--schleier` |
+
+Themen: hell ist die Vorgabe, dunkel über `data-theme="dunkel"`. Schriftstufen: dicht ist die Vorgabe der Schale;
+`data-schrift="klein"`, `"mittel"` oder `"gross"` heben Schrift und Maße für Apps mit eigener Schale und Schriftstufen
+(Leitstelle, Fundus). Beides gilt auch für einen Teil der Seite (etwa eine Probe in hell neben einer in dunkel); dort
+die Schriftgröße mit `font-size: var(--gross)` neu setzen. Mischungen gehen über `color-mix` statt eigener
+RGB-Werte: `color-mix(in srgb, var(--gefahr) var(--toenung), transparent)`.
 
 Eine App mit eigener Gestaltung (Fundus in der Gestaltung der Leitstelle) nimmt statt der Schale ihre Bausteine und
 zeichnet selbst; die Logik bleibt im Appkern: `sitzungStarten`, `anmelden`, `koppeln`, `einrichtenMit`, `abmelden`,

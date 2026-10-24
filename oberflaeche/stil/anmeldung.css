@@ -1,15 +1,14 @@
 /* Anmeldung, erste Einrichtung und "die App antwortet nicht" als ganze Seite (teile/Anmeldung.svelte,
    teile/Einrichtung.svelte, teile/AppWeg.svelte), eine Stelle für alle Apps. Für sich vollständig und ganz unter
    .anmeldung: so sieht sie in Apps mit eigener Schale gleich aus (nur diese Datei laden,
-   `appkern-oberflaeche/anmeldung.css`). Farben, Ecken und Größen kommen nur aus den Variablen der Schale (--hg,
-   --flaeche, --flaeche-2, --rand, --text, --text-2, --text-3, --akzent, --akzent-weich, --akzent-flaeche, --gefahr,
-   --gefahr-weich, --schatten, --r2, --r3, --gross, --klein, --marke, wahlweise --symbol-flaeche und --auf-akzent für
-   Schrift auf dem Akzent); eine App mit eigener Gestaltung setzt sie auf .anmeldung und bekommt dieselbe Anmeldung in
-   ihren Farben. */
+   `appkern-oberflaeche/anmeldung.css`). Farben, Ecken, Schriften und Größen kommen nur aus den Marken
+   (marken.css); eine App mit eigener Schale lädt sie mit dem Leitstand (leitstand.css) und bekommt dieselbe Anmeldung
+   in ihrer Schriftstufe. */
 .anmeldung { display: grid; place-items: center; color: var(--text); background: radial-gradient(circle at 30% 20%, var(--akzent-weich), var(--hg) 60%); }
 .anmeldung .anmelde-karte { width: 420px; max-width: 94vw; background: var(--flaeche); border-radius: var(--r3); box-shadow: var(--schatten); padding: 30px; display: flex; flex-direction: column; gap: 14px; }
-.anmeldung .marke { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: 24px; }
-.anmeldung .marke .symbol { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--auf-akzent, #fff); background: var(--symbol-flaeche, linear-gradient(135deg, #2f7ce0, #6a5ae0)); font-size: 16px; }
+.anmeldung .marke { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; font-size: var(--kennzahl); }
+.anmeldung .marke .symbol { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--auf-akzent); background: var(--symbol-flaeche); }
+.anmeldung .marke .symbol i { font-size: 16px; }
 .anmeldung .rolle { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: var(--klein); color: var(--text-2); }
 .anmeldung .rolle i { color: var(--text-3); }
 .anmeldung label { font-size: var(--klein); color: var(--text-2); display: flex; flex-direction: column; gap: 6px; }
@@ -18,7 +17,7 @@
 .anmeldung .eingabe:focus-within { border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-weich); }
 .anmeldung .knopf { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: var(--r2); border: 1px solid var(--rand); background: var(--flaeche); color: var(--text); cursor: pointer; font: inherit; font-size: var(--klein); white-space: nowrap; }
 .anmeldung .knopf.breit { height: 46px; }
-.anmeldung .knopf.primaer { background: var(--akzent-flaeche); color: var(--auf-akzent, #fff); border-color: transparent; font-weight: 600; }
+.anmeldung .knopf.primaer { background: var(--akzent-flaeche); color: var(--auf-akzent); border-color: transparent; font-weight: 600; }
 .anmeldung .knopf.zweit { background: var(--akzent-weich); color: var(--akzent); border-color: transparent; font-weight: 600; }
 .anmeldung .knopf:disabled { opacity: .5; cursor: default; }
 .anmeldung .rund { width: 38px; height: 38px; border-radius: 19px; border: 0; background: var(--flaeche-2); display: grid; place-items: center; cursor: pointer; color: var(--text-2); }
@@ -34,13 +33,14 @@
 /* Kopplungscode: acht Kästchen mit Lücke nach vier, ein unsichtbares Feld darüber (Einfügen, one-time-code) */
 .anmeldung .code-feld { position: relative; }
 .anmeldung .kaestchen { display: flex; gap: 6px; justify-content: center; }
-.anmeldung .kaestchen .k { flex: 1 1 0; min-width: 0; max-width: 40px; height: 52px; border-radius: var(--r2); border: 1px solid var(--rand); background: var(--flaeche); color: var(--text); display: flex; align-items: center; justify-content: center; font-family: ui-monospace, monospace; font-size: 24px; font-weight: 600; }
+.anmeldung .kaestchen .k { flex: 1 1 0; min-width: 0; max-width: 40px; height: 52px; border-radius: var(--r2); border: 1px solid var(--rand); background: var(--flaeche); color: var(--text); display: flex; align-items: center; justify-content: center; font-family: var(--schrift-code); font-size: var(--kennzahl); font-weight: 600; }
 .anmeldung .kaestchen .k.aktiv { border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-weich); }
 .anmeldung .kaestchen .luecke { flex: none; width: 8px; }
+/* Ausnahme: 16 Pixel halten das iPhone davon ab, beim Antippen zu vergrößern; das Feld selbst ist unsichtbar */
 .anmeldung .code-feld input { position: absolute; inset: 0; width: 100%; opacity: 0; font-size: 16px; caret-color: transparent; }
 .anmeldung .leer-gross { text-align: center; align-items: center; }
 .anmeldung .leer-gross > i { font-size: 40px; color: var(--text-3); }
-.anmeldung .leer-gross h2 { margin: 0; font-size: 20px; }
+.anmeldung .leer-gross h2 { margin: 0; font-size: var(--seitentitel); }
 .anmeldung .leer-gross p { margin: 0 0 6px; color: var(--text-2); }
 .mobil .anmeldung { height: 100%; }
 .mobil .anmeldung .anmelde-karte { width: auto; box-shadow: none; background: transparent; padding: 0 12px; }

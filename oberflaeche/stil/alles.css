@@ -1,9 +1,11 @@
-/* Einstieg der Gestaltung: Schrift und Symbole aus npm, dann die Schale. */
+/* Einstieg der Gestaltung für Apps in der Schale: Schrift und Symbole aus npm, die Marken (die eine Wahrheit für Farben,
+   Schriften und Größen), dann Schale und Bausteine. */
 @import "@fontsource/barlow/400.css";
 @import "@fontsource/barlow/600.css";
 @import "@fontsource/chakra-petch/500.css";
 @import "@fontsource/chakra-petch/600.css";
 @import "@fortawesome/fontawesome-free/css/all.min.css";
+@import "./marken.css";
 @import "./schale.css";
 @import "./anmeldung.css";
 @import "./auswahl.css";
