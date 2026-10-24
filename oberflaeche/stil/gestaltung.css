@@ -29,7 +29,8 @@
 .gs-grund dd { margin: 0; color: var(--text-2); }
 .gs-paar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--a3); }
 .gs-probe { position: relative; min-width: 0; padding: var(--a5) var(--a4) var(--a4); border-radius: var(--r3); background: var(--hg); color: var(--text);
-            font-family: var(--schrift); font-size: var(--gross); line-height: 1.45; box-shadow: 0 0 0 1px var(--rand); overflow: hidden; }
+            font-family: var(--schrift); font-size: var(--gross); line-height: 1.45; box-shadow: 0 0 0 1px var(--rand); overflow: hidden;
+            container-type: inline-size; }
 .gs-thema { position: absolute; top: 4px; right: 8px; font-size: var(--marke); color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
 
 /* Farben: Marke, hell, dunkel, Zweck */

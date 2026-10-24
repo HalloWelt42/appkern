@@ -551,7 +551,7 @@ select.eingabe { padding-right: var(--a5); }
   .spalten.breit-rechts { grid-template-columns: minmax(0, 1fr) 440px; }
   .hauptregler .stufen button span { display: none; }
   .hauptregler .stufen button { padding: 0 var(--a3); }
-  .suche { max-width: 420px; }
+  .kopf .suche { max-width: 420px; }
 }
 @media (max-width: 1240px) {
   :root { --nav-breite: 72px; }   /* Ausnahme: die Seitenleiste wird eine Symbolleiste von 72 Pixeln */
@@ -566,11 +566,16 @@ select.eingabe { padding-right: var(--a5); }
   .spalten, .spalten.breit-rechts, .spalten.schmal-rechts { grid-template-columns: minmax(0, 1fr); overflow-y: auto; gap: var(--a5); padding-bottom: var(--a5); }
   .spalten > .rollfeld { overflow: visible; min-height: auto; flex: none; padding: 0; }
   .einstellung { grid-template-columns: minmax(0, 1fr) 240px; }
-  .suche { max-width: 320px; }
+  .kopf .suche { max-width: 320px; }
   .hauptregler-leiste { left: var(--nav-breite); }
 }
 /* Telefon und schmale Fenster: Einstellungen untereinander (Erklärung, darunter das Bedienelement) */
 @media (max-width: 760px) {
+  .einstellung { grid-template-columns: minmax(0, 1fr); gap: var(--a2); }
+  .einstellung .wert { justify-content: flex-start; flex-wrap: wrap; }
+}
+/* ebenso in einem schmalen Rahmen mit Container (etwa einer Probe der Seite Gestaltung), gleich wie breit das Fenster ist */
+@container (max-width: 600px) {
   .einstellung { grid-template-columns: minmax(0, 1fr); gap: var(--a2); }
   .einstellung .wert { justify-content: flex-start; flex-wrap: wrap; }
 }
@@ -580,6 +585,7 @@ select.eingabe { padding-right: var(--a5); }
   .kopf-aktionen .knopf { display: none; }
   .lage { padding: 0 var(--a2); margin-right: 0; }
   .fuss > span:nth-child(2), .fuss > span:nth-child(3) { display: none; }
-  .suche { display: none; }
+  /* nur die Suche im Kopf weicht; Suchfelder in den Seiten bleiben */
+  .kopf .suche { display: none; }
   .kennzahl { min-width: 120px; }
 }
