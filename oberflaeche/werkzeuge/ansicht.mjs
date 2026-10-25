@@ -15,8 +15,8 @@
 // Gibt die Abfrage keinen Wert her, ist das ein Befund (die Seite fehlt sonst still in der Prüfung).
 // Entwürfe ohne Backend (Ordner mockups einer App): eigene Seitenliste mit --seiten und darin "anmeldung": false; dann
 // fragt die Prüfung die App nicht ab und meldet sich nicht an, das Thema setzt sie wie sonst über appkern_anzeige.
-// Angemeldet wird mit dem Testzugang aus backend/.env.test (KELLERWOLKE_KENNUNG, KELLERWOLKE_PASSWORT); die Werte
-// werden nie ausgegeben. Ein Browser-Dialog (alert, confirm, beforeunload) ist selbst ein Befund und wird geschlossen;
+// Angemeldet wird mit dem Testzugang aus backend/.env.test (KELLERWOLKE_KENNUNG, KELLERWOLKE_PASSWORT; gleichnamige
+// Variablen der Umgebung gehen vor); die Werte werden nie ausgegeben. Ein Browser-Dialog (alert, confirm, beforeunload) ist selbst ein Befund und wird geschlossen;
 // antwortet der Browser nicht binnen 30 Sekunden, ist auch das ein Befund. Ende mit 1, wenn es Befunde gibt.
 import fs from "node:fs";
 import os from "node:os";
@@ -44,6 +44,8 @@ const mitAnmeldung = einstellung.anmeldung !== false;
 const env = Object.fromEntries((fs.existsSync("backend/.env.test") ? fs.readFileSync("backend/.env.test", "utf8") : "")
   .split("\n").filter((z) => z.includes("=") && !z.trimStart().startsWith("#"))
   .map((z) => [z.split("=")[0].trim(), z.slice(z.indexOf("=") + 1).trim()]));
+// die Umgebung geht vor (etwa der Probebetrieb einer App mit nachgestellter Kellerwolke und ihren Testpersonen)
+for (const name of ["KELLERWOLKE_KENNUNG", "KELLERWOLKE_PASSWORT"]) if (process.env[name]) env[name] = process.env[name];
 
 let app = { kennung: "entwurf" };
 let token = "";
