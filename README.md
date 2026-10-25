@@ -114,6 +114,13 @@ laufen gegen eine nachgestellte Fassade, nie gegen die echte Leitstelle.
 Weitere Verbindungen einer App (andere Apps, Dienste am Mac) meldet sie mit `geruest.verbindung_anmelden(name, pruefung)` an;
 sie stehen neben Kellerwolke und Leitstelle in `/api/v1/verbindungen` und in der Fußleiste der Schale.
 
+**Andere Apps des Verbunds** (`geruest.verbund`, `appkern.verbund`): Aufrufe mit dem App-Schlüssel der Kellerwolke,
+mit `sitzung=` im Auftrag der Person (die andere App prüft deren Rechte wie in ihrer Oberfläche). `anfrage(methode,
+adresse, pfad, ...)` am Stück, `durchreichen(adresse, pfad, request)` reicht Inhalte mit Bereichen an den Browser
+(Spieler), `anmelden(name, adresse)` stellt das Ziel zu den Verbindungen, `angebot(name, kennung, adresse)` füllt das
+Feld der Adresse in den Einstellungen aus dem Verzeichnis. Fehler kommen als `VerbundFehler` mit Meldung und Status des
+Ziels; die Adresse steht in einer Einstellung der App, nie fest im Code.
+
 ## Aufträge
 
 Lange Arbeit einer App (Transkribieren, Vertonen, Stapel) läuft als Auftrag: persistent in der eigenen Datenbank der

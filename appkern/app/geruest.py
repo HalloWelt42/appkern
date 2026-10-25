@@ -50,6 +50,7 @@ from appkern.leitstelle import Leitstelle, LeitstellenFehler, geduld_setzen
 from appkern.leitstelle.zugang import ARBEIT
 from appkern.protokoll import Protokoll
 from appkern.protokoll.api import protokoll_router
+from appkern.verbund import Verbund
 from appkern.verzeichnis import Verzeichnis
 
 from .einrichtungscode import Einrichtungscode, Gesperrt
@@ -161,6 +162,7 @@ class Geruest(Generic[E]):
         self.protokoll = Protokoll(self.db)
         self.auftraege = Auftraege(self.db, arten, gleichzeitig=gleichzeitig, protokoll=self.protokoll)
         self.verzeichnis = Verzeichnis()
+        self.verbund = Verbund(self, transport)
         self.besitzer: str | None = None
         self.app_name: str | None = None          # Name des Zugangs in der Kellerwolke (Anmeldungen gelten nur hier)
         self.kellerwolke: Kellerwolke | None = None
@@ -431,6 +433,7 @@ class Geruest(Generic[E]):
         self._laeuft = False
         await self.anmeldung.schliessen()
         await self.verzeichnis.schliessen()
+        await self.verbund.schliessen()
         for c in self._clients:
             await c.aclose()
         await self.db.schliessen()
