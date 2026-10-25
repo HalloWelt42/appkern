@@ -14,7 +14,7 @@ Stelle nachgezogen.
 | Leitstelle | verteilt Aufträge an die KI-Dienste |
 | [Maschinenraum](https://github.com/HalloWelt42/maschinenraum) | regelt die KI-Dienste eines Rechners |
 | [Stellwerk](https://github.com/HalloWelt42/stellwerk) | startet die Apps |
-| Appkern | die Bausteine, aus denen jede App ihren Zugang zu all dem baut: Kellerwolke, Leitstelle, Anmeldung, Aufträge, Einstellungen, Protokoll, App-Verzeichnis |
+| Appkern | die Bausteine, aus denen jede App ihren Zugang zu all dem baut: Kellerwolke, Leitstelle, Anmeldung, Aufträge, Einstellungen, Protokoll, App-Verzeichnis, Mitteilungen aufs Gerät |
 
 ## Kellerwolke-Zugang
 
@@ -222,6 +222,27 @@ from appkern.verzeichnis import Verzeichnis
 verzeichnis = Verzeichnis(eingetragen={"stimmenausgabe": "http://studio:8611"})
 adresse = await verzeichnis.adresse("transkription")      # etwa http://127.0.0.1:8601
 ```
+
+## Mitteilungen aufs Gerät
+
+Web Push für jede App (Zusatz `appkern[push]`): das Gerüst baut den Baustein mit `push=True`. Das Schlüsselpaar
+(VAPID) entsteht beim ersten Bedarf in der Datenbank der App und bleibt; Abos gelten je Konto und Gerät; gesendet wird
+verschlüsselt (RFC 8291) und unterschrieben (RFC 8292) über httpx, ein Abo, das es nicht mehr gibt, geht von selbst.
+Geht nur über HTTPS (oder localhost), auf dem iPhone nur aus der App auf dem Home-Bildschirm.
+
+```python
+from appkern.push import Mitteilung
+
+geruest = Geruest(..., push=True)
+await geruest.push.senden(konto_id, Mitteilung(titel="Pinnwand", text="HAUS-3 ist dir zugewiesen",
+                                               url="/board/haus/3", tag="hinweis-h-1"))
+```
+
+Wege unter `/api/v1/push`: `schluessel`, `abo` (melden), `abo/entfernen`, `geraete` (Liste, `DELETE geraete/{id}`),
+`probe` und `dienst.js`, der Dienst im Browser (Kopf `Service-Worker-Allowed: /`). In der Oberfläche richtet
+`pushEinschalten()` das Gerät im Tippen ein, `pushStarten()` prüft beim Start den Stand dieses Geräts (`push.an`) und
+führt ein Tippen auf eine Mitteilung an ihr Ziel; `pushLage()` sagt, ob und warum ein Gerät keine Mitteilungen
+bekommen kann.
 
 ## Ton
 

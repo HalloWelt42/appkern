@@ -144,9 +144,10 @@ class Geruest(Generic[E]):
     def __init__(self, *, name: str, kennung: str, rolle: str, fassung: str, daten: Path, einstellungen: type[E],
                  arten: Sequence[Art] = (), symbol: str = "fa-cube", farbe: str = "#2f7ce0", oberflaeche: Path | None = None,
                  gleichzeitig: int = 1, angebote: Sequence[AppAngebot] = (), leseverbindungen: int = LESER,
-                 transport: httpx.AsyncBaseTransport | None = None) -> None:
+                 push: bool = False, transport: httpx.AsyncBaseTransport | None = None) -> None:
         """`angebote`: was die App mit Dateien der Kellerwolke kann (Aktionen im Dateimenü, Dateiwahl in der App).
         `leseverbindungen`: so viele Lesungen der Datenbank laufen nebeneinander (neben dem Schreiben).
+        `push`: Mitteilungen aufs Gerät (appkern/push, braucht das Extra `push`); dann steht `self.push` bereit.
         `transport` nur für Tests: alle Verbindungen nach außen gehen dann über ihn."""
         self.name, self.kennung, self.rolle, self.symbol, self.fassung = name, kennung, rolle, symbol, fassung
         self.farbe = farbe
@@ -184,6 +185,11 @@ class Geruest(Generic[E]):
         self._begleiter: list[Begleiter] = [self.abholer] if angebote else []
         self._oberflaeche_gemerkt: tuple[float, str | None] | None = None
         self._laeuft = False
+        self.push = None
+        if push:
+            from ..push import Push                      # nur mit dem Extra push (Schlüssel und Verschlüsselung)
+            self.push = Push(self.db, lambda: self.einstellungen.stand.adresse or f"mailto:{kennung}@localhost",
+                             transport=transport)
 
     # --- Angebote für die Einstellungen: Auswahl aus dem System statt bloßer Textfelder ----------------------------
 
@@ -569,6 +575,9 @@ class Geruest(Generic[E]):
         app.include_router(anmeldungs_router(self.anmeldung, protokoll=self.protokoll))
         if self.abholer.angebote:
             app.include_router(anfragen_router(self.abholer, lambda: self.kellerwolke, self.mensch))
+        if self.push is not None:
+            from ..push import push_router
+            app.include_router(push_router(self.push, self.mensch, self.name))
         for router in (auftrags_router(self.auftraege, abhaengigkeiten=[self.pflicht], wer=self.wer),
                        einstellungs_router(self.einstellungen, abhaengigkeiten=[self.mensch]),
                        protokoll_router(self.protokoll, abhaengigkeiten=[self.pflicht])):
