@@ -137,15 +137,36 @@ def stand_und_tests(z: Ziel, wurzel: Path) -> None:
     _lauf(["git", "fetch", "-q", "origin"], ort=wurzel)
     if _lauf(["git", "rev-parse", "HEAD"], ort=wurzel) != _lauf(["git", "rev-parse", f"origin/{z.zweig}"], ort=wurzel):
         raise Abbruch(f"Erst pushen ({z.zweig} ist nicht auf origin).")
-    tests = subprocess.run([".venv/bin/python", "-m", "pytest", "-q"], cwd=wurzel / "backend", capture_output=True, text=True)
+    tests = subprocess.run([".venv/bin/python", "-m", "pytest", "-q", "--tb=short"], cwd=wurzel / "backend",
+                           capture_output=True, text=True)
     print((tests.stdout.strip().splitlines() or [""])[-1])
     if tests.returncode != 0:
-        raise Abbruch("Tests nicht grün")
+        protokoll = testprotokoll(wurzel.name, tests.stdout + tests.stderr)
+        print(fehlerzeilen(tests.stdout))
+        raise Abbruch(f"Tests nicht grün (ganze Ausgabe: {protokoll})")
     oberflaeche, backend = appkern_staende(wurzel)
     if backend != oberflaeche:
         raise Abbruch(f"Appkern in Oberfläche ({oberflaeche[:7]}) und Backend ({(backend or 'nicht festgelegt')[:7]}) "
                       "verschieden: tools/appkern.sh ausführen")
     print(f"Appkern {oberflaeche[:7]} in Oberfläche und Backend")
+
+
+PROTOKOLLE = Path.home() / "Library" / "Logs" / "Ausrollen"
+FEHLERZEILEN = 40
+
+
+def testprotokoll(app: str, ausgabe: str) -> Path:
+    """Die ganze Ausgabe eines roten Testlaufs aufheben: ein wackelnder Test lässt sich sonst nie aufklären."""
+    PROTOKOLLE.mkdir(parents=True, exist_ok=True)
+    pfad = PROTOKOLLE / f"{app}-tests-{time.strftime('%Y%m%d-%H%M%S')}.log"
+    pfad.write_text(ausgabe)
+    return pfad
+
+
+def fehlerzeilen(ausgabe: str) -> str:
+    """Kopf und Grund jedes Fehlschlags (Zeilen mit ___ und E) samt der Zusammenfassung, höchstens FEHLERZEILEN."""
+    zeilen = [z for z in ausgabe.splitlines() if z.startswith(("____", "E ", "FAILED", "ERROR"))]
+    return "\n".join(zeilen[:FEHLERZEILEN] + ([f"... ({len(zeilen) - FEHLERZEILEN} weitere)"] if len(zeilen) > FEHLERZEILEN else []))
 
 
 def pi_pruefen(z: Ziel) -> None:

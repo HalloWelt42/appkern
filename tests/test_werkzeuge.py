@@ -339,3 +339,16 @@ def test_klassen_der_schale_nur_aus_dem_geladenen_stil(tmp_path):
     _datei(tmp_path, "stil/teil.css", ".karte { padding: 0; }\n")
     _datei(tmp_path, "stil/leitstand.css", ".verlauf { display: block; }\n")
     assert schalen_klassen(tmp_path / "stil") == {"knopf", "karte"}
+
+
+def test_roter_testlauf_beim_ausrollen_zeigt_den_grund_und_hebt_alles_auf(tmp_path, monkeypatch):
+    from appkern.werkzeuge import ausrollen
+    monkeypatch.setattr(ausrollen, "PROTOKOLLE", tmp_path / "protokolle")
+    ausgabe = ("..F.\n____ test_eins ____\n    assert x == 1\nE   assert 2 == 1\nE    +  wo x = 2\n"
+               "FAILED tests/test_a.py::test_eins - assert 2 == 1\n1 failed, 3 passed\n")
+    assert ausrollen.fehlerzeilen(ausgabe).splitlines() == ["____ test_eins ____", "E   assert 2 == 1", "E    +  wo x = 2",
+                                                            "FAILED tests/test_a.py::test_eins - assert 2 == 1"]
+    pfad = ausrollen.testprotokoll("fundus", ausgabe)
+    assert pfad.parent == tmp_path / "protokolle" and pfad.name.startswith("fundus-tests-") and pfad.read_text() == ausgabe
+    viele = "\n".join(f"E   zeile {i}" for i in range(50))
+    assert ausrollen.fehlerzeilen(viele).splitlines()[-1] == "... (10 weitere)"
