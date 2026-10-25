@@ -3,7 +3,7 @@
 // fester Teile beim Zustandswechsel; legt von jeder Ansicht ein Bild ab.
 //
 //   node frontend/node_modules/appkern-oberflaeche/oberflaeche/werkzeuge/ansicht.mjs <basis> [--ausgabe ORDNER]
-//        [--nur SEITE] [--thema hell|dunkel] [--breiten 1920,1440,1000,390]
+//        [--nur SEITE] [--thema hell|dunkel] [--breiten 1920,1440,1000,390] [--seiten DATEI]
 //
 // im Wurzelordner der App (tools/ansicht.sh). Seiten und Zustandswechsel stehen in frontend/ansicht.json:
 //   { "seiten": [ { "name": "start", "pfad": "/" },
@@ -13,6 +13,8 @@
 // Detailseiten holen ihren Pfad aus einer Abfrage der App (mit der Testanmeldung); {weg.zum.wert} wird gefüllt:
 //   { "name": "plan", "abfrage": "/api/v1/plaene?anzahl=1", "pfad": "/vertonen/{eintraege.0.id}" }
 // Gibt die Abfrage keinen Wert her, ist das ein Befund (die Seite fehlt sonst still in der Prüfung).
+// Entwürfe ohne Backend (Ordner mockups einer App): eigene Seitenliste mit --seiten und darin "anmeldung": false; dann
+// fragt die Prüfung die App nicht ab und meldet sich nicht an, das Thema setzt sie wie sonst über appkern_anzeige.
 // Angemeldet wird mit dem Testzugang aus backend/.env.test (KELLERWOLKE_KENNUNG, KELLERWOLKE_PASSWORT); die Werte
 // werden nie ausgegeben. Ein Browser-Dialog (alert, confirm, beforeunload) ist selbst ein Befund und wird geschlossen;
 // antwortet der Browser nicht binnen 30 Sekunden, ist auch das ein Befund. Ende mit 1, wenn es Befunde gibt.
@@ -37,16 +39,21 @@ const themen = wert("--thema") ? [wert("--thema")] : THEMEN;
 // eigene Breiten (etwa die eines Entwurfs); die Höhe folgt der Vorgabe: 844 am Telefon, sonst 900
 const BREITEN = wert("--breiten") ? wert("--breiten").split(",").map(Number).filter((b) => b > 0).map((b) => [b, b <= 600 ? 844 : 900])
   : VORGABE_BREITEN;
-const einstellung = JSON.parse(fs.readFileSync("frontend/ansicht.json", "utf8"));
+const einstellung = JSON.parse(fs.readFileSync(wert("--seiten") ?? "frontend/ansicht.json", "utf8"));
+const mitAnmeldung = einstellung.anmeldung !== false;
 const env = Object.fromEntries((fs.existsSync("backend/.env.test") ? fs.readFileSync("backend/.env.test", "utf8") : "")
   .split("\n").filter((z) => z.includes("=") && !z.trimStart().startsWith("#"))
   .map((z) => [z.split("=")[0].trim(), z.slice(z.indexOf("=") + 1).trim()]));
 
-const app = await (await fetch(`${basis}/api/v1/app`)).json();
-const anmeldung = await fetch(`${basis}/api/v1/anmeldung`, { method: "POST", headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ kennung: env.KELLERWOLKE_KENNUNG, passwort: env.KELLERWOLKE_PASSWORT }) });
-if (!anmeldung.ok) { console.error(`Anmeldung mit dem Testzugang scheitert (${anmeldung.status}); backend/.env.test prüfen`); process.exit(2); }
-const token = (await anmeldung.json()).token;
+let app = { kennung: "entwurf" };
+let token = "";
+if (mitAnmeldung) {
+  app = await (await fetch(`${basis}/api/v1/app`)).json();
+  const anmeldung = await fetch(`${basis}/api/v1/anmeldung`, { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kennung: env.KELLERWOLKE_KENNUNG, passwort: env.KELLERWOLKE_PASSWORT }) });
+  if (!anmeldung.ok) { console.error(`Anmeldung mit dem Testzugang scheitert (${anmeldung.status}); backend/.env.test prüfen`); process.exit(2); }
+  token = (await anmeldung.json()).token;
+}
 
 const profil = fs.mkdtempSync(path.join(os.tmpdir(), "ansicht-"));
 // ohne Zwischenspeicher für Zurück: sonst halten verlassene Seiten ihre Ereignisströme offen, bis keine Verbindung frei ist
@@ -154,7 +161,7 @@ for (const seite of einstellung.seiten.filter((s) => s.abfrage)) {
   }
 }
 for (const thema of themen) {
-  await werte(`localStorage.setItem(${JSON.stringify(`${app.kennung}_sitzung`)}, ${JSON.stringify(token)});
+  await werte(`${token ? `localStorage.setItem(${JSON.stringify(`${app.kennung}_sitzung`)}, ${JSON.stringify(token)});` : ""}
     localStorage.setItem("appkern_anzeige", JSON.stringify({ schrift: "normal", thema: ${JSON.stringify(thema)} })); true`);
   for (const [b, h] of BREITEN) {
     await rufe("Emulation.setDeviceMetricsOverride", { width: b, height: h, deviceScaleFactor: b < 600 ? 2 : 1, mobile: b < 600 });
