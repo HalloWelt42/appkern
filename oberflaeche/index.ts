@@ -41,6 +41,7 @@ export { abmelden, anmelden, einrichtenMit, koppeln, starten as sitzungStarten }
 export { abbrechen as auftragAbbrechen, verfolgen as auftraegeVerfolgen, wiederholen as auftragWiederholen } from "./lib/auftraege.svelte";
 export { fassungVerfolgen } from "./lib/fassung.svelte";
 export { navigationStarten } from "./lib/navigation.svelte";
+export { geraetStarten } from "./lib/geraet.svelte";
 export { pruefen as verbindungenPruefen, verbindungen, verbindungenVerfolgen } from "./lib/verbindungen.svelte";
 export { ANTWORTET_NICHT, KEINE_VERBINDUNG } from "./lib/erreichbar.svelte";
 export { takt, type Takt } from "./lib/takt";
