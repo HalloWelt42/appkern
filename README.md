@@ -516,6 +516,9 @@ laufender Auftrag und ein fertiges Ergebnis zu erkennen sind, die Wörter und da
 Mikrofon wechseln, Live-Mitschrift, jedes Stück sofort im Gerätespeicher); die App richtet das Aufnehmen einmal mit
 `aufnahmeEinrichten({ app, hoeren, name })` ein, legt eine fertige Aufnahme über `ablegen` ab und bietet im Snippet
 `danach` an, was damit geschehen soll. Liegengebliebene Aufnahmen holt `gespeicherteAufnahmen` und `aufnahmeAlsDatei`.
+Eine Spracheingabe ohne Datei nutzt dieselbe Aufnahme ohne den Rekorder: `aufnehmen()` im Tippen, der Text wächst in
+`aufnahme.mitschrift`, dann `aufnahmeBeenden(name)`, `mitschriftAbwarten()` für das letzte Stück und `aufnahmeVerwerfen(id)`;
+`aufnahmeAbbrechen()` verwirft ohne Text.
 Dazu die Listenstile (`.zeile`, `.stand-pille`, `.optionen`, `.knopfzeile`).
 
 ## Neue App aus der Vorlage

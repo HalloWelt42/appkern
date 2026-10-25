@@ -7,7 +7,8 @@
 // erst wenn sie in der Kellerwolke liegt, verschwindet sie vom Gerät. Transkribiert wird nur, wenn der Nutzer es will.
 // Die Live-Mitschrift schneidet den Ton an Sprechpausen in Stücke (höchstens 15 s), wandelt sie in 16 kHz WAV und
 // schickt sie nacheinander an den Hördienst der App (Feld "datei", Antwort {text}); der Text erscheint, während weiter
-// aufgenommen wird. Ohne Hördienst gibt es keine Live-Mitschrift.
+// aufgenommen wird. Ohne Hördienst gibt es keine Live-Mitschrift. Eine Spracheingabe (nur Text, keine Datei) beendet,
+// wartet mit `mitschriftAbwarten` auf das letzte Stück und verwirft die Aufnahme danach.
 // Während der Aufnahme bleibt der Bildschirm an (soweit der Browser das erlaubt) und die App lädt nicht neu.
 import { token } from "./api.svelte";
 import { arbeit } from "./arbeit.svelte";
@@ -508,6 +509,12 @@ function alsWav(werte: Float32Array): Blob {
   v.setUint32(40, werte.length * 2, true);
   for (let i = 0; i < werte.length; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, werte[i])) * 0x7fff, true);
   return new Blob([puffer], { type: "audio/wav" });
+}
+
+/** Wartet, bis die Live-Mitschrift alle geschnittenen Stücke gehört hat (nach `beenden` auch das letzte): wer nur den
+ *  Text will, etwa eine Spracheingabe, hat ihn danach vollständig in `aufnahme.mitschrift`. */
+export function mitschriftAbwarten(): Promise<void> {
+  return warteschlange;
 }
 
 async function hoeren(wav: Blob, beginn: number, laenge: number, meinLauf: number): Promise<void> {

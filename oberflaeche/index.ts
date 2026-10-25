@@ -30,9 +30,10 @@ export { einzelton } from "./lib/wiedergabe.svelte";
 export { push, pushAusschalten, pushEinschalten, pushGeraete, pushGeraetEntfernen, pushGeraetName, pushLage, pushProbe, pushStarten,
          type PushGeraet, type PushLage, type PushVersand } from "./lib/push.svelte";
 export { hochladen, uploadEntfernen, uploads, type Upload } from "./lib/hochladen.svelte";
-export { alsDatei as aufnahmeAlsDatei, aufnahme, aufnahmeEinrichten, geraeteLaden, gespeicherte as gespeicherteAufnahmen, quelleWechseln,
-         starten as aufnehmen, verwerfen as aufnahmeVerwerfen, type AufnahmeEinrichtung, type Gespeichert, type LiveStueck,
-         type NachDerAufnahme } from "./lib/aufnahme.svelte";
+export { abbrechen as aufnahmeAbbrechen, alsDatei as aufnahmeAlsDatei, aufnahme, aufnahmeEinrichten, beenden as aufnahmeBeenden,
+         geraeteLaden, gespeicherte as gespeicherteAufnahmen, mitschriftAbwarten, quelleWechseln, starten as aufnehmen,
+         tonFortsetzen as aufnahmeFortsetzen, verwerfen as aufnahmeVerwerfen, type AufnahmeEinrichtung, type Gespeichert,
+         type LiveStueck, type NachDerAufnahme } from "./lib/aufnahme.svelte";
 export { farbe, genau, groesse, lesen, marke, sprache, SPRACHEN } from "./lib/zeit";
 export type * from "./lib/typen";
 
