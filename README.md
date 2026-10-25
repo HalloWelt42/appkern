@@ -99,6 +99,12 @@ die übrigen der Reihe nach, Ergebnisse in der Reihenfolge der Aufrufe; `weitere
 **Bilder** über die Fähigkeit bild_erzeugen: `ls.bilder_erzeugen(beschreibung, groesse=, startwert=, modell=)` liefert `Wartet`
 und zuletzt `Bilder` (PNG, Startwert).
 
+**Text des Modells** (`appkern.leitstelle.text`): `antwortform(name, schema)` als `response_format` verlangt eine feste
+Antwortform, `json_lesen(text)` liest sie nachsichtig (Codezaun, Text davor und danach), `gerade(text)` und
+`saeubern(wert)` bringen verfasste Prosa auf gerade Zeichen (Gedankenstriche, typografische Anführungszeichen,
+Auslassungspunkte, besondere Leerzeichen; Umlaute bleiben). Nur auf Text, den das Modell verfasst hat, nie auf
+wörtlich übernommene Werte.
+
 Was der Zugang bewusst nicht tut: keine Lese-Zeitgrenze für Arbeit (nur 10 s für den Verbindungsaufbau), keine
 Wiederholung von selbst, kein Laden oder Entladen von Modellen. Fehler kommen nach dem Grundwort der Leitstelle als
 eigene Arten: `SchluesselUngueltig`, `NichtErlaubt`, `KeinModell`, `Gesperrt` und `Halt` (mit `nochmal_in` aus
