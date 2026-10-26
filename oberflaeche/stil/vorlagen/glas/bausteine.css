@@ -173,11 +173,19 @@
   :root[data-vorlage="glas"] .hilfe-bereich { border-color: transparent; box-shadow: var(--glas-kante-feld); }
   :root[data-vorlage="glas"] .hilfe-bereich button:not(.an) { background: var(--glas-feld); }
   :root[data-vorlage="glas"] .hilfe-bereich button.an { background: var(--glas-akzent-verlauf); }
-  /* Meldung: klein, schwebend, ohne eigenes Rollfeld; nur hier milchiges Glas mit Weichzeichner */
+  /* Hilfe: echte Glasscheibe, der Inhalt dahinter verschwimmt. Ihr Rollfeld bekommt will-change: transform, sonst
+     landen Klicks nach dem Rollen in Chromium neben dem Ziel (Weichzeichner auf einer Fläche mit eigenem Rollfeld). */
+  :root[data-vorlage="glas"] .hilfe-fenster {
+    background: var(--glas-spiegel) padding-box, linear-gradient(var(--glas-scheibe), var(--glas-scheibe)) padding-box,
+                var(--glas-rand-verlauf) border-box;
+    backdrop-filter: var(--glas-weichzeichner);
+  }
+  :root[data-vorlage="glas"] .hilfe-inhalt { will-change: transform; }
+  /* Meldung: klein, schwebend, ohne eigenes Rollfeld; milchiges Glas mit Weichzeichner */
   :root[data-vorlage="glas"] .meldung {
     border: 1px solid transparent; border-radius: var(--r3);
     background: var(--glas-spiegel) padding-box, linear-gradient(var(--glas-tafel), var(--glas-tafel)) padding-box,
                 var(--glas-rand-verlauf) border-box;
-    backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: var(--glas-weichzeichner);
   }
 }

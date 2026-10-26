@@ -25,6 +25,7 @@
     --r3: 16px;                           /* Glasinseln der Schale, Bereiche, Fenster */
     --glas-rund: 999px;                   /* Kapsel: Schalter, Chips, Lage */
     --glas-fuge: 10px;                    /* Luft zwischen den Glasinseln der Schale, dort scheint der Grund durch */
+    --glas-weichzeichner: blur(28px) saturate(1.5); /* Glasscheibe über Inhalt: Hilfe und Meldung, nie auf großen oder rollenden Flächen */
   }
 
   /* Hell: milchiges, helles Glas über pastelligen Farbfeldern (Himmelblau, Flieder, Rosé, Minze, Pfirsich) */
@@ -49,7 +50,8 @@
     --flaeche: rgba(251, 251, 255, 0.95); /* Aufklappliste: rollt, darum fast deckend */
     --flaeche-2: rgba(255, 255, 255, 0.76); /* abgehobene Fläche der Schale */
     --mulde: rgba(48, 52, 120, 0.1);      /* eingelassen: Fortschritt, Code, Schalter aus */
-    --glas-tafel: rgba(250, 250, 255, 0.95); /* schwebend über Inhalt (Fenster, Hilfe, Dialog): fast deckend */
+    --glas-tafel: rgba(250, 250, 255, 0.95); /* schwebend über Inhalt (Fenster, Dialog): fast deckend */
+    --glas-scheibe: rgba(250, 250, 255, 0.56); /* Hilfe: echtes Glas über dem Inhalt, mit Weichzeichner; Text auch über dem Hauptknopf über 8 : 1 */
     --glas-kopfzeile: #f6f6fd;            /* mitlaufender Tabellenkopf: deckend, Zeilen rollen darunter durch */
     --glas-feld: rgba(255, 255, 255, 0.6); /* Eingaben und Suche: helle, leicht eingelassene Mulde */
     --glas-perle: #ffffff;                /* Knopf im Schalter */
@@ -124,6 +126,7 @@
     --flaeche-2: rgba(255, 255, 255, 0.08);
     --mulde: rgba(0, 0, 12, 0.34);
     --glas-tafel: rgba(22, 24, 50, 0.96);
+    --glas-scheibe: rgba(20, 22, 48, 0.7);   /* Hilfe mit Weichzeichner; Text auch über hellen Stellen über 7 : 1 */
     --glas-kopfzeile: #1c1d3c;
     --glas-feld: rgba(0, 0, 14, 0.3);     /* Eingaben: dunkle Mulde im Rauchglas */
     --glas-perle: #f3f4ff;
