@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="/node_modules/@fontsource/barlow/500.css" />
     <link rel="stylesheet" href="/node_modules/@fontsource/barlow/600.css" />
     <link rel="stylesheet" href="/node_modules/@fontsource/barlow/700.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/800.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/900.css" />
     <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/400.css" />
     <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/500.css" />
     <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/600.css" />
@@ -60,9 +62,9 @@
       .mock-balken { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--a1) var(--a3); align-items: center; margin-top: var(--a3); font-size: var(--klein); }
       .mock-balken .balken { grid-column: 1 / -1; }
 
-      .hilfe-fenster[hidden] { display: none; }
+      .hilfe-fenster[hidden], .mock-leiste[hidden] { display: none; }
       .mock-leiste { position: fixed; z-index: 80; right: var(--a4); bottom: calc(var(--fuss-hoehe) + var(--a3)); display: flex; align-items: center; gap: var(--a2);
-                     padding: var(--a2) var(--a3); background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r2);
+                     padding: var(--a2) var(--a3); background: var(--flaeche); border: 1px solid var(--rand-stark); border-radius: var(--r2);
                      box-shadow: var(--schatten-schwebend); }
       .mock-leiste .etikett { margin-right: var(--a1); }
     </style>
@@ -350,7 +352,7 @@
 
     <script>
       // Nur für den Entwurf: Vorlage, Thema, Hilfefenster und Seitenleiste umschalten; Startwerte auch über die Adresse
-      // (?vorlage=klassisch&thema=hell&hilfe=aus&leiste=schmal), damit sich jede Fassung direkt aufnehmen lässt.
+      // (?vorlage=klassisch&thema=hell&hilfe=aus&leiste=schmal&umschalter=aus), damit sich jede Fassung direkt aufnehmen lässt.
       const wurzel = document.documentElement;
       const adresse = new URLSearchParams(location.search);
       const hilfe = document.querySelector("[data-mock-hilfe]");
@@ -386,6 +388,7 @@
       vorlage(adresse.get("vorlage") ?? "futur");
       thema(adresse.get("thema") ?? "dunkel");
       hilfeZeigen(adresse.get("hilfe") !== "aus");
+      document.querySelector(".mock-leiste").hidden = adresse.get("umschalter") === "aus";
       seitenleiste(adresse.get("leiste") ?? "breite");
     </script>
   </body>

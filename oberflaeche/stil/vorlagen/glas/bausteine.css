@@ -1,0 +1,183 @@
+/* Bausteine der Vorlage Glas: was über die Marken (glas/marken.css) hinaus anders aussieht. Nur Marken, nur auf dem
+   Rechner (ab 1000 Pixel) und nur mit data-vorlage="glas" am Wurzelelement.
+
+   Aufbau: der Grund liegt fest am body (rollt nie), die Schale steht als vier Glasinseln mit Fugen darüber, in der
+   Arbeitsfläche liegen Bereiche und Karten als weiteres Glas. Jede Glasfläche ist Tönung (Marke der Fläche) plus
+   Spiegelung (Hintergrundbild), Lichtkante und Tiefe (Schatten).
+
+   Regel der Vorlagen: sie ergänzen Kanten, Spiegelungen, Schatten und Schein, ersetzen aber keine Flächen, die eine
+   App an einem Baustein selbst setzt. Das Grundaussehen eines Bausteins steht darum schwach gewichtet (where): seine
+   Abwandlungen im Grunddesign und in den Apps gewinnen weiter. Keine Weichzeichner, Filter oder Masken auf großen
+   oder rollenden Flächen; Glas entsteht hier ohne sie, Schein nur als Schatten. */
+
+@media (min-width: 1000px) {
+
+  /* ═══ Grund ═══ */
+  :root[data-vorlage="glas"] { scrollbar-color: var(--glas-rollbalken) transparent; }
+  :root[data-vorlage="glas"] ::selection { background: var(--akzent-weich); }
+  /* der weiche Grund: Bild über den Farbverläufen, am body, der nie rollt */
+  :root[data-vorlage="glas"] body {
+    background-color: var(--hg);
+    background-image: var(--glas-bild), var(--glas-grund);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+  }
+  /* ein Teil der Seite mit eigenem Thema bringt seinen eigenen Grund mit, sonst stünde sein Glas auf dem fremden */
+  :root[data-vorlage="glas"] body [data-theme] {
+    background-image: var(--glas-bild), var(--glas-grund);
+    background-size: cover;
+    background-position: center;
+  }
+  :root[data-vorlage="glas"] :is(h1, h2) { font-weight: 600; letter-spacing: 0; }
+  :root[data-vorlage="glas"] .etikett { font-weight: 600; letter-spacing: 0.12em; }
+  :root[data-vorlage="glas"] :focus-visible { outline: 2px solid color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); outline-offset: 2px; }
+
+  /* ═══ Schale: vier Glasinseln mit Fugen ═══ */
+  :root[data-vorlage="glas"] .schale { gap: var(--glas-fuge); padding: var(--glas-fuge); }
+  :root[data-vorlage="glas"] :is(.kopf, .seite, .fuss) {
+    border: 0; border-radius: var(--r3);
+    background-image: var(--glas-spiegel);
+    box-shadow: var(--glas-kante), var(--glas-tiefe);
+  }
+  :root[data-vorlage="glas"] .schale > .haupt {
+    border-radius: var(--r3);
+    background-color: var(--glas-haupt);
+    box-shadow: var(--glas-kante), var(--glas-tiefe);
+  }
+  :root[data-vorlage="glas"] .marke { font-weight: 600; }
+  /* Teile, die an Kopf und Fußleiste ausgerichtet schweben, rücken um die Fuge mit */
+  :root[data-vorlage="glas"] .hauptregler-leiste {
+    left: calc(var(--nav-breite) + 2 * var(--glas-fuge)); right: var(--glas-fuge); top: calc(var(--kopf-hoehe) + 2 * var(--glas-fuge));
+  }
+  :root[data-vorlage="glas"] .meldung { right: calc(var(--a5) + var(--glas-fuge)); bottom: calc(var(--fuss-hoehe) + var(--a4) + var(--glas-fuge)); }
+  :root[data-vorlage="glas"] .hilfe-fenster.gross {
+    inset: calc(var(--kopf-hoehe) + 2 * var(--glas-fuge) + var(--a2)) calc(var(--a5) + var(--glas-fuge)) calc(var(--fuss-hoehe) + 2 * var(--glas-fuge) + var(--a2));
+  }
+
+  /* Seitenleiste: der aktive Eintrag als Glasperle mit farbigem Schein */
+  :root[data-vorlage="glas"] .navi { transition: background var(--schnell), box-shadow var(--schnell); }
+  :root[data-vorlage="glas"] .navi.aktiv {
+    background-image: var(--glas-spiegel);
+    box-shadow: var(--glas-kante), 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 30%, transparent), 0 6px 18px var(--glas-schein);
+  }
+  :root[data-vorlage="glas"] .navi.aktiv i { text-shadow: 0 0 12px var(--glas-schein); }
+  :root[data-vorlage="glas"] .lage { border-radius: var(--glas-rund); background-image: var(--glas-spiegel); box-shadow: var(--glas-kante); }
+
+  /* ═══ Knöpfe ═══ */
+  :where(:root[data-vorlage="glas"]) .knopf {
+    border-color: transparent;
+    background-image: var(--glas-spiegel);
+    box-shadow: var(--glas-kante), var(--glas-tiefe-klein);
+    transition: background var(--schnell), border-color var(--schnell), box-shadow var(--schnell);
+  }
+  :root[data-vorlage="glas"] .knopf.ohne { background-image: none; box-shadow: none; }
+  :root[data-vorlage="glas"] .knopf.aktiv { box-shadow: var(--glas-kante), 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 45%, transparent), 0 4px 16px var(--glas-schein); }
+  /* Hauptknopf: Iris als Verlauf mit Lichtkante und Schein */
+  :root[data-vorlage="glas"] .knopf.haupt {
+    background-image: var(--glas-spiegel), var(--glas-akzent-verlauf);
+    box-shadow: var(--glas-kante-akzent), 0 2px 6px var(--glas-schein), 0 8px 24px var(--glas-schein);
+  }
+  :root[data-vorlage="glas"] .knopf.haupt:not([disabled], .gesperrt):hover {
+    filter: none;
+    background-image: var(--glas-spiegel), var(--glas-spiegel), var(--glas-akzent-verlauf);
+    box-shadow: var(--glas-kante-akzent), 0 2px 8px var(--glas-schein), 0 10px 32px var(--glas-schein);
+  }
+  :root[data-vorlage="glas"] .knopf.gefahr-voll { box-shadow: var(--glas-kante-akzent), 0 6px 18px color-mix(in srgb, var(--gefahr-flaeche) 30%, transparent); }
+
+  /* ═══ Marken im Text: Zustände, Fähigkeiten, Zonen, Zähler ═══
+     Ein Dunst über ihrer Tönung (Bild über der Füllfarbe) hebt die Schrift auch über kräftigen Stellen des Grunds ab,
+     eine feine Linie rundum in ihrer Schriftfarbe hält die Form; die Farbe der Marke bleibt die der App */
+  :root[data-vorlage="glas"] :is(.zustand, .faehigkeit, .zone, .zaehler) {
+    background-image: linear-gradient(var(--glas-marke-dunst), var(--glas-marke-dunst));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 26%, transparent);
+  }
+  :root[data-vorlage="glas"] .zustand.laeuft { box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 26%, transparent), 0 0 12px var(--glas-schein); }
+
+  /* ═══ Eingaben: helle oder dunkle Mulden im Glas ═══ */
+  :where(:root[data-vorlage="glas"]) :is(.eingabe, .suche, .auswahl-knopf) {
+    background-color: var(--glas-feld); border-color: transparent; box-shadow: var(--glas-kante-feld);
+  }
+  :root[data-vorlage="glas"] :is(.eingabe:focus, .suche:focus-within) {
+    box-shadow: var(--glas-kante-feld), 0 0 0 3px var(--akzent-weich), 0 0 18px var(--glas-schein);
+  }
+  :root[data-vorlage="glas"] .auswahl-liste { box-shadow: var(--glas-kante), var(--glas-tiefe-hoch); }
+  /* Schalter als Kapsel mit Perle, an in Iris mit Schein */
+  :root[data-vorlage="glas"] .schalter { border-radius: var(--glas-rund); background-color: var(--mulde); box-shadow: var(--glas-kante-feld); }
+  :root[data-vorlage="glas"] .schalter::after {
+    border-radius: 50%; background: var(--glas-perle);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--schattenfarbe) 30%, transparent), 0 2px 6px color-mix(in srgb, var(--schattenfarbe) 20%, transparent);
+  }
+  :root[data-vorlage="glas"] .schalter.an { background-image: var(--glas-akzent-verlauf); box-shadow: var(--glas-kante-akzent), 0 0 14px var(--glas-schein); }
+  /* Stufen: Mulde mit der gewählten Stufe als Glasperle */
+  :where(:root[data-vorlage="glas"]) .stufen { background-color: var(--glas-feld); border-color: transparent; box-shadow: var(--glas-kante-feld); }
+  :root[data-vorlage="glas"] .stufen button.an { background-image: var(--glas-spiegel); box-shadow: var(--glas-kante); }
+  /* Chips als Kapseln; der aktive mit Schein */
+  :where(:root[data-vorlage="glas"]) .chip {
+    border-color: transparent; border-radius: var(--glas-rund);
+    background-image: var(--glas-spiegel); box-shadow: var(--glas-kante), var(--glas-tiefe-klein);
+  }
+  :root[data-vorlage="glas"] .chip.aktiv { background-image: none; box-shadow: var(--glas-kante), 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 40%, transparent), 0 4px 14px var(--glas-schein); }
+
+  /* ═══ Flächen: Bereiche, Karten, Kennzahlen ═══ */
+  :where(:root[data-vorlage="glas"]) :is(.bereich, .filter, .kennzahl) {
+    border-radius: var(--r3);
+    background-image: var(--glas-spiegel);
+    box-shadow: var(--glas-kante), var(--glas-tiefe-klein);
+  }
+  :where(:root[data-vorlage="glas"]) .karte {
+    background-image: var(--glas-spiegel);
+    box-shadow: var(--glas-kante), var(--glas-tiefe-klein);
+    transition: background var(--schnell), box-shadow var(--schnell);
+  }
+  :root[data-vorlage="glas"] .karte.klickbar:hover { background-image: var(--glas-spiegel); box-shadow: var(--glas-kante), var(--glas-tiefe); }
+  :root[data-vorlage="glas"] :is(.karte, .zeile).gewaehlt {
+    outline: 0;
+    box-shadow: var(--glas-kante), 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 60%, transparent), 0 10px 30px var(--glas-schein);
+  }
+  :root[data-vorlage="glas"] .kennzahl.laeuft {
+    box-shadow: var(--glas-kante), 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 35%, transparent), 0 8px 24px var(--glas-schein);
+  }
+  :root[data-vorlage="glas"] .kennzahl.laeuft b { text-shadow: 0 0 18px var(--glas-schein); }
+  :root[data-vorlage="glas"] .hinweis { box-shadow: var(--glas-kante); }
+
+  /* ═══ Reiter ═══ */
+  :root[data-vorlage="glas"] :is(.reiter, .untergruppen) :is(button, a) { transition: background var(--schnell), box-shadow var(--schnell); }
+  :root[data-vorlage="glas"] :is(.reiter, .untergruppen) :is(button, a).aktiv {
+    border-color: transparent; background-color: var(--karte-2); background-image: var(--glas-spiegel);
+    box-shadow: var(--glas-kante), 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 28%, transparent), 0 6px 18px var(--glas-schein);
+  }
+
+  /* ═══ Tabelle, Fortschritt, Ablauf ═══ */
+  /* der mitlaufende Kopf ist deckend (Zeilen rollen darunter durch) und darum eine Kapsel statt eines Streifens */
+  :root[data-vorlage="glas"] .tabelle th { background: var(--glas-kopfzeile); }
+  :root[data-vorlage="glas"] .tabelle th:first-child { border-radius: var(--r2) 0 0 var(--r2); }
+  :root[data-vorlage="glas"] .tabelle th:last-child { border-radius: 0 var(--r2) var(--r2) 0; }
+  :root[data-vorlage="glas"] :is(.balken, .speicher) { box-shadow: var(--glas-kante-feld); border-radius: var(--glas-rund); }
+  /* nur der Balken ohne Bedeutungsfarbe bekommt Verlauf und Schein */
+  :root[data-vorlage="glas"] .balken:not(.fertig, .fehler, .info) b { background: var(--glas-akzent-verlauf); box-shadow: 0 0 10px var(--glas-schein); }
+  :root[data-vorlage="glas"] .balken b { border-radius: var(--glas-rund); }
+  :root[data-vorlage="glas"] .kette .schritt { background-image: var(--glas-spiegel); box-shadow: var(--glas-kante); }
+  :root[data-vorlage="glas"] .kette .schritt.jetzt { box-shadow: var(--glas-kante), 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 35%, transparent), 0 4px 16px var(--glas-schein); }
+  :root[data-vorlage="glas"] .ring::before { background: var(--glas-spiegel), var(--glas-tafel); box-shadow: var(--glas-kante); }
+
+  /* ═══ Schwebendes: Fenster, Dialog, Hilfe, Meldung ═══
+     Fast deckende Tafel mit der Kante als Verlauf rundum (Füllung im Innenrand, Verlauf darunter bis zum Rahmen) */
+  :root[data-vorlage="glas"] :is(.fenster, .dialog, .hilfe-fenster, .hauptregler-leiste) {
+    border: 1px solid transparent; border-radius: var(--r3);
+    background: var(--glas-spiegel) padding-box, linear-gradient(var(--glas-tafel), var(--glas-tafel)) padding-box,
+                var(--glas-rand-verlauf) border-box;
+    box-shadow: var(--glas-tiefe-hoch);
+  }
+  :root[data-vorlage="glas"] :is(.fenster-kopf, .hilfe-kopf) { background: transparent; }
+  :root[data-vorlage="glas"] .hilfe-bereich { border-color: transparent; box-shadow: var(--glas-kante-feld); }
+  :root[data-vorlage="glas"] .hilfe-bereich button:not(.an) { background: var(--glas-feld); }
+  :root[data-vorlage="glas"] .hilfe-bereich button.an { background: var(--glas-akzent-verlauf); }
+  /* Meldung: klein, schwebend, ohne eigenes Rollfeld; nur hier milchiges Glas mit Weichzeichner */
+  :root[data-vorlage="glas"] .meldung {
+    border: 1px solid transparent; border-radius: var(--r3);
+    background: var(--glas-spiegel) padding-box, linear-gradient(var(--glas-tafel), var(--glas-tafel)) padding-box,
+                var(--glas-rand-verlauf) border-box;
+    backdrop-filter: blur(16px) saturate(1.4);
+  }
+}

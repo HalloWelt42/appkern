@@ -1,0 +1,174 @@
+/* Marken der Vorlage Glas: ihre eine Wahrheit für Hintergrund, Glastönungen, Lichtkanten, Spiegelungen, Schatten,
+   Farben und Ecken, wie stil/marken.css für das Grunddesign. Die Bausteine daneben (bausteine.css) nutzen nur Marken.
+
+   Gilt nur mit data-vorlage="glas" am Wurzelelement (html) und nur auf dem Rechner (ab 1000 Pixel Breite); ohne das
+   Merkmal und am Telefon bleibt alles beim Grunddesign. Hell und dunkel wie gewohnt über data-theme, auch für einen
+   Teil der Seite. Schriftgrößen und Maße kommen weiter aus den Schriftstufen (data-schrift).
+
+   Gestaltung: ein vollflächiger, weich verschwommener Grund aus Farbfeldern (hell pastellig, dunkel tief und satt),
+   darüber durchscheinende Glasflächen. Glas entsteht ohne Weichzeichner aus einer Tönung, einer Lichtkante rundum (oben
+   heller, unten dunkler), einer zarten Spiegelung und mehrlagigen weichen Schatten. Innere Flächen sind deckender als
+   äußere, damit Karte auf Bereich auf Hauptfläche klar bleibt. Akzent Iris (Blauviolett) mit sanftem Schein.
+
+   Der Grund: zuerst die Farbverläufe (glas-grund), darüber ein verschwommenes Bild (glas-bild, ohne Bild none), fest
+   am body. Ein Bild bleibt in den Grenzen der Verläufe, sonst sinken die Kontraste: hell keine Stelle dunkler als
+   relative Leuchtdichte 0,5 (die Farbfelder hier liegen zwischen 0,52 und 0,83), dunkel keine heller als 0,065
+   (Farbfelder bis 0,061). Kontraste gegen die ungünstigste Stelle des Grunds unter der jeweiligen Tönung, samt
+   Spiegelung (gerechnet): Text 7 : 1 und mehr, Nebentext und Etiketten 4,5 : 1 und mehr. */
+
+@media (min-width: 1000px) {
+
+  /* Beide Themen: Ecken und Fugen */
+  :root[data-vorlage="glas"] {
+    --r1: 6px;                            /* Marken, Zähler, kleine Flächen: weich gerundet */
+    --r2: 10px;                           /* Knöpfe, Eingaben, Karten */
+    --r3: 16px;                           /* Glasinseln der Schale, Bereiche, Fenster */
+    --glas-rund: 999px;                   /* Kapsel: Schalter, Chips, Lage */
+    --glas-fuge: 10px;                    /* Luft zwischen den Glasinseln der Schale, dort scheint der Grund durch */
+  }
+
+  /* Hell: milchiges, helles Glas über pastelligen Farbfeldern (Himmelblau, Flieder, Rosé, Minze, Pfirsich) */
+  :root[data-vorlage="glas"]:not([data-theme="dunkel"]), :root[data-vorlage="glas"] [data-theme="hell"] {
+    color-scheme: light;
+    /* Grund */
+    --glas-bild: url("hintergrund-hell.webp"); /* verschwommenes Bild über den Verläufen (Flux, weichgezeichnet, keine Stelle dunkler als Leuchtdichte 0,5) */
+    --glas-grund: radial-gradient(62% 72% at 10% 6%, #95c6ff 0%, transparent 74%),
+                  radial-gradient(56% 68% at 92% 4%, #c9b2ff 0%, transparent 74%),
+                  radial-gradient(64% 72% at 94% 96%, #ffb9cf 0%, transparent 76%),
+                  radial-gradient(58% 68% at 6% 96%, #a3e6cf 0%, transparent 76%),
+                  radial-gradient(48% 56% at 56% 52%, #ffd3ab 0%, transparent 74%),
+                  linear-gradient(135deg, #e4ebfb 0%, #f0e8fb 100%); /* Farbfelder des Grunds, weich auslaufend */
+    --hg: #e9ebf8;                        /* Mittelton des Grunds, deckend: unter dem Grund und als Rückfall */
+    /* Glastönungen, von außen nach innen deckender */
+    --leiste: rgba(255, 255, 255, 0.5);   /* Glasinseln Kopf, Seitenleiste, Fußleiste */
+    --glas-haupt: rgba(255, 255, 255, 0.28); /* Glasinsel der Arbeitsfläche, der Grund scheint deutlich durch */
+    --bereich: rgba(255, 255, 255, 0.42); /* Bereich, Filter, Kennzahl auf der Arbeitsfläche */
+    --karte: rgba(255, 255, 255, 0.66);   /* Karte und Eingabe im Leitstand */
+    --karte-2: rgba(255, 255, 255, 0.76); /* Knopf und gewählter Eintrag */
+    --karte-3: rgba(255, 255, 255, 0.92); /* überfahren und gedrückt */
+    --flaeche: rgba(251, 251, 255, 0.95); /* Aufklappliste: rollt, darum fast deckend */
+    --flaeche-2: rgba(255, 255, 255, 0.76); /* abgehobene Fläche der Schale */
+    --mulde: rgba(48, 52, 120, 0.1);      /* eingelassen: Fortschritt, Code, Schalter aus */
+    --glas-tafel: rgba(250, 250, 255, 0.95); /* schwebend über Inhalt (Fenster, Hilfe, Dialog): fast deckend */
+    --glas-kopfzeile: #f6f6fd;            /* mitlaufender Tabellenkopf: deckend, Zeilen rollen darunter durch */
+    --glas-feld: rgba(255, 255, 255, 0.6); /* Eingaben und Suche: helle, leicht eingelassene Mulde */
+    --glas-perle: #ffffff;                /* Knopf im Schalter */
+    --glas-marke-dunst: rgba(255, 255, 255, 0.4); /* Dunst über der Tönung von Zuständen, Fähigkeiten, Zählern */
+    --glas-rollbalken: rgba(48, 52, 120, 0.24); /* Rollbalken */
+    /* Schrift und Linien: tiefe Tinte mit einem Hauch Indigo */
+    --text: #111730;                      /* Haupttext */
+    --text-2: #373f60;                    /* Nebentext */
+    --text-3: #464e70;                    /* Etiketten, schwacher Text */
+    --rand: rgba(40, 44, 110, 0.12);      /* Trennlinien */
+    --rand-stark: rgba(40, 44, 110, 0.2); /* Rahmen, wo eine App sie setzt */
+    --diagrammlinie: rgba(40, 44, 110, 0.08); /* Hilfslinien in Diagrammen */
+    /* Akzent Iris */
+    --akzent: #4a35cf;                    /* Iris als Schrift */
+    --akzent-weich: rgba(86, 66, 230, 0.13); /* Hinterlegung von Aktivem */
+    --akzent-flaeche: #4b39d4;            /* Füllung, Mitte des Verlaufs */
+    --auf-akzent: #ffffff;                /* Schrift auf der Akzentfläche */
+    --glas-akzent-verlauf: linear-gradient(180deg, #5644df 0%, #4b39d4 50%, #3e2cc2 100%); /* Hauptknopf, Schalter an, Balken */
+    --glas-schein: rgba(86, 66, 230, 0.3); /* farbiger Schein um Aktives und Gewähltes */
+    /* Bedeutung und Palette: so tief, dass sie als Schrift auf ihrer Tönung über dem Glas lesbar bleiben */
+    --gut: #08704b;
+    --warn: #a3410a;
+    --gefahr: #a8193a;
+    --gefahr-flaeche: #c22341;            /* auf-farbe darauf 5,6 : 1 */
+    --info: #1d4fc6;
+    --toenung: 15%;                       /* Stärke farbiger Hinterlegungen: leichter auf Glas */
+    --himmel: #1d4fc6;
+    --honig: #6e5600;
+    --sand: #6f5720;
+    --stahl: #455f82;
+    --flieder: #5139d6;
+    --rose: #b3124f;
+    --koralle: #a8360f;
+    /* Licht und Schatten: Schatten leicht bläulich, Lichter weiß */
+    --schattenfarbe: #1c2050;
+    --glas-kante: inset 0 0 0 1px rgba(255, 255, 255, 0.62), inset 0 1px 1px rgba(255, 255, 255, 0.95),
+                  inset 0 -1px 1px rgba(40, 44, 110, 0.07), 0 0 0 1px rgba(40, 44, 110, 0.05); /* Lichtkante rundum, oben heller, unten dunkler */
+    --glas-kante-feld: inset 0 1px 3px rgba(40, 44, 110, 0.12), inset 0 0 0 1px rgba(40, 44, 110, 0.1),
+                       0 1px 1px rgba(255, 255, 255, 0.8); /* eingelassene Kante von Eingaben, unten ein Lichtsaum */
+    --glas-kante-akzent: inset 0 0 0 1px rgba(255, 255, 255, 0.16), inset 0 1px 1px rgba(255, 255, 255, 0.45),
+                         inset 0 -1px 1px rgba(20, 10, 90, 0.3); /* Kante auf der Akzentfläche */
+    --glas-spiegel: linear-gradient(165deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.12) 34%,
+                    rgba(255, 255, 255, 0) 60%); /* zarte Spiegelung von oben links */
+    --glas-rand-verlauf: linear-gradient(160deg, #ffffff 0%, rgba(255, 255, 255, 0.6) 45%, rgba(150, 140, 230, 0.5) 100%); /* Kante als Verlauf rundum an schwebenden Tafeln */
+    --glas-tiefe-klein: 0 1px 2px rgba(36, 40, 100, 0.06), 0 3px 10px rgba(36, 40, 100, 0.06); /* Knöpfe, Karten */
+    --glas-tiefe: 0 1px 2px rgba(36, 40, 100, 0.05), 0 6px 16px rgba(36, 40, 100, 0.06), 0 18px 44px rgba(36, 40, 100, 0.08); /* Glasinseln, Bereiche */
+    --glas-tiefe-hoch: 0 2px 6px rgba(36, 40, 100, 0.08), 0 16px 40px rgba(36, 40, 100, 0.14), 0 40px 90px rgba(36, 40, 100, 0.18); /* schwebende Tafeln */
+    --schatten: var(--glas-tiefe-klein);  /* Karten der Schale */
+    --schatten-schwebend: var(--glas-tiefe-hoch); /* Fenster, Meldungen, Menüs */
+    --schleier: rgba(236, 236, 250, 0.62); /* hinter Dialogen */
+  }
+
+  /* Dunkel: rauchiges Glas über tiefen, satten Farbfeldern (Königsblau, Violett, Pflaume, Petrol, Indigo) */
+  /* Zweck jeder Marke wie im hellen Thema */
+  :root[data-vorlage="glas"][data-theme="dunkel"], :root[data-vorlage="glas"] [data-theme="dunkel"] {
+    color-scheme: dark;
+    --glas-bild: url("hintergrund-dunkel.webp"); /* verschwommenes Bild (Flux, weichgezeichnet, keine Stelle heller als Leuchtdichte 0,065) */
+    --glas-grund: radial-gradient(62% 72% at 10% 6%, #1838a8 0%, transparent 74%),
+                  radial-gradient(56% 68% at 92% 4%, #5420b0 0%, transparent 74%),
+                  radial-gradient(64% 72% at 94% 96%, #7e1666 0%, transparent 76%),
+                  radial-gradient(58% 68% at 6% 96%, #064c62 0%, transparent 76%),
+                  radial-gradient(48% 56% at 56% 52%, #2b28a0 0%, transparent 74%),
+                  linear-gradient(150deg, #0a0d22 0%, #100a21 100%);
+    --hg: #14142e;
+    --leiste: rgba(10, 12, 30, 0.48);     /* Rauch der Glasinseln */
+    --glas-haupt: rgba(10, 12, 30, 0.4);
+    --bereich: rgba(255, 255, 255, 0.03); /* innen heben sich die Flächen mit Licht ab, nicht mit Rauch */
+    --karte: rgba(255, 255, 255, 0.055);
+    --karte-2: rgba(255, 255, 255, 0.08);
+    --karte-3: rgba(255, 255, 255, 0.14);
+    --flaeche: rgba(24, 26, 54, 0.97);
+    --flaeche-2: rgba(255, 255, 255, 0.08);
+    --mulde: rgba(0, 0, 12, 0.34);
+    --glas-tafel: rgba(22, 24, 50, 0.96);
+    --glas-kopfzeile: #1c1d3c;
+    --glas-feld: rgba(0, 0, 14, 0.3);     /* Eingaben: dunkle Mulde im Rauchglas */
+    --glas-perle: #f3f4ff;
+    --glas-marke-dunst: rgba(6, 8, 22, 0.34); /* Rauch über der Tönung von Marken im Text */
+    --glas-rollbalken: rgba(255, 255, 255, 0.2);
+    --text: #f4f5ff;
+    --text-2: #cdd1ee;
+    --text-3: #b2b8de;
+    --rand: rgba(255, 255, 255, 0.1);
+    --rand-stark: rgba(255, 255, 255, 0.18);
+    --diagrammlinie: rgba(255, 255, 255, 0.07);
+    --akzent: #bab3ff;
+    --akzent-weich: rgba(150, 140, 255, 0.16);
+    --akzent-flaeche: #a199ff;
+    --auf-akzent: #0d0a2e;
+    --glas-akzent-verlauf: linear-gradient(180deg, #b6afff 0%, #a199ff 50%, #8d84fb 100%);
+    --glas-schein: rgba(150, 140, 255, 0.36);
+    --gut: #4eebb2;
+    --warn: #ffb57c;
+    --gefahr: #ff9bae;
+    --gefahr-flaeche: #d42a49;            /* auf-farbe darauf 5 : 1 */
+    --info: #a3bdff;
+    --toenung: 16%;
+    --himmel: #a3bdff;
+    --flieder: #bcb0ff;
+    --violett: #dba6ff;
+    --rose: #ff96c2;
+    --koralle: #ffa68a;
+    --petrol: #62dbec;
+    --stahl: #b4c9e4;
+    --schattenfarbe: #03040c;
+    --glas-kante: inset 0 0 0 1px rgba(255, 255, 255, 0.075), inset 0 1px 1px rgba(255, 255, 255, 0.17),
+                  inset 0 -1px 1px rgba(0, 0, 8, 0.32), 0 0 0 1px rgba(0, 0, 10, 0.22);
+    --glas-kante-feld: inset 0 1px 3px rgba(0, 0, 8, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+                       0 1px 1px rgba(255, 255, 255, 0.05);
+    --glas-kante-akzent: inset 0 0 0 1px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.55),
+                         inset 0 -1px 1px rgba(30, 20, 110, 0.35);
+    --glas-spiegel: linear-gradient(165deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.016) 36%,
+                    rgba(255, 255, 255, 0) 60%);
+    --glas-rand-verlauf: linear-gradient(160deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.09) 45%, rgba(170, 160, 255, 0.26) 100%);
+    --glas-tiefe-klein: 0 1px 2px rgba(0, 0, 8, 0.32), 0 4px 12px rgba(0, 0, 8, 0.22);
+    --glas-tiefe: 0 1px 2px rgba(0, 0, 8, 0.3), 0 8px 20px rgba(0, 0, 8, 0.26), 0 24px 56px rgba(0, 0, 8, 0.3);
+    --glas-tiefe-hoch: 0 2px 6px rgba(0, 0, 8, 0.4), 0 20px 48px rgba(0, 0, 8, 0.5), 0 48px 110px rgba(0, 0, 8, 0.55);
+    --schatten: var(--glas-tiefe-klein);
+    --schatten-schwebend: var(--glas-tiefe-hoch);
+    --schleier: rgba(6, 8, 22, 0.62);
+  }
+}

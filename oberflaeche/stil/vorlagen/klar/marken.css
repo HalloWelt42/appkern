@@ -1,0 +1,145 @@
+/* Marken der Vorlage Klar: ihre eine Wahrheit für Farben, Schriften, Ecken und Schatten, wie stil/marken.css für das
+   Grunddesign. Eine Vorlage ändert das ganze Aussehen, nicht nur Farben: hier stehen ihre Werte, die Bausteine
+   daneben (bausteine.css) nutzen nur Marken.
+
+   Gilt nur mit data-vorlage="klar" am Wurzelelement (html) und nur auf dem Rechner (ab 1000 Pixel Breite); ohne das
+   Merkmal und am Telefon bleibt alles beim Grunddesign. Hell und dunkel wie gewohnt über data-theme, auch für einen
+   Teil der Seite. Schriftgrößen und Maße kommen weiter aus den Schriftstufen (data-schrift).
+
+   Gestaltung: ein ruhiger, luftiger Arbeitsplatz. Weiße Flächen auf sehr hellem Blaugrau, im Dunkeln weiches Schiefer
+   statt Schwarz; Flächen heben sich durch Ton und weiche, weite Schatten ab, Linien nur sehr zart und rundum. Große
+   Rundungen, Knöpfe und Reiter als Pillen, ein freundliches Indigo als Akzent, Zustände als sanfte Flächen mit
+   kräftiger Schrift. Alles in Barlow, Zahlen mit gleich breiten Ziffern. Kontraste: Text über 7 : 1 auf jeder Fläche,
+   Nebentext und Etiketten über 4,5 : 1, Schrift auf dem Akzent über 7 : 1. */
+
+@media (min-width: 1000px) {
+
+  /* Beide Themen: Schriften, Ecken, Maße, neue Marken der Vorlage */
+  :root[data-vorlage="klar"] {
+    --schrift-zahl: var(--schrift);       /* Zahlen in Barlow; die Bausteine stellen gleich breite Ziffern ein */
+    --laufweite-titel: -0.012em;          /* Überschriften und Kennzahlen leicht enger: ruhiger, fester Satz */
+    --r1: 6px;                            /* Code, Speicherbalken, kleine Flächen */
+    --r2: 12px;                           /* Eingaben, Einträge in Menüs, Symbolplättchen, Tabellenkopf */
+    --r3: 16px;                           /* Karten, Kennzahlen, Hinweise, Filterleiste */
+    --r4: 20px;                           /* Bereiche um Karten, Arbeitsfläche, Fenster, Dialoge, Hilfe */
+    --pille: 999px;                       /* Knöpfe, Reiter, Chips, Zustände, Zähler, Schalter, Seitenleiste: ganz rund */
+    --fuge: 3px;                          /* Luft zwischen Rinne und Knopf in Stufen und in der Bereichswahl der Hilfe */
+  }
+
+  /* Hell: Weiß auf sehr hellem Blaugrau, Indigo als Fläche und als Schrift */
+  :root[data-vorlage="klar"]:not([data-theme="dunkel"]), :root[data-vorlage="klar"] [data-theme="hell"] {
+    color-scheme: light;
+    --hg: #e9ecf4;                        /* Arbeitsfläche: die eingelassene Mulde hinter den Karten */
+    --leiste: #f6f7fb;                    /* Rahmen aus Kopf, Seitenleiste und Fußleiste */
+    --flaeche: #ffffff;
+    --flaeche-2: #eef0f7;
+    --mulde: #dfe3ed;                     /* Grund von Balken und Code */
+    --bereich: #f1f3f9;                   /* Bereich um Karten: eine Spur heller als die Arbeitsfläche */
+    --karte: #ffffff;
+    --karte-2: #eef0f7;                   /* Rinne der Stufen, Chips, Zähler */
+    --karte-3: #e1e5ef;                   /* gedrückt */
+    --feld: #f6f7fb;                      /* Grund von Eingaben: eingelassen in die weiße Karte */
+    --knopf-flaeche: #ffffff;             /* Grund der Knöpfe, Aufklappknöpfe und der Suche im Kopf */
+    --knopf-ueber: #f1f2fa;               /* Knopf überfahren */
+    --erhaben: #ffffff;                   /* das Gewählte in Stufen und Reitern, Zähler in Chips: hebt sich aus seiner Rinne */
+    --ueber: rgba(52, 60, 120, 0.06);     /* Hauch beim Überfahren von Einträgen, Reitern und Zeilen */
+    --schalter-aus: #c4cad8;              /* Bahn eines ausgeschalteten Schalters */
+    --knauf: #ffffff;                     /* Knauf des Schalters in beiden Stellungen */
+    --text: #1b2133;                      /* 16 : 1 auf Weiß */
+    --text-2: #444e65;                    /* 8,3 : 1 auf Weiß */
+    --text-3: #5a6378;                    /* 6 : 1 auf Weiß, 5 : 1 auf der Arbeitsfläche */
+    --rand: rgba(40, 48, 90, 0.09);       /* sehr zarte Linie rundum */
+    --rand-stark: rgba(40, 48, 90, 0.16);
+    --diagrammlinie: rgba(40, 48, 90, 0.07);
+    --akzent: #4338ca;                    /* Indigo als Schrift, 7,9 : 1 auf Weiß */
+    --akzent-weich: rgba(99, 92, 255, 0.12); /* sanfte Fläche hinter Aktivem und Laufendem */
+    --akzent-flaeche: #463ecf;            /* Füllung von Hauptknopf und Schalter */
+    --akzent-ueber: #3f37c2;              /* Hauptknopf überfahren: eine Spur tiefer */
+    --auf-akzent: #ffffff;                /* Schrift auf der Akzentfläche, 7,4 : 1 */
+    --gut: #0b6e4c;
+    --gut-weich: rgba(18, 150, 100, 0.12);
+    --warn: #a3440b;
+    --warn-weich: rgba(220, 100, 30, 0.12);
+    --gefahr: #b81d3b;
+    --gefahr-weich: rgba(225, 40, 80, 0.1);
+    --gefahr-flaeche: #a91c36;            /* Füllung von Löschen und Halt, auf-farbe darauf 7,2 : 1 */
+    --info: #1b5cb0;                      /* Hinweis, wartet: Himmelblau, vom Indigo des Akzents unterscheidbar */
+    --toenung: 14%;                       /* sanfte Flächen der Zustände und Zähler */
+    /* Palette eine Spur tiefer: als Schrift auf ihrer sanften Fläche über 4,5 : 1 */
+    --petrol: #066779;
+    --tuerkis: #066a63;
+    --minze: #096b49;
+    --violett: #8229d0;
+    --rose: #b31357;
+    --koralle: #a83611;
+    --honig: #715800;
+    --sand: #70571f;
+    --stahl: #445f82;
+    --schattenfarbe: #1e2440;
+    --schatten: 0 1px 2px rgba(30, 36, 70, 0.05), 0 6px 20px -4px rgba(30, 36, 70, 0.09); /* Karten: weich und weit */
+    --schatten-hoch: 0 2px 4px rgba(30, 36, 70, 0.05), 0 14px 32px -8px rgba(30, 36, 70, 0.17); /* Karte überfahren: hebt sich */
+    --schatten-knopf: 0 0 0 1px rgba(40, 48, 90, 0.08), 0 1px 2px rgba(30, 36, 70, 0.06), 0 3px 8px -2px rgba(30, 36, 70, 0.07); /* Knöpfe, Chips, aktiver Reiter */
+    --schatten-knauf: 0 1px 3px rgba(20, 24, 50, 0.28); /* Knauf des Schalters */
+    --schatten-akzent: 0 1px 2px rgba(70, 62, 207, 0.22), 0 6px 16px -6px rgba(70, 62, 207, 0.55); /* Hauptknopf: weicher Schein in seiner Farbe */
+    --schatten-schwebend: 0 0 0 1px rgba(40, 48, 90, 0.06), 0 4px 12px rgba(30, 36, 70, 0.06), 0 24px 56px -12px rgba(30, 36, 70, 0.26);
+    --schleier: rgba(233, 236, 244, 0.72);
+  }
+
+  /* Dunkel: weiches Schiefer, helles Indigo mit dunkler Schrift */
+  :root[data-vorlage="klar"][data-theme="dunkel"], :root[data-vorlage="klar"] [data-theme="dunkel"] {
+    color-scheme: dark;
+    --hg: #1a1f2a;                        /* Arbeitsfläche: tiefer als der Rahmen, wie im Hellen */
+    --leiste: #212734;                    /* Rahmen: weiches Schiefer statt Schwarz */
+    --flaeche: #272e3b;
+    --flaeche-2: #313948;
+    --mulde: #141821;
+    --bereich: #20262f;
+    --karte: #272e3b;
+    --karte-2: #303847;
+    --karte-3: #394253;
+    --feld: #1f2430;
+    --knopf-flaeche: #303847;
+    --knopf-ueber: #394253;
+    --erhaben: #3d475a;                   /* im Dunkeln heller als die Rinne */
+    --ueber: rgba(190, 200, 255, 0.07);
+    --schalter-aus: #4b5467;
+    --knauf: #f1f3f9;
+    --text: #edf0f7;                      /* 12 : 1 auf der Karte */
+    --text-2: #c3cad8;                    /* 8,3 : 1 auf der Karte */
+    --text-3: #a0a9bc;                    /* 5,8 : 1 auf der Karte */
+    --rand: rgba(200, 210, 245, 0.08);
+    --rand-stark: rgba(200, 210, 245, 0.15);
+    --diagrammlinie: rgba(200, 210, 245, 0.06);
+    --akzent: #aab3ff;                    /* 6,9 : 1 auf der Karte */
+    --akzent-weich: rgba(140, 150, 255, 0.16);
+    --akzent-flaeche: #9ea6ff;            /* helles Indigo als Fläche, Schrift darauf dunkel */
+    --akzent-ueber: #b1b8ff;
+    --auf-akzent: #13153a;                /* 7,8 : 1 auf der Akzentfläche */
+    --gut: #4fdc9c;
+    --gut-weich: rgba(79, 220, 156, 0.14);
+    --warn: #ffb27e;
+    --warn-weich: rgba(255, 160, 100, 0.14);
+    --gefahr: #ff97a7;
+    --gefahr-weich: rgba(255, 110, 135, 0.14);
+    --gefahr-flaeche: #ab2038;            /* auf-farbe darauf 7 : 1 */
+    --info: #8fbfff;
+    --toenung: 16%;
+    /* Palette heller: als Schrift auf ihrer sanften Fläche über 4,5 : 1 */
+    --himmel: #8cb4ff;
+    --petrol: #46cadd;
+    --flieder: #b3a7ff;
+    --violett: #d79cff;
+    --rose: #ff94c0;
+    --koralle: #ffa080;
+    --stahl: #a8c0da;
+    --honig: #f2cd62;                     /* wärmer und weicher als das grelle Gelb des Grunddesigns */
+    --schattenfarbe: #07090e;
+    --schatten: 0 0 0 1px rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 24px -6px rgba(0, 0, 0, 0.42);
+    --schatten-hoch: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 4px rgba(0, 0, 0, 0.3), 0 16px 36px -8px rgba(0, 0, 0, 0.55);
+    --schatten-knopf: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.3), 0 3px 8px -2px rgba(0, 0, 0, 0.3);
+    --schatten-knauf: 0 1px 3px rgba(0, 0, 0, 0.5);
+    --schatten-akzent: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 18px -8px rgba(158, 166, 255, 0.5);
+    --schatten-schwebend: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 4px 12px rgba(0, 0, 0, 0.32), 0 28px 64px -12px rgba(0, 0, 0, 0.62);
+    --schleier: rgba(14, 17, 24, 0.7);
+  }
+}

@@ -1,0 +1,142 @@
+/* Marken der Vorlage Papyrus: ihre eine Wahrheit für Farben, Schriften, Ecken und Schatten, wie stil/marken.css für
+   das Grunddesign. Hier stehen die Werte; die Bausteine daneben (bausteine.css) nutzen nur Marken.
+
+   Gilt nur mit data-vorlage="papyrus" am Wurzelelement (html) und nur auf dem Rechner (ab 1000 Pixel Breite); ohne
+   das Merkmal und am Telefon bleibt alles beim Grunddesign. Hell und dunkel wie gewohnt über data-theme, auch für
+   einen Teil der Seite. Schriftgrößen und Maße kommen weiter aus den Schriftstufen (data-schrift).
+
+   Gestaltung (Nutzer 26.10.2026: "clean desktop, alles cremweissfarben, elemente warmes braun, wichtiges stark
+   farbig leuchtend aber klein"): Flächen wie Papier in Cremeweiß, Linien, Knöpfe, Etiketten und Seitenleiste in
+   warmem Braun, der gewählte Eintrag dunkel wie Tinte. Farbe nur im Kleinen und dort satt: Hauptknopf, Schalter,
+   Zähler, wichtige Zustände (läuft, neu, überfällig), aktiver Punkt und Fokus leuchten leicht (Schatten, nie Filter).
+   Titel in Fraunces, Text in Work Sans. Kontraste: Text über 9 : 1, Nebentext über 7 : 1, schwacher Text und
+   Etiketten über 4,5 : 1, Schrift auf den satten Marken über 4,5 : 1, auf dem Hauptknopf über 7 : 1. */
+
+@media (min-width: 1000px) {
+
+  /* Beide Themen: Schriften, Ecken, neue Marken der Vorlage */
+  :root[data-vorlage="papyrus"] {
+    --schrift: "Work Sans Variable", system-ui, sans-serif;          /* Grundschrift: ruhig und offen */
+    --schrift-zahl: "Work Sans Variable", system-ui, sans-serif;     /* Zahlen und Zeiten in der Grundschrift, mit gleich breiten Ziffern */
+    --schrift-titel: "Fraunces Variable", Georgia, serif;            /* Überschriften, Name der App, Kennzahlen */
+    --sperrung: 0.12em;               /* Sperrung der Etiketten in Versalien */
+    --r1: 3px;                        /* Marken, Segmente */
+    --r2: 5px;                        /* Knöpfe, Eingaben, Karten */
+    --r3: 8px;                        /* Fenster, Tafeln */
+    --rund: 999px;                    /* Pillen: Zähler, Zustände, Chips, Schalter */
+  }
+
+  /* Hell: Cremeweiß wie Papier, warmes Braun, satte Farbe nur im Kleinen */
+  :root[data-vorlage="papyrus"]:not([data-theme="dunkel"]), :root[data-vorlage="papyrus"] [data-theme="hell"] {
+    color-scheme: light;
+    --hg: #f4efe3;                    /* Papier: Arbeitsfläche */
+    --leiste: #ece4d2;                /* Kopf, Seitenleiste, Fußleiste: etwas tieferes Papier */
+    --flaeche: #fdfbf6;               /* Karten und Felder der Schale */
+    --flaeche-2: #f1eadb;             /* abgehobene Fläche der Schale */
+    --mulde: #e3d9c4;                 /* eingelassen: Fortschritt, Code */
+    --bereich: #efe9db;               /* Spalten und Filter: leicht vertieft */
+    --karte: #fdfbf6;                 /* Karte und Eingabe: Cremeweiß */
+    --karte-2: #f1eadb;               /* überfahren, Zähler in Ruhe */
+    --karte-3: #e6dcc6;               /* gedrückt */
+    --text: #1f170f;                  /* Tinte: 16,9 : 1 auf der Karte, 13,8 : 1 auf der Leiste */
+    --text-2: #4d4030;                /* Nebentext, 7,8 : 1 auf der Leiste */
+    --text-3: #6a5841;                /* schwacher Text und Etiketten in Braun, 5,3 : 1 auf der Leiste */
+    --braun: #4a3320;                 /* Schrift und Symbole der Bedienelemente: Knöpfe, Chips, Stufen, 9,2 : 1 auf der Leiste */
+    --rand: rgba(96, 66, 30, 0.16);   /* Trennlinien und Rahmen rundum */
+    --rand-stark: rgba(96, 66, 30, 0.36); /* Rahmen von Knöpfen, Eingaben und Schwebendem: als Grenze erkennbar */
+    --diagrammlinie: rgba(96, 66, 30, 0.09);
+    --gewaehlt: #3a2a1b;              /* gewählter Eintrag: Seitenleiste, Stufen, Chips, wie Tinte */
+    --auf-gewaehlt: #f8f0e0;          /* Schrift darauf, 11,8 : 1 */
+    --akzent: #9c3a0a;                /* Orange als Schrift, Verweise und Symbole: 5,1 : 1, auf seiner Tönung 4,6 : 1 */
+    --akzent-weich: rgba(255, 122, 48, 0.16); /* Hinterlegung von Aktivem */
+    --akzent-flaeche: #ff7a30;        /* sattes Orange: Hauptknopf, Schalter, läuft, Balken, aktives Symbol */
+    --auf-akzent: #1a0c04;            /* Schrift auf dem Orange, 7,4 : 1 */
+    --leuchten: rgba(255, 122, 48, 0.42); /* Schein um Hauptknopf, Schalter und Laufendes */
+    --akzent-leucht: #d64d10;         /* kräftiges Orange für kleine Zeichen auf Papier: Fokusring, Punkt an Laufendem, 3,1 : 1 und mehr */
+    --gut: #2b5e1b;                   /* Moos als Schrift: fertig, erledigt */
+    --gut-weich: rgba(43, 94, 27, 0.12);
+    --gut-flaeche: #15803d;           /* sattes Grün für Punkte: verbunden, 4,0 : 1 auf der Leiste */
+    --warn: #8a4500;                  /* Warnung als Schrift */
+    --warn-weich: rgba(245, 160, 15, 0.16);
+    --warn-flaeche: #f5a00f;          /* sattes Gelborange für Zähler mit Warnung, auf-akzent darauf 9 : 1 */
+    --gefahr: #a8231c;                /* Fehler als Schrift, 4,7 : 1 auch auf seiner Tönung */
+    --gefahr-weich: rgba(212, 41, 31, 0.12);
+    --gefahr-flaeche: #d4291f;        /* sattes Rot: überfällig, Fehler-Zähler, Löschen; Weiß darauf 5,1 : 1 */
+    --info: #1f55b8;                  /* Hinweis als Schrift */
+    --info-flaeche: #1d64d8;          /* sattes Blau: neu, wartet; Weiß darauf 5,4 : 1 */
+    --toenung: 14%;                   /* Stärke der ruhigen Tönungen */
+    --himmel: #2b4f8f;                /* Palette gedämpft und tief, damit sie ruhig bleibt; Schrift auf Tönung über 4,9 : 1 */
+    --petrol: #1d5f6b;
+    --tuerkis: #1b6a60;
+    --minze: #24633f;
+    --flieder: #5b47b8;
+    --violett: #7a3aa8;
+    --rose: #a3245a;
+    --koralle: #9a3412;
+    --honig: #6e5000;
+    --sand: #6b4f24;
+    --stahl: #4a5a6e;
+    --schattenfarbe: #2a1b0c;         /* warmes Dunkelbraun für Schatten */
+    --schatten: 0 1px 2px rgba(60, 40, 15, 0.06), 0 3px 12px rgba(60, 40, 15, 0.06);
+    --schatten-schwebend: 0 2px 6px rgba(60, 40, 15, 0.1), 0 18px 44px rgba(60, 40, 15, 0.16);
+    --schatten-hilfe: 0 2px 6px rgba(42, 27, 12, 0.14), 0 18px 48px rgba(42, 27, 12, 0.22); /* Hilfefenster: schwebt deutlich, bleibt warm */
+    --schleier: rgba(244, 239, 227, 0.8);
+  }
+
+  /* Dunkel: warmes Dunkelbraun, Tinte hell, das Orange leuchtet */
+  :root[data-vorlage="papyrus"][data-theme="dunkel"], :root[data-vorlage="papyrus"] [data-theme="dunkel"] {
+    color-scheme: dark;
+    --hg: #1b1612;
+    --leiste: #211b16;
+    --flaeche: #2b241e;
+    --flaeche-2: #352c24;
+    --mulde: #120e0b;
+    --bereich: #231d18;
+    --karte: #2b241e;
+    --karte-2: #352c24;
+    --karte-3: #40362c;
+    --text: #f3ebdb;                  /* 12,9 : 1 auf der Karte */
+    --text-2: #d3c7b1;                /* 9,2 : 1 auf der Karte */
+    --text-3: #b5a78f;                /* 4,9 : 1 auch auf der gedrückten Fläche */
+    --braun: #ead8b8;                 /* helles Sandbraun für Bedienelemente */
+    --rand: rgba(234, 200, 150, 0.12);
+    --rand-stark: rgba(234, 200, 150, 0.26);
+    --diagrammlinie: rgba(234, 200, 150, 0.07);
+    --gewaehlt: #54432f;              /* heller als die Leiste, damit der gewählte Eintrag hervortritt; Orange darauf 3,6 : 1 */
+    --auf-gewaehlt: #fbf3e4;          /* 8,6 : 1 */
+    --akzent: #ff9a5c;                /* 7,3 : 1 auf der Karte */
+    --akzent-weich: rgba(255, 122, 48, 0.16);
+    --akzent-flaeche: #ff7a30;
+    --auf-akzent: #1a0c04;
+    --leuchten: rgba(255, 122, 48, 0.5);
+    --akzent-leucht: #ff8a45;         /* 5 : 1 und mehr auf allen Flächen */
+    --gut: #8fd47a;
+    --gut-weich: rgba(143, 212, 122, 0.14);
+    --gut-flaeche: #3ccf6a;
+    --warn: #ffb347;
+    --warn-weich: rgba(255, 176, 32, 0.15);
+    --warn-flaeche: #ffb020;
+    --gefahr: #ff8a7d;
+    --gefahr-weich: rgba(255, 107, 91, 0.15);
+    --gefahr-flaeche: #cf3729;        /* Weiß darauf 5,0 : 1, als Punkt 3,1 : 1 auf der Karte */
+    --info: #86b3ff;
+    --info-flaeche: #2f6ce0;          /* Weiß darauf 4,8 : 1, als Punkt 3,2 : 1 auf der Karte */
+    --toenung: 18%;
+    --himmel: #8fb0ef;
+    --petrol: #5fc4d2;
+    --tuerkis: #5ccfbf;
+    --minze: #7fd49a;
+    --flieder: #a99bff;
+    --violett: #cc8bef;
+    --rose: #f28ab3;
+    --koralle: #ff8a5c;
+    --honig: #e8c25a;
+    --sand: #d9b67a;
+    --stahl: #a9b8c9;
+    --schattenfarbe: #050302;
+    --schatten: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 18px rgba(0, 0, 0, 0.28);
+    --schatten-schwebend: 0 2px 6px rgba(0, 0, 0, 0.4), 0 20px 50px rgba(0, 0, 0, 0.55);
+    --schatten-hilfe: 0 2px 6px rgba(0, 0, 0, 0.5), 0 14px 32px rgba(0, 0, 0, 0.55), 0 32px 80px rgba(0, 0, 0, 0.7);
+    --schleier: rgba(12, 9, 6, 0.74);
+  }
+}

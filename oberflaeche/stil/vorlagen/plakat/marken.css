@@ -1,0 +1,149 @@
+/* Marken der Vorlage Plakat: ihre eine Wahrheit für Farben, Schriften, Ecken, Konturen und Schatten, wie
+   futur/marken.css. Die Bausteine daneben (bausteine.css) nutzen nur Marken.
+
+   Gilt nur mit data-vorlage="plakat" am Wurzelelement (html) und nur auf dem Rechner (ab 1000 Pixel Breite); ohne das
+   Merkmal und am Telefon bleibt alles beim Grunddesign. Hell und dunkel wie gewohnt über data-theme, auch für einen
+   Teil der Seite. Schriftgrößen und Maße kommen weiter aus den Schriftstufen (data-schrift).
+
+   Gestaltung wie ein gut gesetztes Plakat: Tinte auf warmem Papier (hell) oder helle Kontur auf tiefem Schwarzblau
+   (dunkel), kräftige Konturen rundum, harte versetzte Schatten ohne Weichzeichnung, fast eckig. Eine Hauptfarbe
+   (leuchtendes Gelb) für die Hauptsache, das Gewählte und das Laufende; dazu wenige satte Signalfarben für Zustände.
+   Ordnung: auf Gelb und den hellen Signalflächen steht immer Tinte, auf Rot steht Weiß; was man drücken kann oder was
+   als Körper aufliegt, wirft einen Schatten, Mulden und Etiketten nicht. Kopf und Fuß der App und die Köpfe von Hilfe
+   und Fenster tragen in beiden Themen die dunklen Werte (Bänder in Tinte rahmen das Papier); gelbe Flächen mit Inhalt
+   (gewählte Karte und Zeile, laufende Kennzahl, gewählte Wahl) tragen die hellen, so steht dort jede Schrift in Tinte,
+   auch im dunklen Thema.
+
+   Kontraste (WCAG, gerechnet aus den Werten unten): Text und Nebentext mindestens 7 : 1 auf ihren Flächen, schwacher
+   Text und Etiketten mindestens 4,5 : 1, auch auf Gelb und den Signalflächen. */
+
+@media (min-width: 1000px) {
+
+  /* Beide Themen: Schriften, Ecken, Konturen, Schatten, Hauptfarbe und Signalflächen */
+  :root[data-vorlage="plakat"] {
+    --schrift-titel: var(--schrift);      /* Überschriften, Etiketten, Knöpfe: Grundschrift, aber schwer */
+    --gewicht-titel: 800;                 /* Überschriften, Marke, Kennzahlen-Etiketten */
+    --gewicht-plakat: 900;                /* Seitentitel: der eine schwerste Satz einer Seite */
+    --gewicht-etikett: 800;               /* Etiketten und Marken in Versalien */
+    --gewicht-knopf: 700;                 /* Knöpfe, Reiter, Chips, Einträge der Seitenleiste */
+    --sperrung: 0.08em;                   /* Sperrung der Etiketten in Versalien */
+    --r1: 0;                              /* eckig: Marken, Segmente, kleine Flächen */
+    --r2: 2px;                            /* knapp: Knöpfe, Eingaben, Karten */
+    --r3: 3px;                            /* knapp: Fenster, Tafeln */
+    --kontur-breite: 2px;                 /* Stärke der Kontur rundum an Knöpfen, Karten, Eingaben, Etiketten */
+    --versatz-klein: 3px;                 /* Schattenversatz von Knöpfen, Chips, Schaltern */
+    --versatz: 4px;                       /* Schattenversatz von Karten und Kennzahlen */
+    --versatz-gross: 8px;                 /* Schattenversatz von Schwebendem: Fenster, Dialog, Meldung, Liste */
+    --auf-signal: #14161f;                /* Tinte auf den hellen Signalflächen (gut, Warnung, Hinweis, angehalten) */
+    --gut-flaeche: #46d98a;               /* Fläche für fertig und erfolgreich, Tinte darauf 9,9 : 1 */
+    --warn-flaeche: #ff9a3c;              /* Fläche für Warnung und Auslaufen, Tinte darauf 8,5 : 1 */
+    --info-flaeche: #79b1ff;              /* Fläche für Hinweis und wartet, Tinte darauf 8,2 : 1 */
+    --honig-flaeche: #e6d29a;             /* Fläche für angehalten und Vorwarnung, Tinte darauf 12 : 1 */
+    --auf-farbe: var(--licht);            /* Weiß auf Rot und auf dem Symbol der App */
+    --fortschritt: var(--akzent-flaeche); /* Füllung von Fortschrittsbalken ohne Bedeutungsfarbe */
+    --raster-abstand: 14px;               /* Abstand der Rasterpunkte hinter der Arbeitsfläche, wie im Druck */
+  }
+
+  /* Hell: warmes Papier, Tinte in Schwarzblau, Gelb als Fläche, Ocker als Schrift. Gilt auch für gelbe Flächen mit
+     Inhalt im dunklen Thema. */
+  :root[data-vorlage="plakat"]:not([data-theme="dunkel"]), :root[data-vorlage="plakat"] [data-theme="hell"],
+  :root[data-vorlage="plakat"] :is(.karte.gewaehlt, .kennzahl.laeuft, .zeile.gewaehlt, .wahl label.an) {
+    color-scheme: light;
+    --hg: #f3eedf;
+    --leiste: #faf7ee;
+    --flaeche: #fffefa;
+    --flaeche-2: #f0e9d6;
+    --mulde: #e6dec8;
+    --bereich: #f9f5ea;
+    --karte: #fffefa;
+    --karte-2: #f0e9d6;
+    --karte-3: #e4dbc2;
+    --text: #14161f;                      /* Tinte, 15 : 1 auf dem Papier */
+    --text-2: #33353f;                    /* 10 : 1 auf dem Papier, 8,5 : 1 auf Gelb */
+    --text-3: #53555f;                    /* 6,3 : 1 auf dem Papier, 5,2 : 1 auf Gelb */
+    --rand: rgba(20, 22, 31, 0.3);        /* feine Trennlinien zwischen Zeilen und Feldern */
+    --rand-stark: #14161f;                /* Rahmen in Tinte */
+    --diagrammlinie: rgba(20, 22, 31, 0.12);
+    --kontur: #14161f;                    /* kräftige Kontur rundum: Tinte */
+    --auf-kontur: #fffefa;                /* Papier auf Tinte: Kopf der Tabelle */
+    --schlagschatten: #14161f;            /* harter Schatten in Tinte */
+    --fokus: #14161f;                     /* Fokusring: Tinte mit Abstand */
+    --akzent: #6b4400;                    /* Ocker als Schrift, 8,5 : 1 auf Weiß, 7,3 : 1 auf dem Papier */
+    --akzent-flaeche: #ffd400;            /* Hauptfarbe Gelb: Hauptknopf, Gewähltes, Laufendes */
+    --auf-akzent: #14161f;                /* Tinte auf Gelb, 12,6 : 1 */
+    --akzent-weich: rgba(255, 212, 0, 0.4); /* Gelb als Hinterlegung: Treffer, überfahrene Zeile */
+    --gut: #07582f;                       /* 8,5 : 1 auf der Karte, 7,4 : 1 auf dem Papier */
+    --gut-weich: rgba(70, 217, 138, 0.22);
+    --warn: #7f3000;                      /* 9 : 1 auf der Karte, 7,8 : 1 auf dem Papier */
+    --warn-weich: rgba(255, 154, 60, 0.22);
+    --gefahr: #9a0018;                    /* 8,7 : 1 auf der Karte, 7,6 : 1 auf dem Papier */
+    --gefahr-weich: rgba(179, 0, 27, 0.12);
+    --gefahr-flaeche: #b3001b;            /* Fläche für Fehler, Halt und Löschen, Weiß darauf 7,2 : 1 */
+    --info: #1d3fb0;                      /* 8,7 : 1 auf der Karte, 7,6 : 1 auf dem Papier */
+    --honig: #5c4800;                     /* 8,7 : 1 auf der Karte, 7,6 : 1 auf dem Papier */
+    --toenung-etikett: 30%;               /* Stärke der Farbe in Fähigkeits- und Zonenmarken (gemischt mit der Karte) */
+    --toenung-hinweis: 26%;               /* Stärke der Signalfläche in Hinweisen (gemischt mit der Karte) */
+    --schattenfarbe: #14161f;
+    --schatten: var(--versatz) var(--versatz) 0 var(--schlagschatten);          /* Karten, Kennzahlen */
+    --schatten-knopf: var(--versatz-klein) var(--versatz-klein) 0 var(--schlagschatten); /* Knöpfe, Chips */
+    --schatten-schwebend: var(--versatz-gross) var(--versatz-gross) 0 var(--schlagschatten); /* Fenster, Dialog */
+    --schleier: rgba(243, 238, 223, 0.82);
+    --raster: rgba(20, 22, 31, 0.11);     /* Rasterpunkte hinter der Arbeitsfläche */
+  }
+
+  /* Dunkel: tiefes Schwarzblau, helle Konturen, dieselben satten Flächen. Gilt in beiden Themen auch für Kopf und Fuß
+     der App und die Köpfe von Hilfe und Fenster. */
+  :root[data-vorlage="plakat"][data-theme="dunkel"], :root[data-vorlage="plakat"] [data-theme="dunkel"],
+  :root[data-vorlage="plakat"] :is(.kopf, .fuss, .hilfe-kopf, .fenster-kopf) {
+    color-scheme: dark;
+    --hg: #0e1224;
+    --leiste: #080b17;
+    --flaeche: #161c36;
+    --flaeche-2: #20274a;
+    --mulde: #060912;
+    --bereich: #131931;
+    --karte: #1a2140;
+    --karte-2: #252d52;
+    --karte-3: #313a66;
+    --text: #f7f2e4;                      /* Papier als Schrift */
+    --text-2: #d6d3e0;
+    --text-3: #aeb0c6;
+    --rand: rgba(247, 242, 228, 0.24);
+    --rand-stark: #ece5d0;
+    --diagrammlinie: rgba(247, 242, 228, 0.1);
+    --kontur: #ece5d0;                    /* helle Kontur rundum */
+    --auf-kontur: #0e1224;
+    --schlagschatten: #5b6599;            /* harter Schatten in gedämpftem Blau: sichtbar, aber leiser als die Kontur */
+    --fokus: #ffd400;
+    --akzent: #ffd400;                    /* Gelb als Schrift auf Schwarzblau */
+    --akzent-flaeche: #ffd400;
+    --auf-akzent: #14161f;
+    --akzent-weich: rgba(255, 212, 0, 0.16);
+    --gut: #5ee39a;
+    --gut-weich: rgba(70, 217, 138, 0.18);
+    --warn: #ffab5e;
+    --warn-weich: rgba(255, 154, 60, 0.18);
+    --gefahr: #ffa8af;
+    --gefahr-weich: rgba(255, 92, 110, 0.18);
+    --gefahr-flaeche: #b3001b;
+    --info: #a3c6ff;
+    --honig: #f0d68e;
+    --toenung: 26%;
+    --toenung-etikett: 34%;
+    --toenung-hinweis: 22%;
+    --schattenfarbe: #000000;
+    --schatten: var(--versatz) var(--versatz) 0 var(--schlagschatten);
+    --schatten-knopf: var(--versatz-klein) var(--versatz-klein) 0 var(--schlagschatten);
+    --schatten-schwebend: var(--versatz-gross) var(--versatz-gross) 0 var(--schlagschatten);
+    --schleier: rgba(6, 9, 18, 0.78);
+    --raster: rgba(236, 229, 208, 0.07);
+  }
+
+  /* Gelbe Flächen mit Inhalt: Tinte füllt dort den Fortschritt, damit er sich vom Gelb abhebt; ihren Schatten werfen
+     sie wie ihre Umgebung (im dunklen Thema blau) */
+  :root[data-vorlage="plakat"] :is(.karte.gewaehlt, .kennzahl.laeuft, .zeile.gewaehlt, .wahl label.an) {
+    --fortschritt: var(--kontur);
+    --schatten: inherit;
+    --schatten-knopf: inherit;
+  }
+}

@@ -1,0 +1,172 @@
+/* Bausteine der Vorlage Papyrus: was über die Marken (papyrus/marken.css) hinaus anders aussieht. Nur Marken, nur auf
+   dem Rechner (ab 1000 Pixel) und nur mit data-vorlage="papyrus" am Wurzelelement.
+
+   Regel der Vorlagen: sie ergänzen Schrift, Linien rundum, Rundungen und Leuchten, ersetzen aber keine Flächen, die
+   eine App an einem Baustein selbst setzt. Wo eine Regel eine Fläche ändert, nennt sie die Abwandlung ausdrücklich.
+   Ruhig im Großen: Papier, feine braune Linien, weiche Schatten. Satt im Kleinen: Hauptknopf, Schalter, Zähler mit
+   Bedeutung, die wichtigen Zustände (läuft, neu, überfällig), der aktive Punkt und der Fokus tragen kräftige Farbe
+   mit leichtem Schein. Keine Filter und keine Masken; Leuchten nur als Schatten. */
+
+@media (min-width: 1000px) {
+
+  /* ═══ Grund ═══ */
+  :root[data-vorlage="papyrus"] { scrollbar-color: var(--karte-3) transparent; }
+  :root[data-vorlage="papyrus"] ::selection { background: var(--akzent-weich); }
+  :root[data-vorlage="papyrus"] :is(h1, h2, h3) { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: 0; }
+  :root[data-vorlage="papyrus"] h1 { font-weight: 560; letter-spacing: -0.01em; }
+  /* Nebenangabe rechts in einer Überschrift bleibt in der Grundschrift */
+  :root[data-vorlage="papyrus"] :is(h1, h2, h3) .rechts { font-family: var(--schrift); }
+  :root[data-vorlage="papyrus"] .etikett { font-weight: 600; letter-spacing: var(--sperrung); }
+  /* Fokus: kräftiges Orange, klar vom ruhigen Braun getrennt */
+  :root[data-vorlage="papyrus"] :focus-visible { outline: 2px solid var(--akzent-leucht); outline-offset: 2px; }
+
+  /* ═══ Schale ═══ */
+  :root[data-vorlage="papyrus"] .marke { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: 0; }
+  :root[data-vorlage="papyrus"] .navi { color: var(--text-2); transition: background var(--schnell), color var(--schnell); }
+  :root[data-vorlage="papyrus"] .navi:hover { background: var(--karte-2); color: var(--text); }
+  /* der aktive Punkt: dunkel wie Tinte, sein Symbol leuchtet orange */
+  :root[data-vorlage="papyrus"] .navi.aktiv { background: var(--gewaehlt); color: var(--auf-gewaehlt); box-shadow: var(--schatten); }
+  :root[data-vorlage="papyrus"] .navi.aktiv i {
+    color: var(--symbolfarbe, var(--akzent-flaeche));
+    text-shadow: 0 0 10px var(--leuchten);
+  }
+  /* ruhige Zähler im aktiven Eintrag hell auf der Tinte; die satten behalten ihre Farbe */
+  :root[data-vorlage="papyrus"] .navi.aktiv .zaehler:not(.akzent, .gefahr, .warnung, .info) {
+    background: color-mix(in srgb, var(--auf-gewaehlt) 16%, transparent); color: var(--auf-gewaehlt);
+  }
+  :root[data-vorlage="papyrus"] .lage { background: var(--karte); border-radius: var(--rund); box-shadow: 0 0 0 1px var(--rand); }
+  /* Punkte: satte Farbe mit Schein; die Farbe je Bedeutung wie im Grunddesign, auch für die Lage im Kopf */
+  :root[data-vorlage="papyrus"] .punkt {
+    --punkt: var(--gut-flaeche);
+    background: var(--punkt); box-shadow: 0 0 6px color-mix(in srgb, var(--punkt) 60%, transparent);
+  }
+  :root[data-vorlage="papyrus"] :is(.punkt.warnung, .lage:is(.angespannt, .auslaufen) .punkt) { --punkt: var(--warn-flaeche); }
+  :root[data-vorlage="papyrus"] :is(.punkt.gefahr, .lage:is(.engpass, .halt) .punkt) { --punkt: var(--gefahr-flaeche); }
+  :root[data-vorlage="papyrus"] .punkt.aus { --punkt: var(--text-3); box-shadow: none; }
+  :root[data-vorlage="papyrus"] .einstellung-punkt { box-shadow: 0 0 6px var(--leuchten); }
+
+  /* ═══ Knöpfe: Papier mit braunem Rahmen, der Hauptknopf satt orange ═══ */
+  :root[data-vorlage="papyrus"] .knopf {
+    background: var(--karte); color: var(--braun);
+    transition: background var(--schnell), border-color var(--schnell), box-shadow var(--schnell);
+  }
+  :root[data-vorlage="papyrus"] .knopf:not([disabled], .gesperrt):hover {
+    background: var(--karte-2); border-color: color-mix(in srgb, var(--braun) 55%, transparent);
+  }
+  :root[data-vorlage="papyrus"] .knopf.haupt {
+    background: var(--akzent-flaeche); color: var(--auf-akzent); border-color: transparent;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--schattenfarbe) 18%, transparent), 0 0 14px var(--leuchten);
+  }
+  :root[data-vorlage="papyrus"] .knopf.haupt:not([disabled], .gesperrt):hover {
+    filter: none; background: color-mix(in srgb, var(--akzent-flaeche) 88%, var(--licht)); border-color: transparent;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--schattenfarbe) 18%, transparent), 0 0 20px var(--leuchten);
+  }
+  :root[data-vorlage="papyrus"] .knopf.ohne { background: transparent; border-color: transparent; color: var(--text-2); }
+  :root[data-vorlage="papyrus"] .knopf.ohne:not([disabled], .gesperrt):hover { background: var(--karte-2); border-color: transparent; color: var(--text); }
+  :root[data-vorlage="papyrus"] .knopf.aktiv {
+    background: var(--akzent-weich); color: var(--akzent);
+    border-color: color-mix(in srgb, var(--akzent-flaeche) 65%, transparent);
+  }
+  :root[data-vorlage="papyrus"] .knopf.aktiv:not([disabled], .gesperrt):hover { background: var(--akzent-weich); border-color: var(--akzent-flaeche); }
+  :root[data-vorlage="papyrus"] .knopf.gefahr { color: var(--gefahr); border-color: color-mix(in srgb, var(--gefahr) 45%, transparent); }
+  :root[data-vorlage="papyrus"] .knopf.gefahr:not([disabled], .gesperrt):hover { background: var(--gefahr-weich); border-color: var(--gefahr); }
+  :root[data-vorlage="papyrus"] .knopf.gefahr-voll {
+    background: var(--gefahr-flaeche); color: var(--auf-farbe); border-color: transparent;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--gefahr-flaeche) 35%, transparent);
+  }
+  :root[data-vorlage="papyrus"] .knopf.gefahr-voll:not([disabled], .gesperrt):hover {
+    background: color-mix(in srgb, var(--gefahr-flaeche) 88%, var(--schattenfarbe)); border-color: transparent;
+  }
+  :root[data-vorlage="papyrus"] .knopf.warnung { color: var(--warn); }
+
+  /* ═══ Marken im Text: Zähler und Zustände als kleine Pillen; was zählt, satt und leuchtend ═══ */
+  :root[data-vorlage="papyrus"] .zaehler { border-radius: var(--rund); }
+  :root[data-vorlage="papyrus"] :is(.zaehler.akzent, .zustand.laeuft) {
+    background: var(--akzent-flaeche); color: var(--auf-akzent);
+    box-shadow: 0 0 10px var(--leuchten);
+  }
+  :root[data-vorlage="papyrus"] :is(.zaehler.gefahr, .zustand.fehler) {
+    background: var(--gefahr-flaeche); color: var(--auf-farbe);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--gefahr-flaeche) 45%, transparent);
+  }
+  :root[data-vorlage="papyrus"] :is(.zaehler.info, .zustand.wartet) {
+    background: var(--info-flaeche); color: var(--auf-farbe);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--info-flaeche) 40%, transparent);
+  }
+  :root[data-vorlage="papyrus"] :is(.zaehler.warnung, .zustand.auslaufend) {
+    background: var(--warn-flaeche); color: var(--auf-akzent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--warn-flaeche) 45%, transparent);
+  }
+  :root[data-vorlage="papyrus"] :is(.zustand, .faehigkeit, .zone) { font-weight: 600; }
+  :root[data-vorlage="papyrus"] .zustand { border-radius: var(--rund); padding: 0 10px; }
+  :root[data-vorlage="papyrus"] .zustand.aus { box-shadow: inset 0 0 0 1px var(--rand); }
+
+  /* ═══ Eingaben ═══ */
+  :root[data-vorlage="papyrus"] :is(.eingabe, .suche, .auswahl-knopf) { background: var(--karte); border-color: var(--rand-stark); }
+  :root[data-vorlage="papyrus"] :is(.eingabe:focus, .suche:focus-within) {
+    border-color: var(--akzent-flaeche);
+    box-shadow: 0 0 0 3px var(--akzent-weich);
+  }
+  :root[data-vorlage="papyrus"] .auswahl-liste { box-shadow: 0 0 0 1px var(--rand), var(--schatten-schwebend); }
+  /* Schalter als Pille; an satt orange mit Schein */
+  :root[data-vorlage="papyrus"] .schalter { border-radius: var(--rund); background: var(--mulde); box-shadow: inset 0 0 0 1px var(--rand-stark); }
+  :root[data-vorlage="papyrus"] .schalter::after { border-radius: 50%; background: var(--braun); }
+  :root[data-vorlage="papyrus"] .schalter.an { background: var(--akzent-flaeche); box-shadow: 0 0 12px var(--leuchten); }
+  :root[data-vorlage="papyrus"] .schalter.an::after { background: var(--auf-akzent); }
+  /* Stufen und Chips: das Gewählte dunkel wie Tinte */
+  :root[data-vorlage="papyrus"] .stufen { border-color: var(--rand-stark); }
+  /* schwach gewichtet (where) wie das Grunddesign, damit genauere Stufen wie die des Hauptreglers (normal, auslaufen,
+     halt) ihre Farben behalten */
+  :where(:root[data-vorlage="papyrus"]) .stufen button { color: var(--braun); }
+  :where(:root[data-vorlage="papyrus"]) .stufen button.an { background: var(--gewaehlt); color: var(--auf-gewaehlt); }
+  /* Hauptregler: die Stufe normal setzt nur ihre Schrift; sie bekommt ihre ruhige Tönung statt der Tinte */
+  :root[data-vorlage="papyrus"] .hauptregler .stufen button.an.normal { background: color-mix(in srgb, var(--gut) var(--toenung), transparent); }
+  :root[data-vorlage="papyrus"] .chip { border-radius: var(--rund); border-color: var(--rand-stark); color: var(--braun); }
+  :root[data-vorlage="papyrus"] .chip:hover { background: var(--karte-2); color: var(--text); }
+  :root[data-vorlage="papyrus"] .chip.aktiv { background: var(--gewaehlt); border-color: transparent; color: var(--auf-gewaehlt); }
+  :root[data-vorlage="papyrus"] .chip.aktiv .zaehler:not(.akzent, .gefahr, .warnung, .info) { background: color-mix(in srgb, var(--auf-gewaehlt) 16%, transparent); color: var(--auf-gewaehlt); }
+  :root[data-vorlage="papyrus"] .hilfe-bereich button.an { background: var(--gewaehlt); color: var(--auf-gewaehlt); }
+
+  /* ═══ Flächen: Spalten, Karten, Kennzahlen ═══ */
+  :root[data-vorlage="papyrus"] :is(.bereich, .filter) { box-shadow: 0 0 0 1px var(--rand); }
+  :root[data-vorlage="papyrus"] .karte { box-shadow: 0 0 0 1px var(--rand), var(--schatten); }
+  :root[data-vorlage="papyrus"] .karte.klickbar { transition: background var(--schnell), box-shadow var(--schnell); }
+  /* überfahren: die Karte bleibt Papier und hebt sich etwas (Abwandlung der Fläche) */
+  :root[data-vorlage="papyrus"] .karte.klickbar:hover { background: var(--karte); box-shadow: 0 0 0 1px var(--rand-stark), var(--schatten-schwebend); }
+  :root[data-vorlage="papyrus"] .karte.gewaehlt {
+    outline: 0;
+    box-shadow: 0 0 0 1px var(--akzent-leucht), 0 0 16px var(--akzent-weich), var(--schatten);
+  }
+  /* Kennzahl: Papierkarte, Zahl in der Titelschrift, ein leuchtender Punkt vor dem Etikett der farbigen */
+  :root[data-vorlage="papyrus"] .kennzahl { background: var(--karte); box-shadow: 0 0 0 1px var(--rand), var(--schatten); }
+  :root[data-vorlage="papyrus"] .kennzahl b { font-family: var(--schrift-titel); font-weight: 600; }
+  :root[data-vorlage="papyrus"] .kennzahl span { font-weight: 600; letter-spacing: var(--sperrung); }
+  :root[data-vorlage="papyrus"] .kennzahl.laeuft { --signal: var(--akzent-leucht); }
+  :root[data-vorlage="papyrus"] .kennzahl.fehler { --signal: var(--gefahr-flaeche); }
+  :root[data-vorlage="papyrus"] .kennzahl.wartet { --signal: var(--info-flaeche); }
+  :root[data-vorlage="papyrus"] .kennzahl.erfolg { --signal: var(--gut-flaeche); }
+  :root[data-vorlage="papyrus"] .kennzahl:is(.laeuft, .fehler, .wartet, .erfolg) span::before {
+    content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; vertical-align: 0.1em;
+    border-radius: 50%; background: var(--signal); box-shadow: 0 0 6px var(--signal);
+  }
+
+  /* ═══ Reiter ═══ */
+  /* schwach gewichtet (where) wie das Grunddesign, damit Abwandlungen wie gefahr ihre Farbe behalten */
+  :where(:root[data-vorlage="papyrus"]) :is(.reiter, .untergruppen) :is(button, a) { color: var(--braun); }
+  :where(:root[data-vorlage="papyrus"]) :is(.reiter, .untergruppen) :is(button, a):hover { background: var(--karte-2); color: var(--text); }
+  :where(:root[data-vorlage="papyrus"]) :is(.reiter, .untergruppen) :is(button, a).aktiv {
+    background: var(--karte); border-color: var(--rand-stark); color: var(--text); box-shadow: var(--schatten);
+  }
+
+  /* ═══ Tabelle, Fortschritt, Ablauf ═══ */
+  :root[data-vorlage="papyrus"] .tabelle th { font-weight: 600; letter-spacing: var(--sperrung); }
+  :root[data-vorlage="papyrus"] .tabelle tr:hover td { background: color-mix(in srgb, var(--braun) 5%, transparent); }
+  :root[data-vorlage="papyrus"] :is(.balken, .balken b, .speicher) { border-radius: var(--rund); }
+  :root[data-vorlage="papyrus"] .kette .schritt { border-radius: var(--rund); }
+  :root[data-vorlage="papyrus"] .kette .schritt.jetzt { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 55%, transparent), 0 0 10px var(--akzent-weich); }
+
+  /* ═══ Schwebendes: Fenster, Dialog, Meldung, Hilfe ═══ */
+  :root[data-vorlage="papyrus"] :is(.fenster, .dialog, .meldung) { border-color: var(--rand-stark); }
+  :root[data-vorlage="papyrus"] :is(.fenster-kopf .titel, .hilfe-titel b) { font-family: var(--schrift-titel); font-weight: 600; }
+  :root[data-vorlage="papyrus"] .hilfe-fenster { border-color: var(--rand-stark); box-shadow: var(--schatten-hilfe); }
+}

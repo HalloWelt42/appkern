@@ -1,0 +1,171 @@
+/* Bausteine der Vorlage Klar: was über die Marken (klar/marken.css) hinaus anders aussieht. Nur Marken, nur auf dem
+   Rechner (ab 1000 Pixel) und nur mit data-vorlage="klar" am Wurzelelement.
+
+   Regel der Vorlagen: sie ergänzen, ersetzen aber keine Flächen, die eine App an einem Baustein selbst setzt. Darum
+   steht das Merkmal hier in :where(): eine Regel wiegt so viel wie die Regel des Grunddesigns, die sie ablöst, gewinnt
+   über sie durch die spätere Stelle und weicht jeder Abwandlung (etwa .knopf.haupt) und jeder Regel einer App. Keine
+   Filter und keine Masken; Linien nur zart und rundum, Tiefe über Ton und Schatten. */
+
+@media (min-width: 1000px) {
+
+  /* ═══ Grund ═══ */
+  :root[data-vorlage="klar"] { scrollbar-color: var(--karte-3) transparent; }
+  :root[data-vorlage="klar"] ::selection { background: var(--akzent-weich); }
+  :where(:root[data-vorlage="klar"]) :is(h1, h2, h3) { letter-spacing: var(--laufweite-titel); }
+  /* Zahlen in Barlow mit gleich breiten Ziffern, ohne Sperrung */
+  :where(:root[data-vorlage="klar"]) :is(.zahl, .zaehler, .zeit) { font-variant-numeric: tabular-nums; letter-spacing: 0; }
+  /* Etiketten in Satzschreibung statt Versalien, dafür eine Stufe größer: ruhiger und besser lesbar */
+  :where(:root[data-vorlage="klar"]) .etikett { font-size: var(--klein); font-weight: 600; letter-spacing: 0.01em; text-transform: none; }
+
+  /* ═══ Schale: heller Rahmen ohne Linien, die Arbeitsfläche als runde Mulde darin ═══ */
+  :root[data-vorlage="klar"] .schale { background: var(--leiste); }
+  :where(:root[data-vorlage="klar"]) :is(.kopf, .seite, .fuss) { border-color: transparent; }
+  :where(:root[data-vorlage="klar"]) .schale > .haupt { background: var(--hg); border-radius: var(--r4) 0 0 var(--r4); }
+  :where(:root[data-vorlage="klar"]) .marke { letter-spacing: var(--laufweite-titel); }
+  /* Suche im Kopf: weiße Pille über dem Rahmen */
+  :where(:root[data-vorlage="klar"]) .kopf .suche { background: var(--knopf-flaeche); border-color: transparent; box-shadow: var(--schatten-knopf); }
+  /* Lage im Kopf: Zustand als sanfte Pille in seiner Farbe */
+  :where(:root[data-vorlage="klar"]) .lage { border-radius: var(--pille); padding: 0 var(--a4); }
+  :where(:root[data-vorlage="klar"]) .lage.ruhig { background: color-mix(in srgb, var(--gut) var(--toenung), transparent); color: var(--gut); }
+  :where(:root[data-vorlage="klar"]) :is(.lage.angespannt, .lage.auslaufen) { background: color-mix(in srgb, var(--warn) var(--toenung), transparent); }
+  :where(:root[data-vorlage="klar"]) :is(.lage.engpass, .lage.halt) { background: color-mix(in srgb, var(--gefahr) var(--toenung), transparent); }
+  :where(:root[data-vorlage="klar"]) .hauptregler { border-radius: var(--pille); }
+  /* Seitenleiste: Einträge als Pillen, der aktive in sanftem Indigo; die eingeklappte Leiste behält ihre Maße */
+  :where(:root[data-vorlage="klar"]) .seite { padding: var(--a4) var(--a3); gap: var(--a1); }
+  :where(:root[data-vorlage="klar"]) .seite .etikett { padding: var(--a5) var(--a4) var(--a2); }
+  :where(:root[data-vorlage="klar"]) .navi { border-radius: var(--pille); padding: 10px var(--a4); transition: background var(--schnell), color var(--schnell); }
+  :where(:root[data-vorlage="klar"]) .navi:hover { background: var(--ueber); }
+  :where(:root[data-vorlage="klar"]) .navi.aktiv { background: var(--akzent-weich); color: var(--akzent); font-weight: 600; }
+  :where(:root[data-vorlage="klar"]) .navi.aktiv .zaehler:not(.warnung, .gefahr) { background: var(--erhaben); color: var(--akzent); }
+
+  /* ═══ Knöpfe: Pillen, weiß mit weichem Schatten; der Hauptknopf in Indigo mit Schein in seiner Farbe ═══ */
+  :where(:root[data-vorlage="klar"]) .knopf {
+    border-radius: var(--pille); background: var(--knopf-flaeche); border-color: transparent; box-shadow: var(--schatten-knopf);
+    transition: background var(--schnell), box-shadow var(--schnell), color var(--schnell);
+  }
+  /* gefüllte Knöpfe behalten ihre Fläche beim Überfahren (where: ohne mehr Gewicht als .knopf:hover) */
+  :where(:root[data-vorlage="klar"]) .knopf:where(:not(.haupt, .gefahr-voll)):hover { background: var(--knopf-ueber); }
+  :where(:root[data-vorlage="klar"]) .knopf.haupt { box-shadow: var(--schatten-akzent); }
+  :where(:root[data-vorlage="klar"]) .knopf.haupt:not([disabled], .gesperrt):hover { filter: none; background: var(--akzent-ueber); }
+  :where(:root[data-vorlage="klar"]) .knopf.ohne { box-shadow: none; }
+  :where(:root[data-vorlage="klar"]) .knopf.ohne:hover { background: var(--ueber); }
+  :where(:root[data-vorlage="klar"]) .knopf.gefahr:not([disabled], .gesperrt):hover { background: var(--gefahr-weich); }
+  :where(:root[data-vorlage="klar"]) .knopf.aktiv { background: var(--akzent-weich); border-color: transparent; color: var(--akzent); box-shadow: none; }
+
+  /* ═══ Marken im Text: Zähler, Zustände, Fähigkeiten, Zonen als sanfte Pillen mit kräftiger Schrift ═══ */
+  :where(:root[data-vorlage="klar"]) :is(.zaehler, .zustand, .faehigkeit, .zone) { border-radius: var(--pille); }
+  :where(:root[data-vorlage="klar"]) .zustand.aus { background: var(--karte-2); }
+
+  /* ═══ Eingaben: eingelassen und rund, im Fokus weiß mit weichem Ring in Indigo ═══ */
+  :where(:root[data-vorlage="klar"]) :is(.eingabe, .suche) {
+    background: var(--feld); border-color: var(--rand-stark);
+    transition: background var(--schnell), border-color var(--schnell), box-shadow var(--schnell);
+  }
+  :where(:root[data-vorlage="klar"]) .eingabe { border-radius: var(--r2); }
+  :where(:root[data-vorlage="klar"]) .suche { border-radius: var(--pille); }
+  :where(:root[data-vorlage="klar"]) .suche .leeren { border-radius: var(--pille); }
+  :where(:root[data-vorlage="klar"]) :is(.eingabe:focus, .suche:focus-within) {
+    background: var(--karte); border-color: color-mix(in srgb, var(--akzent-flaeche) 55%, transparent); box-shadow: 0 0 0 4px var(--akzent-weich);
+  }
+  /* Aufklappknopf wie ein Knopf, die Liste schwebt weich */
+  :where(:root[data-vorlage="klar"]) .auswahl-knopf {
+    border-radius: var(--pille); background: var(--knopf-flaeche); border-color: transparent; box-shadow: var(--schatten-knopf);
+    transition: background var(--schnell);
+  }
+  :where(:root[data-vorlage="klar"]) .auswahl-knopf:hover { background: var(--knopf-ueber); }
+  :where(:root[data-vorlage="klar"]) .auswahl-liste { border-radius: var(--r3); box-shadow: var(--schatten-schwebend); padding: var(--a1); }
+  :where(:root[data-vorlage="klar"]) .auswahl-liste button { border-radius: var(--r2); }
+  /* Schalter: runde Bahn, weißer Knauf mit Schatten in beiden Stellungen */
+  :where(:root[data-vorlage="klar"]) .schalter { border-radius: var(--pille); background: var(--schalter-aus); }
+  :where(:root[data-vorlage="klar"]) .schalter::after { border-radius: 50%; background: var(--knauf); box-shadow: var(--schatten-knauf); }
+  :where(:root[data-vorlage="klar"]) .schalter.an::after { background: var(--knauf); }
+  /* Stufen: Rinne mit Pillen, die gewählte hebt sich weiß heraus */
+  :where(:root[data-vorlage="klar"]) .stufen { background: var(--karte-2); border-color: transparent; border-radius: var(--pille); padding: var(--fuge); gap: var(--fuge); }
+  :where(:root[data-vorlage="klar"]) .stufen button { border-radius: var(--pille); transition: background var(--schnell), color var(--schnell); }
+  :where(:root[data-vorlage="klar"]) .stufen button + button { box-shadow: none; }
+  :where(:root[data-vorlage="klar"]) .stufen button:hover { color: var(--text); }
+  :where(:root[data-vorlage="klar"]) .stufen button.an { background: var(--erhaben); color: var(--akzent); box-shadow: var(--schatten-knopf); }
+  /* Chips: getönte Pillen ohne Linie, der aktive in sanftem Indigo */
+  :where(:root[data-vorlage="klar"]) .chip {
+    border-radius: var(--pille); background: var(--karte-2); border-color: transparent; color: var(--text-2);
+    transition: background var(--schnell), color var(--schnell);
+  }
+  :where(:root[data-vorlage="klar"]) .chip:hover { background: var(--karte-3); border-color: transparent; }
+  :where(:root[data-vorlage="klar"]) .chip.aktiv { background: var(--akzent-weich); border-color: transparent; font-weight: 600; }
+  :where(:root[data-vorlage="klar"]) .chip .zaehler { background: var(--erhaben); }
+
+  /* ═══ Flächen: Karten weiß mit weichem, weitem Schatten und mehr Luft; Bereiche als hellere Mulde ohne Linie ═══ */
+  :where(:root[data-vorlage="klar"]) .karte { border-radius: var(--r3); padding: var(--a5); box-shadow: var(--schatten); }
+  :where(:root[data-vorlage="klar"]) .karte + .karte { margin-top: var(--a4); }
+  :where(:root[data-vorlage="klar"]) .karte h3 { margin-bottom: var(--a4); }
+  /* Symbol der Kartenüberschrift auf einem sanften Indigo-Plättchen */
+  :where(:root[data-vorlage="klar"]) .karte h3 > i {
+    display: inline-grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: var(--r2); background: var(--akzent-weich);
+  }
+  :where(:root[data-vorlage="klar"]) .karte.klickbar { transition: box-shadow var(--ruhig), background var(--schnell); }
+  :where(:root[data-vorlage="klar"]) .karte.klickbar:hover { background: var(--karte); box-shadow: var(--schatten-hoch); }
+  :where(:root[data-vorlage="klar"]) :is(.karte.gewaehlt, .karte.gewaehlt.klickbar:hover) {
+    outline: 0; box-shadow: 0 0 0 2px color-mix(in srgb, var(--akzent-flaeche) 60%, transparent), var(--schatten-hoch);
+  }
+  :where(:root[data-vorlage="klar"]) .bereich { border-radius: var(--r4); padding: var(--a5) var(--a6); }
+  /* Filterleiste als weiße Leiste */
+  :where(:root[data-vorlage="klar"]) .filter {
+    background: var(--karte); border-radius: var(--r3); box-shadow: var(--schatten); padding: var(--a3) var(--a4) var(--a3) var(--a5); margin-bottom: var(--a4);
+  }
+  /* Kennzahlen: weiße Kärtchen, Wert groß und fest, Etikett in Satzschreibung */
+  :where(:root[data-vorlage="klar"]) .kennzahlen { gap: var(--a4); }
+  :where(:root[data-vorlage="klar"]) .kennzahl { min-width: 160px; padding: var(--a3) var(--a5); background: var(--karte); border-radius: var(--r3); box-shadow: var(--schatten); }
+  :where(:root[data-vorlage="klar"]) .kennzahl span { font-size: var(--klein); font-weight: 600; letter-spacing: 0.01em; text-transform: none; }
+  :where(:root[data-vorlage="klar"]) .kennzahl b { font-weight: 700; letter-spacing: var(--laufweite-titel); font-variant-numeric: tabular-nums; }
+  /* Hinweise und Bestätigungen: sanfte Fläche ohne Linie */
+  :where(:root[data-vorlage="klar"]) :is(.hinweis, .hinweis.warnung, .hinweis.gefahr, .hinweis.erfolg, .bestaetigen) { border-color: transparent; border-radius: var(--r3); }
+  :where(:root[data-vorlage="klar"]) .hinweis { padding: var(--a4) var(--a5); }
+  /* Einstellungen: mehr Luft zwischen den Zeilen */
+  :where(:root[data-vorlage="klar"]) .einstellung { padding: var(--a4) var(--a1); }
+  :where(:root[data-vorlage="klar"]) .wahl label { border-radius: var(--r3); }
+
+  /* ═══ Reiter: Pillen, der aktive weiß und leicht erhaben ═══ */
+  :where(:root[data-vorlage="klar"]) :is(.reiter, .untergruppen) :is(button, a) { border-radius: var(--pille); transition: background var(--schnell), color var(--schnell); }
+  :where(:root[data-vorlage="klar"]) :is(.reiter, .untergruppen) :is(button, a):hover { background: var(--ueber); }
+  :where(:root[data-vorlage="klar"]) :is(.reiter, .untergruppen) :is(button, a).aktiv {
+    background: var(--erhaben); border-color: transparent; color: var(--text); box-shadow: var(--schatten-knopf);
+  }
+
+  /* ═══ Tabelle, Fortschritt, Ablauf ═══ */
+  /* Kopf der Tabelle als getöntes Band mit runden Enden, Etiketten in Satzschreibung */
+  :where(:root[data-vorlage="klar"]) .tabelle { border-collapse: separate; border-spacing: 0; }
+  :where(:root[data-vorlage="klar"]) .tabelle th { font-size: var(--klein); font-weight: 600; letter-spacing: 0.01em; text-transform: none; }
+  :where(:root[data-vorlage="klar"]) .tabelle th:first-child { border-radius: var(--r2) 0 0 var(--r2); }
+  :where(:root[data-vorlage="klar"]) .tabelle th:last-child { border-radius: 0 var(--r2) var(--r2) 0; }
+  :where(:root[data-vorlage="klar"]) .tabelle td { padding: var(--a3); }
+  :where(:root[data-vorlage="klar"]) :is(.tabelle tbody tr:first-child td, .tabelle.karten tbody tr:first-child) { border-top-color: transparent; }
+  :where(:root[data-vorlage="klar"]) .tabelle tr:hover td { background: var(--ueber); }
+  :where(:root[data-vorlage="klar"]) .tabelle.karten td[data-titel]::before { font-size: var(--klein); font-weight: 600; letter-spacing: 0.01em; text-transform: none; }
+  :where(:root[data-vorlage="klar"]) .ringe > div { font-size: var(--klein); font-weight: 600; letter-spacing: 0.01em; text-transform: none; }
+  :where(:root[data-vorlage="klar"]) :is(.balken, .balken b, .kette .pfeil) { border-radius: var(--pille); }
+  :where(:root[data-vorlage="klar"]) .speicher { border-radius: var(--r1); }
+  :where(:root[data-vorlage="klar"]) .kette .schritt { border-radius: var(--pille); padding: 0 var(--a4); }
+  /* offener Schritt: zarter Ring statt Durchsicht, damit die Schrift voll lesbar bleibt */
+  :where(:root[data-vorlage="klar"]) .kette .schritt.offen { opacity: 1; background: transparent; color: var(--text-3); box-shadow: inset 0 0 0 1px var(--rand-stark); }
+
+  /* ═══ Schwebendes: Fenster, Dialog, Meldung, Hilfe ═══ */
+  :where(:root[data-vorlage="klar"]) :is(.fenster, .dialog, .meldung) { border-color: var(--rand); }
+  :where(:root[data-vorlage="klar"]) :is(.fenster, .dialog) { border-radius: var(--r4); }
+  :where(:root[data-vorlage="klar"]) .dialog { padding: var(--a6); }
+  :where(:root[data-vorlage="klar"]) .meldung { border-radius: var(--r3); background: var(--karte); }
+  /* Griff zum Ziehen der Größe: so weit eingerückt, dass die runde Ecke ihn nicht abschneidet */
+  :where(:root[data-vorlage="klar"]) :is(.griff, .hilfe-griff) { right: calc(var(--r4) * 0.3); bottom: calc(var(--r4) * 0.3); }
+  :where(:root[data-vorlage="klar"]) .hilfe-fenster { border-color: var(--rand); border-radius: var(--r4); box-shadow: var(--schatten-schwebend); }
+  /* Kopf und Leiste der Hilfe als getönte Zone mit weißen Bedienelementen, darunter der Text auf Weiß */
+  :where(:root[data-vorlage="klar"]) :is(.hilfe-kopf, .hilfe-leiste) { background: var(--leiste); border-color: transparent; }
+  :where(:root[data-vorlage="klar"]) .hilfe-leiste { padding: var(--a1) var(--a3) var(--a3); }
+  :where(:root[data-vorlage="klar"]) .hilfe-leiste :is(.eingabe, .suche) { background: var(--karte); }
+  :where(:root[data-vorlage="klar"]) :is(.hilfe-kopf button, .hilfe-mini) { border-radius: var(--pille); }
+  :where(:root[data-vorlage="klar"]) :is(.hilfe-kopf button, .hilfe-mini):hover { background: var(--ueber); }
+  :where(:root[data-vorlage="klar"]) .hilfe-bereich { background: var(--karte-2); border-color: transparent; border-radius: var(--pille); padding: var(--fuge); gap: var(--fuge); }
+  :where(:root[data-vorlage="klar"]) .hilfe-bereich button { border-radius: var(--pille); background: transparent; }
+  :where(:root[data-vorlage="klar"]) .hilfe-bereich button + button { border-left: 0; }
+  :where(:root[data-vorlage="klar"]) .hilfe-text blockquote { border-radius: var(--r3); }
+  :where(:root[data-vorlage="klar"]) .hilfepunkt { border-color: transparent; }
+  :where(:root[data-vorlage="klar"]) .hilfepunkt:hover { background: var(--akzent-weich); }
+}

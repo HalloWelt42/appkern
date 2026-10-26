@@ -1,0 +1,203 @@
+/* Bausteine der Vorlage Plakat: was über die Marken (plakat/marken.css) hinaus anders aussieht. Nur Marken, nur auf
+   dem Rechner (ab 1000 Pixel) und nur mit data-vorlage="plakat" am Wurzelelement.
+
+   Die Vorlage ändert mehr als Linien: Knöpfe, Karten und Etiketten bekommen eigene Flächen. Darum stehen ihre Regeln
+   schwach gewichtet unter :where(...): sie gewichten genau wie die Bausteine des Leitstands und ersetzen sie nur, weil
+   sie später geladen werden. Abwandlungen des Leitstands (etwa .knopf.haupt) und Regeln einer App auf ihren eigenen
+   Klassen behalten so ihren Vorrang; wo eine Abwandlung anders aussehen soll, nennt sie diese Datei ausdrücklich.
+
+   Ordnung der Vorlage: Kontur rundum in --kontur-breite; was man drücken kann oder was als Körper aufliegt (Knopf,
+   Chip, Schalter, Karte, Kennzahl), wirft einen harten Schatten und drückt sich beim Klicken in ihn hinein; Mulden
+   (Eingaben, Bereiche) und Etiketten tragen nur die Kontur. Gewähltes und Laufendes ist eine volle gelbe Fläche.
+   Keine Filter und keine Masken auf großen oder rollenden Flächen. */
+
+@media (min-width: 1000px) {
+
+  /* ═══ Grund ═══ */
+  :root[data-vorlage="plakat"] { scrollbar-color: var(--text-3) transparent; }
+  :where(:root[data-vorlage="plakat"]) ::selection { background: var(--akzent-flaeche); color: var(--auf-akzent); }
+  :where(:root[data-vorlage="plakat"]) :is(h1, h2, h3) { font-family: var(--schrift-titel); font-weight: var(--gewicht-titel); letter-spacing: 0; }
+  :where(:root[data-vorlage="plakat"]) h1 { font-weight: var(--gewicht-plakat); text-transform: uppercase; letter-spacing: 0.01em; }
+  :where(:root[data-vorlage="plakat"]) .etikett { font-weight: var(--gewicht-etikett); letter-spacing: var(--sperrung); color: var(--text-2); }
+  /* Fokus: Ring in Tinte (dunkel in Gelb) mit Abstand; Eingaben ohne Ring bleiben ohne (nur Farbe und Stärke) */
+  :where(:root[data-vorlage="plakat"]) :focus-visible { outline-color: var(--fokus); outline-width: 3px; }
+  /* Köpfe tragen die dunklen Werte (marken.css); die Schrift folgt ihnen hier */
+  :where(:root[data-vorlage="plakat"]) :is(.kopf, .fuss, .hilfe-kopf, .fenster-kopf) { color: var(--text); }
+
+  /* ═══ Schale ═══ */
+  /* Arbeitsfläche: Papier mit feinem Punktraster wie im Druck; steht still, wenn ein Rollfeld darin rollt */
+  :where(:root[data-vorlage="plakat"]) .schale > .haupt {
+    background-color: var(--hg);
+    background-image: radial-gradient(var(--raster) 1.1px, transparent 1.6px);
+    background-size: var(--raster-abstand) var(--raster-abstand);
+  }
+  :where(:root[data-vorlage="plakat"]) .marke { font-weight: var(--gewicht-plakat); letter-spacing: 0.04em; text-transform: uppercase; }
+  :where(:root[data-vorlage="plakat"]) .navi { color: var(--text-2); font-weight: var(--gewicht-knopf); }
+  :where(:root[data-vorlage="plakat"]) .navi:hover { background: var(--karte-2); color: var(--text); }
+  /* gewählter Bereich: gelbe Fläche mit Kontur und Schatten (Kontur als Ring innen, damit nichts springt) */
+  :where(:root[data-vorlage="plakat"]) .navi.aktiv {
+    background: var(--akzent-flaeche); color: var(--auf-akzent);
+    box-shadow: inset 0 0 0 var(--kontur-breite) var(--kontur), var(--schatten-knopf);
+  }
+  :where(:root[data-vorlage="plakat"]) .navi.aktiv i { color: var(--auf-akzent); }
+
+  /* ═══ Knöpfe ═══ hell mit Kontur und Schatten; überfahren hebt sich der Knopf, gedrückt rückt er in den Schatten */
+  :where(:root[data-vorlage="plakat"]) :is(.knopf, .chip, .auswahl-knopf) {
+    border: var(--kontur-breite) solid var(--kontur); font-family: var(--schrift-titel); font-weight: var(--gewicht-knopf);
+    box-shadow: var(--schatten-knopf);
+    transition: background var(--schnell), transform var(--schnell), box-shadow var(--schnell);
+  }
+  :where(:root[data-vorlage="plakat"]) .knopf { background: var(--karte); }
+  :where(:root[data-vorlage="plakat"]) :is(.knopf, .chip, .auswahl-knopf):not([disabled], .gesperrt, .ohne):hover {
+    transform: translate(-1px, -1px);
+    box-shadow: calc(var(--versatz-klein) + 1px) calc(var(--versatz-klein) + 1px) 0 var(--schlagschatten);
+  }
+  :where(:root[data-vorlage="plakat"]) :is(.knopf, .chip, .auswahl-knopf):not([disabled], .gesperrt, .ohne):active {
+    transform: translate(var(--versatz-klein), var(--versatz-klein)); box-shadow: none;
+  }
+  /* überfahren nur eine Stufe dunkler (karte-2): Schrift in Bedeutungsfarbe bleibt über 7 : 1 */
+  :where(:root[data-vorlage="plakat"]) .knopf:not(.haupt, .aktiv, .gefahr-voll, .ohne):hover { background: var(--karte-2); }
+  :where(:root[data-vorlage="plakat"]) .knopf.aktiv { background: var(--akzent-flaeche); border-color: var(--kontur); color: var(--auf-akzent); }
+  :where(:root[data-vorlage="plakat"]) .knopf:is(.haupt, .gefahr-voll) { border-color: var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .knopf.haupt:hover { filter: none; }
+  :where(:root[data-vorlage="plakat"]) .knopf.ohne { box-shadow: none; }
+  :where(:root[data-vorlage="plakat"]) :is(.knopf[disabled], .knopf.gesperrt) { box-shadow: none; border-style: dashed; }
+
+  /* ═══ Zähler und Etiketten ═══ Zähler als Fläche ohne Kontur; Zustände als Aufkleber: Kontur, Versalien, satte
+     Fläche, Tinte darauf (Weiß auf Rot) */
+  :where(:root[data-vorlage="plakat"]) .zaehler { color: var(--text); }
+  :where(:root[data-vorlage="plakat"]) .zaehler.akzent { background: var(--akzent-flaeche); color: var(--auf-akzent); }
+  :where(:root[data-vorlage="plakat"]) :is(.zaehler.gefahr, .navi .zaehler.gefahr) { background: var(--gefahr-flaeche); color: var(--auf-farbe); }
+  :where(:root[data-vorlage="plakat"]) :is(.zaehler.warnung, .navi .zaehler.warnung) { background: var(--warn-flaeche); color: var(--auf-signal); }
+  :where(:root[data-vorlage="plakat"]) .zaehler.info { background: var(--info-flaeche); color: var(--auf-signal); }
+  :where(:root[data-vorlage="plakat"]) .zaehler.erfolg { background: var(--gut-flaeche); color: var(--auf-signal); }
+  :where(:root[data-vorlage="plakat"]) .zaehler.honig { background: var(--honig-flaeche); color: var(--auf-signal); }
+
+  :where(:root[data-vorlage="plakat"]) :is(.zustand, .faehigkeit, .zone) {
+    border: var(--kontur-breite) solid var(--kontur); color: var(--text);
+    font-weight: var(--gewicht-etikett); letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  :where(:root[data-vorlage="plakat"]) .zustand.laeuft { background: var(--akzent-flaeche); color: var(--auf-akzent); }
+  :where(:root[data-vorlage="plakat"]) .zustand.fertig { background: var(--gut-flaeche); color: var(--auf-signal); }
+  :where(:root[data-vorlage="plakat"]) .zustand.fehler { background: var(--gefahr-flaeche); color: var(--auf-farbe); }
+  :where(:root[data-vorlage="plakat"]) .zustand.wartet { background: var(--info-flaeche); color: var(--auf-signal); }
+  :where(:root[data-vorlage="plakat"]) .zustand.pausiert { background: var(--honig-flaeche); color: var(--auf-signal); }
+  :where(:root[data-vorlage="plakat"]) .zustand.auslaufend { background: var(--warn-flaeche); color: var(--auf-signal); }
+  :where(:root[data-vorlage="plakat"]) .zustand.aus { background: var(--karte); color: var(--text-3); border-style: dashed; }
+  :where(:root[data-vorlage="plakat"]) .zustand.wartung { background: color-mix(in srgb, var(--sand) var(--toenung-etikett), var(--karte)); color: var(--text); }
+  /* Fähigkeiten und Zonen: ihre Farbe als Fläche (gemischt mit der Karte), die Schrift in Tinte */
+  :where(:root[data-vorlage="plakat"]) .faehigkeit { background: color-mix(in srgb, var(--f, var(--stahl)) var(--toenung-etikett), var(--karte)); color: var(--text); }
+  :where(:root[data-vorlage="plakat"]) .zone { color: var(--text); }
+  :where(:root[data-vorlage="plakat"]) .zone.heim { background: color-mix(in srgb, var(--stahl) var(--toenung-etikett), var(--karte)); color: var(--text); }
+  :where(:root[data-vorlage="plakat"]) .zone.fern { background: color-mix(in srgb, var(--petrol) var(--toenung-etikett), var(--karte)); color: var(--text); }
+  :where(:root[data-vorlage="plakat"]) .zone.extern { background: color-mix(in srgb, var(--koralle) var(--toenung-etikett), var(--karte)); color: var(--text); }
+
+  /* ═══ Filter, Chips, Eingaben ═══ */
+  :where(:root[data-vorlage="plakat"]) .filter { border: var(--kontur-breite) solid var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .filter .trenner { width: var(--kontur-breite); background: var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .chip { color: var(--text); font-weight: 600; }
+  :where(:root[data-vorlage="plakat"]) .chip.aktiv { background: var(--akzent-flaeche); border-color: var(--kontur); color: var(--auf-akzent); }
+  :where(:root[data-vorlage="plakat"]) :is(.eingabe, .suche) { border: var(--kontur-breite) solid var(--kontur); }
+  /* Fokus in Eingaben: die Mulde bekommt einen gelben harten Schatten */
+  :where(:root[data-vorlage="plakat"]) :is(.eingabe:focus, .suche:focus-within) {
+    border-color: var(--kontur);
+    box-shadow: var(--versatz-klein) var(--versatz-klein) 0 var(--akzent-flaeche);
+  }
+  :where(:root[data-vorlage="plakat"]) .auswahl-knopf { background: var(--karte); }
+  :where(:root[data-vorlage="plakat"]) .auswahl-liste { border: var(--kontur-breite) solid var(--kontur); box-shadow: var(--schatten); }
+  :where(:root[data-vorlage="plakat"]) :is(.auswahl-liste button:hover, .auswahl-liste button.aktiv) { background: var(--akzent-flaeche); color: var(--auf-akzent); }
+  :where(:root[data-vorlage="plakat"]) .auswahl-liste button.aktiv .auswahl-hinweis { color: var(--auf-akzent); opacity: 1; }
+  /* Schalter: Kontur als Ring innen, Griff in Tinte; an gelb (Grunddesign) mit Griff in Tinte */
+  :where(:root[data-vorlage="plakat"]) .schalter { background: var(--karte); box-shadow: inset 0 0 0 var(--kontur-breite) var(--kontur), var(--schatten-knopf); }
+  :where(:root[data-vorlage="plakat"]) .schalter::after { background: var(--kontur); }
+  /* Stufen: Kontur und Schatten am Ganzen, feine Linien in Tinte zwischen den Stufen, die gewählte gelb */
+  :where(:root[data-vorlage="plakat"]) .stufen { border: var(--kontur-breite) solid var(--kontur); box-shadow: var(--schatten-knopf); }
+  :where(:root[data-vorlage="plakat"]) .stufen button { color: var(--text-2); font-weight: var(--gewicht-knopf); }
+  :where(:root[data-vorlage="plakat"]) .stufen button + button { box-shadow: inset 1px 0 0 var(--rand-stark); }
+  :where(:root[data-vorlage="plakat"]) .stufen button:hover { background: var(--karte-2); color: var(--text); }
+  :where(:root[data-vorlage="plakat"]) .stufen button.an { background: var(--akzent-flaeche); color: var(--auf-akzent); }
+  /* Hauptregler im Kopf: die gewählte Stufe in ihrer Signalfläche statt in Gelb (Halt bleibt Rot mit Weiß) */
+  :where(:root[data-vorlage="plakat"]) .hauptregler .stufen button.an.normal { background: var(--gut-flaeche); color: var(--auf-signal); }
+  :where(:root[data-vorlage="plakat"]) .hauptregler .stufen button.an.auslaufen { background: var(--warn-flaeche); color: var(--auf-signal); }
+
+  /* ═══ Flächen: Bereiche, Karten, Kennzahlen ═══ Bereiche als Tablett mit Kontur, Karten als Körper mit Schatten */
+  :where(:root[data-vorlage="plakat"]) .bereich { border: var(--kontur-breite) solid var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .karte { border: var(--kontur-breite) solid var(--kontur); box-shadow: var(--schatten); }
+  :where(:root[data-vorlage="plakat"]) .karte.klickbar { transition: background var(--schnell), transform var(--schnell), box-shadow var(--schnell); }
+  :where(:root[data-vorlage="plakat"]) .karte.klickbar:hover {
+    background: var(--karte); transform: translate(-2px, -2px);
+    box-shadow: calc(var(--versatz) + 2px) calc(var(--versatz) + 2px) 0 var(--schlagschatten);
+  }
+  :where(:root[data-vorlage="plakat"]) .karte.klickbar:active { transform: translate(var(--versatz), var(--versatz)); box-shadow: none; }
+  /* gewählte Karte: volle gelbe Fläche; sie trägt die hellen Werte (marken.css), ihre Schrift steht in Tinte */
+  :where(:root[data-vorlage="plakat"]) :is(.karte.gewaehlt, .karte.gewaehlt:hover) { outline: 0; background: var(--akzent-flaeche); color: var(--text); }
+  :where(:root[data-vorlage="plakat"]) .kennzahl { background: var(--karte); border: var(--kontur-breite) solid var(--kontur); box-shadow: var(--schatten); }
+  :where(:root[data-vorlage="plakat"]) .kennzahl span { font-weight: var(--gewicht-etikett); letter-spacing: var(--sperrung); color: var(--text-2); }
+  :where(:root[data-vorlage="plakat"]) .kennzahl b { font-weight: 700; }
+  :where(:root[data-vorlage="plakat"]) .kennzahl.laeuft { background: var(--akzent-flaeche); color: var(--text); }
+  :where(:root[data-vorlage="plakat"]) .kennzahl.laeuft b { color: var(--text); }
+
+  /* ═══ Reiter ═══ der gewählte als gelbe Fläche mit Kontur und Schatten; der Rahmen liegt immer, damit nichts springt */
+  :where(:root[data-vorlage="plakat"]) :is(.reiter, .untergruppen) :is(button, a) { border-width: var(--kontur-breite); font-weight: var(--gewicht-knopf); }
+  :where(:root[data-vorlage="plakat"]) :is(.reiter, .untergruppen) :is(button, a):hover { background: var(--karte-2); }
+  :where(:root[data-vorlage="plakat"]) :is(.reiter, .untergruppen) :is(button, a).aktiv {
+    background: var(--akzent-flaeche); border-color: var(--kontur); color: var(--auf-akzent); box-shadow: var(--schatten-knopf);
+  }
+  :where(:root[data-vorlage="plakat"]) :is(.reiter, .untergruppen) :is(button, a).aktiv i { color: var(--auf-akzent); }
+
+  /* ═══ Zeilen und Tabelle ═══ Kopf der Tabelle in der Farbe der Kontur (hell Tinte, dunkel Papier), überfahrene Zeile
+     gelb hinterlegt */
+  :where(:root[data-vorlage="plakat"]) .zeile.gewaehlt { background: var(--akzent-flaeche); outline: var(--kontur-breite) solid var(--kontur); color: var(--text); }
+  :where(:root[data-vorlage="plakat"]) .tabelle th {
+    background: var(--kontur); color: var(--auf-kontur); font-weight: var(--gewicht-etikett); letter-spacing: var(--sperrung);
+  }
+  :where(:root[data-vorlage="plakat"]) .tabelle tr:hover td { background: var(--akzent-weich); }
+
+  /* ═══ Fortschritt und Ablauf ═══ Balken mit Kontur und heller Mulde, Bedeutungsfarben als satte Flächen */
+  :where(:root[data-vorlage="plakat"]) :is(.balken, .speicher) { border: var(--kontur-breite) solid var(--kontur); background: var(--karte); }
+  :where(:root[data-vorlage="plakat"]) .balken { height: 12px; }
+  :where(:root[data-vorlage="plakat"]) .balken b { background: var(--fortschritt); }
+  :where(:root[data-vorlage="plakat"]) .balken.dick { height: 16px; }
+  :where(:root[data-vorlage="plakat"]) .speicher { height: 18px; }
+  :where(:root[data-vorlage="plakat"]) .balken.fertig b { background: var(--gut-flaeche); }
+  :where(:root[data-vorlage="plakat"]) .balken.fehler b { background: var(--gefahr-flaeche); }
+  :where(:root[data-vorlage="plakat"]) .balken.info b { background: var(--info-flaeche); }
+  :where(:root[data-vorlage="plakat"]) :is(.ring, .ring::before) { box-shadow: 0 0 0 var(--kontur-breite) var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .kette .schritt {
+    background: var(--karte); border: var(--kontur-breite) solid var(--kontur); color: var(--text); font-weight: var(--gewicht-knopf);
+  }
+  :where(:root[data-vorlage="plakat"]) .kette .schritt.jetzt { background: var(--akzent-flaeche); color: var(--auf-akzent); box-shadow: var(--schatten-knopf); }
+  :where(:root[data-vorlage="plakat"]) .kette .schritt.jetzt i { color: var(--auf-akzent); }
+  /* offen: gestrichelt statt durchsichtig, damit die Schrift lesbar bleibt */
+  :where(:root[data-vorlage="plakat"]) .kette .schritt.offen { opacity: 1; border-style: dashed; color: var(--text-2); }
+  :where(:root[data-vorlage="plakat"]) .kette .schritt.fehler { background: var(--gefahr-flaeche); color: var(--auf-farbe); }
+  :where(:root[data-vorlage="plakat"]) .kette .pfeil { height: var(--kontur-breite); background: var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .kette .pfeil.laeuft { background-image: repeating-linear-gradient(90deg, var(--kontur) 0 6px, transparent 6px 12px); }
+
+  /* ═══ Hinweise und Bestätigung ═══ Kontur in Tinte, die Signalfarbe als helle Fläche, Schrift in Tinte */
+  :where(:root[data-vorlage="plakat"]) :is(.hinweis, .bestaetigen) { border: var(--kontur-breite) solid var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .hinweis { background: color-mix(in srgb, var(--info-flaeche) var(--toenung-hinweis), var(--karte)); }
+  :where(:root[data-vorlage="plakat"]) .hinweis.warnung { background: color-mix(in srgb, var(--warn-flaeche) var(--toenung-hinweis), var(--karte)); border-color: var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .hinweis.gefahr { background: color-mix(in srgb, var(--gefahr-flaeche) var(--toenung-hinweis), var(--karte)); border-color: var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .hinweis.erfolg { background: color-mix(in srgb, var(--gut-flaeche) var(--toenung-hinweis), var(--karte)); border-color: var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .bestaetigen { background: color-mix(in srgb, var(--gefahr-flaeche) var(--toenung-hinweis), var(--karte)); }
+
+  /* ═══ Einstellungen und Wahlkarten ═══ */
+  :where(:root[data-vorlage="plakat"]) .einstellung-punkt { box-shadow: 0 0 0 var(--kontur-breite) var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .wahl label { border: var(--kontur-breite) solid var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .wahl label.an { background: var(--akzent-flaeche); border-color: var(--kontur); color: var(--text); box-shadow: var(--schatten-knopf); }
+  :where(:root[data-vorlage="plakat"]) .wahl .kreis { border-color: var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .wahl label.an .kreis { border-color: var(--kontur); background: radial-gradient(circle, var(--kontur) 45%, transparent 50%); }
+
+  /* ═══ Schwebendes: Fenster, Dialog, Meldung, Hilfe ═══ Kontur und weiter harter Schatten; Köpfe dunkel */
+  :where(:root[data-vorlage="plakat"]) :is(.fenster, .dialog, .meldung, .hauptregler-leiste, .hilfe-fenster) { border: var(--kontur-breite) solid var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .hilfe-fenster { box-shadow: var(--schatten-schwebend); }
+  :where(:root[data-vorlage="plakat"]) .fenster-kopf { background: var(--leiste); }
+  :where(:root[data-vorlage="plakat"]) :is(.fenster-kopf .titel, .hilfe-titel b) { font-weight: var(--gewicht-titel); }
+  :where(:root[data-vorlage="plakat"]) .hilfe-bereich { border: var(--kontur-breite) solid var(--kontur); }
+  :where(:root[data-vorlage="plakat"]) .hilfe-bereich button { font-weight: var(--gewicht-knopf); }
+  :where(:root[data-vorlage="plakat"]) .hilfe-text mark.hilfe-treffer { background: var(--akzent-weich); }
+  :where(:root[data-vorlage="plakat"]) .hilfe-text mark.hilfe-treffer.aktiv {
+    background: var(--akzent-flaeche); color: var(--auf-akzent); outline: var(--kontur-breite) solid var(--kontur);
+  }
+}
