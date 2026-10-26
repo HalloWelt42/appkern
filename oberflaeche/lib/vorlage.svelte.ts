@@ -17,6 +17,10 @@ export interface Vorlage {
 export const VORLAGEN: readonly Vorlage[] = [
   { id: GRUNDDESIGN, name: "Klassisch", text: "Das Grunddesign: ruhig, dicht und überall gleich", symbol: "fa-table-columns" },
   { id: "futur", name: "Futur", text: "Tiefe Flächen, ein leuchtender Akzent, feine Linien und technische Schrift", symbol: "fa-satellite" },
+  { id: "glas", name: "Glas", text: "Durchscheinende Flächen mit Lichtkanten über einem weich verschwommenen Grund", symbol: "fa-gem" },
+  { id: "papyrus", name: "Papyrus", text: "Cremeweiß und warmes Braun, kleine leuchtende Akzente, Titel mit Serifen", symbol: "fa-scroll" },
+  { id: "klar", name: "Klar", text: "Luftig und weich: viel Weißraum, runde Formen, Schatten statt Linien", symbol: "fa-cloud" },
+  { id: "plakat", name: "Plakat", text: "Mutig: kräftige Konturen, harte Schatten, Gelb als Signal, schwere Titel", symbol: "fa-bullhorn" },
 ];
 
 export const vorlage = $state<{ wahl: string }>({ wahl: GRUNDDESIGN });

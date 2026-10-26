@@ -1,5 +1,9 @@
 /* Vorlagen des Appkerns: andere Aussehen für Apps im Leitstand, nur auf dem Rechner (ab 1000 Pixel). Jede wirkt nur mit
    ihrem Merkmal data-vorlage am Wurzelelement; ohne Merkmal gilt das Grunddesign (Klassisch). Laden nach leitstand.css
-   und hilfe.css; gewählt wird über lib/vorlage.svelte.ts. Hier stehen nur freigegebene Vorlagen; Entwürfe lädt die
-   Musterseite oberflaeche/mockups/vorlagen.html einzeln dazu. */
+   und hilfe.css; gewählt wird über lib/vorlage.svelte.ts. Hier stehen nur freigegebene Vorlagen; ein Entwurf lädt die
+   Musterseite oberflaeche/mockups/vorlagen.html einzeln dazu, bis er freigegeben ist. */
 @import "./vorlagen/futur.css";
+@import "./vorlagen/glas.css";
+@import "./vorlagen/papyrus.css";
+@import "./vorlagen/klar.css";
+@import "./vorlagen/plakat.css";
