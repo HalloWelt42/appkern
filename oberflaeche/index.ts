@@ -27,6 +27,7 @@ export { ereignisseBenennen } from "./lib/ereignisse";
 export { anfrage, anfrageOeffnen, dateiSymbol, daneben, inKellerwolke, istMedium, ROLLEN, waehlen, wahl, zurueckZurKellerwolke } from "./lib/kellerwolke";
 export { arbeit, arbeitsfrei } from "./lib/arbeit.svelte";
 export { einzelton } from "./lib/wiedergabe.svelte";
+export { vorleser, type VorleseSatz } from "./lib/vorlesen.svelte";
 export { push, pushAusschalten, pushEinschalten, pushGeraete, pushGeraetEntfernen, pushGeraetName, pushLage, pushProbe, pushStarten,
          type PushGeraet, type PushLage, type PushVersand } from "./lib/push.svelte";
 export { hochladen, uploadEntfernen, uploads, type Upload } from "./lib/hochladen.svelte";

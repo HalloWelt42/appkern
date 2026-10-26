@@ -1,6 +1,7 @@
 """Verbund: Aufrufe an eine andere App mit dem App-Schlüssel, im Auftrag der Person; Fehler mit der Meldung des Ziels;
 Inhalte mit Bereichen durchgereicht; Prüfung und Angebot für die Einstellungen."""
 
+import json
 from pathlib import Path
 
 import httpx
@@ -27,6 +28,10 @@ class Ziel(Wolke):
         self.koepfe.append(request.headers)
         if request.url.path == "/api/v1/app":
             return httpx.Response(200, json={"fassung": "0.9.1"})
+        if request.url.path == "/api/v1/strom":
+            text = json.loads(request.content)["text"]
+            return httpx.Response(200, content="".join(json.dumps({"nr": i, "wort": w}) + "\n" for i, w in enumerate(text.split())),
+                                  headers={"content-type": "application/x-ndjson"})
         if request.url.path == "/api/v1/geheim":
             return httpx.Response(403, json={"detail": "Dieses Konto darf die Transkription nicht nutzen"})
         if request.url.path == "/api/v1/ton":
@@ -63,6 +68,17 @@ async def test_anfrage_im_auftrag_und_fehler(umgebung):
     with pytest.raises(VerbundFehler) as f:
         await v.anfrage("GET", "", "/api/v1/app")
     assert (f.value.status, f.value.meldung) == (None, "nicht eingerichtet")
+
+
+async def test_strom_zeile_fuer_zeile(umgebung):
+    geruest, ziel = umgebung
+    async with geruest.verbund.strom("POST", "http://ziel.test", "/api/v1/strom", sitzung="t-anna", json={"text": "eins zwei"}) as a:
+        zeilen = [json.loads(z) async for z in a.aiter_lines() if z]
+    assert zeilen == [{"nr": 0, "wort": "eins"}, {"nr": 1, "wort": "zwei"}] and ziel.koepfe[-1]["x-kellerwolke-sitzung"] == "t-anna"
+    with pytest.raises(VerbundFehler) as f:
+        async with geruest.verbund.strom("GET", "http://ziel.test", "/api/v1/geheim"):
+            pass
+    assert f.value.status == 403
 
 
 async def test_durchreichen_mit_bereich(umgebung):

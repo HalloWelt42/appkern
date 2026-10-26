@@ -519,6 +519,10 @@ Mikrofon wechseln, Live-Mitschrift, jedes Stück sofort im Gerätespeicher); die
 Eine Spracheingabe ohne Datei nutzt dieselbe Aufnahme ohne den Rekorder: `aufnehmen()` im Tippen, der Text wächst in
 `aufnahme.mitschrift`, dann `aufnahmeBeenden(name)`, `mitschriftAbwarten()` für das letzte Stück und `aufnahmeVerwerfen(id)`;
 `aufnahmeAbbrechen()` verwirft ohne Text.
+`einzelton.umschalten(kennung, adresse)` spielt kurze Töne im Tippen (am iPhone sonst stumm), `vorleser.umschalten(kennung,
+pfad, daten)` liest einen Strom im Format der Vertonung vor (POST an einen Weg der App, je Zeile `satz` mit Base64-WAV,
+`ende`, `fehler`): Satz für Satz lückenlos in einem AudioContext, `vorleser.satz` zum Mitlesen, `vorleser.fehler` mit dem
+Grund; immer nur eines von beiden spielt.
 Dazu die Listenstile (`.zeile`, `.stand-pille`, `.optionen`, `.knopfzeile`).
 
 ## Neue App aus der Vorlage

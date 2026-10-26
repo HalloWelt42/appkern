@@ -8,6 +8,8 @@ bietet dafür die Apps des Verzeichnisses an, `anmelden` stellt das Ziel zu den 
     v = geruest.verbund
     seite = (await v.anfrage("GET", adresse, "/api/v1/transkripte", sitzung=sitzung, params={"suche": "Dach"})).json()
     return await v.durchreichen(adresse, f"/api/v1/inhalt/transkripte/{tid}/ton", request, sitzung=sitzung)
+    async with v.strom("POST", adresse, "/api/v1/sprechen/strom", sitzung=sitzung, json={"text": text}) as antwort:
+        async for zeile in antwort.aiter_lines(): ...
 
 Fehler kommen als `VerbundFehler` mit der Meldung des Ziels und seinem Status (ohne Status: nicht erreichbar oder nicht
 eingerichtet). Wiederholt wird nichts von selbst.
@@ -17,7 +19,8 @@ from __future__ import annotations
 
 import logging
 import ssl
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING, Any
 
 import httpx
@@ -116,6 +119,26 @@ class Verbund:
         if antwort.status_code >= 400:
             raise VerbundFehler(meldung_aus(antwort), antwort.status_code)
         return antwort
+
+    @asynccontextmanager
+    async def strom(self, methode: str, adresse: str, pfad: str, *, sitzung: str | None = None,
+                    **art: Any) -> AsyncIterator[httpx.Response]:
+        """Eine Antwort, die als Strom kommt (etwa Satz für Satz als NDJSON): lesen mit `aiter_lines` oder
+        `aiter_bytes`; endet der Block, endet die Anfrage (bricht der Leser ab, hört das Ziel auf). Ab Status 400 ein
+        `VerbundFehler` mit der Meldung des Ziels, bevor etwas gelesen wird."""
+        ziel = self._ziel(adresse, pfad)
+        client = self.client()
+        try:
+            antwort = await client.send(client.build_request(methode, ziel, headers=self.koepfe(sitzung), **art), stream=True)
+        except httpx.TransportError as f:
+            raise VerbundFehler(f"nicht erreichbar ({type(f).__name__})") from f
+        try:
+            if antwort.status_code >= 400:
+                await antwort.aread()
+                raise VerbundFehler(meldung_aus(antwort), antwort.status_code)
+            yield antwort
+        finally:
+            await antwort.aclose()
 
     async def durchreichen(self, adresse: str, pfad: str, request: Request, *, sitzung: str | None = None) -> Response:
         """Einen Inhalt des Ziels an den Browser reichen, Stück für Stück und mit Bereichen (Range), damit ein Spieler
