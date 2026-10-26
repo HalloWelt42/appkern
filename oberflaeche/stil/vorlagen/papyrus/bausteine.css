@@ -26,6 +26,14 @@
   :root[data-vorlage="papyrus"] .navi:hover { background: var(--karte-2); color: var(--text); }
   /* der aktive Punkt: dunkel wie Tinte, sein Symbol leuchtet orange */
   :root[data-vorlage="papyrus"] .navi.aktiv { background: var(--gewaehlt); color: var(--auf-gewaehlt); box-shadow: var(--schatten); }
+  /* Farben der Palette tragen im aktiven Eintrag seine Schrift: auf der Tinte blieben etwa Board-Kürzel einer App in
+     Ocker oder Petrol unlesbar; so gilt das für jeden Inhalt, den eine App dort zeigt */
+  :root[data-vorlage="papyrus"] .navi.aktiv {
+    --himmel: var(--auf-gewaehlt); --petrol: var(--auf-gewaehlt); --tuerkis: var(--auf-gewaehlt);
+    --minze: var(--auf-gewaehlt); --flieder: var(--auf-gewaehlt); --violett: var(--auf-gewaehlt);
+    --rose: var(--auf-gewaehlt); --koralle: var(--auf-gewaehlt); --honig: var(--auf-gewaehlt);
+    --sand: var(--auf-gewaehlt); --stahl: var(--auf-gewaehlt);
+  }
   :root[data-vorlage="papyrus"] .navi.aktiv i {
     color: var(--symbolfarbe, var(--akzent-flaeche));
     text-shadow: 0 0 10px var(--leuchten);

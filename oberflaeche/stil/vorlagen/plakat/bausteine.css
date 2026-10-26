@@ -40,6 +40,14 @@
     box-shadow: inset 0 0 0 var(--kontur-breite) var(--kontur), var(--schatten-knopf);
   }
   :where(:root[data-vorlage="plakat"]) .navi.aktiv i { color: var(--auf-akzent); }
+  /* Farben der Palette tragen auf der gelben Fläche die Schrift des Eintrags (Board-Kürzel einer App wären sonst Gelb
+     auf Gelb) */
+  :where(:root[data-vorlage="plakat"]) .navi.aktiv {
+    --himmel: var(--auf-akzent); --petrol: var(--auf-akzent); --tuerkis: var(--auf-akzent);
+    --minze: var(--auf-akzent); --flieder: var(--auf-akzent); --violett: var(--auf-akzent);
+    --rose: var(--auf-akzent); --koralle: var(--auf-akzent); --honig: var(--auf-akzent); --sand: var(--auf-akzent);
+    --stahl: var(--auf-akzent);
+  }
 
   /* ═══ Knöpfe ═══ hell mit Kontur und Schatten; überfahren hebt sich der Knopf, gedrückt rückt er in den Schatten */
   :where(:root[data-vorlage="plakat"]) :is(.knopf, .chip, .auswahl-knopf) {
@@ -150,6 +158,14 @@
   :where(:root[data-vorlage="plakat"]) .zeile.gewaehlt { background: var(--akzent-flaeche); outline: var(--kontur-breite) solid var(--kontur); color: var(--text); }
   :where(:root[data-vorlage="plakat"]) .tabelle th {
     background: var(--kontur); color: var(--auf-kontur); font-weight: var(--gewicht-etikett); letter-spacing: var(--sperrung);
+    /* was eine App in den Kopf setzt (Knöpfe, Sortierung, Tagesköpfe), nutzt die Marken: auf dem Band gelten sie in der
+       Schrift des Bandes, überfahren bleibt die Fläche das Band mit Kontur in seiner Schrift */
+    --text: var(--auf-kontur); --text-2: var(--auf-kontur); --text-3: var(--auf-kontur); --akzent: var(--auf-kontur);
+    --karte: var(--kontur); --karte-2: var(--kontur); --rand: var(--auf-kontur); --rand-stark: var(--auf-kontur);
+    --himmel: var(--auf-kontur); --petrol: var(--auf-kontur); --tuerkis: var(--auf-kontur);
+    --minze: var(--auf-kontur); --flieder: var(--auf-kontur); --violett: var(--auf-kontur);
+    --rose: var(--auf-kontur); --koralle: var(--auf-kontur); --honig: var(--auf-kontur); --sand: var(--auf-kontur);
+    --stahl: var(--auf-kontur);
   }
   :where(:root[data-vorlage="plakat"]) .tabelle tr:hover td { background: var(--akzent-weich); }
 
