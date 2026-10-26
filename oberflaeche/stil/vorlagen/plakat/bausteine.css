@@ -161,6 +161,7 @@
     /* was eine App in den Kopf setzt (Knöpfe, Sortierung, Tagesköpfe), nutzt die Marken: auf dem Band gelten sie in der
        Schrift des Bandes, überfahren bleibt die Fläche das Band mit Kontur in seiner Schrift */
     --text: var(--auf-kontur); --text-2: var(--auf-kontur); --text-3: var(--auf-kontur); --akzent: var(--auf-kontur);
+    --info: var(--auf-kontur); --gut: var(--auf-kontur); --warn: var(--auf-kontur); --gefahr: var(--auf-kontur);
     --karte: var(--kontur); --karte-2: var(--kontur); --rand: var(--auf-kontur); --rand-stark: var(--auf-kontur);
     --himmel: var(--auf-kontur); --petrol: var(--auf-kontur); --tuerkis: var(--auf-kontur);
     --minze: var(--auf-kontur); --flieder: var(--auf-kontur); --violett: var(--auf-kontur);
