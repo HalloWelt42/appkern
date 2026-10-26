@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="de" data-theme="dunkel" data-schrift="klein" data-vorlage="futur" data-seitenleiste="breite">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Appkern - Vorlage Futur</title>
+    <!-- Entwurf der Vorlage Futur: eine typische Seite einer App im Leitstand mit den echten Stilen des Appkerns
+         (leitstand, auswahl, hilfe) und der Vorlage (stil/vorlagen/futur.css); das Markup folgt den Bausteinen in
+         teile/ und gestaltung/katalog.json. Unten rechts lassen sich Vorlage, Thema und Hilfefenster umschalten.
+         Servieren aus der Wurzel des Appkerns (wegen node_modules):
+         python3 -m http.server 8691 --directory ~/Entwicklung/Werkzeuge/Appkern
+         dann http://localhost:8691/oberflaeche/mockups/vorlage-futur.html -->
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/400.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/500.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/600.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/barlow/700.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/400.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/500.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/600.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/700.css" />
+    <link rel="stylesheet" href="/node_modules/@fortawesome/fontawesome-free/css/all.min.css" />
+    <link rel="stylesheet" href="../stil/leitstand.css" />
+    <link rel="stylesheet" href="../stil/auswahl.css" />
+    <link rel="stylesheet" href="../stil/hilfe.css" />
+    <link rel="stylesheet" href="../stil/vorlagen/futur.css" />
+    <style>
+      /* Nur für den Entwurf: Anordnung der Beispielseite und die Umschaltleiste; alles andere kommt aus dem Appkern */
+      .mock-symbol { width: 34px; height: 34px; display: inline-grid; place-items: center; flex: none; border-radius: var(--r2);
+                     background: var(--symbol-flaeche); color: var(--auf-farbe); }
+      .mock-symbol i { font-size: 17px; }
+      .kopf .mock-kopfsuche { max-width: 460px; }
+      .mock-seite-fuss { margin-top: auto; display: flex; flex-direction: column; gap: 2px; padding-top: var(--a3); }
+      :where(.seite) button.navi { border: 0; background: none; font: inherit; color: var(--text-2); cursor: pointer; text-align: left; width: 100%; }
+      .mock-reiter { margin: var(--a4) 0 0; }
+      .filter .mock-filtersuche { height: 36px; max-width: 240px; }
+      .mock-streifen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--a3); margin-bottom: var(--a4); }
+      .mock-spalte { padding: var(--a3); min-width: 0; }
+      .mock-spaltenkopf { display: flex; align-items: center; gap: var(--a2); margin-bottom: var(--a3); }
+      .mock-spaltenkopf .zaehler { margin-left: auto; }
+      .mock-spalte .karte { padding: var(--a3); display: flex; flex-direction: column; gap: var(--a2); }
+      .mock-kartenkopf, .mock-kartenfuss { display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; min-width: 0; }
+      .mock-kartenkopf .zustand, .mock-kartenfuss .zeit { margin-left: auto; }
+      .mock-kartentitel { font-weight: 600; line-height: 1.35; }
+      .mock-raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: var(--a4); margin-bottom: var(--a4); }
+      .mock-raster > .karte + .karte { margin-top: 0; }
+      .mock-behaelter { container-type: inline-size; }
+      .mock-stapel { display: flex; flex-direction: column; gap: var(--a2); }
+      .mock-felder { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--a3); margin-bottom: var(--a4); }
+      .mock-feld { display: flex; flex-direction: column; gap: var(--a1); min-width: 0; }
+      .mock-feld.breit { grid-column: 1 / -1; }
+      .mock-feld .suche { max-width: none; }
+      .mock-reihe { display: flex; flex-wrap: wrap; gap: var(--a2); align-items: center; }
+      .mock-reihe + .mock-reihe, .kette + .mock-reihe, .mock-reihe + .kette { margin-top: var(--a3); }
+      .mock-balken { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--a1) var(--a3); align-items: center; margin-top: var(--a3); font-size: var(--klein); }
+      .mock-balken .balken { grid-column: 1 / -1; }
+
+      .hilfe-fenster[hidden] { display: none; }
+      .mock-leiste { position: fixed; z-index: 80; right: var(--a4); bottom: calc(var(--fuss-hoehe) + var(--a3)); display: flex; align-items: center; gap: var(--a2);
+                     padding: var(--a2) var(--a3); background: var(--karte); border: 1px solid var(--rand-stark); border-radius: var(--r2);
+                     box-shadow: var(--schatten-schwebend); }
+      .mock-leiste .etikett { margin-right: var(--a1); }
+    </style>
+  </head>
+  <body>
+    <div class="schale">
+      <header class="kopf">
+        <div class="marke"><span class="mock-symbol"><i class="fa-solid fa-thumbtack"></i></span><span class="marke-name">Pinnwand</span></div>
+        <label class="suche mock-kopfsuche">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input value="Fenster" aria-label="Karten in allen Boards suchen" />
+          <button type="button" class="leeren" title="Eingabe leeren" aria-label="Eingabe leeren"><i class="fa-solid fa-xmark"></i></button>
+        </label>
+        <div class="kopf-aktionen">
+          <span class="lage ruhig" title="Alle Verbindungen stehen"><span class="punkt lebt"></span>Verbunden</span>
+          <button class="knopf symbol aktiv" type="button" title="Hilfe: schwebendes Fenster, durchsuchbar" data-mock="hilfe"><i class="fa-solid fa-circle-question"></i></button>
+          <button class="knopf symbol" type="button" title="Hinweise"><i class="fa-solid fa-bell"></i></button>
+          <button class="knopf ohne" type="button" title="Anna, angemeldet"><i class="fa-solid fa-circle-user"></i>Anna</button>
+        </div>
+      </header>
+
+      <nav class="seite" aria-label="Bereiche und Boards">
+        <a class="navi" href="#heute"><i class="fa-solid fa-calendar-day"></i>Heute</a>
+        <a class="navi" href="#hinweise"><i class="fa-solid fa-bell"></i>Hinweise<span class="zaehler pille gefahr">2</span></a>
+        <a class="navi" href="#zeiten"><i class="fa-solid fa-clock"></i>Zeiten</a>
+        <a class="navi" href="#berichte"><i class="fa-solid fa-chart-column"></i>Berichte</a>
+        <div class="etikett">Werkstatt</div>
+        <a class="navi aktiv" href="#moebel"><i class="fa-solid fa-table-columns"></i>Möbelbau<span class="zaehler">24</span></a>
+        <a class="navi" href="#rad"><i class="fa-solid fa-table-columns"></i>Fahrräder<span class="zaehler">7</span></a>
+        <div class="etikett">Privat</div>
+        <a class="navi" href="#haus"><i class="fa-solid fa-table-columns"></i>Haushalt<span class="zaehler">12</span></a>
+        <a class="navi" href="#ideen"><i class="fa-solid fa-lightbulb"></i>Ideen<span class="zaehler">31</span></a>
+        <div class="mock-seite-fuss">
+          <button class="navi" type="button" data-mock="hilfe"><i class="fa-solid fa-circle-question"></i>Hilfe</button>
+          <a class="navi" href="#einstellungen"><i class="fa-solid fa-gear"></i>Einstellungen</a>
+          <button class="navi" type="button" data-mock="leiste"><i class="fa-solid fa-angles-left"></i>Einklappen</button>
+        </div>
+      </nav>
+
+      <main class="haupt rahmen">
+        <div class="rahmen-kopf">
+          <div class="seitenkopf">
+            <h1>Möbelbau <button type="button" class="hilfepunkt" title="Hilfe zum Board" aria-label="Hilfe zum Board"><i class="fa-solid fa-circle-info"></i></button></h1>
+            <span class="zahl">24 Karten</span>
+            <div class="aktionen">
+              <button class="knopf" type="button"><i class="fa-solid fa-sliders"></i>Einstellungen</button>
+              <button class="knopf haupt" type="button"><i class="fa-solid fa-plus"></i>Karte anlegen</button>
+            </div>
+            <div class="unterzeile">Aufträge der Werkstatt vom Zuschnitt bis zur Auslieferung; Karten zieht man zwischen den Spalten.</div>
+          </div>
+          <div class="kennzahlen">
+            <div class="kennzahl"><span>Offen</span><b>18</b><small>davon 4 neu</small></div>
+            <div class="kennzahl laeuft"><span>Läuft</span><b>1:24:07</b><small>MÖB-12 Fensterrahmen</small></div>
+            <div class="kennzahl erfolg"><span>Diese Woche</span><b>31:20</b><small>von 38:00 Soll</small></div>
+            <div class="kennzahl fehler"><span>Überfällig</span><b>2</b><small>seit Montag</small></div>
+          </div>
+          <div class="reiter mock-reiter">
+            <button type="button" class="aktiv"><i class="fa-solid fa-table-columns"></i>Board</button>
+            <button type="button"><i class="fa-solid fa-list"></i>Liste</button>
+            <button type="button"><i class="fa-solid fa-calendar"></i>Kalender</button>
+            <button type="button"><i class="fa-solid fa-chart-gantt"></i>Zeitstrahl<span class="zaehler pille warnung">2</span></button>
+          </div>
+        </div>
+
+        <div class="rollfeld">
+          <div class="filter">
+            <span class="etikett">Zeigen</span>
+            <button type="button" class="chip aktiv">Alle <span class="zaehler">24</span></button>
+            <button type="button" class="chip">Meine <span class="zaehler">9</span></button>
+            <button type="button" class="chip">Fällig diese Woche</button>
+            <span class="trenner"></span>
+            <button type="button" class="chip"><i class="fa-solid fa-tag"></i>Eiche</button>
+            <div class="rechts">
+              <span class="auswahl"><button class="auswahl-knopf klein" type="button" title="Gruppieren"><i class="fa-solid fa-layer-group"></i><span class="auswahl-text">Nach Status</span><i class="fa-solid fa-chevron-down auswahl-pfeil"></i></button></span>
+              <label class="suche mock-filtersuche"><i class="fa-solid fa-filter"></i><input placeholder="Im Board filtern" aria-label="Im Board filtern" /></label>
+            </div>
+          </div>
+
+          <div class="mock-streifen">
+            <section class="bereich mock-spalte">
+              <div class="mock-spaltenkopf"><span class="etikett">Eingang</span><span class="zaehler">3</span></div>
+              <div class="karte klickbar">
+                <div class="mock-kartenkopf"><span class="zahl schwach">MÖB-21</span><span class="zustand wartet">neu</span></div>
+                <div class="mock-kartentitel">Sideboard Eiche, Maße beim Kunden nehmen</div>
+                <div class="mock-kartenfuss"><span class="faehigkeit werkzeug"><i class="fa-solid fa-ruler"></i>Aufmaß</span><span class="schwach klein">Fr 31.10.</span></div>
+              </div>
+              <div class="karte klickbar">
+                <div class="mock-kartenkopf"><span class="zahl schwach">MÖB-20</span></div>
+                <div class="mock-kartentitel">Angebot Garderobe nachrechnen</div>
+                <div class="mock-kartenfuss"><span class="schwach klein">ohne Termin</span></div>
+              </div>
+            </section>
+            <section class="bereich mock-spalte">
+              <div class="mock-spaltenkopf"><span class="etikett">Zuschnitt</span><span class="zaehler">2</span></div>
+              <div class="karte klickbar">
+                <div class="mock-kartenkopf"><span class="zahl schwach">MÖB-17</span><span class="zustand pausiert">angehalten</span></div>
+                <div class="mock-kartentitel">Platten für Bücherregal zuschneiden</div>
+                <div class="mock-kartenfuss"><span class="faehigkeit text"><i class="fa-solid fa-user"></i>Bert</span><span class="zeit">2:10</span></div>
+              </div>
+              <div class="karte klickbar">
+                <div class="mock-kartenkopf"><span class="zahl schwach">MÖB-15</span><span class="zustand fehler">überfällig</span></div>
+                <div class="mock-kartentitel">Kanten anleimen</div>
+                <div class="mock-kartenfuss"><span class="schwach klein">seit Mo 27.10.</span><span class="zeit">0:45</span></div>
+              </div>
+            </section>
+            <section class="bereich mock-spalte">
+              <div class="mock-spaltenkopf"><span class="etikett">In Arbeit</span><span class="zaehler akzent">2</span></div>
+              <div class="karte klickbar gewaehlt">
+                <div class="mock-kartenkopf"><span class="zahl schwach">MÖB-12</span><span class="zustand laeuft"><i class="fa-solid fa-circle-notch dreht"></i>läuft</span></div>
+                <div class="mock-kartentitel">Fensterrahmen schleifen und ölen</div>
+                <div class="balken lebt"><b style="width: 62%"></b></div>
+                <div class="mock-kartenfuss"><span class="faehigkeit text"><i class="fa-solid fa-user"></i>Anna</span><span class="zeit">1:24</span></div>
+              </div>
+              <div class="karte klickbar">
+                <div class="mock-kartenkopf"><span class="zahl schwach">MÖB-09</span></div>
+                <div class="mock-kartentitel">Tischplatte verleimen</div>
+                <div class="mock-kartenfuss"><span class="faehigkeit text"><i class="fa-solid fa-user"></i>Cora</span><span class="zeit">3:05</span></div>
+              </div>
+            </section>
+            <section class="bereich mock-spalte">
+              <div class="mock-spaltenkopf"><span class="etikett">Fertig</span><span class="zaehler">2</span></div>
+              <div class="karte klickbar">
+                <div class="mock-kartenkopf"><span class="zahl schwach">MÖB-08</span><span class="zustand fertig">erledigt</span></div>
+                <div class="mock-kartentitel">Schubladen einpassen</div>
+                <div class="mock-kartenfuss"><span class="schwach klein">Di 28.10.</span><span class="zeit">4:30</span></div>
+              </div>
+              <div class="karte klickbar">
+                <div class="mock-kartenkopf"><span class="zahl schwach">MÖB-05</span><span class="zustand fertig">erledigt</span></div>
+                <div class="mock-kartentitel">Lieferung Kommode</div>
+                <div class="mock-kartenfuss"><span class="schwach klein">Mo 27.10.</span><span class="zeit">1:15</span></div>
+              </div>
+            </section>
+          </div>
+
+          <div class="mock-raster">
+            <section class="karte mock-behaelter">
+              <h3><i class="fa-solid fa-sliders"></i>Einstellungen des Boards<span class="rechts">gilt für alle Mitglieder</span></h3>
+              <div class="einstellung">
+                <div><div class="name">Zeiterfassung<button type="button" class="hilfepunkt" title="Hilfe zu Zeiterfassung" aria-label="Hilfe zu Zeiterfassung"><i class="fa-solid fa-circle-info"></i></button></div>
+                  <div class="erklaerung">Timer und gebuchte Zeit an jeder Arbeitskarte.</div></div>
+                <div class="wert"><button class="schalter an" type="button" role="switch" aria-checked="true" aria-label="Zeiterfassung"></button></div>
+              </div>
+              <div class="einstellung">
+                <div><div class="name">Erste Ansicht</div><div class="erklaerung">Was sich beim Öffnen des Boards zeigt.</div></div>
+                <div class="wert"><span class="stufen"><button type="button" class="an">Board</button><button type="button">Liste</button><button type="button">Kalender</button></span></div>
+              </div>
+              <div class="einstellung">
+                <div><div class="name">Erinnerung<span class="einstellung-punkt" title="Geändert, noch nicht gespeichert"></span></div><div class="erklaerung">Tage vor der Fälligkeit.</div></div>
+                <div class="wert"><span class="einstellung-zahl">
+                  <button type="button" class="knopf symbol klein" title="Erinnerung verringern" aria-label="Erinnerung verringern"><i class="fa-solid fa-minus"></i></button>
+                  <b class="zahl">2</b>
+                  <button type="button" class="knopf symbol klein" title="Erinnerung erhöhen" aria-label="Erinnerung erhöhen"><i class="fa-solid fa-plus"></i></button>
+                  <span class="einheit">Tage</span></span></div>
+              </div>
+              <div class="einstellung">
+                <div><div class="name">Sortierung</div><div class="erklaerung">Reihenfolge der Karten in einer Spalte.</div></div>
+                <div class="wert"><span class="auswahl"><button class="auswahl-knopf" type="button" title="Sortierung"><span class="auswahl-text">Fälligkeit zuerst</span><i class="fa-solid fa-chevron-down auswahl-pfeil"></i></button></span></div>
+              </div>
+            </section>
+
+            <section class="karte">
+              <h3><i class="fa-solid fa-message"></i>Hinweise</h3>
+              <div class="mock-stapel">
+                <div class="hinweis"><i class="fa-solid fa-circle-info"></i><span>Cora hat dich zur Karte MÖB-09 hinzugefügt.</span></div>
+                <div class="hinweis warnung"><i class="fa-solid fa-triangle-exclamation"></i><span>Zwei Karten sind überfällig.</span><span class="rechts"><button class="knopf klein" type="button">Ansehen</button></span></div>
+                <div class="hinweis gefahr"><i class="fa-solid fa-circle-xmark"></i><span>Die Vertonung antwortet nicht.</span><span class="rechts"><button class="knopf klein" type="button">Erneut prüfen</button></span></div>
+                <div class="hinweis erfolg"><i class="fa-solid fa-circle-check"></i><span>Woche gebucht: 31:20 Stunden.</span></div>
+              </div>
+            </section>
+
+            <section class="karte">
+              <h3><i class="fa-solid fa-keyboard"></i>Eingaben und Knöpfe</h3>
+              <div class="mock-felder">
+                <label class="mock-feld"><span class="etikett">Titel</span><input class="eingabe" value="Fensterrahmen schleifen und ölen" /></label>
+                <label class="mock-feld"><span class="etikett">Fällig</span><input class="eingabe" value="31.10.2026" /></label>
+                <label class="mock-feld breit"><span class="etikett">Beschreibung</span><textarea class="eingabe" rows="2">Erst Körnung 120, dann 180; Öl dünn auftragen und über Nacht trocknen lassen.</textarea></label>
+                <div class="mock-feld breit"><span class="etikett">Suche</span>
+                  <label class="suche"><i class="fa-solid fa-magnifying-glass"></i><input value="Eiche" aria-label="Suche" /><button type="button" class="leeren" title="Eingabe leeren" aria-label="Eingabe leeren"><i class="fa-solid fa-xmark"></i></button></label></div>
+              </div>
+              <div class="mock-reihe">
+                <button class="knopf haupt" type="button"><i class="fa-solid fa-play"></i>Timer starten</button>
+                <button class="knopf" type="button"><i class="fa-solid fa-rotate-left"></i>Rückgängig</button>
+                <button class="knopf ohne" type="button">Abbrechen</button>
+                <button class="knopf gefahr" type="button">Entfernen</button>
+              </div>
+              <div class="mock-reihe">
+                <button class="knopf gefahr-voll klein" type="button"><i class="fa-solid fa-trash-can"></i>Endgültig löschen</button>
+                <button class="knopf klein" type="button" disabled>Gesperrt</button>
+                <button class="knopf symbol klein" type="button" title="Mehr"><i class="fa-solid fa-ellipsis"></i></button>
+                <button class="knopf symbol klein aktiv" type="button" title="Angeheftet"><i class="fa-solid fa-thumbtack"></i></button>
+              </div>
+            </section>
+
+            <section class="karte">
+              <h3><i class="fa-solid fa-list-check"></i>Ablauf und Zustände</h3>
+              <div class="kette">
+                <span class="schritt erledigt"><i class="fa-solid fa-check"></i>Aufmaß</span><span class="pfeil erledigt"></span>
+                <span class="schritt jetzt"><i class="fa-solid fa-circle-notch dreht"></i>Fertigung</span><span class="pfeil laeuft"></span>
+                <span class="schritt offen">Lieferung</span>
+              </div>
+              <div class="mock-balken"><span>Fortschritt der Woche</span><span class="zahl">82 %</span><div class="balken lebt"><b style="width: 82%"></b></div></div>
+              <div class="mock-balken"><span>Abgerechnet</span><span class="zahl">100 %</span><div class="balken fertig"><b style="width: 100%"></b></div></div>
+              <div class="mock-reihe">
+                <span class="zustand laeuft"><i class="fa-solid fa-circle-notch dreht"></i>läuft</span><span class="zustand wartet">wartet</span>
+                <span class="zustand fertig">fertig</span><span class="zustand fehler">Fehler</span><span class="zustand pausiert">angehalten</span><span class="zustand aus">aus</span>
+              </div>
+              <div class="mock-reihe">
+                <span class="zaehler">12</span><span class="zaehler pille warnung">3</span><span class="zaehler pille gefahr">1</span><span class="zaehler akzent">2 laufen</span>
+              </div>
+            </section>
+          </div>
+
+          <section class="karte">
+            <h3><i class="fa-solid fa-clock"></i>Gebuchte Zeit dieser Woche<span class="rechts">31:20 von 38:00</span></h3>
+            <div class="tabellen-raum">
+              <table class="tabelle karten">
+                <thead><tr><th>Karte</th><th>Wer</th><th>Tag</th><th class="zahl">Dauer</th><th>Zustand</th></tr></thead>
+                <tbody>
+                  <tr><td><span class="zahl schwach">MÖB-12</span> Fensterrahmen schleifen und ölen</td><td data-titel="Wer">Anna</td><td data-titel="Tag">Mi 29.10.</td><td data-titel="Dauer" class="zahl">1:24</td><td data-titel="Zustand"><span class="zustand laeuft">läuft</span></td></tr>
+                  <tr><td><span class="zahl schwach">MÖB-17</span> Platten für Bücherregal zuschneiden</td><td data-titel="Wer">Bert</td><td data-titel="Tag">Di 28.10.</td><td data-titel="Dauer" class="zahl">2:10</td><td data-titel="Zustand"><span class="zustand pausiert">angehalten</span></td></tr>
+                  <tr><td><span class="zahl schwach">MÖB-08</span> Schubladen einpassen</td><td data-titel="Wer">Cora</td><td data-titel="Tag">Di 28.10.</td><td data-titel="Dauer" class="zahl">4:30</td><td data-titel="Zustand"><span class="zustand fertig">fertig</span></td></tr>
+                  <tr><td><span class="zahl schwach">MÖB-05</span> Lieferung Kommode</td><td data-titel="Wer">Anna</td><td data-titel="Tag">Mo 27.10.</td><td data-titel="Dauer" class="zahl">1:15</td><td data-titel="Zustand"><span class="zustand fertig">fertig</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer class="fuss">
+        <span><span class="punkt lebt"></span>Verbunden mit der Kellerwolke</span>
+        <span>Zuletzt gespeichert um 14:32</span>
+        <span>3 Personen im Board</span>
+        <div class="rechts"><span>Vorlage <b data-mock-name>Futur</b></span></div>
+      </footer>
+    </div>
+
+    <section class="hilfe-fenster" data-mock-hilfe style="right: 28px; top: 150px; width: 400px; height: 460px" aria-label="Hilfe">
+      <header class="hilfe-kopf">
+        <i class="fa-solid fa-table-columns"></i>
+        <div class="hilfe-titel"><b>Board</b><span>Spalten, Karten und Ziehen</span></div>
+        <button type="button" title="Auf den Kopf verkleinern"><i class="fa-solid fa-window-minimize"></i></button>
+        <button type="button" title="Groß über die ganze Seite"><i class="fa-solid fa-expand"></i></button>
+        <button type="button" title="Hilfe schließen" data-mock="hilfe"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div class="hilfe-leiste">
+        <div class="hilfe-wahl">
+          <select class="eingabe" aria-label="Thema"><option>Arbeiten: Board</option></select>
+          <select class="eingabe" aria-label="Abschnitt"><option>Karten ziehen</option></select>
+        </div>
+        <div class="hilfe-suchzeile">
+          <div class="hilfe-bereich" role="group" aria-label="Wo suchen"><button type="button" class="an">Alle</button><button type="button">Thema</button></div>
+          <label class="suche">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input value="ziehen" aria-label="In der Hilfe suchen" />
+            <span class="hilfe-zaehler">1 von 3</span>
+            <button type="button" class="hilfe-mini" title="Voriger Treffer"><i class="fa-solid fa-chevron-up"></i></button>
+            <button type="button" class="hilfe-mini" title="Nächster Treffer"><i class="fa-solid fa-chevron-down"></i></button>
+            <button type="button" class="leeren" title="Suche leeren" aria-label="Suche leeren"><i class="fa-solid fa-xmark"></i></button>
+          </label>
+        </div>
+      </div>
+      <div class="hilfe-inhalt">
+        <article class="hilfe-text">
+          <h2>Karten ziehen</h2>
+          <p>Eine Karte <mark class="hilfe-treffer aktiv">ziehen</mark> ordnet sie in eine andere Spalte oder an eine andere Stelle derselben Spalte. Die Zeit
+            auf der Karte läuft dabei weiter.</p>
+          <ul>
+            <li>In eine Erledigt-Spalte gezogen, hält ein laufender Timer an und bucht.</li>
+            <li>Mehrere Karten wählt man mit gedrückter Umschalttaste.</li>
+          </ul>
+          <h3>Mit der Tastatur</h3>
+          <p>Leertaste hebt die Karte an, die Pfeile <mark class="hilfe-treffer">ziehen</mark> sie, Enter legt sie ab.</p>
+        </article>
+      </div>
+      <div class="hilfe-griff" title="Größe ändern"></div>
+    </section>
+
+    <div class="mock-leiste" role="group" aria-label="Entwurf umschalten">
+      <span class="etikett">Entwurf</span>
+      <span class="stufen" aria-label="Vorlage"><button type="button" data-vorlage-wahl="klassisch">Klassisch</button><button type="button" data-vorlage-wahl="futur">Futur</button></span>
+      <span class="stufen" aria-label="Thema"><button type="button" data-thema-wahl="hell">Hell</button><button type="button" data-thema-wahl="dunkel">Dunkel</button></span>
+      <button class="knopf klein" type="button" data-mock="hilfe"><i class="fa-solid fa-circle-question"></i>Hilfe</button>
+    </div>
+
+    <script>
+      // Nur für den Entwurf: Vorlage, Thema, Hilfefenster und Seitenleiste umschalten; Startwerte auch über die Adresse
+      // (?vorlage=klassisch&thema=hell&hilfe=aus&leiste=schmal), damit sich jede Fassung direkt aufnehmen lässt.
+      const wurzel = document.documentElement;
+      const adresse = new URLSearchParams(location.search);
+      const hilfe = document.querySelector("[data-mock-hilfe]");
+      const leisteKnopf = document.querySelector("[data-mock=leiste]");
+
+      function vorlage(wert) {
+        if (wert === "futur") wurzel.dataset.vorlage = "futur"; else delete wurzel.dataset.vorlage;
+        document.querySelector("[data-mock-name]").textContent = wert === "futur" ? "Futur" : "Klassisch";
+        for (const b of document.querySelectorAll("[data-vorlage-wahl]")) b.classList.toggle("an", b.dataset.vorlageWahl === wert);
+      }
+      function thema(wert) {
+        wurzel.dataset.theme = wert;
+        for (const b of document.querySelectorAll("[data-thema-wahl]")) b.classList.toggle("an", b.dataset.themaWahl === wert);
+      }
+      function hilfeZeigen(an) {
+        hilfe.hidden = !an;
+        for (const b of document.querySelectorAll(".kopf [data-mock=hilfe], .seite [data-mock=hilfe]")) b.classList.toggle("aktiv", an);
+      }
+      function seitenleiste(wahl) {
+        wurzel.dataset.seitenleiste = wahl;
+        const schmal = wahl === "schmal";
+        leisteKnopf.innerHTML = `<i class="fa-solid ${schmal ? "fa-angles-right" : "fa-angles-left"}"></i>${schmal ? "Ausklappen" : "Einklappen"}`;
+        leisteKnopf.title = schmal ? "Seitenleiste ausklappen" : "Seitenleiste einklappen";
+      }
+
+      for (const b of document.querySelectorAll("[data-vorlage-wahl]")) b.addEventListener("click", () => vorlage(b.dataset.vorlageWahl));
+      for (const b of document.querySelectorAll("[data-thema-wahl]")) b.addEventListener("click", () => thema(b.dataset.themaWahl));
+      for (const b of document.querySelectorAll("[data-mock=hilfe]")) b.addEventListener("click", () => hilfeZeigen(hilfe.hidden));
+      leisteKnopf.addEventListener("click", () => seitenleiste(wurzel.dataset.seitenleiste === "schmal" ? "breite" : "schmal"));
+
+      vorlage(adresse.get("vorlage") ?? "futur");
+      thema(adresse.get("thema") ?? "dunkel");
+      hilfeZeigen(adresse.get("hilfe") !== "aus");
+      seitenleiste(adresse.get("leiste") ?? "breite");
+    </script>
+  </body>
+</html>

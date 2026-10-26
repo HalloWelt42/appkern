@@ -242,14 +242,19 @@ def test_marken_in_svelte(tmp_path):
 
 
 def test_marken_pruefen_nur_den_stil_der_app(tmp_path):
-    """Entwürfe, Doku, Abhängigkeiten und Gebautes zählen nicht; die Marken des Appkerns sind die Wahrheit."""
+    """Entwürfe, Doku, Abhängigkeiten und Gebautes zählen nicht; die Marken des Appkerns und die Marken einer Vorlage
+    sind die Wahrheit, die Bausteine einer Vorlage werden geprüft (Gegenprobe: marken.css direkt unter vorlagen)."""
     from appkern.werkzeuge import marken_pruefen
 
     fest = ".a { color: #fff; }\n"
     dateien = [_datei(tmp_path, n, fest) for n in (
         "mockups/stil.css", "docs/prototyp/a.css", "frontend/node_modules/x/a.css", "frontend/dist/a.css",
-        "oberflaeche/stil/marken.css", "daten-vorfuehrung/a.css", "frontend/src/a.css", "oberflaeche/stil/schale.css")]
-    assert [b.datei for b in marken_pruefen(dateien, tmp_path, set())] == ["frontend/src/a.css", "oberflaeche/stil/schale.css"]
+        "oberflaeche/stil/marken.css", "daten-vorfuehrung/a.css", "frontend/src/a.css", "oberflaeche/stil/schale.css",
+        "oberflaeche/stil/vorlagen/futur/marken.css", "oberflaeche/stil/vorlagen/futur/bausteine.css",
+        "oberflaeche/stil/vorlagen/marken.css")]
+    assert [b.datei for b in marken_pruefen(dateien, tmp_path, set())] == [
+        "frontend/src/a.css", "oberflaeche/stil/schale.css", "oberflaeche/stil/vorlagen/futur/bausteine.css",
+        "oberflaeche/stil/vorlagen/marken.css"]
 
 
 def test_strenge_und_haken(tmp_path, capsys):

@@ -1,0 +1,94 @@
+/* Marken der Vorlage Futur: ihre eine Wahrheit für Farben, Schriften, Ecken und Schatten, wie stil/marken.css für das
+   Grunddesign. Eine Vorlage ändert das ganze Aussehen, nicht nur Farben: hier stehen ihre Werte, die Bausteine
+   daneben (bausteine.css) nutzen nur Marken.
+
+   Gilt nur mit data-vorlage="futur" am Wurzelelement (html) und nur auf dem Rechner (ab 1000 Pixel Breite); ohne das
+   Merkmal und am Telefon bleibt alles beim Grunddesign. Hell und dunkel wie gewohnt über data-theme, auch für einen
+   Teil der Seite. Schriftgrößen und Maße kommen weiter aus den Schriftstufen (data-schrift).
+
+   Gestaltung: ruhige, tiefe Flächen (Graphit und Nachtblau im Dunkeln, kühles Hellgrau im Hellen), ein klarer Akzent
+   in Cyan mit sparsamem Leuchten, feine Linien rundum, knappe Ecken, Überschriften und Etiketten in der technischen
+   Schrift. Kontraste wie im Grunddesign: Text 14 : 1 und mehr, Nebentext über 8 : 1, Etiketten über 4,2 : 1. */
+
+@media (min-width: 1000px) {
+
+  /* Beide Themen: Schriften, Ecken, neue Marken der Vorlage */
+  :root[data-vorlage="futur"] {
+    --schrift-titel: var(--schrift-zahl); /* Überschriften, Etiketten, Knöpfe, Reiter: technische Schrift */
+    --sperrung: 0.14em;                   /* Sperrung der Etiketten in Versalien */
+    --r1: 1px;                            /* knapper als im Grunddesign: Marken, Segmente */
+    --r2: 2px;                            /* Knöpfe, Eingaben, Karten */
+    --r3: 3px;                            /* Fenster, Tafeln */
+    --ecke: 10px;                         /* Länge der Eckmarken an Kennzahlen */
+  }
+
+  /* Hell: kühles Hellgrau, Cyan als Fläche, tiefes Petrol als Schrift */
+  :root[data-vorlage="futur"]:not([data-theme="dunkel"]), :root[data-vorlage="futur"] [data-theme="hell"] {
+    color-scheme: light;
+    --hg: #e6ecf1;
+    --leiste: #f3f6f9;
+    --flaeche: #fbfcfd;
+    --flaeche-2: #e9eff4;
+    --mulde: #d3dde6;
+    --bereich: #f1f5f8;
+    --karte: #ffffff;
+    --karte-2: #e8eef3;
+    --karte-3: #d7e1e9;
+    --text: #0b1720;
+    --text-2: #364b5c;
+    --text-3: #52677a;
+    --rand: rgba(8, 72, 102, 0.13);
+    --rand-stark: rgba(8, 72, 102, 0.26);
+    --diagrammlinie: rgba(8, 72, 102, 0.08);
+    --akzent: #006f87;                    /* 5,8 : 1 auf Weiß */
+    --akzent-weich: rgba(20, 196, 222, 0.16);
+    --akzent-flaeche: #14c4de;
+    --auf-akzent: #021a20;                /* 8,5 : 1 auf der Akzentfläche */
+    --schattenfarbe: #0a1c28;
+    --schatten: 0 0 0 1px rgba(8, 72, 102, 0.08), 0 6px 18px rgba(8, 40, 60, 0.08);
+    --schatten-schwebend: 0 0 0 1px rgba(8, 72, 102, 0.14), 0 18px 44px rgba(8, 40, 60, 0.18), 0 2px 6px rgba(8, 40, 60, 0.1);
+    --schleier: rgba(236, 242, 247, 0.8);
+    --leuchten: rgba(20, 196, 222, 0.32);   /* Schein um Hauptknopf, Fokus und Laufendes */
+    --raster: rgba(8, 72, 102, 0.06);       /* Linien des Rasters hinter der Arbeitsfläche */
+    --schein: rgba(20, 196, 222, 0.08);     /* weiches Licht oben über der Arbeitsfläche */
+  }
+
+  /* Dunkel: Graphit mit Nachtblau, Cyan leuchtet */
+  :root[data-vorlage="futur"][data-theme="dunkel"], :root[data-vorlage="futur"] [data-theme="dunkel"] {
+    color-scheme: dark;
+    --hg: #0a1017;
+    --leiste: #0d141c;
+    --flaeche: #111a24;
+    --flaeche-2: #16212d;
+    --mulde: #060a0f;
+    --bereich: #0f1821;
+    --karte: #131e2a;
+    --karte-2: #192736;
+    --karte-3: #213245;
+    --text: #e6f0f7;
+    --text-2: #a7bacb;
+    --text-3: #7f95aa;
+    --rand: rgba(125, 211, 252, 0.1);
+    --rand-stark: rgba(125, 211, 252, 0.22);
+    --diagrammlinie: rgba(125, 211, 252, 0.07);
+    --akzent: #45e3ff;                    /* 11 : 1 auf der Karte */
+    --akzent-weich: rgba(34, 211, 238, 0.14);
+    --akzent-flaeche: #22d3ee;
+    --auf-akzent: #03161c;                /* 10 : 1 auf der Akzentfläche */
+    --gut: #34e8a6;
+    --gut-weich: rgba(52, 232, 166, 0.14);
+    --warn: #ffad66;
+    --warn-weich: rgba(255, 173, 102, 0.15);
+    --gefahr: #ff6b85;
+    --gefahr-weich: rgba(255, 107, 133, 0.15);
+    --gefahr-flaeche: #d42a49;            /* 5 : 1 für auf-farbe */
+    --info: #6aa6ff;
+    --schattenfarbe: #02060a;
+    --schatten: 0 0 0 1px rgba(125, 211, 252, 0.06), 0 8px 24px rgba(0, 0, 0, 0.35);
+    --schatten-schwebend: 0 0 0 1px rgba(125, 211, 252, 0.16), 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 40px rgba(34, 211, 238, 0.07);
+    --schleier: rgba(4, 8, 12, 0.78);
+    --leuchten: rgba(34, 211, 238, 0.38);
+    --raster: rgba(125, 211, 252, 0.045);
+    --schein: rgba(34, 211, 238, 0.07);
+  }
+}

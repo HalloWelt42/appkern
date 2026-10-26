@@ -1,0 +1,133 @@
+/* Bausteine der Vorlage Futur: was über die Marken (futur/marken.css) hinaus anders aussieht. Nur Marken, nur auf
+   dem Rechner (ab 1000 Pixel) und nur mit data-vorlage="futur" am Wurzelelement.
+
+   Regel der Vorlagen: sie ergänzen Schrift, Sperrung, Linien rundum und Leuchten, ersetzen aber keine Flächen, die
+   eine App an einem Baustein selbst setzt. Wo eine Regel eine Fläche ändert, nennt sie die Abwandlung ausdrücklich
+   (etwa nur der Hauptknopf oder nur Balken ohne Bedeutungsfarbe). Keine Filter und keine Masken auf großen oder
+   rollenden Flächen; Leuchten nur als Schatten. */
+
+@media (min-width: 1000px) {
+
+  /* ═══ Grund ═══ */
+  :root[data-vorlage="futur"] { scrollbar-color: var(--karte-3) transparent; }
+  :root[data-vorlage="futur"] ::selection { background: var(--akzent-weich); }
+  :root[data-vorlage="futur"] :is(h1, h2, h3) { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: 0.02em; }
+  :root[data-vorlage="futur"] .etikett { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: var(--sperrung); }
+  :root[data-vorlage="futur"] :focus-visible { outline: 1px solid var(--akzent-flaeche); outline-offset: 2px; }
+
+  /* ═══ Schale ═══ */
+  :root[data-vorlage="futur"] .kopf { background-image: linear-gradient(180deg, var(--schein), transparent); }
+  :root[data-vorlage="futur"] .marke { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  /* Arbeitsfläche: feines Raster und weiches Licht von oben; steht still, wenn ein Rollfeld darin rollt */
+  :root[data-vorlage="futur"] .schale > .haupt {
+    background-color: var(--hg);
+    background-image: radial-gradient(70% 320px at 50% -80px, var(--schein), transparent),
+                      linear-gradient(var(--raster) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--raster) 1px, transparent 1px);
+    background-size: auto, 32px 32px, 32px 32px;
+  }
+  /* Etikett der Seitenleiste mit auslaufender Linie; schwach gewichtet (where), damit die eingeklappte Leiste es weiter
+     ausblendet */
+  :where(:root[data-vorlage="futur"]) .seite .etikett { display: flex; align-items: center; gap: var(--a2); }
+  :root[data-vorlage="futur"] .seite .etikett::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--rand-stark), transparent); }
+  :root[data-vorlage="futur"] .navi { transition: background var(--schnell), box-shadow var(--schnell); }
+  :root[data-vorlage="futur"] .navi.aktiv {
+    background: var(--akzent-weich);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 32%, transparent);
+  }
+  :root[data-vorlage="futur"] .navi.aktiv i { text-shadow: 0 0 10px var(--leuchten); }
+
+  /* ═══ Knöpfe ═══ */
+  :root[data-vorlage="futur"] .knopf {
+    font-family: var(--schrift-titel); letter-spacing: 0.03em;
+    transition: background var(--schnell), border-color var(--schnell), box-shadow var(--schnell);
+  }
+  :root[data-vorlage="futur"] .knopf:not([disabled], .gesperrt):hover {
+    border-color: color-mix(in srgb, var(--akzent-flaeche) 45%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--akzent-flaeche) 14%, transparent);
+  }
+  :root[data-vorlage="futur"] .knopf.haupt { box-shadow: 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 60%, transparent), 0 0 16px var(--leuchten); }
+  :root[data-vorlage="futur"] .knopf.haupt:not([disabled], .gesperrt):hover {
+    filter: none; background: color-mix(in srgb, var(--akzent-flaeche) 82%, var(--licht));
+    box-shadow: 0 0 0 1px var(--akzent-flaeche), 0 0 22px var(--leuchten);
+  }
+  :root[data-vorlage="futur"] .knopf.aktiv { background: var(--akzent-weich); }
+  :root[data-vorlage="futur"] .knopf:is(.gefahr, .gefahr-voll):not([disabled], .gesperrt):hover {
+    border-color: color-mix(in srgb, var(--gefahr) 50%, transparent);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--gefahr) 22%, transparent);
+  }
+
+  /* ═══ Marken im Text: Zähler, Zustände, Fähigkeiten, Zonen ═══ */
+  :root[data-vorlage="futur"] .zaehler { font-family: var(--schrift-titel); }
+  :root[data-vorlage="futur"] :is(.zustand, .faehigkeit, .zone) {
+    font-family: var(--schrift-titel); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  :root[data-vorlage="futur"] .zustand.laeuft { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 35%, transparent); }
+
+  /* ═══ Eingaben ═══ */
+  :root[data-vorlage="futur"] :is(.eingabe:focus, .suche:focus-within) {
+    border-color: color-mix(in srgb, var(--akzent-flaeche) 70%, transparent);
+    box-shadow: 0 0 0 3px var(--akzent-weich);
+  }
+  :root[data-vorlage="futur"] .auswahl-knopf { border-color: var(--rand-stark); }
+  :root[data-vorlage="futur"] .auswahl-liste { box-shadow: var(--schatten-schwebend); }
+  :root[data-vorlage="futur"] .schalter { box-shadow: inset 0 0 0 1px var(--rand-stark); }
+  :root[data-vorlage="futur"] .schalter.an { box-shadow: 0 0 12px var(--leuchten); }
+  :root[data-vorlage="futur"] .stufen button { font-family: var(--schrift-titel); letter-spacing: 0.03em; }
+  :root[data-vorlage="futur"] .stufen button.an { background: var(--akzent-weich); }
+  :root[data-vorlage="futur"] .chip { font-family: var(--schrift-titel); letter-spacing: 0.03em; }
+  :root[data-vorlage="futur"] .chip.aktiv { box-shadow: 0 0 12px var(--akzent-weich); }
+
+  /* ═══ Flächen: Bereiche, Karten, Kennzahlen ═══ */
+  :root[data-vorlage="futur"] :is(.bereich, .karte, .filter) { box-shadow: 0 0 0 1px var(--rand); }
+  :root[data-vorlage="futur"] .karte.klickbar:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 35%, transparent); }
+  :root[data-vorlage="futur"] .karte.gewaehlt {
+    outline: 0;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 60%, transparent), 0 0 18px color-mix(in srgb, var(--akzent-flaeche) 16%, transparent);
+  }
+  /* Kennzahl mit Eckmarken in allen vier Ecken (Zeichnung im Hintergrund, keine Maske) */
+  :root[data-vorlage="futur"] .kennzahl {
+    --eckfarbe: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent);
+    box-shadow: 0 0 0 1px var(--rand);
+    background-image: linear-gradient(var(--eckfarbe), var(--eckfarbe)), linear-gradient(var(--eckfarbe), var(--eckfarbe)),
+                      linear-gradient(var(--eckfarbe), var(--eckfarbe)), linear-gradient(var(--eckfarbe), var(--eckfarbe)),
+                      linear-gradient(var(--eckfarbe), var(--eckfarbe)), linear-gradient(var(--eckfarbe), var(--eckfarbe)),
+                      linear-gradient(var(--eckfarbe), var(--eckfarbe)), linear-gradient(var(--eckfarbe), var(--eckfarbe));
+    background-size: var(--ecke) 1px, 1px var(--ecke), var(--ecke) 1px, 1px var(--ecke),
+                     var(--ecke) 1px, 1px var(--ecke), var(--ecke) 1px, 1px var(--ecke);
+    background-position: left top, left top, right top, right top, left bottom, left bottom, right bottom, right bottom;
+    background-repeat: no-repeat;
+  }
+  :root[data-vorlage="futur"] .kennzahl span { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: var(--sperrung); }
+  :root[data-vorlage="futur"] .kennzahl.laeuft b { text-shadow: 0 0 14px var(--leuchten); }
+
+  /* ═══ Reiter ═══ */
+  :root[data-vorlage="futur"] :is(.reiter, .untergruppen) :is(button, a) { font-family: var(--schrift-titel); letter-spacing: 0.04em; }
+  :root[data-vorlage="futur"] :is(.reiter, .untergruppen) :is(button, a).aktiv {
+    border-color: color-mix(in srgb, var(--akzent-flaeche) 45%, transparent);
+    box-shadow: 0 0 14px var(--akzent-weich);
+  }
+  :root[data-vorlage="futur"] :is(.reiter, .untergruppen) :is(button, a).aktiv i { text-shadow: 0 0 10px var(--leuchten); }
+
+  /* ═══ Tabelle, Fortschritt, Ablauf ═══ */
+  :root[data-vorlage="futur"] .tabelle th { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: 0.12em; }
+  :root[data-vorlage="futur"] .tabelle tr:hover td { background: color-mix(in srgb, var(--akzent-flaeche) 6%, transparent); }
+  /* nur der Balken ohne Bedeutungsfarbe bekommt den Verlauf */
+  :root[data-vorlage="futur"] .balken:not(.fertig, .fehler, .info) b {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--akzent-flaeche) 55%, transparent), var(--akzent-flaeche));
+  }
+  :root[data-vorlage="futur"] .kette .schritt { font-family: var(--schrift-titel); letter-spacing: 0.03em; }
+  :root[data-vorlage="futur"] .kette .schritt.jetzt { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--akzent-flaeche) 40%, transparent); }
+
+  /* ═══ Schwebendes: Fenster, Dialog, Meldung, Hilfe ═══ */
+  :root[data-vorlage="futur"] :is(.fenster, .dialog, .meldung) { border-color: color-mix(in srgb, var(--akzent-flaeche) 28%, transparent); }
+  :root[data-vorlage="futur"] :is(.fenster-kopf .titel, .hilfe-titel b) { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: 0.03em; }
+  :root[data-vorlage="futur"] .hilfe-fenster {
+    border-color: color-mix(in srgb, var(--akzent-flaeche) 30%, transparent);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--schattenfarbe) 55%, transparent),
+                0 14px 32px color-mix(in srgb, var(--schattenfarbe) 60%, transparent),
+                0 32px 80px color-mix(in srgb, var(--schattenfarbe) 75%, transparent),
+                0 0 48px color-mix(in srgb, var(--akzent-flaeche) 10%, transparent);
+  }
+  :root[data-vorlage="futur"] .hilfe-kopf { background-image: linear-gradient(180deg, var(--schein), transparent); }
+}
