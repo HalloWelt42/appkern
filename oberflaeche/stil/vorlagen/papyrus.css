@@ -1,0 +1,7 @@
+/* Vorlage Papyrus: ruhiges Cremeweiß wie Papier, Elemente in warmem Braun, Wichtiges klein, aber kräftig farbig und leuchtend; angelehnt an das Designsystem der Kiste (Titel in Fraunces, Text in Work Sans). Umschaltbar über data-vorlage="papyrus" am Wurzelelement, nur auf dem Rechner
+   (ab 1000 Pixel); ohne das Merkmal bleibt das Grunddesign unverändert. Laden nach leitstand.css und hilfe.css.
+   Entwurf zum Ansehen: oberflaeche/mockups/vorlagen.html?vorlage=papyrus. */
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/work-sans";
+@import "./papyrus/marken.css";
+@import "./papyrus/bausteine.css";

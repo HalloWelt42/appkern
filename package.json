@@ -13,6 +13,8 @@
     "oberflaeche/werkzeuge/"
   ],
   "dependencies": {
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/work-sans": "^5.3.0",
     "@fontsource/barlow": "^5.2.8",
     "@fontsource/chakra-petch": "^5.3.0",
     "@fortawesome/fontawesome-free": "^6.6.0",
@@ -29,6 +31,7 @@
     "./anmeldung.css": "./oberflaeche/stil/anmeldung.css",
     "./auswahl.css": "./oberflaeche/stil/auswahl.css",
     "./hilfe.css": "./oberflaeche/stil/hilfe.css",
+    "./vorlagen.css": "./oberflaeche/stil/vorlagen.css",
     "./gestaltung": {
       "svelte": "./oberflaeche/teile/Gestaltung.svelte",
       "default": "./oberflaeche/teile/Gestaltung.svelte"

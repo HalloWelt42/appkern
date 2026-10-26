@@ -433,6 +433,10 @@ In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`
 - **Seitenleiste** des Leitstands: `seitenleisteStarten()` beim Start, `seitenleisteUmschalten()` am Knopf, Zustand in
   `seitenleiste.schmal`. Ohne Wahl schmal bis 1240 Pixel Breite, sonst nach der Wahl dieses Geräts (Merkmal
   `data-seitenleiste` an der Wurzel, auf das `leitstand.css` hört; Apps ohne den Baustein klappen nach der Breite).
+- **Vorlagen** für ein anderes Aussehen im Leitstand, nur auf dem Rechner (ab 1000 Pixel): `vorlagen.css` nach
+  `leitstand.css` und `hilfe.css` laden, `vorlageStarten()` beim Start, `vorlageSetzen(id)` an der Wahl, die wählbaren
+  in `VORLAGEN` (Klassisch ist das Grunddesign). Gemerkt je Gerät, wirksam über `data-vorlage` an der Wurzel. Eine
+  Vorlage sind eigene Marken plus Bausteine unter `stil/vorlagen/<name>/`; Entwürfe zeigt `oberflaeche/mockups/vorlagen.html`.
 - **Einstellungen der App** in eigener Schale: `einstellungenLaden()`, Entwurf in `einstellungen.entwurf`,
   `einstellungenSpeichern()` und `einstellungenVerwerfen()`; `<EinstellungsZeile feld melden />` zeichnet eine
   Einstellung als Zeile des Leitstands (Schalter, Zahl mit Schritten, Auswahl auch aus dem Angebot mit eigenem Wert,

@@ -1,6 +1,6 @@
 /* Vorlage Futur: ein anderes Aussehen für Apps im Leitstand, umschaltbar über data-vorlage="futur" am Wurzelelement,
    nur auf dem Rechner (ab 1000 Pixel). Eine Vorlage besteht aus ihren Marken (Werte) und ihren Bausteinen (was über
    die Marken hinaus anders aussieht); ohne das Merkmal bleibt das Grunddesign unverändert. Laden nach leitstand.css
-   und hilfe.css. Entwurf zum Ansehen: oberflaeche/mockups/vorlage-futur.html. */
+   und hilfe.css. Entwurf zum Ansehen: oberflaeche/mockups/vorlagen.html?vorlage=futur. */
 @import "./futur/marken.css";
 @import "./futur/bausteine.css";

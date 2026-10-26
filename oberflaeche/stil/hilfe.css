@@ -34,9 +34,10 @@
 .hilfe-leiste { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3); border-bottom: 1px solid var(--rand); }
 .hilfe-wahl { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--a2); }
 .hilfe-wahl .eingabe { width: 100%; }
-.hilfe-suchzeile { display: flex; gap: var(--a2); align-items: stretch; }
-.hilfe-suchzeile .suche { max-width: none; min-width: 0; }
-.hilfe-bereich { flex: none; display: flex; border: 1px solid var(--rand); border-radius: var(--r2); overflow: hidden; }
+/* das Suchfeld braucht Platz für Text, Zähler und drei Knöpfe: im schmalen Fenster rückt es unter Alle und Thema */
+.hilfe-suchzeile { display: flex; flex-wrap: wrap; gap: var(--a2); align-items: stretch; }
+.hilfe-suchzeile .suche { flex: 1 1 18em; max-width: none; min-width: 0; }
+.hilfe-bereich { flex: none; display: flex; min-height: 42px; border: 1px solid var(--rand); border-radius: var(--r2); overflow: hidden; }
 .hilfe-bereich button {
   border: 0; padding: 0 var(--a3); background: var(--karte); color: var(--text-2); font-size: var(--klein); cursor: pointer;
 }

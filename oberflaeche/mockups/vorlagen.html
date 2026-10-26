@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Appkern - Vorlage Futur</title>
-    <!-- Entwurf der Vorlage Futur: eine typische Seite einer App im Leitstand mit den echten Stilen des Appkerns
-         (leitstand, auswahl, hilfe) und der Vorlage (stil/vorlagen/futur.css); das Markup folgt den Bausteinen in
+    <title>Appkern - Vorlagen</title>
+    <!-- Entwürfe der Vorlagen: eine typische Seite einer App im Leitstand mit den echten Stilen des Appkerns
+         (leitstand, auswahl, hilfe) und der Vorlagen (stil/vorlagen.css); das Markup folgt den Bausteinen in
          teile/ und gestaltung/katalog.json. Unten rechts lassen sich Vorlage, Thema und Hilfefenster umschalten.
          Servieren aus der Wurzel des Appkerns (wegen node_modules):
          python3 -m http.server 8691 --directory ~/Entwicklung/Werkzeuge/Appkern
-         dann http://localhost:8691/oberflaeche/mockups/vorlage-futur.html -->
+         dann http://localhost:8691/oberflaeche/mockups/vorlagen.html -->
     <link rel="stylesheet" href="/node_modules/@fontsource/barlow/400.css" />
     <link rel="stylesheet" href="/node_modules/@fontsource/barlow/500.css" />
     <link rel="stylesheet" href="/node_modules/@fontsource/barlow/600.css" />
@@ -18,11 +18,17 @@
     <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/500.css" />
     <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/600.css" />
     <link rel="stylesheet" href="/node_modules/@fontsource/chakra-petch/700.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource-variable/fraunces/index.css" />
+    <link rel="stylesheet" href="/node_modules/@fontsource-variable/work-sans/index.css" />
     <link rel="stylesheet" href="/node_modules/@fortawesome/fontawesome-free/css/all.min.css" />
     <link rel="stylesheet" href="../stil/leitstand.css" />
     <link rel="stylesheet" href="../stil/auswahl.css" />
     <link rel="stylesheet" href="../stil/hilfe.css" />
-    <link rel="stylesheet" href="../stil/vorlagen/futur.css" />
+    <link rel="stylesheet" href="../stil/vorlagen.css" />
+    <link rel="stylesheet" href="../stil/vorlagen/papyrus.css" /><!-- Entwurf -->
+    <link rel="stylesheet" href="../stil/vorlagen/klar.css" /><!-- Entwurf -->
+    <link rel="stylesheet" href="../stil/vorlagen/plakat.css" /><!-- Entwurf -->
+    <link rel="stylesheet" href="../stil/vorlagen/glas.css" /><!-- Entwurf -->
     <style>
       /* Nur für den Entwurf: Anordnung der Beispielseite und die Umschaltleiste; alles andere kommt aus dem Appkern */
       .mock-symbol { width: 34px; height: 34px; display: inline-grid; place-items: center; flex: none; border-radius: var(--r2);
@@ -337,7 +343,7 @@
 
     <div class="mock-leiste" role="group" aria-label="Entwurf umschalten">
       <span class="etikett">Entwurf</span>
-      <span class="stufen" aria-label="Vorlage"><button type="button" data-vorlage-wahl="klassisch">Klassisch</button><button type="button" data-vorlage-wahl="futur">Futur</button></span>
+      <span class="stufen" aria-label="Vorlage"><button type="button" data-vorlage-wahl="klassisch">Klassisch</button><button type="button" data-vorlage-wahl="futur">Futur</button><button type="button" data-vorlage-wahl="papyrus">Papyrus</button><button type="button" data-vorlage-wahl="klar">Klar</button><button type="button" data-vorlage-wahl="plakat">Plakat</button><button type="button" data-vorlage-wahl="glas">Glas</button></span>
       <span class="stufen" aria-label="Thema"><button type="button" data-thema-wahl="hell">Hell</button><button type="button" data-thema-wahl="dunkel">Dunkel</button></span>
       <button class="knopf klein" type="button" data-mock="hilfe"><i class="fa-solid fa-circle-question"></i>Hilfe</button>
     </div>
@@ -351,8 +357,10 @@
       const leisteKnopf = document.querySelector("[data-mock=leiste]");
 
       function vorlage(wert) {
-        if (wert === "futur") wurzel.dataset.vorlage = "futur"; else delete wurzel.dataset.vorlage;
-        document.querySelector("[data-mock-name]").textContent = wert === "futur" ? "Futur" : "Klassisch";
+        const knopf = document.querySelector(`[data-vorlage-wahl="${wert}"]`) ?? document.querySelector('[data-vorlage-wahl="klassisch"]');
+        wert = knopf.dataset.vorlageWahl;
+        if (wert === "klassisch") delete wurzel.dataset.vorlage; else wurzel.dataset.vorlage = wert;
+        document.querySelector("[data-mock-name]").textContent = knopf.textContent;
         for (const b of document.querySelectorAll("[data-vorlage-wahl]")) b.classList.toggle("an", b.dataset.vorlageWahl === wert);
       }
       function thema(wert) {

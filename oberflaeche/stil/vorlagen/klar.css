@@ -1,0 +1,5 @@
+/* Vorlage Klar: luftig, weich und freundlich: viel Weißraum, große Rundungen, weiche Schatten statt Linien. Umschaltbar über data-vorlage="klar" am Wurzelelement, nur auf dem Rechner
+   (ab 1000 Pixel); ohne das Merkmal bleibt das Grunddesign unverändert. Laden nach leitstand.css und hilfe.css.
+   Entwurf zum Ansehen: oberflaeche/mockups/vorlagen.html?vorlage=klar. */
+@import "./klar/marken.css";
+@import "./klar/bausteine.css";

@@ -1,0 +1,7 @@
+/* Vorlage Glas: durchscheinende Flächen über einem vollflächigen, weich verschwommenen Hintergrund, mit Lichtkanten,
+   Spiegelungen und Tiefe. Der Hintergrund ist schon weich (Bild oder Farbverläufe), darum brauchen die Flächen keinen
+   Weichzeichner. Umschaltbar über data-vorlage="glas" am Wurzelelement, nur auf dem Rechner (ab 1000 Pixel); ohne das
+   Merkmal bleibt das Grunddesign unverändert. Laden nach leitstand.css und hilfe.css.
+   Entwurf zum Ansehen: oberflaeche/mockups/vorlagen.html?vorlage=glas. */
+@import "./glas/marken.css";
+@import "./glas/bausteine.css";

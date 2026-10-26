@@ -34,6 +34,7 @@ export { einzelton } from "./lib/wiedergabe.svelte";
 export { vorleser, type VorleseSatz } from "./lib/vorlesen.svelte";
 export { hilfe, hilfeThemen, type HilfeAbschnitt, type HilfeThema } from "./lib/hilfe.svelte";
 export { seitenleiste, seitenleisteStarten, seitenleisteUmschalten, type Seitenwahl } from "./lib/seitenleiste.svelte";
+export { VORLAGEN, vorlage, vorlageSetzen, vorlageStarten, type Vorlage } from "./lib/vorlage.svelte";
 export { einstellungen, einstellungenLaden, einstellungenSpeichern, einstellungenVerwerfen, einstellungsAngebot, einstellungsFeld,
          einstellungsGeheimnis, einstellungSetzen, einstellungsWert } from "./lib/einstellungen.svelte";
 export { push, pushAusschalten, pushEinschalten, pushGeraete, pushGeraetEntfernen, pushGeraetName, pushLage, pushProbe, pushStarten,
