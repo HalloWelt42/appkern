@@ -54,12 +54,19 @@ class Vorleser {
     else void this.starten(kennung, pfad, daten);
   }
 
+  /** Schaltet den Ton im Tippen frei, wenn der Text erst danach geladen wird (am iPhone bleibt Ton sonst stumm, der
+   *  nicht im Tippen beginnt); dann `starten`. */
+  entsperren(): AudioContext {
+    const ctx = (this.#ctx ??= new AudioContext());
+    void ctx.resume().catch(() => undefined);
+    return ctx;
+  }
+
   async starten(kennung: string, pfad: string, daten: unknown): Promise<void> {
     this.anhalten();
     einzelton.anhalten();
     this.#wachen();
-    const ctx = (this.#ctx ??= new AudioContext());
-    void ctx.resume().catch(() => undefined);              // noch im Tippen fortsetzen, sonst bleibt es am iPhone stumm
+    const ctx = this.entsperren();                          // noch im Tippen, sonst bleibt es am iPhone stumm
     const lauf = ++this.#lauf;
     const steuerung = new AbortController();
     this.#steuerung = steuerung;
