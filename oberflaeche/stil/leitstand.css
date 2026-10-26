@@ -70,6 +70,12 @@ code, .code { font-family: var(--schrift-code); font-size: 0.92em; background: v
 }
 .suche input { flex: 1; background: none; border: 0; outline: 0; color: var(--text); min-width: 0; }
 .suche:focus-within { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
+/* das X am Ende eines Suchfelds (teile/Suchfeld.svelte): leert die Eingabe */
+.suche .leeren {
+  flex: none; display: inline-grid; place-items: center; width: 30px; height: 30px; margin-right: calc(-1 * var(--a1));
+  border: 0; border-radius: var(--r2); background: none; color: var(--text-3); cursor: pointer;
+}
+.suche .leeren:hover { background: var(--karte-2); color: var(--text); }
 .kopf-aktionen { margin-left: auto; display: flex; gap: var(--a1); align-items: center; }
 
 /* Hauptregler: auf jeder Seite im Kopf, greift sofort in den ganzen Verbund ein.
@@ -434,6 +440,14 @@ select.eingabe { padding-right: var(--a5); }
 .einstellung .wert .eingabe { width: 130px; text-align: right; font-family: var(--schrift-zahl); }
 .einstellung .wert select.eingabe { width: 180px; text-align: left; font-family: var(--schrift); }
 .einstellung .einheit { color: var(--text-3); font-size: var(--klein); min-width: 34px; }
+/* Einstellungen der App (teile/EinstellungsZeile.svelte): Punkt für ungespeichert, Zahl mit Schritten, Text, Geheimnis */
+.einstellung-punkt { width: 8px; height: 8px; border-radius: 50%; background: var(--akzent-flaeche); flex: none; }
+.einstellung-zahl { display: inline-flex; align-items: center; gap: var(--a2); }
+.einstellung-zahl .zahl { min-width: 48px; text-align: center; font-family: var(--schrift-zahl); }
+.einstellung-reihe { display: inline-flex; align-items: center; gap: var(--a1); min-width: 0; max-width: 100%; flex-wrap: wrap; justify-content: flex-end; }
+.einstellung .wert .eingabe.einstellung-text { width: min(360px, 100%); text-align: left; font-family: var(--schrift); }
+.einstellung-geheim { font-family: var(--schrift-code); font-size: var(--klein); color: var(--text-2); overflow-wrap: anywhere; }
+.einstellung-chips { display: flex; flex-wrap: wrap; gap: var(--a1); justify-content: flex-end; }
 
 .schalter { width: 50px; height: 28px; border-radius: var(--r2); background: var(--karte-3); position: relative; border: 0; cursor: pointer; flex: none; }
 .schalter::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: var(--r1); background: var(--text-2); transition: left var(--schnell); }
@@ -554,21 +568,34 @@ select.eingabe { padding-right: var(--a5); }
   .kopf .suche { max-width: 420px; }
 }
 @media (max-width: 1240px) {
-  :root { --nav-breite: 72px; }   /* Ausnahme: die Seitenleiste wird eine Symbolleiste von 72 Pixeln */
-  .marke { min-width: 0; gap: 0; }
-  .marke .marke-name, .marke .zahl { display: none; }
   .rolle { display: none; }
-  .seite { padding: var(--a3) var(--a2); align-items: stretch; }
-  .seite .etikett { display: none; }
-  .seite .navi { font-size: 0; justify-content: center; padding: 11px 0; }
-  .seite .navi i { width: auto; font-size: 20px; }
-  .seite .navi .zaehler { display: none; }
   .spalten, .spalten.breit-rechts, .spalten.schmal-rechts { grid-template-columns: minmax(0, 1fr); overflow-y: auto; gap: var(--a5); padding-bottom: var(--a5); }
   .spalten > .rollfeld { overflow: visible; min-height: auto; flex: none; padding: 0; }
   .einstellung { grid-template-columns: minmax(0, 1fr) 240px; }
   .kopf .suche { max-width: 320px; }
   .hauptregler-leiste { left: var(--nav-breite); }
 }
+/* Seitenleiste als Symbolleiste von 72 Pixeln (Ausnahme der Breite): von selbst bis 1240 Pixel, in Apps mit dem
+   Baustein seitenleiste nach der Wahl dieses Geräts (Merkmal data-seitenleiste an der Wurzel). Beide Fassungen gleich
+   halten. */
+@media (max-width: 1240px) {
+  :root:not([data-seitenleiste]) { --nav-breite: 72px; }   /* Ausnahme: Symbolleiste von 72 Pixeln */
+  :root:not([data-seitenleiste]) .marke { min-width: 0; gap: 0; }
+  :root:not([data-seitenleiste]) .marke :is(.marke-name, .zahl) { display: none; }
+  :root:not([data-seitenleiste]) .seite { padding: var(--a3) var(--a2); align-items: stretch; }
+  :root:not([data-seitenleiste]) .seite .etikett { display: none; }
+  :root:not([data-seitenleiste]) .seite .navi { font-size: 0; justify-content: center; padding: 11px 0; }
+  :root:not([data-seitenleiste]) .seite .navi i { width: auto; font-size: 20px; }
+  :root:not([data-seitenleiste]) .seite .navi .zaehler { display: none; }
+}
+:root[data-seitenleiste="schmal"] { --nav-breite: 72px; }   /* Ausnahme: Symbolleiste von 72 Pixeln */
+:root[data-seitenleiste="schmal"] .marke { min-width: 0; gap: 0; }
+:root[data-seitenleiste="schmal"] .marke :is(.marke-name, .zahl) { display: none; }
+:root[data-seitenleiste="schmal"] .seite { padding: var(--a3) var(--a2); align-items: stretch; }
+:root[data-seitenleiste="schmal"] .seite .etikett { display: none; }
+:root[data-seitenleiste="schmal"] .seite .navi { font-size: 0; justify-content: center; padding: 11px 0; }
+:root[data-seitenleiste="schmal"] .seite .navi i { width: auto; font-size: 20px; }
+:root[data-seitenleiste="schmal"] .seite .navi .zaehler { display: none; }
 /* Telefon und schmale Fenster: Einstellungen untereinander (Erklärung, darunter das Bedienelement) */
 @media (max-width: 760px) {
   .einstellung { grid-template-columns: minmax(0, 1fr); gap: var(--a2); }

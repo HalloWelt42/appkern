@@ -13,6 +13,10 @@ export { default as AnfrageBand } from "./teile/AnfrageBand.svelte";
 export { default as Dateiwahl } from "./teile/Dateiwahl.svelte";
 export { default as Rekorder } from "./teile/Rekorder.svelte";
 export { default as Gestaltung } from "./teile/Gestaltung.svelte";
+export { default as Hilfe } from "./teile/Hilfe.svelte";
+export { default as Hilfepunkt } from "./teile/Hilfepunkt.svelte";
+export { default as Suchfeld } from "./teile/Suchfeld.svelte";
+export { default as EinstellungsZeile } from "./teile/EinstellungsZeile.svelte";
 export { leiste, leisteOeffnen, leisteSchliessen } from "./lib/leiste.svelte";
 export { abfrage, anfragenEinstellen, ApiFehler, ereignisse, hole, json, seitenFehler, seitenSignal, token, verbindung,
          type AnfrageOptionen, type FehlerArt } from "./lib/api.svelte";
@@ -28,6 +32,10 @@ export { anfrage, anfrageOeffnen, dateiSymbol, daneben, inKellerwolke, istMedium
 export { arbeit, arbeitsfrei } from "./lib/arbeit.svelte";
 export { einzelton } from "./lib/wiedergabe.svelte";
 export { vorleser, type VorleseSatz } from "./lib/vorlesen.svelte";
+export { hilfe, hilfeThemen, type HilfeAbschnitt, type HilfeThema } from "./lib/hilfe.svelte";
+export { seitenleiste, seitenleisteStarten, seitenleisteUmschalten, type Seitenwahl } from "./lib/seitenleiste.svelte";
+export { einstellungen, einstellungenLaden, einstellungenSpeichern, einstellungenVerwerfen, einstellungsAngebot, einstellungsFeld,
+         einstellungsGeheimnis, einstellungSetzen, einstellungsWert } from "./lib/einstellungen.svelte";
 export { push, pushAusschalten, pushEinschalten, pushGeraete, pushGeraetEntfernen, pushGeraetName, pushLage, pushProbe, pushStarten,
          type PushGeraet, type PushLage, type PushVersand } from "./lib/push.svelte";
 export { hochladen, uploadEntfernen, uploads, type Upload } from "./lib/hochladen.svelte";

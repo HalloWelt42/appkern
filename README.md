@@ -420,6 +420,24 @@ Telefon mit Reitern. Barlow und die Symbole kommen über npm.
 In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`; im Einstieg
 `import "appkern-oberflaeche/stil.css"`.
 
+### Bausteine für jede Oberfläche, auch mit eigener Schale (Leitstand)
+
+- **Hilfe**: `hilfeThemen(import.meta.glob("./hilfe/*.md", { query: "?raw", import: "default", eager: true }), folge)`
+  meldet die Themen an (Markdown mit Kopf `titel`, `untertitel`, `bereich`, `symbol`; Abschnitte `## Titel {#anker}`;
+  Verweise `[Text](hilfe:thema/anker)`), `<Hilfe />` einmal in der Schale ist das schwebende Fenster (ziehen, Größe,
+  minimieren, groß, Suche über alle Themen oder eines mit Zähler und Markierung, Lage und Thema gemerkt, am Telefon
+  immer groß). `<Hilfepunkt thema abschnitt />` ist der i-Knopf am Bedienelement, `hilfe.umschalten()` der Knopf Hilfe.
+  Stile: `appkern-oberflaeche/hilfe.css` (in `stil.css` schon enthalten).
+- **Suchfeld**: `<Suchfeld bind:wert ... />` ist der Baustein `.suche` mit dem X am Ende, das leert wie getippt
+  (Ereignis `input`); weitere Eigenschaften und `{@attach ...}` gehen an das Eingabefeld.
+- **Seitenleiste** des Leitstands: `seitenleisteStarten()` beim Start, `seitenleisteUmschalten()` am Knopf, Zustand in
+  `seitenleiste.schmal`. Ohne Wahl schmal bis 1240 Pixel Breite, sonst nach der Wahl dieses Geräts (Merkmal
+  `data-seitenleiste` an der Wurzel, auf das `leitstand.css` hört; Apps ohne den Baustein klappen nach der Breite).
+- **Einstellungen der App** in eigener Schale: `einstellungenLaden()`, Entwurf in `einstellungen.entwurf`,
+  `einstellungenSpeichern()` und `einstellungenVerwerfen()`; `<EinstellungsZeile feld melden />` zeichnet eine
+  Einstellung als Zeile des Leitstands (Schalter, Zahl mit Schritten, Auswahl auch aus dem Angebot mit eigenem Wert,
+  Liste, Geheimnis mit Auge, Kopieren und Ändern). Seite, Gruppen und Leiste zum Speichern baut die App.
+
 ### Marken
 
 Farben, Schriften, Schriftgrößen, Abstände, Ecken und Schatten aller Apps stehen an einer Stelle:
