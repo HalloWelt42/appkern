@@ -117,7 +117,8 @@ sie stehen neben Kellerwolke und Leitstelle in `/api/v1/verbindungen` und in der
 **Andere Apps des Verbunds** (`geruest.verbund`, `appkern.verbund`): Aufrufe mit dem App-Schlüssel der Kellerwolke,
 mit `sitzung=` im Auftrag der Person (die andere App prüft deren Rechte wie in ihrer Oberfläche). `anfrage(methode,
 adresse, pfad, ...)` am Stück, `durchreichen(adresse, pfad, request)` reicht Inhalte mit Bereichen an den Browser
-(Spieler), `anmelden(name, adresse)` stellt das Ziel zu den Verbindungen, `angebot(name, kennung, adresse)` füllt das
+(Spieler), `anmelden(name, adresse, pfad, meldung)` stellt das Ziel zu den Verbindungen (ohne `meldung`: die Fassung), `strom(...)` liest
+Antworten Zeile für Zeile, `angebot(name, kennung, adresse)` füllt das
 Feld der Adresse in den Einstellungen aus dem Verzeichnis. Fehler kommen als `VerbundFehler` mit Meldung und Status des
 Ziels; die Adresse steht in einer Einstellung der App, nie fest im Code.
 

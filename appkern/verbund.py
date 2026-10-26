@@ -66,6 +66,12 @@ def meldung_aus(antwort: httpx.Response) -> str:
     return antwort.text[:300] or antwort.reason_phrase
 
 
+def fassung_oder_verbunden(daten: Any) -> str:
+    """Meldung einer Verbindung zu einer App des Appkerns: ihre Fassung aus /api/v1/app, sonst "verbunden"."""
+    fassung = daten.get("fassung") if isinstance(daten, dict) else None
+    return f"Fassung {fassung}" if fassung else "verbunden"
+
+
 class Verbund:
     def __init__(self, geruest: Geruest, transport: httpx.AsyncBaseTransport | None = None) -> None:
         self.g = geruest
@@ -160,9 +166,10 @@ class Verbund:
         return StreamingResponse(antwort.aiter_bytes(), status_code=antwort.status_code, headers=weiter,
                                  background=BackgroundTask(antwort.aclose))
 
-    def pruefung(self, name: str, adresse: Callable[[], str], pfad: str = "/api/v1/app") -> Callable[[], Awaitable[Verbindung]]:
-        """Prüfung für die Liste der Verbindungen: ein lesender Aufruf, der nichts startet; bei einer App des Appkerns
-        steht ihre Fassung in der Meldung."""
+    def pruefung(self, name: str, adresse: Callable[[], str], pfad: str = "/api/v1/app",
+                 meldung: Callable[[Any], str] | None = None) -> Callable[[], Awaitable[Verbindung]]:
+        """Prüfung für die Liste der Verbindungen: ein lesender Aufruf, der nichts startet. `meldung` macht aus der
+        Antwort (JSON, sonst None) den Text; ohne steht bei einer App des Appkerns ihre Fassung da."""
         from appkern.app.geruest import Verbindung
 
         async def pruefen() -> Verbindung:
@@ -174,14 +181,14 @@ class Verbund:
                 daten = antwort.json() if antwort.headers.get("content-type", "").startswith("application/json") else None
             except VerbundFehler as f:
                 return Verbindung(name=name, ok=False, adresse=ziel, meldung=f.meldung)
-            fassung = daten.get("fassung") if isinstance(daten, dict) else None
-            return Verbindung(name=name, ok=True, adresse=ziel, meldung=f"Fassung {fassung}" if fassung else "verbunden")
+            return Verbindung(name=name, ok=True, adresse=ziel, meldung=(meldung or fassung_oder_verbunden)(daten))
 
         return pruefen
 
-    def anmelden(self, name: str, adresse: Callable[[], str], pfad: str = "/api/v1/app") -> None:
+    def anmelden(self, name: str, adresse: Callable[[], str], pfad: str = "/api/v1/app",
+                 meldung: Callable[[Any], str] | None = None) -> None:
         """Das Ziel zu den Verbindungen der App stellen (`/api/v1/verbindungen`, Fußleiste)."""
-        self.g.verbindung_anmelden(name, self.pruefung(name, adresse, pfad))
+        self.g.verbindung_anmelden(name, self.pruefung(name, adresse, pfad, meldung))
 
     def angebot(self, name: str, kennung: str, adresse: Callable[[], str]) -> Callable[[], Awaitable[Angebot]]:
         """Anbieter für das Feld der Adresse eines Ziels: die eingetragene und die Apps des Verzeichnisses, deren

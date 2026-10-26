@@ -105,5 +105,8 @@ async def test_pruefung_und_angebot(umgebung):
     adresse["wert"] = "http://ziel.test"
     ziel = next(x for x in await geruest.verbindungen() if x.name == "Ziel")
     assert (ziel.ok, ziel.meldung, ziel.adresse) == (True, "Fassung 0.9.1", "http://ziel.test")
+    # eine eigene Meldung aus der Antwort, etwa für einen Dienst, der keine Fassung meldet
+    geruest.verbund.anmelden("Dienst", lambda: "http://ziel.test", "/api/v1/app", lambda d: f"läuft als {d['fassung']}")
+    assert next(x for x in await geruest.verbindungen() if x.name == "Dienst").meldung == "läuft als 0.9.1"
     angebot = await geruest.verbund.angebot("Ziel", "ziel", lambda: adresse["wert"])()
     assert [o.wert for o in angebot.optionen] == ["http://ziel.test"] and angebot.stand == "verbunden: Fassung 0.9.1"
