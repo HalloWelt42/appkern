@@ -3,7 +3,7 @@
 // fester Teile beim Zustandswechsel; legt von jeder Ansicht ein Bild ab.
 //
 //   node frontend/node_modules/appkern-oberflaeche/oberflaeche/werkzeuge/ansicht.mjs <basis> [--ausgabe ORDNER]
-//        [--nur SEITE] [--thema hell|dunkel] [--breiten 1920,1440,1000,390] [--seiten DATEI]
+//        [--nur SEITE] [--thema hell|dunkel] [--breiten 1920,1440,1000,390] [--seiten DATEI] [--vorlage NAME]
 //
 // im Wurzelordner der App (tools/ansicht.sh). Seiten und Zustandswechsel stehen in frontend/ansicht.json:
 //   { "seiten": [ { "name": "start", "pfad": "/" },
@@ -13,6 +13,8 @@
 // Detailseiten holen ihren Pfad aus einer Abfrage der App (mit der Testanmeldung); {weg.zum.wert} wird gefüllt:
 //   { "name": "plan", "abfrage": "/api/v1/plaene?anzahl=1", "pfad": "/vertonen/{eintraege.0.id}" }
 // Gibt die Abfrage keinen Wert her, ist das ein Befund (die Seite fehlt sonst still in der Prüfung).
+// --vorlage wählt eine Vorlage des Aussehens (lib/vorlage.svelte.ts, etwa futur) wie die App es auf dem Gerät tut; sie
+// wirkt nur ab 1000 Pixel, die Bilder tragen ihren Namen. Ohne Angabe gilt Klassisch.
 // Entwürfe ohne Backend (Ordner mockups einer App): eigene Seitenliste mit --seiten und darin "anmeldung": false; dann
 // fragt die Prüfung die App nicht ab und meldet sich nicht an, das Thema setzt sie wie sonst über appkern_anzeige.
 // Angemeldet wird mit dem Testzugang aus backend/.env.test (KELLERWOLKE_KENNUNG, KELLERWOLKE_PASSWORT; gleichnamige
@@ -36,6 +38,7 @@ if (!basis) { console.error("Aufruf: ansicht.mjs <basis> [--ausgabe ORDNER] [--n
 const ausgabe = wert("--ausgabe") ?? path.join(os.tmpdir(), "ansicht");
 const nur = wert("--nur");
 const themen = wert("--thema") ? [wert("--thema")] : THEMEN;
+const vorlage = wert("--vorlage");
 // eigene Breiten (etwa die eines Entwurfs); die Höhe folgt der Vorgabe: 844 am Telefon, sonst 900
 const BREITEN = wert("--breiten") ? wert("--breiten").split(",").map(Number).filter((b) => b > 0).map((b) => [b, b <= 600 ? 844 : 900])
   : VORGABE_BREITEN;
@@ -164,12 +167,13 @@ for (const seite of einstellung.seiten.filter((s) => s.abfrage)) {
 }
 for (const thema of themen) {
   await werte(`${token ? `localStorage.setItem(${JSON.stringify(`${app.kennung}_sitzung`)}, ${JSON.stringify(token)});` : ""}
-    localStorage.setItem("appkern_anzeige", JSON.stringify({ schrift: "normal", thema: ${JSON.stringify(thema)} })); true`);
+    localStorage.setItem("appkern_anzeige", JSON.stringify({ schrift: "normal", thema: ${JSON.stringify(thema)} }));
+    ${vorlage ? `localStorage.setItem("appkern_vorlage", ${JSON.stringify(vorlage)});` : `localStorage.removeItem("appkern_vorlage");`} true`);
   for (const [b, h] of BREITEN) {
     await rufe("Emulation.setDeviceMetricsOverride", { width: b, height: h, deviceScaleFactor: b < 600 ? 2 : 1, mobile: b < 600 });
     for (const seite of einstellung.seiten) {
       if (seite.auslassen || (nur && seite.name !== nur) || (seite.nur && !seite.nur.includes(b))) continue;
-      const name = `${seite.name}-${b}-${thema}`;
+      const name = `${seite.name}-${b}-${thema}${vorlage ? `-${vorlage}` : ""}`;
       ansicht = name;
       try {
       await rufe("Page.navigate", { url: basis + seite.pfad });
