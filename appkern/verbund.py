@@ -131,7 +131,7 @@ class Verbund:
                     **art: Any) -> AsyncIterator[httpx.Response]:
         """Eine Antwort, die als Strom kommt (etwa Satz für Satz als NDJSON): lesen mit `aiter_lines` oder
         `aiter_bytes`; endet der Block, endet die Anfrage (bricht der Leser ab, hört das Ziel auf). Ab Status 400 ein
-        `VerbundFehler` mit der Meldung des Ziels, bevor etwas gelesen wird."""
+        `VerbundFehler` mit der Meldung des Ziels, bevor etwas gelesen wird; reißt die Verbindung beim Lesen ab, auch."""
         ziel = self._ziel(adresse, pfad)
         client = self.client()
         try:
@@ -142,7 +142,10 @@ class Verbund:
             if antwort.status_code >= 400:
                 await antwort.aread()
                 raise VerbundFehler(meldung_aus(antwort), antwort.status_code)
-            yield antwort
+            try:
+                yield antwort
+            except httpx.TransportError as f:                    # mitten im Lesen abgerissen
+                raise VerbundFehler(f"Verbindung abgerissen ({type(f).__name__})") from f
         finally:
             await antwort.aclose()
 

@@ -15,6 +15,14 @@ from test_geruest import ProbeEinstellungen, Wolke
 TON = bytes(range(256)) * 4
 
 
+class Abriss(httpx.AsyncByteStream):
+    """Ein Strom, dessen Verbindung nach der ersten Zeile abreißt."""
+
+    async def __aiter__(self):
+        yield b'{"nr": 0}\n'
+        raise httpx.ReadError("weg")
+
+
 class Ziel(Wolke):
     """Kellerwolke wie im Gerüst-Test, dazu eine andere App unter ziel.test, die sich merkt, wie sie gerufen wurde."""
 
@@ -32,6 +40,8 @@ class Ziel(Wolke):
             text = json.loads(request.content)["text"]
             return httpx.Response(200, content="".join(json.dumps({"nr": i, "wort": w}) + "\n" for i, w in enumerate(text.split())),
                                   headers={"content-type": "application/x-ndjson"})
+        if request.url.path == "/api/v1/abriss":
+            return httpx.Response(200, stream=Abriss())
         if request.url.path == "/api/v1/geheim":
             return httpx.Response(403, json={"detail": "Dieses Konto darf die Transkription nicht nutzen"})
         if request.url.path == "/api/v1/ton":
@@ -79,6 +89,12 @@ async def test_strom_zeile_fuer_zeile(umgebung):
         async with geruest.verbund.strom("GET", "http://ziel.test", "/api/v1/geheim"):
             pass
     assert f.value.status == 403
+    zeilen = []
+    with pytest.raises(VerbundFehler) as f:
+        async with geruest.verbund.strom("GET", "http://ziel.test", "/api/v1/abriss") as a:
+            async for z in a.aiter_lines():
+                zeilen.append(z)
+    assert zeilen == ['{"nr": 0}'] and f.value.meldung == "Verbindung abgerissen (ReadError)"
 
 
 async def test_durchreichen_mit_bereich(umgebung):
