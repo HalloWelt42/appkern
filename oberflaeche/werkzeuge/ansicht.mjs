@@ -68,7 +68,7 @@ const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--hide-scrollb
   "about:blank"], { stdio: "ignore" });
 const warte = (ms) => new Promise((r) => setTimeout(r, ms));
 let port;
-for (let i = 0; i < 100 && !port; i++) { await warte(100); try { port = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split("\n")[0]; } catch { /* noch nicht */ } }
+for (let i = 0; i < 900 && !port; i++) { await warte(100); try { port = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split("\n")[0]; } catch { /* noch nicht */ } }
 const ws = new WebSocket((await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((z) => z.type === "page").webSocketDebuggerUrl);
 await new Promise((r) => ws.addEventListener("open", r));
 let n = 0;
@@ -104,7 +104,6 @@ const MESSEN = `(() => {
   const blassMerk = new Map();
   const blass = (e) => { if (!e) return false; if (blassMerk.has(e)) return blassMerk.get(e);
     const b = parseFloat(stil(e).opacity) < 1 || blass(e.parentElement); blassMerk.set(e, b); return b; };
-  const grundMerk = new Map();
   const weg = (e) => { const t = []; for (let x = e; x && x !== document.body && t.length < 4; x = x.parentElement)
     t.unshift(x.tagName.toLowerCase() + (x.classList.length ? "." + [...x.classList].slice(0, 2).join(".") : "")); return t.join(" > "); };
   const farbe = (s) => { const m = s.match(/rgba?\\(([^)]+)\\)/); if (!m) return null;
@@ -112,9 +111,22 @@ const MESSEN = `(() => {
   const misch = (o, u) => ({ r: o.r * o.a + u.r * (1 - o.a), g: o.g * o.a + u.g * (1 - o.a), b: o.b * o.a + u.b * (1 - o.a), a: 1 });
   const hell = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
     return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b); };
-  const grund = (e) => { if (!e) return { r: 255, g: 255, b: 255, a: 1 }; if (grundMerk.has(e)) return grundMerk.get(e);
-    const c = farbe(stil(e).backgroundColor); const unten = c && c.a >= 1 ? null : grund(e.parentElement);
-    const g = !c || c.a === 0 ? unten : c.a >= 1 ? c : misch(c, unten); grundMerk.set(e, g); return g; };
+  // Hintergrund unter dem Text: die eigene Fläche und die der Vorfahren, deren Kasten die Mitte des Texts wirklich enthält.
+  // Ein Vorfahr, unter dem der Text gar nicht liegt (etwa eine 2 Pixel breite Linie mit absolut gesetzter Beschriftung
+  // daneben), malt nicht hinter ihm und zählt nicht.
+  // Ein rollender Rahmen malt seinen Hintergrund unter seinen ganzen Inhalt (auch was gerade herausgerollt ist), die Wurzel
+  // unter alles.
+  const flaeche = (e) => { const k = e.getBoundingClientRect(); const s = stil(e);
+    if (e === document.documentElement || e === document.body) return { l: -Infinity, o: -Infinity, r: Infinity, u: Infinity };
+    if (s.overflowX === "visible" && s.overflowY === "visible") return { l: k.left, o: k.top, r: k.right, u: k.bottom };
+    const l = k.left - e.scrollLeft, o = k.top - e.scrollTop;
+    return { l, o, r: l + Math.max(k.width, e.scrollWidth), u: o + Math.max(k.height, e.scrollHeight) }; };
+  const grund = (e, x, y) => { if (!e) return { r: 255, g: 255, b: 255, a: 1 };
+    const k = flaeche(e); const darunter = x >= k.l && x <= k.r && y >= k.o && y <= k.u;
+    const c = darunter ? farbe(stil(e).backgroundColor) : null;
+    if (c && c.a >= 1) return c;
+    const unten = grund(e.parentElement, x, y);
+    return !c || c.a === 0 ? unten : misch(c, unten); };
   const breite = innerWidth;
   const ueber = []; const kontrast = [];
   for (const e of document.querySelectorAll("body *")) {
@@ -130,12 +142,28 @@ const MESSEN = `(() => {
     if (!text || e.closest("[disabled], [aria-disabled=true], [aria-hidden=true]")) continue;
     if (blass(e)) continue;
     const vorn = farbe(s.color); if (!vorn) continue;
-    const hinten = grund(e); const v = misch(vorn, hinten);
+    const hinten = grund(e, r.left + r.width / 2, r.top + r.height / 2); const v = misch(vorn, hinten);
     const [a, b] = [hell(v), hell(hinten)].sort((x, y) => y - x);
     const wert = (a + 0.05) / (b + 0.05);
     if (wert < ${KONTRAST_MIN}) kontrast.push(weg(e) + " (" + wert.toFixed(2) + ": " + e.textContent.trim().slice(0, 30) + ")");
   }
-  return { seitlich: document.documentElement.scrollWidth > breite + 1, ueber: [...new Set(ueber)].slice(0, 5), kontrast: [...new Set(kontrast)].slice(0, 5) };
+  // Inhalt breiter als sein schneidender Rahmen (etwa eine Tabelle, deren rechte Spalten im Rollfeld verschwinden); Kürzen mit
+  // Auslassungspunkten ist gewollt und zählt nicht
+  const geschnitten = [];
+  for (const e of document.querySelectorAll("body *")) {
+    const s = stil(e);
+    // Eingabefelder rollen ihren Text selbst; das ist kein Überlauf der Seite
+    if (s.display === "none" || s.overflowX === "visible" || s.textOverflow === "ellipsis" || ["INPUT", "TEXTAREA", "SELECT"].includes(e.tagName)) continue;
+    if (e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0) {
+      // was am weitesten hinausragt (ohne den Rahmen selbst), damit der Befund die Ursache nennt
+      const rand = e.getBoundingClientRect().left + e.clientWidth;
+      let weitest = null, mass = 0;
+      for (const k of e.querySelectorAll("*")) { const r = k.getBoundingClientRect(); if (r.width && r.right - rand > mass) { mass = r.right - rand; weitest = k; } }
+      geschnitten.push(weg(e) + " (" + e.scrollWidth + " statt " + e.clientWidth + (weitest ? "; am weitesten: " + weg(weitest) + " '" + (weitest.textContent || "").trim().slice(0, 30) + "'" : "") + ")");
+    }
+  }
+  return { seitlich: document.documentElement.scrollWidth > breite + 1, ueber: [...new Set(ueber)].slice(0, 5), kontrast: [...new Set(kontrast)].slice(0, 5),
+           geschnitten: [...new Set(geschnitten)].slice(0, 5) };
 })()`;
 
 const lage = (fest) => werte(`JSON.stringify(${JSON.stringify(fest)}.map((s) => { const e = document.querySelector(s);
@@ -182,6 +210,7 @@ for (const thema of themen) {
       if (m.seitlich) befunde.push(`${name}: rollt seitlich`);
       for (const u of m.ueber) befunde.push(`${name}: läuft rechts über: ${u}`);
       for (const k of m.kontrast) befunde.push(`${name}: Kontrast unter ${KONTRAST_MIN}: ${k}`);
+      for (const g of m.geschnitten) befunde.push(`${name}: breiter als sein Rahmen: ${g}`);
       const bild = await rufe("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(ausgabe, `${name}.png`), Buffer.from(bild.result.data, "base64"));
       for (const [i, w] of (seite.wechsel ?? []).entries()) {
@@ -193,6 +222,11 @@ for (const thema of themen) {
           if (vorher[j] && nachher[j] && JSON.stringify(vorher[j]) !== JSON.stringify(nachher[j]))
             befunde.push(`${name}: Wechsel ${i + 1} (${w.klick}) verschiebt ${s}: ${vorher[j]} -> ${nachher[j]}`);
         });
+        const mw = await werte(MESSEN);
+        if (mw.seitlich) befunde.push(`${name}-wechsel${i + 1}: rollt seitlich`);
+        for (const u of mw.ueber) befunde.push(`${name}-wechsel${i + 1}: läuft rechts über: ${u}`);
+        for (const k of mw.kontrast) befunde.push(`${name}-wechsel${i + 1}: Kontrast unter ${KONTRAST_MIN}: ${k}`);
+        for (const g of mw.geschnitten) befunde.push(`${name}-wechsel${i + 1}: breiter als sein Rahmen: ${g}`);
         const nach = await rufe("Page.captureScreenshot", { format: "png" });
         fs.writeFileSync(path.join(ausgabe, `${name}-wechsel${i + 1}.png`), Buffer.from(nach.result.data, "base64"));
       }
