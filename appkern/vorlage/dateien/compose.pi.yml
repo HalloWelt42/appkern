@@ -22,6 +22,8 @@ services:
       __UMGEBUNG___EINRICHTUNGSCODE_ORT: ${EINRICHTUNGSCODE_ORT:-daten/einrichtungscode im Ordner der App}
     volumes:
       - ./daten:/app/daten
+      # Sicherungen der Datenbank nach der Regel des Appkerns: wöchentlich von der App, vor dem Neustart vom Ausrollen
+      - ./sicherungen:/app/sicherungen
       - ./zertifikate:/zertifikate:ro
       # Ortszeit des Pi (sonst UTC)
       - /etc/localtime:/etc/localtime:ro

@@ -8,9 +8,10 @@
 
 Was das Gerüst übernimmt: Datenbank, Einstellungen (Grundeinstellungen plus die der App), Protokoll, Aufträge,
 Anmeldung mit dem Kellerwolke-Konto (Besitzer ist das Konto des App-Schlüssels), Zugänge zu Kellerwolke und Leitstelle
-(nach jeder Änderung der Einstellungen neu aufgebaut), App-Verzeichnis, Prüfung der Verbindungen, erste Einrichtung
-(solange keine Kellerwolke eingetragen ist: vom Rechner selbst, von anderswo mit dem Einrichtungscode aus einer Datei am
-Rechner, Lehre 34), tägliches Aufräumen, Auslieferung der gebauten Oberfläche.
+(nach jeder Änderung der Einstellungen neu aufgebaut), App-Verzeichnis, Prüfung der Verbindungen, regelmäßige
+Sicherung der Datenbank (`appkern.app.sicherung`), erste Einrichtung (solange keine Kellerwolke eingetragen ist: vom
+Rechner selbst, von anderswo mit dem Einrichtungscode aus einer Datei am Rechner, Lehre 34), tägliches Aufräumen,
+Auslieferung der gebauten Oberfläche.
 
 Die Schnittstellendoku zum Ausprobieren (/docs, /redoc, /openapi.json) gibt es nur in der Entwicklung, mit
 `<KENNUNG>_SCHNITTSTELLEN_DOKU=1` in der Umgebung; sonst zeigt die App ihren Aufbau niemandem ohne Anmeldung.
@@ -53,29 +54,14 @@ from appkern.protokoll.api import protokoll_router
 from appkern.verbund import Verbund
 from appkern.verzeichnis import Verzeichnis
 
+from .begleiter import Begleiter
 from .einrichtungscode import Einrichtungscode, Gesperrt
 from .einstellungen import Grundeinstellungen
+from .sicherung import RegelmaessigeSicherung, ablage_der_app, regel_aus
 
 logger = logging.getLogger("appkern.app")
 
 
-class Begleiter:
-    """Hintergrundarbeit einer App, die mit dem Gerüst lebt, etwa ein Abgleich mit der Kellerwolke. Eine App leitet
-    davon ab und überschreibt, was sie braucht; angemeldet mit `geruest.begleiter_anmelden`.
-
-    Reihenfolge beim Start: Datenbank, Einstellungen, Protokoll, Zugänge, dann `starten` und `verbunden` jedes
-    Begleiters, danach erst die Aufträge (die sich auf den Begleiter verlassen dürfen). `verbunden` kommt nach jedem
-    Neuaufbau der Zugänge wieder (geänderte Kellerwolke oder Leitstelle). Beim Stoppen enden erst die Aufträge, dann die
-    Begleiter in umgekehrter Reihenfolge. Ein Fehler eines Begleiters steht im Log und hält die App nicht an."""
-
-    async def starten(self) -> None:
-        """Einmal beim Start, etwa das eigene Datenbankschema einrichten."""
-
-    async def verbunden(self) -> None:
-        """Nach jedem Aufbau der Zugänge (auch dem ersten)."""
-
-    async def stoppen(self) -> None:
-        """Beim Beenden: eigene Aufgaben beenden."""
 E = TypeVar("E", bound=Grundeinstellungen)
 LOKAL = {"127.0.0.1", "::1", "localhost"}
 TAG_S = 24 * 3600
@@ -145,10 +131,13 @@ class Geruest(Generic[E]):
     def __init__(self, *, name: str, kennung: str, rolle: str, fassung: str, daten: Path, einstellungen: type[E],
                  arten: Sequence[Art] = (), symbol: str = "fa-cube", farbe: str = "#2f7ce0", oberflaeche: Path | None = None,
                  gleichzeitig: int = 1, angebote: Sequence[AppAngebot] = (), leseverbindungen: int = LESER,
-                 push: bool = False, transport: httpx.AsyncBaseTransport | None = None) -> None:
+                 push: bool = False, sicherungen: Path | None = None,
+                 transport: httpx.AsyncBaseTransport | None = None) -> None:
         """`angebote`: was die App mit Dateien der Kellerwolke kann (Aktionen im Dateimenü, Dateiwahl in der App).
         `leseverbindungen`: so viele Lesungen der Datenbank laufen nebeneinander (neben dem Schreiben).
         `push`: Mitteilungen aufs Gerät (appkern/push, braucht das Extra `push`); dann steht `self.push` bereit.
+        `sicherungen`: Ordner der Sicherungen (`appkern.app.sicherung`); ohne Angabe `sicherungen` neben dem
+        Datenordner, im Container /app/sicherungen (eingebunden wie in der Vorlage, dorthin sichert auch das Ausrollen).
         `transport` nur für Tests: alle Verbindungen nach außen gehen dann über ihn."""
         self.name, self.kennung, self.rolle, self.symbol, self.fassung = name, kennung, rolle, symbol, fassung
         self.farbe = farbe
@@ -184,7 +173,9 @@ class Geruest(Generic[E]):
         self._pflege: asyncio.Task | None = None
         self.abholer = Abholer(angebote, self.auftraege, lambda: self.kellerwolke,
                                lambda: self.einstellungen.stand.adresse or None)
-        self._begleiter: list[Begleiter] = [self.abholer] if angebote else []
+        self.sicherung = RegelmaessigeSicherung(ablage_der_app(self.daten, kennung, sicherungen),
+                                                lambda: regel_aus(self.einstellungen.stand))
+        self._begleiter: list[Begleiter] = ([self.abholer] if angebote else []) + [self.sicherung]
         self._oberflaeche_gemerkt: tuple[float, str | None] | None = None
         self._laeuft = False
         self.push = None

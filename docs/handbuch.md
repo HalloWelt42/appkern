@@ -9,7 +9,7 @@ sicherung:
 schluessel_orte:
   - "Mac: `.env.test` im Klon (nicht im Repo): Adresse und App-Schlüssel des Testzugangs AppkernTest an der Kellerwolke der Entwicklung, nur für den Verbundtest"
 einrichten: einrichten.sh
-stand: 782e156
+stand: 714dbe6
 ---
 
 # Appkern
@@ -19,7 +19,9 @@ stand: 782e156
 Der Appkern ist kein Dienst, sondern der Unterbau, auf dem die Neubau-Apps stehen ([[Fundus]], [[Assistent]],
 [[Vertonung]], [[Transkription]] und weitere). Er bringt die Bausteine, die jede App gleich braucht: Anmeldung mit dem
 Konto der [[Kellerwolke]], Zugang zur Ablage mit App-Schlüssel, die Fassade zur [[Leitstelle]], Aufträge mit Phasen
-und Fortsetzung nach einem Neustart, Einstellungen mit verdeckten Schlüsseln, Protokoll, Tonarbeit über den Tondienst
+und Fortsetzung nach einem Neustart, Einstellungen mit verdeckten Schlüsseln, Protokoll, die Sicherung der Datenbank
+nach einer Regel für alle Apps (wöchentlich, vor dem Ausrollen nur nach 24 Stunden, nie ohne Änderung, höchstens drei
+Stände; die Werte stellt jede App unter Einstellungen, Sicherung ein), Tonarbeit über den Tondienst
 des [[Klangwerk]], das Gerüst einer App, die Oberflächen-Schale mit der gemeinsamen Gestaltung und die Werkzeuge für
 Commit und Ausrollen (`python -m appkern.werkzeuge`).
 
@@ -90,6 +92,11 @@ anlegen.
 - Das Ausrollen einer App bricht mit "Appkern in Oberfläche und Backend verschieden" ab: in der App `tools/appkern.sh`
   laufen lassen, committen, pushen.
 - Eine App baut mit einem alten Appkern: sie nennt den Zweig statt eines Commits; `tools/appkern.sh` legt den Commit fest.
+- Das Ausrollen einer App bricht bei "Datenbank sichern" ab: die Zeile darüber nennt den Grund (meist Platz oder Rechte);
+  der Ordner `sicherungen` im Ordner der App auf dem Pi muss dem Nutzer `pi` gehören. Ohne Fehler, aber ohne neue
+  Sicherung: die Zeile nennt, warum keine nötig war (jüngste jünger als 24 Stunden oder Datenbank unverändert).
+- Nach dem Ausrollen steht "Warnung: Aufräumen ging nicht": ausgerollt ist trotzdem; verwaiste Abbilder und Baucache
+  räumt das nächste Ausrollen weg, von Hand `docker image prune -f` und `docker builder prune -f --max-used-space 20GB`.
 - Der Symbolsatz einer neuen App fehlt: kein Python mit cairosvg und Pillow gefunden; `python3 tools/symbole.py` in der
   App mit dem Python 3.13 aus Homebrew.
 - Der Commit bricht mit einer Zeichen- oder Stilprüfung ab: `python -m appkern.werkzeuge pruefen <datei>` nennt die

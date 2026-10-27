@@ -387,16 +387,43 @@ geruest.oberflaeche_ausliefern(app)                         # zuletzt
 
 | Teil | Inhalt |
 |---|---|
-| Einstellungen | `Grundeinstellungen` (Kellerwolke, Leitstelle, Zertifikatsstelle, weitere Konten, Anmeldung bei Ausfall) plus die der App; Zugänge werden nach jeder Änderung neu aufgebaut; `geruest.tls_pruefung()` gibt dieselbe Prüfung der Zertifikate für eigene Verbindungen im Heimnetz |
+| Einstellungen | `Grundeinstellungen` (Kellerwolke, Leitstelle, Zertifikatsstelle, weitere Konten, Anmeldung bei Ausfall, Sicherung) plus die der App; Zugänge werden nach jeder Änderung neu aufgebaut; `geruest.tls_pruefung()` gibt dieselbe Prüfung der Zertifikate für eigene Verbindungen im Heimnetz |
 | Erste Einrichtung | `POST /api/v1/einrichtung` mit Kellerwolke und App-Schlüssel, nur solange nichts eingetragen ist. Vom Rechner der App geht sie ohne weiteres; von anderswo (anderes Gerät, hinter einem Vorschaltdienst, in Docker) mit dem einmaligen Einrichtungscode aus einer Datei am Rechner (Modus 0600, je Start neu, `<KENNUNG>_EINRICHTUNGSCODE_DATEI`, Vorgabe `<daten>/einrichtungscode`; wie man sie am Rechner findet: `<KENNUNG>_EINRICHTUNGSCODE_ORT`). App-Angaben (`einrichtungscode`), Protokoll und die Einrichtung der Schale nennen nur den Ort, nie den Code; fünf falsche Codes sperren zehn Minuten, nach der Einrichtung ist die Datei weg (Lehre 34) |
 | Anmeldung | Besitzer ist das Konto des App-Schlüssels; Anmelden, Koppeln, Abweisungen und Abmelden stehen im Protokoll |
 | Schnittstellen | `/api/v1/app`, `/api/v1/ich`, `/api/v1/verbindungen` (Kellerwolke und Leitstelle nebeneinander geprüft, jede höchstens 10 s), Anmeldung, Aufträge, Einstellungen, Protokoll |
 | Schnittstellendoku | `/docs`, `/redoc` und `/openapi.json` nur in der Entwicklung mit `<KENNUNG>_SCHNITTSTELLEN_DOKU=1`; sonst zeigt die App ihren Aufbau niemandem ohne Anmeldung. `app.openapi()` liefert das Schema im Code immer |
 | Betrieb | Datenbank `daten/<kennung>.sqlite` (Lesen neben dem Schreiben, `leseverbindungen`, Vorgabe 4), tägliches Aufräumen, Auslieferung der gebauten Oberfläche |
 | Begleiter | Hintergrundarbeit der App (`Begleiter` mit `starten`, `verbunden` nach jedem Aufbau der Zugänge, `stoppen`), angemeldet mit `geruest.begleiter_anmelden` vor dem Start; läuft vor den Aufträgen an und nach ihnen aus |
+| Sicherung | `geruest.sicherung`, ein Begleiter, den jede App mitbringt: Regel und Ablage unten unter Sicherung; Ordner `sicherungen` neben dem Datenordner (im Container `/app/sicherungen`, eingebunden wie in der Vorlage), anders mit `sicherungen=` |
 
 Im Gerüst stehen `geruest.kellerwolke`, `geruest.leitstelle`, `geruest.auftraege`, `geruest.protokoll`,
 `geruest.einstellungen.stand` und `geruest.verzeichnis` bereit.
+
+## Sicherung
+
+Eine Regel für alle Apps (Nutzer 27.10.2026, "Wöchentlich und vor dem Ausrollen"): man braucht meist nur den letzten
+Stand, höchstens die drei letzten, und nicht jeden Tag einen. Die Werte stehen in den Einstellungen jeder App (Gruppe
+Sicherung, in jeder App dieselben Namen; Vorgaben an einer Stelle, `appkern.sicherung.VORGABE`):
+
+| Einstellung | Vorgabe | Was |
+|---|---|---|
+| `sicherung_abstand_tage` | 7 | regelmäßig eine neue, wenn die jüngste so viele Tage alt ist |
+| `sicherung_vor_ausrollen_ab_stunden` | 24 | vor dem Neustart beim Ausrollen eine neue nur, wenn die jüngste älter ist (0: vor jedem Ausrollen) |
+| `sicherung_behalten` | 3 | so viele Stände bleiben; durchgesetzt bei jedem Blick, nicht erst beim Anlegen |
+
+Beide Anlässe sichern nie ohne Änderung: sind Datenbankdatei und WAL älter als die jüngste Sicherung, entsteht keine
+neue. Das prüft die Regel billig über Änderungszeiten, ohne die Datenbank zu lesen: eine Sicherung trägt den Beginn
+ihrer Kopie als Änderungszeit. Eine Sicherung ist eine stimmige Kopie über die Sicherungsschnittstelle von SQLite,
+`<kennung>-JJJJMMTT-HHMMSS.sqlite`; sie entsteht als `.<name>.teil` und heißt erst fertig so. Neben den Sicherungen
+liegt nichts (das Werkzeug Sicherungen am Mac holt je App die neuesten Einträge des Ordners), und die Sicherung
+schreibt nie in die Datenbank, auch nicht ins Protokoll der App (das wäre selbst eine Änderung); Ergebnisse stehen im
+Log.
+
+| Teil | Wo |
+|---|---|
+| Regel und Ablage | `appkern.sicherung` (`Regel`, `VORGABE`, `Ablage`, `regelmaessig`, `vor_ausrollen`, `Ergebnis`), ohne Web |
+| regelmäßig | `appkern.app.sicherung.RegelmaessigeSicherung`, im Gerüst immer dabei (`geruest.sicherung`); schaut alle zehn Minuten, der erste Blick nach dem ersten Takt. Eine App ohne Gerüst nutzt ihn mit eigener `Ablage` und `regel` |
+| vor dem Ausrollen | `python -m appkern.sicherung vor-ausrollen --kennung K --datenbank D --ordner O`; das Ausrollen ruft es im eben gebauten Abbild der App (`docker compose run`), so gelten ihre gespeicherten Einstellungen und ihre Umgebung (`<KENNUNG>_SICHERUNG_...`), nur lesend |
 
 ## Oberfläche
 
@@ -578,7 +605,7 @@ Arbeitskopie zeigen statt auf GitHub.
 | `marken [PFAD ...]` | nur die Marken der Gestaltung: jeder Befund, Zahl je Datei und Regel, die Strenge des Repos |
 | `fassung [patch\|minor\|major\|id]` | `version.json` hochzählen |
 | `appkern` | Appkern in Oberfläche (package-lock) und Backend (requirements, Archiv des Commits) auf denselben neuesten Commit |
-| `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`); `--ziel DATEI` für einen Probestand in eigenem Ordner, `compose` darin nennt die Compose-Datei; `--ergaenzung DATEI` bringt die Angaben des Hauses (Rechner, Ordner, Adresse, Namen, Leitstelle) aus einer privaten Datei und füllt nur, was das Ziel nicht nennt; `<kennung>.local` steht immer in den Namen des Zertifikats (Vorgabe des Vorschaltdienstes ohne Servernamen) |
+| `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`); `--ziel DATEI` für einen Probestand in eigenem Ordner, `compose` darin nennt die Compose-Datei; `--ergaenzung DATEI` bringt die Angaben des Hauses (Rechner, Ordner, Adresse, Namen, Leitstelle) aus einer privaten Datei und füllt nur, was das Ziel nicht nennt; `<kennung>.local` steht immer in den Namen des Zertifikats (Vorgabe des Vorschaltdienstes ohne Servernamen). Vor dem Neustart sichert es nach der Regel der Sicherung (oben); nach einem gelungenen Ausrollen räumt es auf dem Pi auf: verwaiste Abbilder (`docker image prune -f`) und der Baucache bis auf `baucache_gb` (im Ziel, Vorgabe 20, `BAUCACHE_GB` in der Umgebung geht vor; `docker builder prune --max-used-space`), Ergebnis als Zeile "Aufgeräumt: ..."; nach einem Fehlschlag bleibt alles, das alte Abbild ist der Rückweg |
 
 **Nur Marken** (Nutzer 24.10.2026: "Nur Marken, Ausnahme begründet"): im Stil einer App (CSS, Svelte, HTML außerhalb
 von Entwürfen unter `mockups` und `docs`) stehen keine festen Farben, Schriften und Schriftgrößen, nur Marken des

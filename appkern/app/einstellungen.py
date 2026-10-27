@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, SecretStr
 
+from appkern.sicherung import VORGABE
+
 VERBINDUNGEN = {"gruppe": "Verbindungen"}
 ZUGANG = {"gruppe": "Zugang"}
+SICHERUNG = {"gruppe": "Sicherung"}
 
 
 class Grundeinstellungen(BaseModel):
@@ -44,3 +47,18 @@ class Grundeinstellungen(BaseModel):
                                                  "Anmeldung weiter, wenn die Kellerwolke gerade nicht erreichbar ist; so "
                                                  "bleibt die App bedienbar, und ihre Adresse lässt sich hier berichtigen. "
                                                  "Neue Anmeldungen brauchen die Kellerwolke immer. 0: keine.")
+    sicherung_abstand_tage: int = Field(VORGABE.abstand_tage, ge=1, le=365, title="Regelmäßige Sicherung",
+                                        json_schema_extra={**SICHERUNG, "einheit": "Tage"},
+                                        description="So viele Tage nach der jüngsten Sicherung legt die App von selbst "
+                                                    "eine neue an, aber nur, wenn sich ihre Datenbank seitdem geändert hat.")
+    sicherung_vor_ausrollen_ab_stunden: int = Field(VORGABE.vor_ausrollen_ab_stunden, ge=0, le=8760,
+                                                    title="Sicherung vor dem Ausrollen",
+                                                    json_schema_extra={**SICHERUNG, "einheit": "Stunden"},
+                                                    description="Vor dem Neustart beim Ausrollen entsteht eine Sicherung "
+                                                                "nur, wenn die jüngste älter ist als so viele Stunden und "
+                                                                "sich die Datenbank seitdem geändert hat. 0: vor jedem "
+                                                                "Ausrollen, sofern geändert.")
+    sicherung_behalten: int = Field(VORGABE.behalten, ge=1, le=100, title="Aufbewahrte Sicherungen",
+                                    json_schema_extra={**SICHERUNG, "einheit": "Stände"},
+                                    description="So viele Sicherungen bleiben im Ordner der Sicherungen; ältere entfernt "
+                                                "die App, sobald es mehr sind.")

@@ -357,3 +357,72 @@ def test_roter_testlauf_beim_ausrollen_zeigt_den_grund_und_hebt_alles_auf(tmp_pa
     assert pfad.parent == tmp_path / "protokolle" and pfad.name.startswith("fundus-tests-") and pfad.read_text() == ausgabe
     viele = "\n".join(f"E   zeile {i}" for i in range(50))
     assert ausrollen.fehlerzeilen(viele).splitlines()[-1] == "... (10 weitere)"
+
+
+def _ziel(**mehr):
+    from appkern.werkzeuge.ausrollen import Ziel
+    return Ziel.model_validate({"kennung": "probe", "rechner": "pi@pi", "wurzel": "/srv/probe", "adresse": "https://pi:1",
+                                "repo": "x", "namen": ["pi"], **mehr})
+
+
+def test_sicherung_vor_dem_ausrollen_im_neuen_abbild_mit_eigenen_ordnern():
+    """Das Ausrollen sichert nicht mehr selbst, sondern ruft den Baustein im eben gebauten Abbild der App: dieselbe
+    Regel und dieselben Einstellungen wie in der App, Daten und Sicherungen eigens eingebunden, Ordner als Nutzer des Pi
+    angelegt."""
+    import shlex
+
+    from appkern.werkzeuge.ausrollen import sicherungs_skript
+
+    skript = sicherungs_skript(_ziel(compose="compose.test.yml"))
+    assert "mkdir -p daten sicherungen" in skript
+    befehl = shlex.split(skript.split("\n", 3)[3].replace("\\\n", " "))
+    assert befehl[:9] == ["docker", "compose", "-f", "compose.test.yml", "run", "--rm", "--no-deps", "-T", "-v"]
+    assert befehl[9:12] == ["/srv/probe/daten:/sicherung/daten", "-v", "/srv/probe/sicherungen:/sicherung/sicherungen"]
+    assert befehl[12:] == ["probe", "python", "-m", "appkern.sicherung", "vor-ausrollen", "--kennung", "probe",
+                           "--datenbank", "/sicherung/daten/probe.sqlite", "--ordner", "/sicherung/sicherungen"]
+
+
+def test_aufraeumen_nur_nach_gelungenem_ausrollen_mit_grenze_aus_der_einstellung(tmp_path, monkeypatch, capsys):
+    """Nach einem gelungenen Ausrollen: verwaiste Abbilder weg, Baucache bis zur Grenze; nach einem Abbruch bleibt
+    alles (das alte Abbild ist der Rückweg); ein gescheitertes Aufräumen ist nur eine Warnung."""
+    from appkern.werkzeuge import ausrollen
+
+    assert ausrollen.aufgeraeumt("Deleted Images:\ndeleted: sha256:ab\n\nTotal reclaimed space: 1.2GB\n",
+                                 "ID\tRECLAIMABLE\tSIZE\nxy\ttrue\t3GB\nTotal:\t4.5GB\n", 20) == \
+        "Aufgeräumt: verwaiste Abbilder 1.2GB, Baucache 4.5GB freigegeben (Grenze 20 GB)"
+    assert ausrollen.aufgeraeumt("", "", 7) == "Aufgeräumt: verwaiste Abbilder 0B, Baucache 0B freigegeben (Grenze 7 GB)"
+
+    (tmp_path / "deploy").mkdir()
+    (tmp_path / "deploy" / "ausrollen.toml").write_text('kennung = "probe"\nrechner = "pi@pi"\nwurzel = "/srv/probe"\n'
+                                                        'adresse = "https://pi:1"\nrepo = "x"\nnamen = ["pi"]\n')
+    assert ausrollen.laden(tmp_path, umgebung={}).baucache_gb == 20
+    assert ausrollen.laden(tmp_path, umgebung={"BAUCACHE_GB": "35"}).baucache_gb == 35
+
+    befehle: list[str] = []
+
+    def ssh(z, skript):
+        befehle.append(skript)
+        return "Total reclaimed space: 2GB" if "image prune" in skript else "Total:\t9GB"
+
+    monkeypatch.setattr(ausrollen, "_ssh", ssh)
+    for schritt in ("stand_und_tests", "pi_pruefen", "zertifikat", "stand_holen", "bauen", "ruhe_abwarten", "sichern",
+                    "starten", "pruefen", "fortsetzen"):
+        monkeypatch.setattr(ausrollen, schritt, lambda *a, **k: None)
+    monkeypatch.setenv("BAUCACHE_GB", "12")
+    assert ausrollen.ausrollen(tmp_path) == 0
+    assert befehle == ["docker image prune -f", "docker builder prune -f --max-used-space 12GB"]
+    assert "Baucache 9GB freigegeben (Grenze 12 GB)" in capsys.readouterr().out
+
+    befehle.clear()
+
+    def faellt(*a, **k):
+        raise ausrollen.Abbruch("Fassungen passen nicht zusammen")
+
+    monkeypatch.setattr(ausrollen, "pruefen", faellt)
+    assert ausrollen.ausrollen(tmp_path) == 1
+    assert befehle == [], "nach einem Fehlschlag wird nicht aufgeräumt"
+
+    monkeypatch.setattr(ausrollen, "pruefen", lambda *a, **k: None)
+    monkeypatch.setattr(ausrollen, "_ssh", faellt)
+    assert ausrollen.ausrollen(tmp_path) == 0
+    assert "Warnung: Aufräumen ging nicht" in capsys.readouterr().out

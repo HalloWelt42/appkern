@@ -13,10 +13,12 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
 import types
 import typing
 from collections.abc import Awaitable, Callable, Mapping
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, SecretStr, ValidationError
@@ -76,6 +78,44 @@ def _art(annotation: Any) -> tuple[FeldArt, list[str]]:
     return "liste" if typing.get_origin(kern) in (list, tuple) else "wert", []
 
 
+def aus_umgebung(modell: type[BaseModel], praefix: str, umgebung: Mapping[str, str]) -> dict[str, Any]:
+    """Werte aus der Umgebung: `<PRAEFIX><FELD>` in Großbuchstaben; Listen und Werte als JSON, Schalter als ja/nein."""
+    werte: dict[str, Any] = {}
+    if not praefix:
+        return werte
+    for name, feld in modell.model_fields.items():
+        roh = umgebung.get(f"{praefix}{name}".upper())
+        if roh is None:
+            continue
+        art, _ = _art(feld.annotation)
+        if art in ("liste", "wert"):
+            werte[name] = json.loads(roh)
+        elif art == "schalter":
+            werte[name] = roh.strip().lower() in ("1", "true", "ja", "an")
+        else:
+            werte[name] = roh
+    return werte
+
+
+def nur_lesen(pfad: Path | str, modell: type[M], *, umgebung_praefix: str = "",
+              umgebung: Mapping[str, str] | None = None) -> M:
+    """Der gültige Stand wie in der laufenden App (gespeichert, dann Umgebung, dann Vorgabe), nur lesend und ohne das
+    Schema einzurichten: für ein Werkzeug neben der laufenden App, etwa die Sicherung vor dem Ausrollen. Fehlen Datei
+    oder Tabelle, gelten Umgebung und Vorgabe."""
+    gespeichert: dict[str, Any] = {}
+    datei = Path(pfad)
+    if datei.is_file():
+        v = sqlite3.connect(f"{datei.resolve().as_uri()}?mode=ro", uri=True)
+        try:
+            if v.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='einstellung'").fetchone():
+                gespeichert = {s: json.loads(w) for s, w in v.execute("SELECT schluessel, wert FROM einstellung")
+                               if s in modell.model_fields}
+        finally:
+            v.close()
+    werte = aus_umgebung(modell, umgebung_praefix, umgebung if umgebung is not None else os.environ)
+    return modell.model_validate({**werte, **gespeichert})
+
+
 class Einstellungen(Generic[M]):
     def __init__(self, db: Datenbank, modell: type[M], *, umgebung_praefix: str = "",
                  umgebung: Mapping[str, str] | None = None) -> None:
@@ -96,21 +136,7 @@ class Einstellungen(Generic[M]):
         return self._stand
 
     def _aus_umgebung(self) -> dict[str, Any]:
-        werte: dict[str, Any] = {}
-        if not self.praefix:
-            return werte
-        for name, feld in self.modell.model_fields.items():
-            roh = self._umgebung.get(f"{self.praefix}{name}".upper())
-            if roh is None:
-                continue
-            art, _ = _art(feld.annotation)
-            if art in ("liste", "wert"):
-                werte[name] = json.loads(roh)
-            elif art == "schalter":
-                werte[name] = roh.strip().lower() in ("1", "true", "ja", "an")
-            else:
-                werte[name] = roh
-        return werte
+        return aus_umgebung(self.modell, self.praefix, self._umgebung)
 
     def _bauen(self, gespeichert: dict[str, Any]) -> M:
         return self.modell.model_validate({**self._aus_umgebung(), **gespeichert})
@@ -229,4 +255,4 @@ def _json(wert: Any) -> Any:
     return wert
 
 
-__all__ = ["Einstellungen", "UnbekanntesFeld", "ValidationError", "verdeckt"]
+__all__ = ["Einstellungen", "UnbekanntesFeld", "ValidationError", "aus_umgebung", "nur_lesen", "verdeckt"]

@@ -9,8 +9,10 @@ Aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim ersten Fehler ab:
    der Pi liefert nur Daten; fehlt er, ist das eine Warnung, kein Abbruch: der Mac kann gerade schlafen)
 3. Zertifikat der Hausstelle für den Vorschaltdienst, noch mindestens 60 Tage gültig, sonst neu ausgestellt
 4. Stand holen, Abbild bauen (der alte Stand läuft weiter)
-5. warten, bis die App keinen laufenden Auftrag hat, dann Datenbank sichern (die letzten zehn bleiben) und neu starten;
-   der Vorschaltdienst startet jedes Mal neu (geänderte eingehängte Dateien bemerkt Docker nicht).
+5. warten, bis die App keinen laufenden Auftrag hat, dann Datenbank sichern nach der Regel der Sicherung (im eben
+   gebauten Abbild, mit den Einstellungen der App: nur, wenn die jüngste älter als 24 Stunden ist und sich etwas
+   geändert hat; höchstens drei bleiben) und neu starten; der Vorschaltdienst startet jedes Mal neu (geänderte
+   eingehängte Dateien bemerkt Docker nicht).
    Mit `--auslaufen` (für Apps, die tagelang durcharbeiten, Angaben unter [auslaufen] in deploy/ausrollen.toml): statt
    auf eine Lücke zu warten, hält die App an, der laufende Schritt läuft aus (Wartendes bleibt in der Warteschlange),
    dann wird ausgerollt und danach der Zustand von vorher hergestellt und geprüft, dass die Arbeit wieder läuft. Der
@@ -19,11 +21,15 @@ Aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim ersten Fehler ab:
 6. über HTTPS melden Server, gebaute Oberfläche und version.json dieselbe Fassung; die Seite kommt über HTTP/2; Symbole
    für Tab, Startbildschirm und Web-App sowie das Manifest antworten mit 200 und dem richtigen Typ, die Symbole des
    Startbildschirms sind deckend (sonst zeigt iOS keins)
+7. nur nach einem gelungenen Ausrollen: auf dem Pi verwaiste Abbilder entfernen (der vorige Stand jeder App, die dort
+   baut) und den Baucache auf `baucache_gb` kürzen (Vorgabe 20, `BAUCACHE_GB` in der Umgebung geht vor); nach einem
+   Fehlschlag bleibt alles, das alte Abbild ist dann der Rückweg
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import shlex
 import shutil
@@ -34,9 +40,14 @@ import time
 import tomllib
 from pathlib import Path
 
-from pydantic import BaseModel, model_validator
+from collections.abc import Mapping
+
+from pydantic import BaseModel, Field, model_validator
 
 SCHWELLE_S = 60 * 86400
+BAUCACHE_GB = 20         # Vorgabe: so viel Baucache bleibt nach dem Aufräumen (Einstellung baucache_gb, BAUCACHE_GB)
+SICHERUNGEN = "sicherungen"   # Ordner der Sicherungen im Ordner der App (im Abbild /app/sicherungen, siehe Vorlage)
+IM_ABBILD = "/sicherung"      # dort sieht der Aufruf der Sicherung im Abbild Daten und Sicherungen (eigens eingebunden)
 SYMBOLE = {"favicon.ico": "image/", "favicon-32.png": "image/png", "apple-touch-icon.png": "image/png",
            "icon-192.png": "image/png", "icon-512.png": "image/png", "icon-maskable-512.png": "image/png",
            "site.webmanifest": "application/manifest+json"}
@@ -55,6 +66,7 @@ class Ziel(BaseModel):
     ton: bool = False       # die App nutzt die Tonarbeit über den Tondienst: die Leitstelle muss ihn melden
     leitstelle: str | None = None   # Adresse der Leitstelle, vom Pi aus erreichbar (nötig mit Ton)
     auslaufen: Auslaufen | None = None   # Weg für --auslaufen (Apps, die tagelang durcharbeiten)
+    baucache_gb: int = Field(BAUCACHE_GB, ge=1)   # so viel Baucache bleibt nach dem Aufräumen auf dem Rechner, in GB
 
     @model_validator(mode="after")
     def _ton_braucht_leitstelle(self) -> "Ziel":
@@ -77,6 +89,7 @@ class Ziel(BaseModel):
 
     @property
     def datenbank(self) -> str:
+        """Die Datenbank der App, relativ zu ihrem Ordner."""
         return f"daten/{self.kennung}.sqlite"
 
 
@@ -97,12 +110,16 @@ class Abbruch(Exception):
 ZIEL_DATEI = Path("deploy") / "ausrollen.toml"
 
 
-def laden(wurzel: Path, datei: Path = ZIEL_DATEI, ergaenzung: Path | None = None) -> Ziel:
-    """Die Angaben des Ziels; eine Ergänzung (TOML) füllt nur Felder, die die Angaben nicht selbst nennen."""
+def laden(wurzel: Path, datei: Path = ZIEL_DATEI, ergaenzung: Path | None = None,
+          umgebung: Mapping[str, str] = os.environ) -> Ziel:
+    """Die Angaben des Ziels; eine Ergänzung (TOML) füllt nur Felder, die die Angaben nicht selbst nennen.
+    `BAUCACHE_GB` in der Umgebung geht vor (derselbe Name wie im Ausrollen der Leitstelle)."""
     roh = tomllib.loads((wurzel / datei).read_text(encoding="utf-8"))
     if ergaenzung is not None:
         for schluessel, wert in tomllib.loads(Path(ergaenzung).read_text(encoding="utf-8")).items():
             roh.setdefault(schluessel, wert)
+    if umgebung.get("BAUCACHE_GB"):
+        roh["baucache_gb"] = umgebung["BAUCACHE_GB"]
     return Ziel.model_validate(roh)
 
 
@@ -230,20 +247,26 @@ def stand_holen(z: Ziel) -> None:
 
 
 def sichern(z: Ziel) -> None:
-    """Die Datenbank so, wie sie unmittelbar vor dem Neustart ist (die letzten zehn Sicherungen bleiben)."""
+    """Vor dem Neustart nach der Regel der Sicherung (`appkern.sicherung`): eine neue nur, wenn die jüngste älter ist
+    als die Einstellung "Sicherung vor dem Ausrollen" der App (Vorgabe 24 Stunden) und sich die Datenbank seitdem
+    geändert hat; danach bleiben höchstens "Aufbewahrte Sicherungen" (Vorgabe 3). Läuft im eben gebauten Abbild der
+    App mit ihrer Umgebung, so gelten dieselben Werte wie in der App; Datenordner und Ordner der Sicherungen sind dafür
+    eigens eingebunden, die laufende App bleibt unberührt."""
     _schritt("Datenbank sichern")
-    w, db, k = shlex.quote(z.wurzel), shlex.quote(z.datenbank), z.kennung
-    print(_ssh(z, f"""set -e
-  cd {w}
-  mkdir -p daten sicherungen
-  if [ -f {db} ]; then
-    ziel=sicherungen/{k}-$(date +%Y%m%d-%H%M%S).sqlite
-    python3 -c 'import sqlite3, sys; q = sqlite3.connect(sys.argv[1]); z = sqlite3.connect(sys.argv[2]); q.backup(z); z.close(); q.close()' {db} "$ziel"
-    echo "gesichert: $ziel"
-    ls -1t sicherungen/{k}-*.sqlite | tail -n +11 | xargs -r rm --
-  else
-    echo 'noch keine Datenbank'
-  fi"""))
+    print(_ssh(z, sicherungs_skript(z)))
+
+
+def sicherungs_skript(z: Ziel) -> str:
+    """Das Skript auf dem Pi: Ordner als Nutzer des Pi anlegen (sonst legte Docker sie für root an), dann der Aufruf."""
+    daten, datei = Path(z.datenbank).parent, Path(z.datenbank).name
+    q = shlex.quote
+    return f"""set -e
+  cd {q(z.wurzel)}
+  mkdir -p {q(str(daten))} {SICHERUNGEN}
+  docker compose -f {q(z.compose)} run --rm --no-deps -T \\
+    -v {q(f"{z.wurzel}/{daten}")}:{IM_ABBILD}/daten -v {q(f"{z.wurzel}/{SICHERUNGEN}")}:{IM_ABBILD}/{SICHERUNGEN} \\
+    {q(z.kennung)} python -m appkern.sicherung vor-ausrollen --kennung {q(z.kennung)} \\
+    --datenbank {q(f"{IM_ABBILD}/daten/{datei}")} --ordner {IM_ABBILD}/{SICHERUNGEN}"""
 
 
 RUHE_HOECHSTENS_S = 4 * 3600     # so lange wartet das Ausrollen höchstens auf laufende Aufträge
@@ -395,6 +418,28 @@ def pruefen(z: Ziel, wurzel: Path) -> None:
     print("HTTP/2 über den Vorschaltdienst, Symbole deckend, Manifest in Ordnung")
 
 
+def aufraeumen(z: Ziel) -> None:
+    """Nach einem gelungenen Ausrollen auf dem Pi: verwaiste Abbilder entfernen (ohne Namen, etwa der vorige Stand jeder
+    App, die dort baut; Abbilder in Benutzung nie) und den Baucache auf `baucache_gb` kürzen. Jedes Ausrollen baut auf
+    dem Pi neu; ohne Aufräumen lief Docker dort voll. Scheitert es, ist das eine Warnung: ausgerollt ist trotzdem."""
+    _schritt("Aufräumen")
+    try:
+        abbilder = _ssh(z, "docker image prune -f")
+        baucache = _ssh(z, f"docker builder prune -f --max-used-space {z.baucache_gb}GB")
+    except Abbruch as f:
+        print(f"Warnung: Aufräumen ging nicht ({f}); beim nächsten Ausrollen wieder")
+        return
+    print(aufgeraeumt(abbilder, baucache, z.baucache_gb))
+
+
+def aufgeraeumt(abbilder: str, baucache: str, grenze_gb: int) -> str:
+    """Die Zeile für das Protokoll aus den Ausgaben von `docker image prune` und `docker builder prune`."""
+    frei_abbilder = re.search(r"^Total reclaimed space:\s*(\S+)", abbilder, re.MULTILINE)
+    frei_baucache = re.search(r"^Total:\s*(\S+)", baucache, re.MULTILINE)
+    return (f"Aufgeräumt: verwaiste Abbilder {frei_abbilder.group(1) if frei_abbilder else '0B'}, "
+            f"Baucache {frei_baucache.group(1) if frei_baucache else '0B'} freigegeben (Grenze {grenze_gb} GB)")
+
+
 def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI, auslaufen_lassen: bool = False,
               ergaenzung: Path | None = None) -> int:
     try:
@@ -419,5 +464,6 @@ def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI, ausl
     except Abbruch as f:
         print(f"\nAbbruch: {f}", file=sys.stderr)
         return 1
+    aufraeumen(z)
     print(f"\nAusgerollt: {z.adresse}")
     return 0
