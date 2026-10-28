@@ -9,7 +9,8 @@
 //   { "seiten": [ { "name": "start", "pfad": "/" },
 //                 { "name": "aufnehmen", "pfad": "/aufnahmen", "nur": [1440, 390],
 //                   "wechsel": [ { "klick": "Aufnehmen", "fest": [".rek-leiste"] } ] } ] }
-// `klick` ist ein CSS-Selektor oder der Text eines Knopfs; `fest` sind Teile, die sich beim Wechsel nicht bewegen dürfen.
+// `klick` ist ein CSS-Selektor oder der Text eines Knopfs, `wischen` ("links" oder "rechts") ein Wischen quer über die
+// Mitte; `fest` sind Teile, die sich beim Wechsel nicht bewegen dürfen. `speicher` belegt localStorage vor dem Laden.
 // Detailseiten holen ihren Pfad aus einer Abfrage der App (mit der Testanmeldung); {weg.zum.wert} wird gefüllt:
 //   { "name": "plan", "abfrage": "/api/v1/plaene?anzahl=1", "pfad": "/vertonen/{eintraege.0.id}" }
 // Gibt die Abfrage keinen Wert her, ist das ein Befund (die Seite fehlt sonst still in der Prüfung).
@@ -185,6 +186,16 @@ const klicken = (ziel) => werte(`(() => { let e = null; try { e = document.query
   e ??= [...document.querySelectorAll("button, a, [role=button]")].find((k) => k.textContent.trim().includes(${JSON.stringify(ziel)}));
   if (!e) return false; e.click(); return true; })()`);
 
+// Wischen quer über die Mitte ("links" oder "rechts"), als Maus mit gedrückter Taste: kommt als Pointer-Ereignisse an
+const wischen = async (richtung, breite, hoehe) => {
+  const [von, nach] = richtung === "links" ? [0.7, 0.3] : [0.3, 0.7];
+  const y = Math.round(hoehe / 2);
+  const maus = (type, x) => rufe("Input.dispatchMouseEvent", { type, x: Math.round(x * breite), y, button: "left", buttons: 1, clickCount: 1 });
+  await maus("mousePressed", von);
+  for (let s = 1; s <= 5; s++) await maus("mouseMoved", von + (nach - von) * (s / 5));
+  await maus("mouseReleased", nach);
+};
+
 fs.mkdirSync(ausgabe, { recursive: true });
 await rufe("Page.enable");
 await rufe("Runtime.enable");
@@ -224,6 +235,8 @@ for (const thema of themen) {
       const name = `${seite.name}-${b}${h <= 500 ? `x${h}` : ""}-${thema}${vorlage ? `-${vorlage}` : ""}`;
       ansicht = name;
       try {
+      // "speicher": feste Einträge im localStorage vor dem Laden (etwa ein gewähltes Layout), damit jede Seite gleich beginnt
+      if (seite.speicher) await werte(`${Object.entries(seite.speicher).map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(v)});`).join("")} true`);
       await rufe("Page.navigate", { url: basis + seite.pfad });
       await warte(seite.warten_ms ?? 1800);
       const m = await werte(MESSEN);
@@ -235,7 +248,8 @@ for (const thema of themen) {
       fs.writeFileSync(path.join(ausgabe, `${name}.png`), Buffer.from(bild.result.data, "base64"));
       for (const [i, w] of (seite.wechsel ?? []).entries()) {
         const vorher = await lage(w.fest ?? []);
-        if (!(await klicken(w.klick))) { befunde.push(`${name}: Wechsel ${i + 1}: "${w.klick}" nicht gefunden`); break; }
+        if (w.wischen) await wischen(w.wischen, b, h);
+        else if (!(await klicken(w.klick))) { befunde.push(`${name}: Wechsel ${i + 1}: "${w.klick}" nicht gefunden`); break; }
         await warte(w.warten_ms ?? 1200);
         const nachher = await lage(w.fest ?? []);
         (w.fest ?? []).forEach((s, j) => {
