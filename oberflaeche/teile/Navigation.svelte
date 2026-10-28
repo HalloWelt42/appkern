@@ -24,18 +24,18 @@
   </div>
   {#each bereiche as b (b.schluessel)}
     {@const zahl = b.zahl?.() ?? 0}
-    <button class="nav-eintrag" class:aktiv={seite === b.schluessel} title={b.titel} onclick={() => gehe(b.schluessel)}>
+    <button class="nav-eintrag" class:aktiv={seite === b.schluessel} title={b.hinweis ? `${b.titel}: ${b.hinweis}` : b.titel} onclick={() => gehe(b.schluessel)}>
       <i class="fa-solid {b.symbol}"></i><span class="nav-text">{b.titel}</span>{#if zahl}<span class="zahl">{zahl}</span>{/if}
     </button>
   {/each}
   {#if bereiche.length}<div class="nav-gruppe">App</div>{/if}
-  <button class="nav-eintrag" class:aktiv={seite === "auftraege"} title="Aufträge" onclick={() => gehe("auftraege")}>
+  <button class="nav-eintrag" class:aktiv={seite === "auftraege"} title="Aufträge: was die App im Hintergrund erledigt, mit Fortschritt, Abbrechen und Wiederholen" onclick={() => gehe("auftraege")}>
     <i class="fa-solid fa-list-check"></i><span class="nav-text">Aufträge</span>{#if offen}<span class="zahl">{offen}</span>{/if}
   </button>
-  <button class="nav-eintrag" class:aktiv={seite === "protokoll"} title="Protokoll" onclick={() => gehe("protokoll")}>
+  <button class="nav-eintrag" class:aktiv={seite === "protokoll"} title="Protokoll: was in der App geschah, wann und durch wen" onclick={() => gehe("protokoll")}>
     <i class="fa-solid fa-clock-rotate-left"></i><span class="nav-text">Protokoll</span>
   </button>
-  <button class="nav-eintrag" class:aktiv={seite === "einstellungen"} title="Einstellungen" onclick={() => gehe("einstellungen")}>
+  <button class="nav-eintrag" class:aktiv={seite === "einstellungen"} title="Einstellungen: Verbindungen, Zugang, Sicherung und Verhalten der App" onclick={() => gehe("einstellungen")}>
     <i class="fa-solid fa-sliders"></i><span class="nav-text">Einstellungen</span>
   </button>
   {#if zusatz}<div class="nav-zusatz">{@render zusatz()}</div>{/if}

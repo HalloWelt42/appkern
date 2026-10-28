@@ -176,7 +176,9 @@
   const HERKUNFT = { gespeichert: "gespeichert", umgebung: "aus der Umgebung", vorgabe: "Vorgabe" } as const;
 </script>
 
-<section class="seite einstellungen">
+<!-- Lesestufe mittel (Grundschrift 17, kleine Texte und Marken 15 Pixel): die Seite besteht aus Erklärungen zum Lesen;
+     die dichte Stufe der Schale war hier zu klein (Nutzer 28.10.2026: "kaum lesbar, weil viel zu kleine Texte") -->
+<section class="seite einstellungen" data-schrift="mittel">
   <div class="seiten-kopf"><h1>Einstellungen</h1></div>
   <nav class="reiterleiste" aria-label="Gruppen der Einstellungen">
     {#each gruppen as g (g)}
