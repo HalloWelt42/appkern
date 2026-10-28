@@ -39,8 +39,10 @@ const ausgabe = wert("--ausgabe") ?? path.join(os.tmpdir(), "ansicht");
 const nur = wert("--nur");
 const themen = wert("--thema") ? [wert("--thema")] : THEMEN;
 const vorlage = wert("--vorlage");
-// eigene Breiten (etwa die eines Entwurfs); die Höhe folgt der Vorgabe: 844 am Telefon, sonst 900
-const BREITEN = wert("--breiten") ? wert("--breiten").split(",").map(Number).filter((b) => b > 0).map((b) => [b, b <= 600 ? 844 : 900])
+// eigene Breiten (etwa die eines Entwurfs); die Höhe folgt der Vorgabe: 844 am Telefon, sonst 900. Mit "BxH" (etwa
+// 844x390 für ein Telefon quer) gilt die angegebene Höhe.
+const BREITEN = wert("--breiten") ? wert("--breiten").split(",").map((z) => z.split("x").map(Number)).filter(([b]) => b > 0)
+  .map(([b, h]) => [b, h > 0 ? h : b <= 600 ? 844 : 900])
   : VORGABE_BREITEN;
 const einstellung = JSON.parse(fs.readFileSync(wert("--seiten") ?? "frontend/ansicht.json", "utf8"));
 const mitAnmeldung = einstellung.anmeldung !== false;
@@ -78,6 +80,16 @@ let ansicht = "";               // die gerade geprüfte Ansicht, für Befunde au
 ws.addEventListener("message", (e) => {
   const m = JSON.parse(e.data);
   if (m.id && offen.has(m.id)) { offen.get(m.id)(m); offen.delete(m.id); }
+  // Fehler in der Konsole und im Netz (nicht geladene Dateien) sind Befunde der gerade geprüften Ansicht
+  if (m.method === "Runtime.exceptionThrown") {
+    befunde.push(`${ansicht}: Fehler in der Konsole: ${(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text ?? "").split("\n")[0].slice(0, 160)}`);
+  }
+  if (m.method === "Runtime.consoleAPICalled" && m.params.type === "error") {
+    befunde.push(`${ansicht}: console.error: ${m.params.args.map((a) => a.value ?? a.description ?? "").join(" ").slice(0, 160)}`);
+  }
+  if (m.method === "Log.entryAdded" && m.params.entry.level === "error") {
+    befunde.push(`${ansicht}: ${m.params.entry.source}: ${m.params.entry.text.slice(0, 120)} ${m.params.entry.url ?? ""}`.trim());
+  }
   if (m.method === "Page.javascriptDialogOpening") {
     befunde.push(`${ansicht}: Browser-Dialog (${m.params.type}): ${m.params.message.slice(0, 80)}`);
     ws.send(JSON.stringify({ id: ++n, method: "Page.handleJavaScriptDialog", params: { accept: true } }));
@@ -193,15 +205,23 @@ for (const seite of einstellung.seiten.filter((s) => s.abfrage)) {
     seite.auslassen = true;
   }
 }
+await rufe("Runtime.enable");
+await rufe("Log.enable");
+// Apps mit eigenem Schlüssel für das Thema (statt appkern_anzeige): "thema": {"schluessel": "...", "hell": "...", "dunkel": "..."}
+const eigenesThema = einstellung.thema;
 for (const thema of themen) {
+  if (eigenesThema?.schluessel) {
+    await werte(`localStorage.setItem(${JSON.stringify(eigenesThema.schluessel)}, ${JSON.stringify(eigenesThema[thema] ?? thema)}); true`);
+  }
   await werte(`${token ? `localStorage.setItem(${JSON.stringify(`${app.kennung}_sitzung`)}, ${JSON.stringify(token)});` : ""}
     localStorage.setItem("appkern_anzeige", JSON.stringify({ schrift: "normal", thema: ${JSON.stringify(thema)} }));
     ${vorlage ? `localStorage.setItem("appkern_vorlage", ${JSON.stringify(vorlage)});` : `localStorage.removeItem("appkern_vorlage");`} true`);
   for (const [b, h] of BREITEN) {
-    await rufe("Emulation.setDeviceMetricsOverride", { width: b, height: h, deviceScaleFactor: b < 600 ? 2 : 1, mobile: b < 600 });
+    const telefon = b < 600 || h <= 500;   // auch ein Telefon quer
+    await rufe("Emulation.setDeviceMetricsOverride", { width: b, height: h, deviceScaleFactor: telefon ? 2 : 1, mobile: telefon });
     for (const seite of einstellung.seiten) {
       if (seite.auslassen || (nur && seite.name !== nur) || (seite.nur && !seite.nur.includes(b))) continue;
-      const name = `${seite.name}-${b}-${thema}${vorlage ? `-${vorlage}` : ""}`;
+      const name = `${seite.name}-${b}${h <= 500 ? `x${h}` : ""}-${thema}${vorlage ? `-${vorlage}` : ""}`;
       ansicht = name;
       try {
       await rufe("Page.navigate", { url: basis + seite.pfad });
