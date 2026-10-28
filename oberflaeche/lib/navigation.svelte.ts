@@ -2,13 +2,16 @@
 // Zurück und Vor im Browser funktionieren. Der erste Teil wählt den Bereich (`seite`), die übrigen (`teile`) lesen die
 // Seiten selbst; ein Zusatz (`?karte=haus-12`) bleibt erhalten und steht in `suche`. Das Backend liefert für jeden Pfad außerhalb von /api die Oberfläche aus. Alte Anker (#/seite)
 // werden beim Start in Pfade umgeschrieben.
+import type { Snippet } from "svelte";
 import { vielleichtNeuLaden } from "./fassung.svelte";
 import { leisteSchliessen } from "./leiste.svelte";
 
 // `titel`: setzt eine Seite, die einen Teil zeigt (etwa ein Transkript), für den Kopf am Telefon; `kennzeichen` daneben
-// sagt, woher das Gezeigte kommt (etwa "Kellerwolke"). Jeder Ortswechsel leert beides wieder.
+// sagt, woher das Gezeigte kommt (etwa "Kellerwolke"); `aktionen`: Knöpfe der Seite in derselben Zeile des Kopfs am
+// Telefon (der Titel wird dann kleiner und kürzt sich). Jeder Ortswechsel leert alles wieder.
 export const navigation = $state<{ seite: string; teile: string[]; suche: string; titel: string;
-  kennzeichen: { symbol: string; text: string } | null }>({ seite: "", teile: [], suche: "", titel: "", kennzeichen: null });
+  kennzeichen: { symbol: string; text: string } | null; aktionen: Snippet | null }>({ seite: "", teile: [], suche: "", titel: "",
+  kennzeichen: null, aktionen: null });
 
 function zerlegen(pfad: string): string[] {
   return pfad
@@ -28,6 +31,7 @@ function lesen(): void {
   if (seite !== navigation.seite || teile.join("/") !== navigation.teile.join("/")) {
     navigation.titel = "";
     navigation.kennzeichen = null;
+    navigation.aktionen = null;
     leisteSchliessen();
   }
   navigation.seite = seite;

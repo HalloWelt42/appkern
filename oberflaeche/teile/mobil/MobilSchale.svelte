@@ -37,12 +37,13 @@
 </script>
 
 <div class="mobil">
-  <div class="t-kopf">
+  <div class="t-kopf" class:mit-aktionen={!!navigation.aktionen}>
     {#if bereich && navigation.teile.length}
       <button class="rund" aria-label="Zurück" onclick={() => gehe(seite)}><i class="fa-solid fa-chevron-left"></i></button>
     {:else if unterMehr}<button class="rund" aria-label="Zurück" onclick={() => gehe("mehr")}><i class="fa-solid fa-chevron-left"></i></button>{/if}
     <h1>{navigation.titel || titel}</h1>
     {#if navigation.kennzeichen}<span class="pille"><i class="fa-solid {navigation.kennzeichen.symbol}"></i>{navigation.kennzeichen.text}</span>{/if}
+    {#if navigation.aktionen}<span class="t-aktionen">{@render navigation.aktionen()}</span>{/if}
     {#if offen && seite !== "auftraege"}<button class="pille aktiv" style="border:0" onclick={() => gehe("auftraege")}><i class="fa-solid fa-gears"></i>{offen}</button>{/if}
   </div>
   {#if !verbindung.ok}

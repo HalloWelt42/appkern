@@ -9,7 +9,7 @@ sicherung:
 schluessel_orte:
   - "Mac: `.env.test` im Klon (nicht im Repo): Adresse und App-Schlüssel des Testzugangs AppkernTest an der Kellerwolke der Entwicklung, nur für den Verbundtest"
 einrichten: einrichten.sh
-stand: 4cdc0d5
+stand: e03fa4e
 ---
 
 # Appkern
