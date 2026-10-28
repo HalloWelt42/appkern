@@ -96,8 +96,10 @@ werkzeuge, nachladbar=..., modell=..., titel=...)` liefert `RundeBeginnt`, `Wart
 Werkzeuge, der Text war Vorrede), `Aufruf`, `Ergebnis`, `Antwort`, `Grenze`. Werkzeuge sind `Werkzeug` (Name, Beschreibung,
 JSON-Schema, `ausfuehren`) oder `ModellWerkzeug` mit einem Pydantic-Modell als Argumenten; lesende laufen bis drei nebeneinander,
 die übrigen der Reihe nach, Ergebnisse in der Reihenfolge der Aufrufe; `weitere_werkzeuge` lädt `nachladbar` bei Bedarf.
-**Bilder** über die Fähigkeit bild_erzeugen: `ls.bilder_erzeugen(beschreibung, groesse=, startwert=, modell=)` liefert `Wartet`
-und zuletzt `Bilder` (PNG, Startwert).
+**Bilder** über die Fähigkeit bild_erzeugen: `ls.bilder_erzeugen(beschreibung, groesse=, startwert=, modell=, schritte=,
+alternativen=)` liefert `Wartet`, `Rechnet` (seit wie vielen Sekunden der Dienst rechnet) und zuletzt `Bilder` (PNG, Startwert);
+`alternativen` sind weitere Bildmodelle in der Reihenfolge der App, gewählt wird nur aus ihnen. `ls.dienste()` nennt die
+Dienste mit Zustand (aus, startet, bereit ...), Zweck und bei Bilddiensten den Bild-Steckbrief (Größen, Schritte, Anzahl).
 
 **Text des Modells** (`appkern.leitstelle.text`): `antwortform(name, schema)` als `response_format` verlangt eine feste
 Antwortform, `json_lesen(text)` liest sie nachsichtig (Codezaun, Text davor und danach), `gerade(text)` und

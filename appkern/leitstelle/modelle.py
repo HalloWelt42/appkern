@@ -180,7 +180,59 @@ class Bilder(_Modell):
     auftrag: str | None = None
 
 
-Bildereignis = Wartet | Bilder
+class Rechnet(_Modell):
+    """Der Dienst rechnet (Bilder: alle paar Sekunden, solange er rechnet); `seit_s` wie die Leitstelle es meldet."""
+
+    art: Literal["rechnet"] = "rechnet"
+    seit_s: int
+
+
+Bildereignis = Wartet | Rechnet | Bilder
+
+
+class BildGroessen(_Modell):
+    """Welche Größen ein Bildmodell annimmt: Raster, Kanten, Pixel, Vorgabe und empfohlene Größen ("BxH")."""
+
+    raster: int = 16
+    kante_min: int | None = None
+    kante_max: int | None = None
+    pixel_min: int | None = None
+    pixel_max: int | None = None
+    vorgabe: str = "1024x1024"
+    empfohlen: list[str] = Field(default_factory=list)
+
+
+class BildSchritte(_Modell):
+    vorgabe: int | None = None
+    kleinste: int = 1
+    groesste: int | None = None
+
+
+class Bildsteckbrief(_Modell):
+    """Was ein Bilddienst annimmt (PROTOKOLL 4.8 der Leitstelle), sobald er einmal lief."""
+
+    modell: str = ""
+    name: str = ""
+    kann_bearbeiten: bool = False
+    groessen: BildGroessen = Field(default_factory=BildGroessen)
+    schritte: BildSchritte = Field(default_factory=BildSchritte)
+    anzahl_max: int = 1
+    beschreibung_max_token: int | None = None
+    lizenz: str = ""
+    parameter_mrd: float | None = None
+
+
+class DienstEintrag(_Modell):
+    """Ein Dienst im Maschinenraum (`GET /v1/dienste`), den die App nutzen darf. `zustand`: bereit, startet, aus,
+    schlaeft, nicht_erreichbar (Wörter bleiben Zeichenketten)."""
+
+    kennung: str
+    name: str = ""
+    zweck: str = ""
+    faehigkeiten: list[str] = Field(default_factory=list)
+    zustand: str = "aus"
+    rechner: list[str] = Field(default_factory=list)
+    bild: Bildsteckbrief | None = None
 
 
 class Einbettungen(_Modell):

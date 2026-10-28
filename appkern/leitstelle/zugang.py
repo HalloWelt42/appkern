@@ -31,8 +31,8 @@ import httpx
 
 from .fehler import LeitstellenFehler, NichtErreichbar, fehler_aus
 from .modelle import (
-    Bild, Bilder, Bildereignis, ChatAntwort, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Stueck, Verbrauch,
-    Wartet, Werkzeugaufruf,
+    Bild, Bilder, Bildereignis, ChatAntwort, DienstEintrag, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Rechnet,
+    Stueck, Verbrauch, Wartet, Werkzeugaufruf,
 )
 from .arbeit import KOPF as ARBEIT_KOPF, LAUFENDE_ARBEIT
 from .bindung import GEBUNDEN, KOPF as INSTANZ_KOPF, Bindung
@@ -42,6 +42,7 @@ ARBEIT = httpx.Timeout(10.0, read=None, write=None, pool=None)
 ABFRAGE = httpx.Timeout(10.0)
 ABBRUCH = "leitstelle_abbruch"
 _WARTET = re.compile(r"^:\s*wartet,\s*(?P<grund>.*?)(?:,\s*etwa\s+(?P<s>\d+)\s*s)?\s*$")
+_RECHNET = re.compile(r"^:\s*rechnet seit\s+(?P<s>\d+)\s*s\s*$")
 
 
 def _verbrauch(roh: dict[str, Any] | None) -> Verbrauch | None:
@@ -170,6 +171,12 @@ class Leitstelle:
         return [Modell(id=m["id"], name=m.get("name", ""), geladen=m.get("geladen", False), steckbrief=m.get("steckbrief"))
                 for m in antwort.json().get("data", [])]
 
+    async def dienste(self) -> list[DienstEintrag]:
+        """Die Dienste im Maschinenraum, die die App nutzen darf (PROTOKOLL 6.2): Zustand (aus, startet, bereit ...),
+        Zweck, Rechner und bei Bilddiensten ihr Bild-Steckbrief (Größen, Schritte, Anzahl). Startet nichts."""
+        antwort = await self._senden("GET", "/v1/dienste", kopf=dict(self._schluessel_kopf), timeout=ABFRAGE)
+        return [DienstEintrag.model_validate(d) for d in antwort.json().get("data", [])]
+
     def _chat_koerper(self, nachrichten, modell, optionen, strom: bool) -> dict[str, Any]:
         koerper: dict[str, Any] = {"messages": _nachrichten(nachrichten), **optionen}
         if modell:
@@ -257,18 +264,25 @@ class Leitstelle:
         return Einbettungen(vektoren=[d["embedding"] for d in reihe], modell=daten.get("model"),
                             lage=antwort.headers.get("x-leitstelle-lage"), verbrauch=_verbrauch(daten.get("usage")))
 
-    async def bilder_erzeugen(self, beschreibung: str, *, groesse: str = "1024x1024", anzahl: int = 1,
+    async def bilder_erzeugen(self, beschreibung: str, *, groesse: str | None = "1024x1024", anzahl: int = 1,
                               startwert: int | None = None, modell: str | None = None, titel: str = "",
-                              prioritaet: Prioritaet | None = None) -> AsyncIterator[Bildereignis]:
+                              prioritaet: Prioritaet | None = None, schritte: int | None = None,
+                              alternativen: Sequence[str] = ()) -> AsyncIterator[Bildereignis]:
         """Bilder über die Fähigkeit bild_erzeugen (`/v1/images/generations` als Strom): `Wartet`, solange der Auftrag
-        wartet (etwa weil der Bilddienst erst startet), zuletzt `Bilder`. Wie der Dienst das Bild rechnet, weiß nur die
-        Leitstelle."""
-        koerper: dict[str, Any] = {"prompt": beschreibung, "size": groesse, "n": anzahl, "response_format": "b64_json",
-                                   "stream": True}
+        wartet (etwa weil der Bilddienst erst startet), `Rechnet`, solange er rechnet, zuletzt `Bilder`. `groesse`
+        None und `schritte` None: die Vorgabe des Modells (Steckbrief). `alternativen`: weitere Bildmodelle in der
+        Reihenfolge der App, falls das gewählte nicht kann; gewählt wird nur aus dieser Liste."""
+        koerper: dict[str, Any] = {"prompt": beschreibung, "n": anzahl, "response_format": "b64_json", "stream": True}
+        if groesse:
+            koerper["size"] = groesse
         if startwert is not None:
             koerper["seed"] = startwert
+        if schritte is not None:
+            koerper["steps"] = schritte
         if modell:
             koerper["model"] = modell
+        if alternativen:
+            koerper["alternativen"] = list(alternativen)
         try:
             async with self._client.stream("POST", f"{self.adresse}/v1/images/generations", json=koerper,
                                            headers=self.koepfe(titel, prioritaet), timeout=ARBEIT) as antwort:
@@ -281,6 +295,8 @@ class Leitstelle:
                         if treffer:
                             s = treffer.group("s")
                             yield Wartet(grund=treffer.group("grund"), sekunden=int(s) if s else None)
+                        elif rechnet := _RECHNET.match(zeile):
+                            yield Rechnet(seit_s=int(rechnet.group("s")))
                         continue
                     if not zeile.startswith("data:") or zeile[5:].strip() == "[DONE]":
                         continue

@@ -5,8 +5,8 @@ from .fehler import (
     NichtGefunden, RechnerSchlaeft, SchluesselUngueltig, Ungueltig,
 )
 from .modelle import (
-    Bild, Bilder, Bildereignis, ChatAntwort, Einbettungen, Ende, Ereignis, Messwerte, Modell, Nachricht, Prioritaet, Steckbrief, Stueck, Verbrauch, Wartet,
-    Werkzeugaufruf,
+    Bild, BildGroessen, Bilder, Bildereignis, BildSchritte, Bildsteckbrief, ChatAntwort, DienstEintrag, Einbettungen, Ende, Ereignis,
+    Messwerte, Modell, Nachricht, Prioritaet, Rechnet, Steckbrief, Stueck, Verbrauch, Wartet, Werkzeugaufruf,
 )
 from .hoeren import Gehoert, GehoertesSegment, GehoertesWort, hoeren
 from .geduld import WARTEN_BEI, geduld, geduld_setzen, geduldig
@@ -14,7 +14,8 @@ from .text import antwortform, gerade, json_lesen, saeubern
 from .zugang import Dienst, Leitstelle
 
 __all__ = [
-    "Abgebrochen", "antwortform", "Bild", "Bilder", "Bildereignis", "ChatAntwort", "Dienst", "DienstFehler", "DienstWeg", "Einbettungen", "Ende", "Ereignis", "Gehoert",
+    "Abgebrochen", "antwortform", "Bild", "BildGroessen", "Bilder", "Bildereignis", "BildSchritte", "Bildsteckbrief", "ChatAntwort",
+    "DienstEintrag", "Rechnet", "Dienst", "DienstFehler", "DienstWeg", "Einbettungen", "Ende", "Ereignis", "Gehoert",
     "GehoertesSegment", "GehoertesWort", "Gesperrt", "WARTEN_BEI", "geduld", "geduld_setzen", "geduldig", "gerade", "hoeren", "json_lesen", "saeubern",
     "Halt", "KeinModell", "Leitstelle", "LeitstellenFehler", "Messwerte", "Modell", "Nachricht", "NichtErlaubt", "NichtErreichbar",
     "NichtGefunden", "Prioritaet", "RechnerSchlaeft", "SchluesselUngueltig", "Steckbrief", "Stueck", "Ungueltig", "Verbrauch", "Wartet",

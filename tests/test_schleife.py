@@ -9,7 +9,7 @@ import json
 import httpx
 from pydantic import BaseModel
 
-from appkern.leitstelle import Bilder, Leitstelle, Nachricht, Wartet
+from appkern.leitstelle import Bilder, Leitstelle, Nachricht, Rechnet, Wartet
 from appkern.leitstelle.schleife import (
     Antwort, Aufruf, Ergebnis, Grenze, ModellWerkzeug, RundeEnde, Schleife, TextStueck, Warten, WerkzeugErgebnis,
 )
@@ -146,3 +146,37 @@ async def test_bilder_erzeugen_als_strom():
     assert ereignisse[0] == Wartet(grund="Dienst startet", sekunden=180)
     fertig = ereignisse[1]
     assert isinstance(fertig, Bilder) and fertig.bilder[0].daten == png and fertig.startwert == 7 and fertig.auftrag == "b1"
+
+
+async def test_bilder_mit_schritten_ausweichmodellen_und_rechnet():
+    png = b"\x89PNG\r\n\x1a\nbild"
+
+    def handler(request: httpx.Request):
+        koerper = json.loads(request.content)
+        assert koerper == {"prompt": "Turm", "n": 1, "response_format": "b64_json", "stream": True, "steps": 12,
+                           "model": "bildwerk-moss-image", "alternativen": ["bildschmiede"]}
+        antwort = {"created": 1, "data": [{"b64_json": base64.b64encode(png).decode()}], "x-leitstelle": {"seed": 3}}
+        inhalt = f": rechnet seit 10 s\n\n: rechnet seit 20 s\n\ndata: {json.dumps(antwort)}\n\ndata: [DONE]\n\n"
+        return httpx.Response(200, content=inhalt.encode(), headers={"content-type": "text/event-stream"})
+
+    async with leitstelle(handler) as ls:
+        ereignisse = [e async for e in ls.bilder_erzeugen("Turm", groesse=None, schritte=12, modell="bildwerk-moss-image",
+                                                         alternativen=["bildschmiede"])]
+    assert ereignisse[:2] == [Rechnet(seit_s=10), Rechnet(seit_s=20)] and isinstance(ereignisse[2], Bilder)
+
+
+async def test_dienste_mit_bild_steckbrief():
+    def handler(request: httpx.Request):
+        assert request.url.path == "/v1/dienste"
+        return httpx.Response(200, json={"object": "list", "data": [
+            {"kennung": "bildwerk-moss-image", "name": "Bildwerk MOSS-Image", "zweck": "Bilder aus Text", "faehigkeiten": ["bild_erzeugen"],
+             "zustand": "bereit", "rechner": ["Mac"], "neu": 1,
+             "bild": {"modell": "moss-image", "groessen": {"raster": 16, "vorgabe": "1024x1024", "empfohlen": ["1024x1024", "1344x768"]},
+                      "schritte": {"vorgabe": 50, "kleinste": 1, "groesste": 218}, "anzahl_max": 4}},
+            {"kennung": "bildschmiede", "zustand": "aus", "bild": None}]})
+
+    async with leitstelle(handler) as ls:
+        dienste = await ls.dienste()
+    assert [d.kennung for d in dienste] == ["bildwerk-moss-image", "bildschmiede"]
+    assert dienste[0].bild is not None and dienste[0].bild.schritte.vorgabe == 50 and dienste[0].bild.groessen.empfohlen[1] == "1344x768"
+    assert dienste[1].zustand == "aus" and dienste[1].bild is None
