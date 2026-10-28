@@ -283,9 +283,27 @@ class Leitstelle:
             koerper["model"] = modell
         if alternativen:
             koerper["alternativen"] = list(alternativen)
+        async for e in self._bildstrom("/v1/images/generations", titel, prioritaet, json=koerper):
+            yield e
+
+    async def bilder_bearbeiten(self, beschreibung: str, vorlage: bytes, *, groesse: str | None = None, anzahl: int = 1,
+                                startwert: int | None = None, modell: str | None = None, titel: str = "",
+                                prioritaet: Prioritaet | None = None, schritte: int | None = None,
+                                vorlage_typ: str = "image/png") -> AsyncIterator[Bildereignis]:
+        """Bilder mit einer Bildvorlage (`/v1/images/edits`, Formular mit der Datei im Feld image, als Strom): nur für
+        Modelle, deren Bild-Steckbrief `kann_bearbeiten` meldet. Ereignisse wie bei `bilder_erzeugen`."""
+        felder: dict[str, str] = {"prompt": beschreibung, "n": str(anzahl), "response_format": "b64_json", "stream": "true"}
+        for name, wert in (("size", groesse), ("seed", startwert), ("steps", schritte), ("model", modell)):
+            if wert is not None and wert != "":
+                felder[name] = str(wert)
+        async for e in self._bildstrom("/v1/images/edits", titel, prioritaet, data=felder,
+                                       files={"image": ("vorlage", vorlage, vorlage_typ)}):
+            yield e
+
+    async def _bildstrom(self, pfad: str, titel: str, prioritaet: Prioritaet | None, **art: Any) -> AsyncIterator[Bildereignis]:
         try:
-            async with self._client.stream("POST", f"{self.adresse}/v1/images/generations", json=koerper,
-                                           headers=self.koepfe(titel, prioritaet), timeout=ARBEIT) as antwort:
+            async with self._client.stream("POST", f"{self.adresse}{pfad}", headers=self.koepfe(titel, prioritaet), timeout=ARBEIT,
+                                           **art) as antwort:
                 if antwort.status_code >= 400:
                     raise _fehler(antwort, (await antwort.aread()).decode("utf-8", "replace"))
                 auftrag = antwort.headers.get("x-leitstelle-auftrag")

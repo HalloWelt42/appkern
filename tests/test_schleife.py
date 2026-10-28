@@ -180,3 +180,20 @@ async def test_dienste_mit_bild_steckbrief():
     assert [d.kennung for d in dienste] == ["bildwerk-moss-image", "bildschmiede"]
     assert dienste[0].bild is not None and dienste[0].bild.schritte.vorgabe == 50 and dienste[0].bild.groessen.empfohlen[1] == "1344x768"
     assert dienste[1].zustand == "aus" and dienste[1].bild is None
+
+
+async def test_bilder_mit_vorlage_als_formular():
+    png = b"\x89PNG\r\n\x1a\nbild"
+
+    def handler(request: httpx.Request):
+        assert request.url.path == "/v1/images/edits"
+        inhalt = request.content
+        assert b'name="image"' in inhalt and b"vorlage-bytes" in inhalt and b'name="seed"' in inhalt and b'name="steps"' in inhalt
+        antwort = {"created": 1, "data": [{"b64_json": base64.b64encode(png).decode()}], "x-leitstelle": {"seed": 9}}
+        return httpx.Response(200, content=f": rechnet seit 5 s\n\ndata: {json.dumps(antwort)}\n\ndata: [DONE]\n\n".encode(),
+                              headers={"content-type": "text/event-stream"})
+
+    async with leitstelle(handler) as ls:
+        ereignisse = [e async for e in ls.bilder_bearbeiten("Turm im gleichen Stil", b"vorlage-bytes", startwert=9, schritte=20,
+                                                            modell="bildwerk-flux")]
+    assert ereignisse[0] == Rechnet(seit_s=5) and isinstance(ereignisse[1], Bilder) and ereignisse[1].startwert == 9
