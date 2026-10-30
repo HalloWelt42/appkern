@@ -16,6 +16,8 @@
      data-rahmen="kopf"    Kopf (Höhe und oberer Innenabstand kommen von hier; die App setzt nur padding-inline)
      data-rahmen="inhalt"  der Teil dazwischen; er selbst oder seine Teile rollen
      data-rahmen="fuss"    Fußleiste (Reiter), wenn es eine gibt
+   Schwebende Ebenen (Auswahltafeln, Vollbild) richten sich nach --rahmen-kopf-unten, --rahmen-fuss und
+   --rahmen-sicher-oben, nie nach env() oder eigenen Zahlen.
    Apps mit der Schale bekommen das über stil.css, Apps mit eigener Schale über leitstand.css oder
    import "appkern-oberflaeche/rahmen.css". Die Ansichtsprüfung (werkzeuge/ansicht.mjs, am Telefon und mit --rahmen) misst
    genau diese Regeln mit sicheren Rändern wie am iPhone; das Ausrollen verlangt sie für den Stand. */
@@ -23,6 +25,8 @@
 :root {
   --rahmen-kopf: 48px;     /* Kopf ohne den sicheren Rand */
   --rahmen-fuss: 56px;     /* Fußleiste */
+  --rahmen-sicher-oben: env(safe-area-inset-top);                               /* für Ebenen über der App */
+  --rahmen-kopf-unten: calc(var(--rahmen-kopf) + env(safe-area-inset-top));     /* Unterkante des Kopfs */
   --rahmen-rand: 12px;     /* Seitenrand am Telefon (HELF-70): einmal außen, Karten und Kästen setzen keinen eigenen
                               Außenrand darauf und innen nicht mehr als diesen */
 }

@@ -12,7 +12,7 @@
 }
 .hilfe-fenster.gross { inset: calc(var(--kopf-hoehe) + var(--a3)) var(--a5) calc(var(--fuss-hoehe) + var(--a3)); }
 @media (max-width: 700px) {
-  .hilfe-fenster.gross { inset: max(var(--a3), env(safe-area-inset-top)) var(--a2) var(--a2); }
+  .hilfe-fenster.gross { inset: max(var(--a3), var(--rahmen-sicher-oben)) var(--a2) var(--a2); }
 }
 
 .hilfe-kopf {
