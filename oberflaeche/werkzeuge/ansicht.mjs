@@ -269,8 +269,17 @@ const RAHMEN = `(() => {
       const flaeche = (s.backgroundColor !== "rgba(0, 0, 0, 0)" && s.backgroundColor !== "transparent") || s.boxShadow !== "none"
         || px(s.borderLeftWidth) > 0 || px(s.borderRightWidth) > 0;
       const text = [...e.childNodes].some((k) => k.nodeType === 3 && k.textContent.trim());
-      if (!flaeche && !text && !["INPUT", "TEXTAREA", "SELECT", "IMG", "CANVAS", "VIDEO"].includes(e.tagName)) continue;
-      const w = Math.min(r.right, W) - Math.max(r.left, 0);
+      const feld = ["INPUT", "TEXTAREA", "SELECT", "IMG", "CANVAS", "VIDEO"].includes(e.tagName);
+      if (!flaeche && !text && !feld) continue;
+      // eine Fläche zählt mit ihrem Kasten; Text und Felder mit dem Platz, den ihr Behälter ihnen gibt (ein kurzer,
+      // mittig gesetzter Hinweis verschenkt keine Breite)
+      let links = r.left, rechts = r.right;
+      if (!flaeche && e.parentElement && e.parentElement !== inhalt.parentElement) {
+        const v = e.parentElement, vs = getComputedStyle(v), vr = v.getBoundingClientRect();
+        links = vr.left + px(vs.borderLeftWidth) + px(vs.paddingLeft);
+        rechts = vr.right - px(vs.borderRightWidth) - px(vs.paddingRight);
+      }
+      const w = Math.min(rechts, W) - Math.max(links, 0);
       if (w > breitest) { breitest = w; welches = e; }
     }
     if (welches && breitest / W < ${NUTZBAR_MIN}) b.push("Inhalt nutzt nur " + Math.round(breitest / W * 100) + " Prozent der Breite (" + Math.round(breitest)

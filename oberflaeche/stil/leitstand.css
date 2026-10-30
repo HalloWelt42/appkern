@@ -369,9 +369,10 @@ select.eingabe { padding-right: var(--a5); }
 .balken.info b { background: var(--info); }
 .balken.dick { height: 10px; }
 /* lebendig: ein heller Schimmer wandert über den laufenden Balken */
-.balken.lebt b::after { content: ""; position: absolute; inset: 0; width: 40%;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--licht) 28%, transparent), transparent); animation: schimmer 1.8s linear infinite; }
-@keyframes schimmer { from { transform: translateX(-120%); } to { transform: translateX(300%); } }
+/* als Hintergrund des Balkens, nicht als verschobenes Teil: so ragt nichts über den Balken hinaus (keine Rollbreite) */
+.balken.lebt b { background-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--licht) 28%, transparent), transparent);
+  background-size: 40% 100%; background-repeat: no-repeat; animation: schimmer 1.8s linear infinite; }
+@keyframes schimmer { from { background-position: -70% 0; } to { background-position: 170% 0; } }
 /* unbestimmt: pendelnder Abschnitt */
 .balken.unbestimmt b { width: 30%; animation: pendeln 1.6s ease-in-out infinite alternate; }
 @keyframes pendeln { from { margin-left: 0; } to { margin-left: 70%; } }
