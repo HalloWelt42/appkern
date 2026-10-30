@@ -3,9 +3,9 @@ Vorlesen nimmt Text, teilt ihn an Satzgrenzen und liefert den Ton Satz für Satz
 isoliert im Klangwerk hinter der Leitstelle, Stimme und Tempo wählt man in der App Vorlesen. Eine App, die vorlesen
 will, ruft nur sie: mit ihrem App-Schlüssel der Kellerwolke und im Auftrag der Person (über `geruest.verbund`).
 
-    class AppEinstellungen(Grundeinstellungen, VorlesenEinstellungen): ...   # Feld vorlesen_adresse (Verbindungen)
+    class AppEinstellungen(Grundeinstellungen, VorlesenEinstellungen): ...   # Adresse und Vorlesestimme (Verbindungen)
 
-    vorlesen = Vorlesen(geruest)            # Angebot für das Feld, Verbindung in der Fußleiste
+    vorlesen = Vorlesen(geruest)            # Angebote für beide Felder, Verbindung in der Fußleiste
     app.include_router(vorlesen.router())   # POST /api/v1/vorlesen für den Vorleser der Oberfläche, GET: ist es da?
 
     # mit eigener Prüfung vorher (etwa Rechte an einer Karte):
@@ -14,7 +14,11 @@ will, ruft nur sie: mit ihrem App-Schlüssel der Kellerwolke und im Auftrag der 
 Das Format des Stroms (NDJSON, je Zeile `art` satz, ende oder fehler; `satz` mit `nr`, `text`, `von_zeichen`,
 `bis_zeichen`, `dauer_ms` und dem Ton als Base64-WAV in `ton`) liest der Vorleser der Oberfläche (`vorleser`, mit
 Vorlauf). Die Zeilen gehen unverändert durch; was vor der ersten Zeile scheitert, ist ein `VorlesenFehler` mit Grund
-und Status, danach kommt eine Zeile `fehler`."""
+und Status, danach kommt eine Zeile `fehler`.
+
+Die Vorlesestimme wählt jede App für sich (Feld `vorlesen_stimme`) aus dem, was die App Vorlesen gerade anbietet: ihr
+Katalog und die eigenen Stimmen, die sie freigibt. Die Auswahl kommt jedes Mal aus Vorlesen, nie aus einer festen
+Liste; gesendet wird die Wahl bei jedem Aufruf, ohne Wahl gilt die Vorgabe von Vorlesen."""
 
 from __future__ import annotations
 
@@ -27,7 +31,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from appkern.app.einstellungen import VERBINDUNGEN
-from appkern.verbund import SITZUNG, VerbundFehler
+from appkern.einstellungen import Angebot, Option
+from appkern.verbund import ABFRAGE, SITZUNG, VerbundFehler
 
 if TYPE_CHECKING:
     from appkern.app import Geruest
@@ -44,6 +49,9 @@ class VorlesenEinstellungen(BaseModel):
     vorlesen_adresse: str = Field("", title="Vorlesen", json_schema_extra=VERBINDUNGEN,
                                   description="Adresse der App Vorlesen, der einen Stelle für Sprachausgabe. Stimme und "
                                               "Tempo wählt man dort. Leer: ohne Vorlesen.")
+    vorlesen_stimme: str = Field("", title="Vorlesestimme", json_schema_extra=VERBINDUNGEN,
+                                 description="Mit dieser Stimme liest die App Vorlesen für diese App: aus ihrem Katalog "
+                                             "oder eine eigene Stimme, die sie freigibt. Leer: die Vorgabe von Vorlesen.")
 
 
 class Vorlesetext(BaseModel):
@@ -85,10 +93,29 @@ class Vorlesen:
             raise TypeError("Die Einstellungen der App erben VorlesenEinstellungen nicht (Feld vorlesen_adresse fehlt)")
         self.g = geruest
         geruest.einstellungen.anbieten("vorlesen_adresse", geruest.verbund.angebot(name, "vorlesen", self.adresse))
+        geruest.einstellungen.anbieten("vorlesen_stimme", self.stimmen_angebot)
         geruest.verbund.anmelden(name, self.adresse)
 
     def adresse(self) -> str:
         return str(self.g.einstellungen.stand.vorlesen_adresse).strip().rstrip("/")
+
+    def stimme(self) -> str:
+        return str(self.g.einstellungen.stand.vorlesen_stimme).strip()
+
+    async def stimmen_angebot(self) -> Angebot:
+        """Auswahl für die Vorlesestimme, jedes Mal aus der App Vorlesen (`GET /api/v1/stimmen`): ihr Katalog und die
+        eigenen Stimmen, die sie freigibt; dazu leer für ihre Vorgabe."""
+        optionen = [Option(wert="", titel="Vorgabe von Vorlesen", hinweis="wie in der App Vorlesen eingestellt")]
+        if not self.da:
+            return Angebot(optionen=optionen, eigener_wert=False, stand="erst die Adresse der App Vorlesen eintragen")
+        try:
+            daten = (await self.g.verbund.anfrage("GET", self.adresse(), "/api/v1/stimmen", timeout=ABFRAGE)).json()
+        except VerbundFehler as f:
+            return Angebot(optionen=optionen, eigener_wert=False, stand=f"Vorlesen antwortet nicht: {f.meldung}")
+        stimmen = daten.get("stimmen") or []
+        optionen += [Option(wert=str(s["name"]), titel=str(s.get("titel") or s["name"]),
+                            hinweis="eigene Stimme" if s.get("art") == "eigen" else "Katalog") for s in stimmen]
+        return Angebot(optionen=optionen, eigener_wert=False, stand=str(daten.get("stand") or f"{len(stimmen)} Stimmen"))
 
     @property
     def da(self) -> bool:
@@ -105,7 +132,8 @@ class Vorlesen:
             raise VorlesenFehler(f"Der Text ist länger als {TEXT_HOECHSTENS} Zeichen", 400)
         gekommen = False
         try:
-            async with self.g.verbund.strom("POST", self.adresse(), STROM, sitzung=sitzung, json={"text": text}) as antwort:
+            koerper = {"text": text, **({"stimme": self.stimme()} if self.stimme() else {})}
+            async with self.g.verbund.strom("POST", self.adresse(), STROM, sitzung=sitzung, json=koerper) as antwort:
                 async for zeile in antwort.aiter_lines():
                     if zeile.strip():
                         gekommen = True

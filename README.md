@@ -127,8 +127,9 @@ Ziels; die Adresse steht in einer Einstellung der App, nie fest im Code.
 
 **Vorlesen** (`appkern.vorlesen`): Sprachausgabe hat im Verbund genau eine Stelle, die App Vorlesen; das Sprechmodell
 bleibt isoliert im Klangwerk hinter der Leitstelle, Stimme und Tempo wählt man in der App Vorlesen. Eine App erbt
-`VorlesenEinstellungen` (Feld `vorlesen_adresse` unter Verbindungen), legt `Vorlesen(geruest)` an (Angebot aus dem
-Verzeichnis, Verbindung in der Fußleiste) und bindet `vorlesen.router()` ein: `POST /api/v1/vorlesen` mit `{"text"}`
+`VorlesenEinstellungen` (Felder `vorlesen_adresse` und `vorlesen_stimme` unter Verbindungen), legt `Vorlesen(geruest)` an
+(Angebote aus dem Verzeichnis und, für die Vorlesestimme, jedes Mal aus der App Vorlesen: ihr Katalog und die eigenen
+Stimmen, die sie freigibt; die Wahl geht bei jedem Aufruf mit, leer heißt ihre Vorgabe; Verbindung in der Fußleiste) und bindet `vorlesen.router()` ein: `POST /api/v1/vorlesen` mit `{"text"}`
 liefert den Strom der App Vorlesen im Auftrag der Person (NDJSON, je Zeile `satz` mit Base64-WAV, `ende`, `fehler`),
 `GET /api/v1/vorlesen` sagt `{"da": ...}`. Mit eigener Prüfung vorher: `await vorlesen.antwort(vorlesen.zeilen(text,
 sitzung=...))`; was vor der ersten Zeile scheitert, ist eine Antwort mit Grund (`VorlesenFehler`, nie als 401), ein

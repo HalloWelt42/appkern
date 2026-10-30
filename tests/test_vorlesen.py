@@ -48,6 +48,9 @@ class Vorleseapp(Wolke):
         self.rufe.append(request)
         if request.url.path == "/api/v1/app":
             return httpx.Response(200, json={"fassung": "0.1.0"})
+        if request.url.path == "/api/v1/stimmen":
+            return httpx.Response(200, json={"stimmen": [{"name": "eins", "titel": "Eins", "art": "katalog"},
+                                                         {"name": "privat:abc", "titel": "Eigene", "art": "eigen"}], "stand": ""})
         text = json.loads(request.content)["text"]
         if text == "verboten":
             return httpx.Response(401, json={"detail": "Anmeldung fehlt"})
@@ -124,3 +127,17 @@ def test_einstellungen_ohne_feld_abgelehnt(tmp_path: Path):
                       einstellungen=Grundeinstellungen)
     with pytest.raises(TypeError):
         Vorlesen(geruest)
+
+
+async def test_vorlesestimme_der_app(umgebung):
+    geruest, vorlesen, ziel, c, h = umgebung
+    angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_stimme", headers=h)).json()
+    assert [o["wert"] for o in angebot["optionen"]] == [""] and not angebot["eigener_wert"]
+    await geruest.einstellungen.aendern({"vorlesen_adresse": "http://vl.test"})
+    angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_stimme", headers=h)).json()
+    assert [(o["wert"], o["hinweis"]) for o in angebot["optionen"]][1:] == [("eins", "Katalog"), ("privat:abc", "eigene Stimme")]
+    await c.post("/api/v1/vorlesen", headers=h, json={"text": "Eins."})
+    assert json.loads(ziel.rufe[-1].content) == {"text": "Eins."}                  # ohne Wahl: Vorgabe von Vorlesen
+    await geruest.einstellungen.aendern({"vorlesen_stimme": "privat:abc"})
+    await c.post("/api/v1/vorlesen", headers=h, json={"text": "Zwei."})
+    assert json.loads(ziel.rufe[-1].content) == {"text": "Zwei.", "stimme": "privat:abc"}
