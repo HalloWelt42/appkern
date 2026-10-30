@@ -31,7 +31,7 @@
 .welle .sprecherspur { position: absolute; }
 .welle i.fahne { pointer-events: none; }
 .welle .abspielkopf { pointer-events: none; }
-.mobil .t-spieler { position: sticky; bottom: -16px; margin: 8px -16px -16px; z-index: 2; }
+.mobil .t-spieler { position: sticky; bottom: calc(-1 * var(--rahmen-rand)); margin: 8px calc(-1 * var(--rahmen-rand)) calc(-1 * var(--rahmen-rand)); z-index: 2; }
 .rund.aktiv { background: var(--akzent-weich); color: var(--akzent); }
 .rueckfrage { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 14px; margin: 4px 0 10px;
   background: var(--flaeche-2); border-radius: var(--r2); box-shadow: 0 0 0 1px var(--rand); font-size: var(--klein); }
@@ -136,8 +136,8 @@
 .mobil .rek-symbole { justify-content: center; gap: 10px; }
 .mobil .rek-symbol { width: 40px; height: 40px; border-radius: 20px; }
 .mobil .rek-blase { top: auto; bottom: calc(100% + 8px); left: 50%; right: auto; transform: translateX(-50%); }
-.mobil .rek-leiste { grid-template-columns: auto minmax(0, 1fr) auto auto auto; grid-template-areas: "stopp pegel zeit pause marken"; gap: 10px; margin: 0 -16px -16px; border-radius: 0;
-  box-shadow: 0 -1px 0 var(--rand); position: sticky; bottom: -16px; }
+.mobil .rek-leiste { grid-template-columns: auto minmax(0, 1fr) auto auto auto; grid-template-areas: "stopp pegel zeit pause marken"; gap: 10px; margin: 0 calc(-1 * var(--rahmen-rand)) calc(-1 * var(--rahmen-rand)); border-radius: 0;
+  box-shadow: 0 -1px 0 var(--rand); position: sticky; bottom: calc(-1 * var(--rahmen-rand)); }
 .mobil .rek-leiste .stopp { width: 48px; height: 48px; }
 .mobil .rek-zeit { font-size: var(--gross); }
 /* die laufende Aufnahme füllt die Fläche: am Rechner das Rollfeld, am Telefon die Spalte über die ganze Höhe */

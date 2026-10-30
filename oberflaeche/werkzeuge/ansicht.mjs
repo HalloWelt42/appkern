@@ -96,7 +96,9 @@ let ansicht = "";               // die gerade geprüfte Ansicht, für Befunde au
 ws.addEventListener("message", (e) => {
   const m = JSON.parse(e.data);
   if (m.id && offen.has(m.id)) { offen.get(m.id)(m); offen.delete(m.id); }
-  // Fehler in der Konsole und im Netz (nicht geladene Dateien) sind Befunde der gerade geprüften Ansicht
+  // Fehler in der Konsole und im Netz (nicht geladene Dateien) sind Befunde der gerade geprüften Ansicht; die Prüfung des
+  // Rahmens (--rahmen) zählt sie nicht (sie läuft oft gegen einen Probebetrieb, dem Dienste fehlen), die volle Prüfung schon
+  if (nurRahmen && m.method !== "Page.javascriptDialogOpening") return;
   if (m.method === "Runtime.exceptionThrown") {
     befunde.push(`${ansicht}: Fehler in der Konsole: ${(m.params.exceptionDetails.exception?.description ?? m.params.exceptionDetails.text ?? "").split("\n")[0].slice(0, 160)}`);
   }
@@ -372,7 +374,9 @@ for (const seite of einstellung.seiten.filter((s) => s.abfrage)) {
       return encodeURIComponent(String(w));
     });
   } catch (f) {
-    befunde.push(`${seite.name}: Pfad aus ${seite.abfrage} nicht ermittelbar (${f.message})`);
+    // ohne Daten im Probebetrieb fehlt die Seite; beim Rahmen ein Hinweis (der Rahmen ist auf jeder Seite derselbe)
+    if (nurRahmen) console.log(`Hinweis: ${seite.name} ausgelassen, Pfad aus ${seite.abfrage} nicht ermittelbar (${f.message})`);
+    else befunde.push(`${seite.name}: Pfad aus ${seite.abfrage} nicht ermittelbar (${f.message})`);
     seite.auslassen = true;
   }
 }
