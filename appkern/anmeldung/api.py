@@ -15,6 +15,7 @@ die Oberfläche ab. Ein 401, den eine App von einem anderen Dienst weiterreicht,
 
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable
 from typing import Literal
 
@@ -28,6 +29,14 @@ from .dienst import APP_PRAEFIX, Anmeldung, AnmeldungsFehler, Konto
 KOPF = "x-kellerwolke-sitzung"
 ABGEWIESEN = {"WWW-Authenticate": "Kellerwolke-Sitzung"}     # Kennzeichen: diese App weist die Anmeldung ab
 COOKIE = "app_inhalt"
+
+
+def inhalt_cookie(kennung: str) -> str:
+    """Name des Inhalts-Cookies einer App (HELF-56). Ein Cookie gilt für den Rechner, nicht für den Port: alle Apps auf
+    demselben Rechner (etwa der Pi mit Pinnwand, Leitstelle, Transkription) teilten sich sonst eines, und die zuletzt
+    geöffnete App überschrieb es mit ihrer Sitzung; Bilder und Töne der anderen kamen dann nicht mehr. Darum trägt jede
+    App ihre Kennung im Namen."""
+    return f"{COOKIE}_{re.sub(r'[^a-z0-9]+', '_', kennung.lower()).strip('_') or 'app'}"
 _ZUGANG_DAUER = 30 * 24 * 3600
 
 
@@ -68,10 +77,12 @@ def _bearer(request: Request) -> str:
     return wert.strip() if art.lower() == "bearer" else ""
 
 
-def angemeldet(anmeldung: Anmeldung, *, cookie: bool = False,
+def angemeldet(anmeldung: Anmeldung, *, cookie: bool | str = False,
                nur_menschen: bool = False) -> Callable[[Request], Awaitable[Konto]]:
-    """Abhängigkeit für geschützte Endpunkte; mit `cookie=True` auch für Inhaltsadressen, mit `nur_menschen=True` ohne
-    andere Apps, auch nicht im Auftrag eines Menschen (etwa Einstellungen mit Geheimnissen)."""
+    """Abhängigkeit für geschützte Endpunkte; mit `cookie` auch für Inhaltsadressen (der Name des Inhalts-Cookies der
+    App, siehe `inhalt_cookie`; `True` heißt der alte gemeinsame Name), mit `nur_menschen=True` ohne andere Apps, auch
+    nicht im Auftrag eines Menschen (etwa Einstellungen mit Geheimnissen)."""
+    keks = COOKIE if cookie is True else (cookie or "")
 
     async def pruefen(request: Request) -> Konto:
         sitzung, bearer = request.headers.get(KOPF, ""), _bearer(request)
@@ -80,7 +91,7 @@ def angemeldet(anmeldung: Anmeldung, *, cookie: bool = False,
                 rufer = await anmeldung.pruefen(bearer)
                 konto = (await anmeldung.im_auftrag(sitzung, rufer.app) if rufer and rufer.app else None) or rufer
             else:
-                token = sitzung or bearer or (request.cookies.get(COOKIE, "") if cookie else "")
+                token = sitzung or bearer or (request.cookies.get(keks, "") if keks else "")
                 konto = await anmeldung.pruefen(token)
         except AnmeldungsFehler as f:
             raise _http(f)
@@ -94,8 +105,11 @@ def angemeldet(anmeldung: Anmeldung, *, cookie: bool = False,
 
 
 def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung",
-                      inhalt_pfad: str = "/api/v1/inhalt", protokoll: Protokoll | None = None) -> APIRouter:
-    """Mit `protokoll` werden Anmelden, Koppeln, Abweisungen und Abmelden eingetragen (nie Passwörter oder Token)."""
+                      inhalt_pfad: str = "/api/v1/inhalt", protokoll: Protokoll | None = None,
+                      cookie: str = COOKIE) -> APIRouter:
+    """Mit `protokoll` werden Anmelden, Koppeln, Abweisungen und Abmelden eingetragen (nie Passwörter oder Token).
+    `cookie`: Name des Inhalts-Cookies der App (`inhalt_cookie(kennung)`), damit Apps auf demselben Rechner einander
+    das Cookie nicht überschreiben."""
     router = APIRouter(prefix=prefix, tags=["anmeldung"])
     mensch = angemeldet(anmeldung, nur_menschen=True)
 
@@ -142,13 +156,13 @@ def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung"
         await anmeldung.abmelden(token)
         if konto is not None:
             await eintragen("anmeldung.abgemeldet", "Gerät getrennt" if konto.geraet else "Sitzung beendet", konto.name)
-        response.delete_cookie(COOKIE, path=inhalt_pfad, httponly=True, samesite="strict", secure=_https(request))
+        response.delete_cookie(cookie, path=inhalt_pfad, httponly=True, samesite="strict", secure=_https(request))
         response.status_code = 204
         return response
 
     @router.post("/zugang", status_code=204)
     async def zugang(request: Request, response: Response, konto: Konto = Depends(mensch)) -> Response:
-        response.set_cookie(COOKIE, request.headers[KOPF], max_age=_ZUGANG_DAUER, path=inhalt_pfad, httponly=True,
+        response.set_cookie(cookie, request.headers[KOPF], max_age=_ZUGANG_DAUER, path=inhalt_pfad, httponly=True,
                             samesite="strict", secure=_https(request))
         response.status_code = 204
         return response
@@ -156,4 +170,4 @@ def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung"
     return router
 
 
-__all__ = ["ABGEWIESEN", "COOKIE", "KOPF", "anmeldungs_router", "angemeldet"]
+__all__ = ["ABGEWIESEN", "COOKIE", "KOPF", "anmeldungs_router", "angemeldet", "inhalt_cookie"]

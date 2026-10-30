@@ -10,7 +10,7 @@ import pytest
 from fastapi import Depends, FastAPI
 
 from appkern.anmeldung import Abgelehnt, Anmeldung, KellerwolkeWeg, NichtErlaubt, ZuVieleVersuche
-from appkern.anmeldung.api import COOKIE, angemeldet, anmeldungs_router
+from appkern.anmeldung.api import COOKIE, angemeldet, anmeldungs_router, inhalt_cookie
 
 KONTEN = {"chef": "1", "gast": "2"}
 APPS = {"kw_app_vertonung": ("Vertonung", "chef"), "kw_app_fremd": ("Fremd", "gast")}
@@ -304,3 +304,37 @@ async def test_im_auftrag_eines_menschen_ueber_eine_andere_app():
 
 async def _wert(w):
     return w
+
+
+
+async def test_inhalts_cookie_je_app():
+    """HELF-56: ein Cookie gilt für den Rechner, nicht für den Port. Zwei Apps auf demselben Rechner setzen darum je ein
+    eigenes Inhalts-Cookie; meldet sich jemand an der zweiten an, bleiben Bilder und Töne der ersten erreichbar."""
+    assert inhalt_cookie("pinnwand") == "app_inhalt_pinnwand" and inhalt_cookie("Leit Stelle") == "app_inhalt_leit_stelle"
+    s = Schein()
+    a = anmeldung(s)
+    apps = {}
+    for kennung in ("pinnwand", "leitstelle"):
+        app = FastAPI()
+        app.include_router(anmeldungs_router(a, cookie=inhalt_cookie(kennung)))
+        lesen = angemeldet(a, cookie=inhalt_cookie(kennung))
+
+        @app.get("/api/v1/inhalt/bild")
+        async def bild(konto=Depends(lesen)):
+            return {"konto": konto.name}
+
+        apps[kennung] = app
+    # ein Browser, zwei Apps auf demselben Rechner: dieselbe Keksdose
+    dose = httpx.Cookies()
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=apps["pinnwand"]), base_url="http://t", cookies=dose) as p, \
+               httpx.AsyncClient(transport=httpx.ASGITransport(app=apps["leitstelle"]), base_url="http://t", cookies=dose) as l:
+        token = (await p.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]
+        assert (await p.post("/api/v1/anmeldung/zugang", headers={"X-Kellerwolke-Sitzung": token})).status_code == 204
+        dose.update(p.cookies)
+        assert (await p.get("/api/v1/inhalt/bild")).json() == {"konto": "chef"}
+        anderes = (await l.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]
+        assert (await l.post("/api/v1/anmeldung/zugang", headers={"X-Kellerwolke-Sitzung": anderes})).status_code == 204
+        dose.update(l.cookies)
+        assert {"app_inhalt_pinnwand", "app_inhalt_leitstelle"} <= set(dose.keys())
+        assert dose.get("app_inhalt_pinnwand") == token                  # nicht überschrieben
+        assert (await p.get("/api/v1/inhalt/bild")).json() == {"konto": "chef"}

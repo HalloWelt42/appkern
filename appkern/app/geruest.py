@@ -40,7 +40,7 @@ import appkern
 from appkern.anfragen import Abholer, Angebot as AppAngebot
 from appkern.anfragen.api import anfragen_router
 from appkern.anmeldung import Anmeldung, Konto
-from appkern.anmeldung.api import angemeldet, anmeldungs_router
+from appkern.anmeldung.api import angemeldet, anmeldungs_router, inhalt_cookie
 from appkern.auftraege import Art, Auftraege
 from appkern.auftraege.api import auftrags_router
 from appkern.datenbank import LESER, Datenbank
@@ -169,7 +169,9 @@ class Geruest(Generic[E]):
             return konto.name if konto.mensch else (konto.app or konto.name)
 
         self.wer = wer
-        self.lesen = Depends(angemeldet(self.anmeldung, cookie=True))
+        #: Name des Inhalts-Cookies dieser App (je App eigen, damit Apps auf demselben Rechner es nicht überschreiben)
+        self.inhalt_cookie = inhalt_cookie(self.kennung)
+        self.lesen = Depends(angemeldet(self.anmeldung, cookie=self.inhalt_cookie))
         self._pflege: asyncio.Task | None = None
         self.abholer = Abholer(angebote, self.auftraege, lambda: self.kellerwolke,
                                lambda: self.einstellungen.stand.adresse or None)
@@ -566,7 +568,7 @@ class Geruest(Generic[E]):
         app = FastAPI(title=self.name, version=self.fassung, lifespan=lebenszyklus, docs_url="/docs" if doku else None,
                       redoc_url="/redoc" if doku else None, openapi_url="/openapi.json" if doku else None)
         app.include_router(self._grund_router())
-        app.include_router(anmeldungs_router(self.anmeldung, protokoll=self.protokoll))
+        app.include_router(anmeldungs_router(self.anmeldung, protokoll=self.protokoll, cookie=self.inhalt_cookie))
         if self.abholer.angebote:
             app.include_router(anfragen_router(self.abholer, lambda: self.kellerwolke, self.mensch))
         if self.push is not None:

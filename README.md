@@ -360,10 +360,16 @@ from appkern.anmeldung.api import angemeldet, anmeldungs_router
 
 ich = await kellerwolke.ich()                                   # Konto des App-Schlüssels
 anmeldung = Anmeldung("https://192.168.1.20:39280", lambda: {ich.konto, *einstellungen.stand.weitere_konten})
-app.include_router(anmeldungs_router(anmeldung))               # POST /api/v1/anmeldung, .../koppeln, .../abmelden, .../zugang
+keks = inhalt_cookie("meine-app")                              # Inhalts-Cookie je App (app_inhalt_meine_app)
+app.include_router(anmeldungs_router(anmeldung, cookie=keks))  # POST /api/v1/anmeldung, .../koppeln, .../abmelden, .../zugang
 pflicht = Depends(angemeldet(anmeldung))                       # für alle eigenen Endpunkte
-lesen = Depends(angemeldet(anmeldung, cookie=True))           # für Inhaltsadressen unter /api/v1/inhalt
+lesen = Depends(angemeldet(anmeldung, cookie=keks))            # für Inhaltsadressen unter /api/v1/inhalt
 ```
+
+Das Inhalts-Cookie (für `<img>`, `<audio>` und Downloads, die keinen Kopf senden) trägt die Kennung der App im Namen: ein
+Cookie gilt für den Rechner, nicht für den Port, und Apps auf demselben Rechner überschrieben sonst einander das Cookie
+(Bilder und Töne der zuerst geöffneten App kamen dann nicht mehr). Das Gerüst richtet es selbst ein
+(`geruest.inhalt_cookie`, `geruest.lesen`).
 
 Ist die Kellerwolke gerade nicht erreichbar, gilt eine Anmeldung, die sie früher bestätigt hat, aus dem Merker weiter,
 bis "Anmeldung bei Ausfall" (Einstellungen, Zugang, Vorgabe 24 Stunden, 0 schaltet es ab) nach der letzten Bestätigung;
