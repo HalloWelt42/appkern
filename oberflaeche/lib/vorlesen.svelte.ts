@@ -1,10 +1,12 @@
 // Vorlesen in der Oberfläche jeder App. Die App reicht den Strom ihrer Vertonung durch: ein POST an einen Weg der App,
 // je Zeile ein JSON im Format der Vertonung (`satz` mit dem Ton als Base64-WAV und dem Text, `ende`, `fehler`). Hier wird
 // Satz für Satz lückenlos gespielt (ein AudioContext, die Sätze vorausgeplant, nie ein Tonelement je Satz) und der
-// laufende Satz gemeldet; der erste Satz klingt, sobald er gesprochen ist. Gestartet wird im Tippen (`umschalten`),
+// laufende Satz gemeldet. Gespielt wird mit Vorlauf (vorlauf.ts): erst, wenn genug Ton bereitliegt; ist die Vertonung
+// ausgelastet, mehr, und reißt der Ton ab, wartet der Vorleser, bis wieder genug da ist. Gestartet wird im Tippen (`umschalten`),
 // sonst bleibt der Ton am iPhone stumm; ein zweites Tippen auf dieselbe Kennung hält an. Immer nur eines spielt: beginnt
 // das Vorlesen, hält der Einzelton an, und beginnt ein Ton- oder Videoelement der Seite, endet das Vorlesen.
 import { token } from "./api.svelte";
+import { Vorlauf } from "./vorlauf";
 import { einzelton } from "./wiedergabe.svelte";
 
 export interface VorleseSatz {
@@ -46,6 +48,8 @@ class Vorleser {
   #quellen: AudioBufferSourceNode[] = [];
   #lauf = 0;
   #wacht = false;
+  /** Vorlauf über die Läufe gemerkt: nach einem Abriss mehr, nach Läufen ohne langsam wieder weniger */
+  #vorlauf = new Vorlauf();
 
   /** Liest den Strom von `pfad` (unter /api/v1, POST mit `daten`) unter `kennung` vor; liest dieselbe Kennung schon,
    *  hält es an. Im Klick aufrufen. */
@@ -74,8 +78,46 @@ class Vorleser {
     let zeitpunkt = 0;
     let offen = 0;
     let fertig = false;
+    /** angekommene Sätze, die noch auf den Vorlauf warten */
+    let bereit: { puffer: AudioBuffer; satz: VorleseSatz }[] = [];
+    let spielt = false;
+    const jetzt = (): number => performance.now() / 1000;
+    const vorlauf = this.#vorlauf;
+    vorlauf.beginnen(jetzt());
+    const einplanen = (puffer: AudioBuffer, satz: VorleseSatz): void => {
+      const quelle = ctx.createBufferSource();
+      quelle.buffer = puffer;
+      quelle.connect(ctx.destination);
+      zeitpunkt = Math.max(zeitpunkt, ctx.currentTime + 0.05);
+      const beginn = zeitpunkt;
+      quelle.start(beginn);
+      zeitpunkt += puffer.duration + PAUSE_S;
+      offen++;
+      this.#quellen.push(quelle);
+      setTimeout(() => {
+        if (lauf !== this.#lauf) return;
+        this.satz = satz;
+        this.wartet = false;
+      }, Math.max(0, (beginn - ctx.currentTime) * 1000));
+      quelle.onended = () => {
+        offen--;
+        vorbei();
+      };
+    };
+    /** Spielt, was bereitliegt, sobald der Vorlauf es erlaubt (oder der Text zu Ende ist) */
+    const weiter = (): void => {
+      if (!spielt) {
+        const bereitS = bereit.reduce((s, b) => s + b.puffer.duration, 0);
+        if (!bereit.length || !vorlauf.genug(bereitS, jetzt(), fertig)) return;
+        spielt = true;
+      }
+      for (const b of bereit) einplanen(b.puffer, b.satz);
+      bereit = [];
+    };
     const vorbei = (): void => {
-      if (lauf === this.#lauf && fertig && offen === 0) this.#beenden(lauf);
+      if (lauf !== this.#lauf || !fertig || offen > 0 || bereit.length) return;
+      vorlauf.beenden();
+      this.#beenden(lauf);
     };
     try {
       const antwort = await fetch(`/api/v1${pfad}`, {
@@ -101,25 +143,15 @@ class Vorleser {
           if (z.art === "satz" && z.ton) {
             const puffer = await ctx.decodeAudioData(tonAus(z.ton));
             if (lauf !== this.#lauf) return;
-            const quelle = ctx.createBufferSource();
-            quelle.buffer = puffer;
-            quelle.connect(ctx.destination);
-            zeitpunkt = Math.max(zeitpunkt, ctx.currentTime + 0.05);
-            const beginn = zeitpunkt;
-            quelle.start(beginn);
-            zeitpunkt += puffer.duration + PAUSE_S;
-            offen++;
-            this.#quellen.push(quelle);
-            const satz = { nr: z.nr ?? 0, text: z.text ?? "" };
-            setTimeout(() => {
-              if (lauf !== this.#lauf) return;
-              this.satz = satz;
-              this.wartet = false;
-            }, Math.max(0, (beginn - ctx.currentTime) * 1000));
-            quelle.onended = () => {
-              offen--;
-              vorbei();
-            };
+            vorlauf.angekommen(puffer.duration);
+            // abgerissen: alles Eingeplante ist verklungen, bevor dieser Satz kam; dann erst wieder mit Vorlauf
+            if (spielt && offen === 0 && ctx.currentTime > zeitpunkt) {
+              vorlauf.abgerissen();
+              spielt = false;
+              this.wartet = true;
+            }
+            bereit.push({ puffer, satz: { nr: z.nr ?? 0, text: z.text ?? "" } });
+            weiter();
           } else if (z.art === "fehler") {
             this.fehler = z.meldung || "Vorlesen brach ab";
             fertig = true;
@@ -129,6 +161,7 @@ class Vorleser {
         }
       }
       fertig = true;
+      weiter();
       vorbei();
     } catch {
       if (lauf === this.#lauf && !steuerung.signal.aborted) {

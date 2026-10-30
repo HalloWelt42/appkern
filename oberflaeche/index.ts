@@ -32,6 +32,7 @@ export { anfrage, anfrageOeffnen, dateiSymbol, daneben, inKellerwolke, istMedium
 export { arbeit, arbeitsfrei } from "./lib/arbeit.svelte";
 export { einzelton } from "./lib/wiedergabe.svelte";
 export { vorleser, type VorleseSatz } from "./lib/vorlesen.svelte";
+export { Vorlauf, VORLAUF_MAX_S, VORLAUF_MIN_S } from "./lib/vorlauf";
 export { hilfe, hilfeThemen, type HilfeAbschnitt, type HilfeThema } from "./lib/hilfe.svelte";
 export { seitenleiste, seitenleisteStarten, seitenleisteUmschalten, type Seitenwahl } from "./lib/seitenleiste.svelte";
 export { VORLAGEN, vorlage, vorlageSetzen, vorlageStarten, type Vorlage } from "./lib/vorlage.svelte";
