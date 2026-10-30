@@ -1,6 +1,6 @@
 // Vorlauf beim Vorlesen (HELF-34, Nutzer: "mit leichtem Vorlauf für flüssiges Vorlesen, bei Auslastung des Rechners mehr
 // Vorlauf einplanen"). Der Vorleser spielt erst, wenn so viele Sekunden Ton bereitliegen, wie der Vorlauf verlangt, oder
-// der Text zu Ende gesprochen ist. Wie ausgelastet die Vertonung ist, wird gemessen statt geraten: kommt der Ton
+// der Text zu Ende gesprochen ist. Wie ausgelastet der Sprechdienst ist, wird gemessen statt geraten: kommt der Ton
 // schneller als Echtzeit, reicht der kleine Vorlauf; kommt er langsamer, wächst der Vorlauf mit dem Abstand. Reißt der
 // Ton trotzdem ab (der nächste Satz war nicht rechtzeitig da), wartet der Vorleser, bis wieder genug da ist, und merkt
 // sich den größeren Vorlauf für das nächste Mal; ein Lauf ohne Abriss nimmt ihn langsam wieder zurück.
@@ -9,7 +9,7 @@
 export const VORLAUF_MIN_S = 1.5;
 /** Größter Vorlauf: länger wartet niemand gern auf den ersten Ton */
 export const VORLAUF_MAX_S = 20;
-/** So viel schneller als Echtzeit gilt die Vertonung als frei (dann genügt der kleinste Vorlauf) */
+/** So viel schneller als Echtzeit gilt der Sprechdienst als frei (dann genügt der kleinste Vorlauf) */
 const FREI_FAKTOR = 1.5;
 
 export class Vorlauf {
@@ -31,13 +31,13 @@ export class Vorlauf {
     this.#tonS += dauerS;
   }
 
-  /** Wie schnell die Vertonung liefert: Sekunden Ton je Sekunde Wartezeit (über 1: schneller als Echtzeit) */
+  /** Wie schnell der Sprechdienst liefert: Sekunden Ton je Sekunde Wartezeit (über 1: schneller als Echtzeit) */
   tempo(jetzt: number): number {
     const vergangen = Math.max(0.001, jetzt - this.#beginn);
     return this.#tonS / vergangen;
   }
 
-  /** Der Vorlauf für diesen Augenblick: der gemerkte, bei langsamer Vertonung mehr (je langsamer, desto mehr) */
+  /** Der Vorlauf für diesen Augenblick: der gemerkte, bei langsamem Sprechdienst mehr (je langsamer, desto mehr) */
   noetigS(jetzt: number): number {
     const t = this.tempo(jetzt);
     const last = t >= FREI_FAKTOR ? 1 : FREI_FAKTOR / Math.max(t, 0.1);

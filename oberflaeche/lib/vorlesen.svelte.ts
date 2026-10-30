@@ -1,11 +1,13 @@
-// Vorlesen in der Oberfläche jeder App. Die App reicht den Strom ihrer Vertonung durch: ein POST an einen Weg der App,
-// je Zeile ein JSON im Format der Vertonung (`satz` mit dem Ton als Base64-WAV und dem Text, `ende`, `fehler`). Hier wird
-// Satz für Satz lückenlos gespielt (ein AudioContext, die Sätze vorausgeplant, nie ein Tonelement je Satz) und der
-// laufende Satz gemeldet. Gespielt wird mit Vorlauf (vorlauf.ts): erst, wenn genug Ton bereitliegt; ist die Vertonung
-// ausgelastet, mehr, und reißt der Ton ab, wartet der Vorleser, bis wieder genug da ist. Gestartet wird im Tippen (`umschalten`),
-// sonst bleibt der Ton am iPhone stumm; ein zweites Tippen auf dieselbe Kennung hält an. Immer nur eines spielt: beginnt
-// das Vorlesen, hält der Einzelton an, und beginnt ein Ton- oder Videoelement der Seite, endet das Vorlesen.
-import { token } from "./api.svelte";
+// Vorlesen in der Oberfläche jeder App. Die App reicht den Strom der App Vorlesen durch (der einen Stelle für
+// Sprachausgabe, Baustein `appkern.vorlesen`): ein POST an einen Weg der App, je Zeile ein JSON (`satz` mit dem Ton als
+// Base64-WAV und dem Text, `ende`, `fehler`). Hier wird Satz für Satz lückenlos gespielt (ein AudioContext, die Sätze
+// vorausgeplant, nie ein Tonelement je Satz) und der laufende Satz gemeldet. Gespielt wird mit Vorlauf (vorlauf.ts):
+// erst, wenn genug Ton bereitliegt; ist der Sprechdienst ausgelastet, mehr, und reißt der Ton ab, wartet der Vorleser,
+// bis wieder genug da ist. Gestartet wird im Tippen (`umschalten`), sonst bleibt der Ton am iPhone stumm; ein zweites
+// Tippen auf dieselbe Kennung hält an. Immer nur eines spielt: beginnt das Vorlesen, hält der Einzelton an, und beginnt
+// ein Ton- oder Videoelement der Seite, endet das Vorlesen. Ob die App eine App Vorlesen eingetragen hat, sagt
+// `vorlesbar.da` (einmal geholt mit `vorlesbarPruefen`).
+import { hole, token } from "./api.svelte";
 import { Vorlauf } from "./vorlauf";
 import { einzelton } from "./wiedergabe.svelte";
 
@@ -14,7 +16,7 @@ export interface VorleseSatz {
   text: string;
 }
 
-/** Pause zwischen zwei Sätzen (wie beim Sprechen am Stück in der Vertonung) */
+/** Pause zwischen zwei Sätzen (wie beim Sprechen am Stück) */
 const PAUSE_S = 0.3;
 
 function tonAus(basis64: string): ArrayBuffer {
@@ -37,7 +39,7 @@ async function grundAus(antwort: Response): Promise<string> {
 class Vorleser {
   /** Was gerade vorgelesen wird (Kennung, die die App vergibt), sonst null */
   kennung = $state<string | null>(null);
-  /** Der erste Satz ist noch nicht da (die Vertonung spricht ihn) */
+  /** Der erste Satz ist noch nicht da (er wird gerade gesprochen) */
   wartet = $state(false);
   /** Der Satz, der gerade klingt */
   satz = $state<VorleseSatz | null>(null);
@@ -205,3 +207,17 @@ class Vorleser {
 }
 
 export const vorleser = new Vorleser();
+
+/** Ist in dieser App eine App Vorlesen eingetragen? `null`: noch nicht gefragt */
+export const vorlesbar = $state<{ da: boolean | null }>({ da: null });
+let gefragt: Promise<void> | null = null;
+
+/** Fragt einmal je Seite den Weg `GET /vorlesen` der App (aus `appkern.vorlesen`); ohne Weg gilt: nicht da. */
+export function vorlesbarPruefen(neu = false): Promise<void> {
+  if (!gefragt || neu) {
+    gefragt = hole<{ da: boolean }>("/vorlesen")
+      .then((a) => { vorlesbar.da = a.da; })
+      .catch(() => { vorlesbar.da = false; });
+  }
+  return gefragt;
+}

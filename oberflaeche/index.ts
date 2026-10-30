@@ -17,6 +17,7 @@ export { default as Hilfe } from "./teile/Hilfe.svelte";
 export { default as Hilfepunkt } from "./teile/Hilfepunkt.svelte";
 export { default as Suchfeld } from "./teile/Suchfeld.svelte";
 export { default as EinstellungsZeile } from "./teile/EinstellungsZeile.svelte";
+export { default as VorleseKnopf } from "./teile/VorleseKnopf.svelte";
 export { leiste, leisteOeffnen, leisteSchliessen } from "./lib/leiste.svelte";
 export { abfrage, anfragenEinstellen, ApiFehler, ereignisse, hole, json, seitenFehler, seitenSignal, token, verbindung,
          type AnfrageOptionen, type FehlerArt } from "./lib/api.svelte";
@@ -31,7 +32,7 @@ export { ereignisseBenennen } from "./lib/ereignisse";
 export { anfrage, anfrageOeffnen, dateiSymbol, daneben, inKellerwolke, istMedium, ROLLEN, waehlen, wahl, zurueckZurKellerwolke } from "./lib/kellerwolke";
 export { arbeit, arbeitsfrei } from "./lib/arbeit.svelte";
 export { einzelton } from "./lib/wiedergabe.svelte";
-export { vorleser, type VorleseSatz } from "./lib/vorlesen.svelte";
+export { vorlesbar, vorlesbarPruefen, vorleser, type VorleseSatz } from "./lib/vorlesen.svelte";
 export { Vorlauf, VORLAUF_MAX_S, VORLAUF_MIN_S } from "./lib/vorlauf";
 export { hilfe, hilfeThemen, type HilfeAbschnitt, type HilfeThema } from "./lib/hilfe.svelte";
 export { seitenleiste, seitenleisteStarten, seitenleisteUmschalten, type Seitenwahl } from "./lib/seitenleiste.svelte";
