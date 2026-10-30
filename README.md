@@ -536,6 +536,16 @@ Meldet der Server eine andere, lädt die Seite von selbst neu: beim Start sofort
 oder wenn das Fenster wieder nach vorn kommt, je Fassung nur einmal; solange `ruhig()` der App nein sagt (etwa
 während einer Aufnahme), wartet es. Kein Nutzer muss nach dem Ausrollen selbst neu laden.
 
+Den Rahmen am Telefon regelt keine App selbst: `stil/rahmen.css` (in `stil.css` und `leitstand.css` enthalten, einzeln
+`appkern-oberflaeche/rahmen.css`) ist die eine Wahrheit nach dem Vorbild der Codeschmiede. Die Seite rollt nie, die App ist
+schirmhoch (100dvh), der Kopf beginnt ganz oben mit `env(safe-area-inset-top)` als Abstand und fester Höhe, die Fußleiste
+steht ganz unten ohne Abstand, ein Seitenrand `--rahmen-rand` (Karten setzen keinen eigenen darauf), Eingaben auf Geräten
+mit Finger 17 px (kein Zoom beim Tippen, Zoomen mit zwei Fingern bleibt). Eine Telefonansicht kennzeichnet nur ihre Teile:
+`data-rahmen="app"`, `"kopf"`, `"inhalt"`, `"fuss"`. Die Ansichtsprüfung misst das bei 375, 390 und 430 Pixeln mit sicheren
+Rändern wie am iPhone (`tools/ansicht.sh <adresse> --rahmen`), das Ausrollen verlangt einen befundfreien Lauf für den Stand
+von `frontend/` (Apps ohne Telefonansicht: `"rahmen": false` in `ansicht.json`). Nach Änderungen an viewport, Statusleiste
+oder Manifest die Web-App auf dem iPhone neu zum Home-Bildschirm hinzufügen, sonst zeigt iOS den alten Stand.
+
 Die Adresse im Browser ist ein echter Pfad: der erste Teil wählt den Bereich (`/transkripte`), weitere Teile liest die
 Seite aus `navigation.teile` (`/transkripte/<kennung>`); Zurück und Vor im Browser funktionieren, das Backend liefert
 für jeden Pfad außerhalb von `/api` die Oberfläche aus, nur nie für eine fehlende Datei: ein Weg mit Dateiendung (etwa

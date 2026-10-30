@@ -166,6 +166,25 @@ def stand_und_tests(z: Ziel, wurzel: Path) -> None:
         raise Abbruch(f"Appkern in Oberfläche ({oberflaeche[:7]}) und Backend ({(backend or 'nicht festgelegt')[:7]}) "
                       "verschieden: tools/appkern.sh ausführen")
     print(f"Appkern {oberflaeche[:7]} in Oberfläche und Backend")
+    rahmen_nachweis(wurzel)
+
+
+# Befundfreie Rahmenläufe der Ansichtsprüfung (oberflaeche/werkzeuge/ansicht.mjs --rahmen), je Git-Baum von frontend/
+RAHMEN_STEMPEL = Path.home() / "Library" / "Caches" / "Appkern" / "rahmen"
+
+
+def rahmen_nachweis(wurzel: Path, stempel: Path = RAHMEN_STEMPEL) -> None:
+    """Telefonrahmen und Tippen ohne Zoom (HELF-13, HELF-69) für genau diesen Stand von frontend/ geprüft: sonst weicht
+    eine App wieder unbemerkt von stil/rahmen.css ab. Apps ohne Telefonansicht tragen "rahmen": false in ansicht.json."""
+    einstellung = wurzel / "frontend" / "ansicht.json"
+    if einstellung.exists() and json.loads(einstellung.read_text()).get("rahmen") is False:
+        print("Rahmen: ohne Telefonansicht (ansicht.json)")
+        return
+    baum = _lauf(["git", "rev-parse", "HEAD:frontend"], ort=wurzel)
+    if not (stempel / f"{baum}.json").exists():
+        raise Abbruch(f"Rahmen am Telefon für diesen Stand nicht geprüft (frontend {baum[:7]}): Probebetrieb starten und "
+                      "tools/ansicht.sh <adresse> --rahmen ausführen (Befunde beheben, nur ein befundfreier Lauf zählt)")
+    print(f"Rahmen am Telefon geprüft für frontend {baum[:7]}")
 
 
 PROTOKOLLE = Path.home() / "Library" / "Logs" / "Ausrollen"

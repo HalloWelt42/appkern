@@ -1,9 +1,17 @@
 // Ansichtsprüfung (Lehren 12 und 13 der Transkription): jede Seite der App in allen Breiten, hell und dunkel, in einem
 // unsichtbaren Chrome. Misst seitliches Rollen, Überlauf über den rechten Rand, Kontrast von Text und die Verschiebung
 // fester Teile beim Zustandswechsel; legt von jeder Ansicht ein Bild ab.
+// Am Telefon (375, 390 und 430 Pixel, mit sicheren Rändern und Fingerbedienung wie am iPhone) misst sie zusätzlich den
+// Rahmen nach stil/rahmen.css (HELF-13): Seite fest, App schirmhoch, Kopf ganz oben mit Inhalt erst unter dem sicheren
+// Rand und in seiner Höhe, Fußleiste ganz unten, nicht verdeckt und nicht zu hoch, Eingaben ab 16 px, keine eigene Regel
+// für die Web-App-Ansicht am Rahmen, viewport-fit=cover; dazu Tippen ohne Zoom (HELF-69): jedes Eingabefeld ab 16 px, das
+// Zoomen mit zwei Fingern nicht gesperrt; dazu schmale Ränder (HELF-70): der Inhalt nutzt mindestens 90 Prozent der Breite.
+// --rahmen prüft nur das (Telefonbreiten, hell) und hält einen
+// befundfreien Lauf für den Stand von frontend/ fest; ohne diesen Nachweis rollt das Ausrollen nicht aus. Eine App ohne
+// Telefonansicht trägt "rahmen": false in ihre ansicht.json ein.
 //
 //   node frontend/node_modules/appkern-oberflaeche/oberflaeche/werkzeuge/ansicht.mjs <basis> [--ausgabe ORDNER]
-//        [--nur SEITE] [--thema hell|dunkel] [--breiten 1920,1440,1000,390] [--seiten DATEI] [--vorlage NAME]
+//        [--nur SEITE] [--thema hell|dunkel] [--breiten 1920,1440,1000,390] [--seiten DATEI] [--vorlage NAME] [--rahmen]
 //
 // im Wurzelordner der App (tools/ansicht.sh). Seiten und Zustandswechsel stehen in frontend/ansicht.json:
 //   { "seiten": [ { "name": "start", "pfad": "/" },
@@ -24,9 +32,14 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 
-const VORGABE_BREITEN = [[1920, 1080], [1440, 900], [1280, 800], [1100, 800], [900, 800], [390, 844]];
+// Telefone wie am iPhone: Breite, Höhe und sichere Ränder oben und unten (Statusleiste mit Kamera-Insel, Home-Balken)
+const TELEFONE = [[375, 812, 50, 34], [390, 844, 47, 34], [430, 932, 59, 34]];
+const VORGABE_BREITEN = [[1920, 1080], [1440, 900], [1280, 800], [1100, 800], [900, 800], ...TELEFONE.map(([b, h]) => [b, h])];
+// Wo ein befundfreier Rahmenlauf festgehalten wird, benannt nach dem Git-Baum von frontend/ (appkern.werkzeuge.ausrollen)
+const NUTZBAR_MIN = 0.9;        // so viel der Breite nutzt der Inhalt am Telefon mindestens (HELF-70)
+const STEMPEL = path.join(os.homedir(), "Library", "Caches", "Appkern", "rahmen");
 const THEMEN = ["hell", "dunkel"];
 const KONTRAST_MIN = 3;          // darunter ist Text auch groß kaum lesbar (WCAG für große Schrift)
 const FRIST_MS = 30000;
@@ -38,14 +51,16 @@ const wert = (name) => { const i = argumente.indexOf(name); return i >= 0 ? argu
 if (!basis) { console.error("Aufruf: ansicht.mjs <basis> [--ausgabe ORDNER] [--nur SEITE] [--thema hell|dunkel]"); process.exit(2); }
 const ausgabe = wert("--ausgabe") ?? path.join(os.tmpdir(), "ansicht");
 const nur = wert("--nur");
-const themen = wert("--thema") ? [wert("--thema")] : THEMEN;
+const nurRahmen = argumente.includes("--rahmen");
+const themen = wert("--thema") ? [wert("--thema")] : nurRahmen ? ["hell"] : THEMEN;
 const vorlage = wert("--vorlage");
 // eigene Breiten (etwa die eines Entwurfs); die Höhe folgt der Vorgabe: 844 am Telefon, sonst 900. Mit "BxH" (etwa
 // 844x390 für ein Telefon quer) gilt die angegebene Höhe.
 const BREITEN = wert("--breiten") ? wert("--breiten").split(",").map((z) => z.split("x").map(Number)).filter(([b]) => b > 0)
-  .map(([b, h]) => [b, h > 0 ? h : b <= 600 ? 844 : 900])
-  : VORGABE_BREITEN;
+  .map(([b, h]) => [b, h > 0 ? h : TELEFONE.find(([t]) => t === b)?.[1] ?? (b <= 600 ? 844 : 900)])
+  : nurRahmen ? TELEFONE.map(([b, h]) => [b, h]) : VORGABE_BREITEN;
 const einstellung = JSON.parse(fs.readFileSync(wert("--seiten") ?? "frontend/ansicht.json", "utf8"));
+if (nurRahmen && einstellung.rahmen === false) { console.log("Ohne Telefonansicht (ansicht.json: rahmen false); nichts zu prüfen"); process.exit(0); }
 const mitAnmeldung = einstellung.anmeldung !== false;
 const env = Object.fromEntries((fs.existsSync("backend/.env.test") ? fs.readFileSync("backend/.env.test", "utf8") : "")
   .split("\n").filter((z) => z.includes("=") && !z.trimStart().startsWith("#"))
@@ -179,6 +194,142 @@ const MESSEN = `(() => {
            geschnitten: [...new Set(geschnitten)].slice(0, 5) };
 })()`;
 
+// Rahmen am Telefon (stil/rahmen.css): die Sollwerte (Kopf- und Fußhöhe) liest die Messung aus der Seite selbst, die
+// sicheren Ränder aus env() wie das Gerät sie meldet.
+const RAHMEN = `(() => {
+  const b = [];
+  const px = (v) => parseFloat(v) || 0;
+  const weg = (e) => { const t = []; for (let x = e; x && x !== document.body && t.length < 3; x = x.parentElement)
+    t.unshift(x.tagName.toLowerCase() + (x.classList.length ? "." + [...x.classList].slice(0, 2).join(".") : "")); return t.join(" > "); };
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)";
+  document.body.append(probe);
+  const oben = px(getComputedStyle(probe).paddingTop);
+  probe.remove();
+  const meta = (n) => document.querySelector('meta[name="' + n + '"]')?.getAttribute("content") ?? null;
+  if (!/viewport-fit\\s*=\\s*cover/.test(meta("viewport") ?? "")) b.push("index.html: viewport ohne viewport-fit=cover");
+  if (meta("apple-mobile-web-app-status-bar-style") === "black-translucent") b.push("index.html: Statusleiste black-translucent");
+  if (meta("apple-mobile-web-app-capable") !== "yes") b.push("index.html: apple-mobile-web-app-capable fehlt");
+  const wurzeln = [...document.querySelectorAll('[data-rahmen="app"]')].filter((e) => e.getClientRects().length);
+  if (wurzeln.length !== 1) { b.push(wurzeln.length ? "mehr als ein Rahmen (data-rahmen=app)" : "keine Telefonansicht mit data-rahmen=app"); return b; }
+  const app = wurzeln[0];
+  const H = innerHeight;
+  const soll = (n) => px(getComputedStyle(document.documentElement).getPropertyValue(n));
+  if (!soll("--rahmen-kopf")) { b.push("stil/rahmen.css nicht geladen (keine Marke --rahmen-kopf)"); return b; }
+  for (const e of [document.documentElement, document.body]) {
+    const s = getComputedStyle(e);
+    if (s.overflowY !== "hidden") b.push(e.tagName.toLowerCase() + " kann rollen (overflow " + s.overflowY + "); die Seite muss fest stehen");
+  }
+  if (document.scrollingElement.scrollHeight > H + 1) b.push("Seite höher als der Schirm (" + document.scrollingElement.scrollHeight + " statt " + H + " px)");
+  const a = app.getBoundingClientRect();
+  if (Math.abs(a.top) > 1 || Math.abs(a.bottom - H) > 1) b.push("App nicht schirmhoch (" + Math.round(a.top) + " bis " + Math.round(a.bottom) + " statt 0 bis " + H + " px)");
+  const kopf = app.querySelector('[data-rahmen="kopf"]');
+  if (!kopf) b.push("kein Kopf mit data-rahmen=kopf");
+  else {
+    const k = kopf.getBoundingClientRect();
+    const hoehe = soll("--rahmen-kopf") + oben;
+    if (Math.abs(k.top) > 1) b.push("Kopf beginnt " + Math.round(k.top) + " px unter dem oberen Rand (seine Fläche gehört unter die Statusleiste)");
+    if (Math.abs(px(getComputedStyle(kopf).paddingTop) - oben) > 1) b.push("Kopf: Abstand oben " + getComputedStyle(kopf).paddingTop + " statt des sicheren Rands " + oben + " px");
+    if (k.height > hoehe + 1) b.push("Kopf zu hoch (" + Math.round(k.height) + " statt " + hoehe + " px)");
+    if (k.height < hoehe - 1) b.push("Kopf zu niedrig (" + Math.round(k.height) + " statt " + hoehe + " px)");
+    for (const e of kopf.querySelectorAll("*")) {
+      const r = e.getBoundingClientRect();
+      if (!r.width || !r.height || getComputedStyle(e).visibility === "hidden") continue;
+      if (r.top < oben - 1) { b.push("Kopf unter der Statusleiste: " + weg(e) + " beginnt bei " + Math.round(r.top) + " px, sicherer Rand " + oben + " px"); break; }
+      if (r.bottom > k.bottom + 1) { b.push("Kopf: " + weg(e) + " ragt " + Math.round(r.bottom - k.bottom) + " px unter den Kopf"); break; }
+    }
+    const t = document.elementFromPoint(k.left + k.width / 2, oben + (k.bottom - oben) / 2);
+    if (t && !kopf.contains(t)) b.push("Kopf verdeckt von " + weg(t));
+  }
+  const fuss = app.querySelector('[data-rahmen="fuss"]');
+  if (fuss && fuss.getClientRects().length) {
+    const f = fuss.getBoundingClientRect();
+    if (f.bottom > H + 1) b.push("Fußleiste verdeckt: ragt " + Math.round(f.bottom - H) + " px unter den Schirm");
+    if (f.bottom < H - 1) b.push("Fußleiste zu hoch: " + Math.round(H - f.bottom) + " px Luft darunter");
+    if (px(getComputedStyle(fuss).paddingBottom) > 0) b.push("Fußleiste: Abstand unten " + getComputedStyle(fuss).paddingBottom + " (unten gehört nichts hin)");
+    if (f.height > soll("--rahmen-fuss") + 1) b.push("Fußleiste zu hoch (" + Math.round(f.height) + " statt " + soll("--rahmen-fuss") + " px)");
+    for (const e of fuss.children) {
+      const r = e.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      if (t && !fuss.contains(t)) { b.push("Fußleiste verdeckt von " + weg(t)); break; }
+    }
+  }
+  // Nutzbare Breite (HELF-70): der breiteste sichtbare Teil des Inhalts (Fläche mit Grund, Rand oder Schatten, Text,
+  // Eingabe) gegen die Schirmbreite; Seitenrand plus Kartenrand plus Innenrand darf nicht zu viel verschenken
+  const inhalt = app.querySelector('[data-rahmen="inhalt"]');
+  if (!inhalt) b.push("kein Inhalt mit data-rahmen=inhalt");
+  else {
+    const W = innerWidth;
+    let breitest = 0, welches = null;
+    for (const e of inhalt.querySelectorAll("*")) {
+      const s = getComputedStyle(e);
+      const r = e.getBoundingClientRect();
+      if (!r.width || !r.height || s.visibility === "hidden" || r.bottom < 0 || r.top > H) continue;
+      const flaeche = (s.backgroundColor !== "rgba(0, 0, 0, 0)" && s.backgroundColor !== "transparent") || s.boxShadow !== "none"
+        || px(s.borderLeftWidth) > 0 || px(s.borderRightWidth) > 0;
+      const text = [...e.childNodes].some((k) => k.nodeType === 3 && k.textContent.trim());
+      if (!flaeche && !text && !["INPUT", "TEXTAREA", "SELECT", "IMG", "CANVAS", "VIDEO"].includes(e.tagName)) continue;
+      const w = Math.min(r.right, W) - Math.max(r.left, 0);
+      if (w > breitest) { breitest = w; welches = e; }
+    }
+    if (welches && breitest / W < ${NUTZBAR_MIN}) b.push("Inhalt nutzt nur " + Math.round(breitest / W * 100) + " Prozent der Breite (" + Math.round(breitest)
+      + " von " + W + " px, breitester Teil " + weg(welches) + "); Seitenrand nur einmal (--rahmen-rand), Karten ohne Außenrand");
+  }
+  const teile = [...document.querySelectorAll("[data-rahmen]")];
+  const passt = (sel) => teile.some((t) => { try { return t.matches(sel); } catch { return false; } });
+  const durch = (regeln) => { for (const r of regeln) {
+    const bedingung = r.conditionText ?? r.media?.mediaText ?? "";
+    if (r.cssRules && /display-mode/.test(bedingung)) {
+      for (const i of r.cssRules) if (i.selectorText && passt(i.selectorText)) b.push("eigene Regel für die Web-App-Ansicht am Rahmen: @media " + bedingung + " { " + i.selectorText + " }");
+    } else if (r.cssRules) durch(r.cssRules);
+  } };
+  for (const s of document.styleSheets) { try { durch(s.cssRules); } catch { /* fremde Datei */ } }
+  return [...new Set(b)];
+})()`;
+
+// Tippen am Telefon ohne Zoom (HELF-69): jedes Eingabefeld (auch Auswahl, Textfläche, bearbeitbare Flächen wie der
+// Code-Editor) mindestens 16 px, sonst vergrößert iOS beim Tippen die Seite; Zoomen mit zwei Fingern bleibt erlaubt.
+const TIPPEN = `(() => {
+  const b = [];
+  const weg = (e) => { const t = []; for (let x = e; x && x !== document.body && t.length < 3; x = x.parentElement)
+    t.unshift(x.tagName.toLowerCase() + (x.classList.length ? "." + [...x.classList].slice(0, 2).join(".") : "")); return t.join(" > "); };
+  const viewport = document.querySelector('meta[name="viewport"]')?.getAttribute("content") ?? "";
+  if (/maximum-scale|user-scalable\\s*=\\s*(no|0)/.test(viewport)) b.push("index.html: viewport sperrt das Zoomen (" + viewport + ")");
+  const ohne = ["checkbox", "radio", "range", "hidden", "file", "color", "button", "submit", "reset", "image"];
+  const felder = [...document.querySelectorAll("input, textarea, select, [contenteditable]:not([contenteditable=false])")]
+    .filter((e) => !ohne.includes(e.type));
+  const klein = felder.map((e) => [e, parseFloat(getComputedStyle(e).fontSize)]).filter(([, g]) => g < 16);
+  for (const [e, g] of klein.slice(0, 3)) b.push("Eingabe " + weg(e) + " mit " + g + " px (unter 16 vergrößert iOS beim Tippen die Seite)");
+  if (klein.length > 3) b.push("... und " + (klein.length - 3) + " weitere Eingaben unter 16 px");
+  return b;
+})()`;
+
+// Telefon wie am iPhone: sichere Ränder und Fingerbedienung; am Rechner beides aus
+const geraetSetzen = async (b, h) => {
+  const telefon = TELEFONE.find(([tb, th]) => tb === b && th === h);
+  await rufe("Emulation.setSafeAreaInsetsOverride", { insets: { top: telefon?.[2] ?? 0, bottom: telefon?.[3] ?? 0, left: 0, right: 0 } });
+  await rufe("Emulation.setTouchEmulationEnabled", { enabled: !!telefon, maxTouchPoints: telefon ? 5 : 1 });
+  return !!telefon;
+};
+
+// Den befundfreien Rahmenlauf für den Stand von frontend/ festhalten (nur ohne ungesicherte Änderungen dort)
+const stempeln = () => {
+  try {
+    if (execFileSync("git", ["status", "--porcelain", "--", "frontend"], { encoding: "utf8" }).trim()) {
+      console.log("Rahmen nicht festgehalten: frontend/ hat ungesicherte Änderungen (erst committen, dann prüfen)");
+      return;
+    }
+    const baum = execFileSync("git", ["rev-parse", "HEAD:frontend"], { encoding: "utf8" }).trim();
+    fs.mkdirSync(STEMPEL, { recursive: true });
+    fs.writeFileSync(path.join(STEMPEL, `${baum}.json`), JSON.stringify({ app: app.kennung, basis, zeit: new Date().toISOString(),
+      telefone: TELEFONE, befunde: 0 }, null, 2));
+    console.log(`Rahmen für frontend ${baum.slice(0, 7)} festgehalten`);
+  } catch (f) {
+    console.log(`Rahmen nicht festgehalten: ${f.message.split("\n")[0]}`);
+  }
+};
+
 const lage = (fest) => werte(`JSON.stringify(${JSON.stringify(fest)}.map((s) => { const e = document.querySelector(s);
   if (!e) return null; const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)]; }))`);
 
@@ -230,6 +381,7 @@ for (const thema of themen) {
   for (const [b, h] of BREITEN) {
     const telefon = b < 600 || h <= 500;   // auch ein Telefon quer
     await rufe("Emulation.setDeviceMetricsOverride", { width: b, height: h, deviceScaleFactor: telefon ? 2 : 1, mobile: telefon });
+    const iphone = await geraetSetzen(b, h);
     for (const seite of einstellung.seiten) {
       if (seite.auslassen || (nur && seite.name !== nur) || (seite.nur && !seite.nur.includes(b))) continue;
       const name = `${seite.name}-${b}${h <= 500 ? `x${h}` : ""}-${thema}${vorlage ? `-${vorlage}` : ""}`;
@@ -239,6 +391,8 @@ for (const thema of themen) {
       if (seite.speicher) await werte(`${Object.entries(seite.speicher).map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(v)});`).join("")} true`);
       await rufe("Page.navigate", { url: basis + seite.pfad });
       await warte(seite.warten_ms ?? 1800);
+      if (iphone && einstellung.rahmen !== false) for (const r of await werte(RAHMEN)) befunde.push(`${name}: Rahmen: ${r}`);
+      if (iphone) for (const r of await werte(TIPPEN)) befunde.push(`${name}: Tippen: ${r}`);
       const m = await werte(MESSEN);
       if (m.seitlich) befunde.push(`${name}: rollt seitlich`);
       for (const u of m.ueber) befunde.push(`${name}: läuft rechts über: ${u}`);
@@ -272,6 +426,7 @@ for (const thema of themen) {
 }
 ws.close();
 chrome.kill();
+if (nurRahmen && !befunde.length && !nur) stempeln();
 for (const b of befunde) console.log(b);
 console.log(befunde.length ? `${befunde.length} Befunde; Bilder in ${ausgabe}` : `Keine Befunde; Bilder in ${ausgabe}`);
 process.exit(befunde.length ? 1 : 0);

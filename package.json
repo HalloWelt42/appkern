@@ -29,6 +29,7 @@
     "./marken.css": "./oberflaeche/stil/marken.css",
     "./leitstand.css": "./oberflaeche/stil/leitstand.css",
     "./anmeldung.css": "./oberflaeche/stil/anmeldung.css",
+    "./rahmen.css": "./oberflaeche/stil/rahmen.css",
     "./auswahl.css": "./oberflaeche/stil/auswahl.css",
     "./hilfe.css": "./oberflaeche/stil/hilfe.css",
     "./vorlagen.css": "./oberflaeche/stil/vorlagen.css",

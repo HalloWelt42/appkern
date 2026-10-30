@@ -426,3 +426,50 @@ def test_aufraeumen_nur_nach_gelungenem_ausrollen_mit_grenze_aus_der_einstellung
     monkeypatch.setattr(ausrollen, "_ssh", faellt)
     assert ausrollen.ausrollen(tmp_path) == 0
     assert "Warnung: Aufräumen ging nicht" in capsys.readouterr().out
+
+
+def test_ausrollen_verlangt_den_rahmen_am_telefon_fuer_genau_diesen_stand(tmp_path):
+    """HELF-13: ohne befundfreien Rahmenlauf (ansicht.mjs --rahmen) für den Git-Baum von frontend/ kein Ausrollen."""
+    import subprocess
+    import pytest
+    from appkern.werkzeuge import ausrollen
+    app = tmp_path / "app"
+    (app / "frontend").mkdir(parents=True)
+    (app / "frontend" / "ansicht.json").write_text('{"seiten": []}')
+    git = ["git", "-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run(["git", "init", "-q"], cwd=app, check=True)
+    subprocess.run(["git", "add", "."], cwd=app, check=True)
+    subprocess.run([*git, "commit", "-qm", "a"], cwd=app, check=True)
+    stempel = tmp_path / "stempel"
+    with pytest.raises(ausrollen.Abbruch, match="nicht geprüft"):
+        ausrollen.rahmen_nachweis(app, stempel)
+    baum = subprocess.run(["git", "rev-parse", "HEAD:frontend"], cwd=app, capture_output=True, text=True).stdout.strip()
+    stempel.mkdir()
+    (stempel / f"{baum}.json").write_text("{}")
+    ausrollen.rahmen_nachweis(app, stempel)
+    # ein neuer Stand der Oberfläche braucht einen neuen Lauf
+    (app / "frontend" / "neu.css").write_text("a { color: red }")
+    subprocess.run(["git", "add", "."], cwd=app, check=True)
+    subprocess.run([*git, "commit", "-qm", "b"], cwd=app, check=True)
+    with pytest.raises(ausrollen.Abbruch):
+        ausrollen.rahmen_nachweis(app, stempel)
+    # ohne Telefonansicht erklärt die App das selbst
+    (app / "frontend" / "ansicht.json").write_text('{"rahmen": false, "seiten": []}')
+    ausrollen.rahmen_nachweis(app, stempel)
+
+
+def test_rahmen_ist_die_eine_wahrheit_der_telefonansicht():
+    """HELF-13/69/70: die Schale lädt stil/rahmen.css und kennzeichnet ihre Teile; sie selbst regelt keinen sicheren Rand."""
+    wurzel = Path(__file__).parent.parent / "oberflaeche"
+    assert '@import "./rahmen.css";' in (wurzel / "stil" / "alles.css").read_text()
+    assert '@import "./rahmen.css";' in (wurzel / "stil" / "leitstand.css").read_text()
+    schale = (wurzel / "teile" / "mobil" / "MobilSchale.svelte").read_text()
+    for teil in ("app", "kopf", "inhalt", "fuss"):
+        assert f'data-rahmen="{teil}"' in schale
+    for datei in (wurzel / "stil").glob("*.css"):
+        if datei.name != "rahmen.css":
+            text = datei.read_text()
+            assert "safe-area-inset-bottom" not in text and "display-mode" not in text, datei.name
+    rahmen = (wurzel / "stil" / "rahmen.css").read_text()
+    assert "safe-area-inset-bottom)" not in rahmen.split("*/", 1)[1]
+    assert "maximum-scale" not in (Path(__file__).parent.parent / "appkern" / "vorlage" / "dateien" / "frontend" / "index.html").read_text()

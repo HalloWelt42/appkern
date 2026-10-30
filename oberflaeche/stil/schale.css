@@ -191,21 +191,19 @@ button { font: inherit; color: inherit; }
 .tabelle tr.leer td { text-align: center; color: var(--text-3); }
 
 /* ----- Telefon ----- */
-.mobil { height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: var(--hg); padding-top: calc(env(safe-area-inset-top) + var(--oben-luft, 0px)); }
-/* Vom Home-Bildschirm (iOS 26): unmittelbar unter Uhr und Kamera-Insel fängt das System Berührungen für die
-   Mitteilungszentrale ab, Knöpfe dort waren nicht mehr erreichbar; darum etwas Luft unter dem sicheren Rand. */
-@media (display-mode: standalone) and (pointer: coarse) { .mobil { --oben-luft: 14px; } }
-/* Kopf kompakt (Nutzervorgabe 20.10.2026): eine Zeile, etwa 44 px, Titel einzeilig mit Auslassung */
-.mobil .t-kopf { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 12px; }
+/* Rahmen (Höhe, Kopf, Fußleiste, sichere Ränder, Rollen der Seite) nur aus stil/rahmen.css; hier allein die Gestaltung */
+.mobil { background: var(--hg); }
+/* Kopf kompakt (Nutzervorgabe 20.10.2026): eine Zeile, Titel einzeilig mit Auslassung */
+.mobil .t-kopf { display: flex; align-items: center; gap: 8px; padding-inline: 12px; }
 .mobil .t-kopf h1 { margin: 0; font-size: calc(var(--gross) + 4px); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Mit Knöpfen der Seite in derselben Zeile: Titel kleiner (nie unter 17 px), Knöpfe fest, nichts bricht um */
-.mobil .t-kopf.mit-aktionen { gap: 6px; padding: 4px 8px 4px 12px; }
+.mobil .t-kopf.mit-aktionen { gap: 6px; padding-inline: 12px 8px; }
 .mobil .t-kopf.mit-aktionen h1 { font-size: max(17px, var(--gross)); }
 .mobil .t-kopf > .t-aktionen, .mobil .t-kopf > .pille, .mobil .t-kopf > .rund { flex: none; }
 .mobil .t-aktionen { display: flex; align-items: center; gap: 4px; }
-.mobil .t-inhalt { flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; padding: 0 16px 16px; }
-.mobil .t-reiter { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--leiste); box-shadow: 0 -1px 0 var(--rand); padding: 6px 0 8px; } /* kein Abstand über dem Home-Balken (Nutzervorgabe 20.10.2026) */
-.mobil .t-reiter button { border: 0; background: transparent; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: var(--marke); color: var(--text-3); padding: 6px 0; min-height: 48px; }
+.mobil .t-inhalt { overflow-y: auto; overflow-x: clip; padding: 0 var(--rahmen-rand) var(--rahmen-rand); }
+.mobil .t-reiter { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--leiste); box-shadow: 0 -1px 0 var(--rand); }
+.mobil .t-reiter button { border: 0; background: transparent; font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: var(--marke); color: var(--text-3); padding: 0; height: 100%; min-width: 0; }
 .mobil .t-reiter button i { font-size: 21px; }
 .mobil .t-reiter button.aktiv { color: var(--akzent); font-weight: 600; }
 .mobil .t-gruppe { font-size: var(--marke); text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); padding: 16px 4px 6px; }
@@ -217,17 +215,19 @@ button { font: inherit; color: inherit; }
 .mobil .t-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mobil .t-meta { display: block; font-size: var(--klein); color: var(--text-3); margin-top: 2px; }
 .mobil .t-zeile.gefahr, .mobil .t-zeile.gefahr > i { color: var(--gefahr); }
-.mobil .t-band { margin: 0 16px 10px; padding: 10px 14px; border-radius: var(--r2); background: var(--warn-weich); color: var(--warn); font-size: var(--klein); display: flex; gap: 10px; }
+.mobil .t-band { margin: 0 var(--rahmen-rand) 10px; padding: 10px 14px; border-radius: var(--r2); background: var(--warn-weich); color: var(--warn); font-size: var(--klein); display: flex; gap: 10px; }
 .mobil .segment { display: flex; }
 .mobil .segment button { flex: 1; }
 .mobil .auftrag { grid-template-columns: minmax(0, 1fr); }
 .mobil .auftrag .art { display: none; }
 .mobil .feld { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.mobil .karte { padding: 4px 14px; }
+.mobil .karte { padding: 4px var(--rahmen-rand); margin-bottom: var(--rahmen-rand); }
 .mobil .seiten-kopf { padding: 4px 0 10px; }
 .mobil .tabelle td.zeit { white-space: normal; }
 .mobil .seiten-kopf h1 { display: none; }
-.mobil .seite .rollfeld { padding: 0; overflow: visible; }
+.mobil .seite .rollfeld { overflow: visible; }
+/* der Seitenrand kommt einmal vom Inhalt der Schale; ein Rollfeld setzt am Telefon keinen zweiten darauf (HELF-70) */
+.mobil .rollfeld { padding: 0; }
 .mobil .leiste { display: none; }
 .mobil .suche { min-width: 0; flex: 1; }
 .eingabe .wert.markierbar { user-select: all; -webkit-user-select: all; }

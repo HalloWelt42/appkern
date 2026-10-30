@@ -1,5 +1,6 @@
 <script lang="ts">
   // Eigene Ansicht fürs Telefon: Reiter unten (Bereiche der App, Aufträge, Mehr), Band bei fehlender Verbindung.
+  // Höhe, Kopf, Fußleiste und sichere Ränder kommen allein aus stil/rahmen.css (data-rahmen), wie in jeder Telefonansicht.
   import { onMount } from "svelte";
   import AnfrageOeffnen from "../AnfrageOeffnen.svelte";
   import AppWeg from "../AppWeg.svelte";
@@ -36,8 +37,8 @@
   const offen = $derived(auftraege.laufen + auftraege.warten);
 </script>
 
-<div class="mobil">
-  <div class="t-kopf" class:mit-aktionen={!!navigation.aktionen}>
+<div class="mobil" data-rahmen="app">
+  <div class="t-kopf" data-rahmen="kopf" class:mit-aktionen={!!navigation.aktionen}>
     {#if bereich && navigation.teile.length}
       <button class="rund" aria-label="Zurück" onclick={() => gehe(seite)}><i class="fa-solid fa-chevron-left"></i></button>
     {:else if unterMehr}<button class="rund" aria-label="Zurück" onclick={() => gehe("mehr")}><i class="fa-solid fa-chevron-left"></i></button>{/if}
@@ -59,7 +60,7 @@
         ? `${v.name} nicht eingerichtet; unter Mehr, Einstellungen eintragen.`
         : `${v.name} nicht erreichbar; nichts geht verloren.`}{/each}</span></div>
   {/if}
-  <div class="t-inhalt">
+  <div class="t-inhalt" data-rahmen="inhalt">
     {#if bereich}
       <bereich.seite />
     {:else if seite === "anfrage" && oeffnen}
@@ -74,7 +75,7 @@
       <MobilAuftraege />
     {/if}
   </div>
-  <nav class="t-reiter">
+  <nav class="t-reiter" data-rahmen="fuss">
     {#each reiter as b (b.schluessel)}
       <button class:aktiv={seite === b.schluessel} onclick={() => gehe(b.schluessel)}><i class="fa-solid {b.symbol}"></i>{b.titel}</button>
     {/each}
