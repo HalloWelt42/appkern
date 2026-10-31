@@ -125,17 +125,18 @@ Antworten Zeile für Zeile, `angebot(name, kennung, adresse)` füllt das
 Feld der Adresse in den Einstellungen aus dem Verzeichnis. Fehler kommen als `VerbundFehler` mit Meldung und Status des
 Ziels; die Adresse steht in einer Einstellung der App, nie fest im Code.
 
-**Vorlesen** (`appkern.vorlesen`): Sprachausgabe hat im Verbund genau eine Stelle, die App Vorlesen; das Sprechmodell
-bleibt isoliert im Klangwerk hinter der Leitstelle, Stimme und Tempo wählt man in der App Vorlesen. Eine App erbt
-`VorlesenEinstellungen` (Felder `vorlesen_adresse` und `vorlesen_stimme` unter Verbindungen), legt `Vorlesen(geruest)` an
-(Angebote aus dem Verzeichnis und, für die Vorlesestimme, jedes Mal aus der App Vorlesen: ihr Katalog und die eigenen
-Stimmen, die sie freigibt; die Wahl geht bei jedem Aufruf mit, leer heißt ihre Vorgabe; Verbindung in der Fußleiste) und bindet `vorlesen.router()` ein: `POST /api/v1/vorlesen` mit `{"text"}`
-liefert den Strom der App Vorlesen im Auftrag der Person (NDJSON, je Zeile `satz` mit Base64-WAV, `ende`, `fehler`),
-`GET /api/v1/vorlesen` sagt `{"da": ...}`. Mit eigener Prüfung vorher: `await vorlesen.antwort(vorlesen.zeilen(text,
-sitzung=...))`; was vor der ersten Zeile scheitert, ist eine Antwort mit Grund (`VorlesenFehler`, nie als 401), ein
-Abriss danach eine Zeile `fehler`. Die Satzteilung dazu steht in `appkern.saetze` (`saetze` mit Lage im Text,
-Abkürzungen und Ordnungszahlen; `stuecke` für zu lange Sätze). In der Oberfläche liest `VorleseKnopf` (Lautsprecher,
-zweites Tippen hält an) über den Vorleser mit Vorlauf vor.
+**Vorlesen** (`appkern.vorlesen`): der eine Weg jeder App zur Sprachausgabe; gesprochen wird von der Vertonung, die
+die Stimmen und ihre Freigaben hält (das Sprechmodell bleibt im Klangwerk hinter der Leitstelle). Eine App erbt
+`VorlesenEinstellungen` (Felder `vertonung_adresse` und `vorlesen_stimme` unter Verbindungen), legt `Vorlesen(geruest)`
+an (Angebote aus dem Verzeichnis und, für die Vorlesestimme, jedes Mal aus der Vertonung: ihr Katalog und die privaten
+Stimmen, die sie dieser App freigibt; leer heißt die Stimme ab Werk; Verbindung in der Fußleiste) und bindet
+`vorlesen.router()` ein: `POST /api/v1/vorlesen` mit `{"text"}` liefert den Strom der Vertonung im Auftrag der Person
+(NDJSON, je Zeile `satz` mit Base64-WAV, `ende`, `fehler`; lange Texte in Teilen bis 7500 Zeichen an Satzgrenzen, die
+Sätze durchgezählt), `GET /api/v1/vorlesen` sagt `{"da": ...}`. Mit eigener Prüfung vorher: `await
+vorlesen.antwort(vorlesen.zeilen(text, sitzung=...))`; was vor der ersten Zeile scheitert, ist eine Antwort mit Grund
+(`VorlesenFehler`, nie als 401), ein Abriss danach eine Zeile `fehler`. Die Satzteilung steht in `appkern.saetze`
+(`saetze` mit Lage im Text, Abkürzungen und Ordnungszahlen; `stuecke` für zu lange Sätze). In der Oberfläche liest
+`VorleseKnopf` (Lautsprecher, zweites Tippen hält an) über den Vorleser mit Vorlauf vor.
 
 ## Aufträge
 
@@ -608,7 +609,7 @@ Eine Spracheingabe ohne Datei nutzt dieselbe Aufnahme ohne den Rekorder: `aufneh
 `aufnahme.mitschrift`, dann `aufnahmeBeenden(name)`, `mitschriftAbwarten()` für das letzte Stück und `aufnahmeVerwerfen(id)`;
 `aufnahmeAbbrechen()` verwirft ohne Text.
 `einzelton.umschalten(kennung, adresse)` spielt kurze Töne im Tippen (am iPhone sonst stumm), `vorleser.umschalten(kennung,
-pfad, daten)` liest einen Strom der App Vorlesen vor (POST an einen Weg der App, je Zeile `satz` mit Base64-WAV,
+pfad, daten)` liest einen Strom der Vertonung vor (POST an einen Weg der App, je Zeile `satz` mit Base64-WAV,
 `ende`, `fehler`): Satz für Satz lückenlos in einem AudioContext, `vorleser.satz` zum Mitlesen, `vorleser.fehler` mit dem
 Grund; immer nur eines von beiden spielt. Gespielt wird mit Vorlauf (`lib/vorlauf.ts`): erst, wenn genug Ton bereitliegt
 (mindestens 1,5 Sekunden); liefert der Sprechdienst langsamer als Echtzeit (ausgelastet), entsprechend mehr, höchstens 20

@@ -1,7 +1,9 @@
-"""Vorlesen: Satzteilung und der Anschluss an die App Vorlesen (Strom im Auftrag der Person, Gründe vor der ersten
-Zeile als Antwort, Abriss danach als Zeile `fehler`, Feld mit Angebot und Verbindung)."""
+"""Vorlesen über die Vertonung: Satzteilung, Teile bis 7500 Zeichen mit durchgezählten Sätzen, Strom im Auftrag der
+Person, Gründe vor dem ersten Satz als Antwort, Abriss danach als Zeile `fehler`, Vorlesestimme je App mit der Auswahl
+aus der Vertonung (Katalog und privat nur, was sie dieser App freigibt)."""
 
 import json
+import re
 from pathlib import Path
 
 import httpx
@@ -10,7 +12,7 @@ from fastapi import FastAPI
 
 from appkern.app import Geruest, Grundeinstellungen
 from appkern.saetze import hat_worte, saetze, stuecke
-from appkern.vorlesen import Vorlesen, VorlesenEinstellungen, VorlesenFehler
+from appkern.vorlesen import TEIL_HOECHSTENS, Vorlesen, VorlesenEinstellungen, VorlesenFehler, stimmwahl, teile
 from test_geruest import Wolke
 
 
@@ -27,50 +29,61 @@ def test_saetze_abkuerzungen_ordnungszahlen_absaetze():
     assert all(text[x.von:x.bis].split() == x.text.split() for x in s)
 
 
-def test_stuecke_und_worte():
+def test_stuecke_teile_und_worte():
     lang = ", ".join(f"Teil {i} mit einigen Wörtern" for i in range(20)) + "."
-    teile = stuecke(lang, 60)
-    assert all(len(t) <= 60 for t in teile) and " ".join(teile).split() == lang.split()
+    st = stuecke(lang, 60)
+    assert all(len(t) <= 60 for t in st) and " ".join(st).split() == lang.split()
     assert stuecke("kurz") == ["kurz"] and stuecke("   ") == []
     assert hat_worte("Ja.") and not hat_worte(" - ... ")
+    text = "Das ist ein Satz mit genau so vielen Wörtern, dass er lang genug ist. " * 130
+    t = teile(text)
+    assert len(t) == 2 and all(len(x) <= TEIL_HOECHSTENS for x in t) and " ".join(t).split() == text.split()
+    assert stimmwahl("") is None and stimmwahl("katalog:eins") == {"art": "katalog", "name": "eins"}
+    assert stimmwahl("abc-123") == {"art": "klon", "knoten_id": "abc-123"}
 
 
-class Vorleseapp(Wolke):
-    """Kellerwolke wie im Gerüst-Test, dazu eine App Vorlesen unter vl.test, die sich merkt, wie sie gerufen wurde."""
+class Vertonung(Wolke):
+    """Kellerwolke wie im Gerüst-Test, dazu eine Vertonung unter vt.test, die sich merkt, wie sie gerufen wurde."""
 
     def __init__(self) -> None:
         super().__init__()
         self.rufe: list[httpx.Request] = []
+        self.privat_frei = True
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
-        if request.url.host != "vl.test":
+        if request.url.host != "vt.test":
             return super().__call__(request)
         self.rufe.append(request)
-        if request.url.path == "/api/v1/app":
-            return httpx.Response(200, json={"fassung": "0.1.0"})
-        if request.url.path == "/api/v1/stimmen":
-            return httpx.Response(200, json={"stimmen": [{"name": "eins", "titel": "Eins", "art": "katalog"},
-                                                         {"name": "privat:abc", "titel": "Eigene", "art": "eigen"}], "stand": ""})
+        pfad = request.url.path
+        if pfad == "/api/v1/app":
+            return httpx.Response(200, json={"fassung": "0.17.0"})
+        if pfad == "/api/v1/stimmen":
+            if request.url.params.get("bereich") == "privat":
+                if not self.privat_frei:
+                    return httpx.Response(403, json={"detail": "Private Stimmen sind dieser App nicht erlaubt"})
+                return httpx.Response(200, json=[{"id": "p-1", "name": "Eigene", "bereich": "privat"}])
+            return httpx.Response(200, json=[{"id": "katalog:eins", "name": "eins", "bereich": "katalog"}])
         text = json.loads(request.content)["text"]
-        if text == "verboten":
+        if text.startswith("verboten"):
             return httpx.Response(401, json={"detail": "Anmeldung fehlt"})
-        if text == "abriss":
+        if text.startswith("abriss"):
             return httpx.Response(200, stream=Abriss())
-        zeilen = [{"art": "satz", "nr": i, "text": t, "ton": "UklGRg=="} for i, t in enumerate(text.split("."))]
-        zeilen.append({"art": "ende", "saetze": len(zeilen), "dauer_ms": 0})
+        saetze_ = [t for t in re.split(r"(?<=[.!?])\s+", text) if t]
+        zeilen = [{"art": "satz", "nr": i, "text": t, "dauer_ms": 1000, "ton": "UklGRg=="} for i, t in enumerate(saetze_)]
+        zeilen.append({"art": "ende", "saetze": len(zeilen), "dauer_ms": 1000 * len(zeilen)})
         return httpx.Response(200, content="".join(json.dumps(z) + "\n" for z in zeilen),
                               headers={"content-type": "application/x-ndjson"})
 
 
 class Abriss(httpx.AsyncByteStream):
     async def __aiter__(self):
-        yield b'{"art": "satz", "nr": 0}\n'
+        yield b'{"art": "satz", "nr": 0, "dauer_ms": 1}\n'
         raise httpx.ReadError("weg")
 
 
 @pytest.fixture
 async def umgebung(tmp_path: Path):
-    ziel = Vorleseapp()
+    ziel = Vertonung()
     geruest = Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
                       einstellungen=Einstellungen, transport=httpx.MockTransport(ziel))
     vorlesen = Vorlesen(geruest)
@@ -84,6 +97,10 @@ async def umgebung(tmp_path: Path):
     await geruest.stoppen()
 
 
+def strom(ziel: Vertonung) -> list[httpx.Request]:
+    return [r for r in ziel.rufe if r.url.path == "/api/v1/sprechen/strom"]
+
+
 async def test_ohne_adresse_nicht_da(umgebung):
     geruest, vorlesen, _, c, h = umgebung
     assert (await c.get("/api/v1/vorlesen", headers=h)).json() == {"da": False}
@@ -92,26 +109,45 @@ async def test_ohne_adresse_nicht_da(umgebung):
     assert (await c.post("/api/v1/vorlesen", json={"text": "Hallo."})).status_code == 401
 
 
-async def test_strom_im_auftrag_der_person(umgebung):
+async def test_strom_im_auftrag_der_person_in_teilen(umgebung):
     geruest, vorlesen, ziel, c, h = umgebung
-    await geruest.einstellungen.aendern({"vorlesen_adresse": "http://vl.test/"})
-    assert vorlesen.adresse() == "http://vl.test" and (await c.get("/api/v1/vorlesen", headers=h)).json() == {"da": True}
-    r = await c.post("/api/v1/vorlesen", headers=h, json={"text": "Eins. Zwei"})
+    await geruest.einstellungen.aendern({"vertonung_adresse": "http://vt.test/"})
+    assert vorlesen.adresse() == "http://vt.test" and (await c.get("/api/v1/vorlesen", headers=h)).json() == {"da": True}
+    r = await c.post("/api/v1/vorlesen", headers=h, json={"text": "Eins. Zwei."})
     assert r.status_code == 200 and r.headers["content-type"].startswith("application/x-ndjson")
     zeilen = [json.loads(z) for z in r.text.splitlines()]
-    assert [z["art"] for z in zeilen] == ["satz", "satz", "ende"] and zeilen[1]["text"] == " Zwei"
-    ruf = ziel.rufe[-1]
-    assert ruf.url.path == "/api/v1/vorlesen/strom" and ruf.headers["authorization"] == "Bearer kw_app_gut"
-    assert ruf.headers["x-kellerwolke-sitzung"] == h["X-Kellerwolke-Sitzung"]
+    assert [z["art"] for z in zeilen] == ["satz", "satz", "ende"] and zeilen[-1] == {"art": "ende", "saetze": 2, "dauer_ms": 2000}
+    ruf = strom(ziel)[-1]
+    assert json.loads(ruf.content) == {"ausschreiben": True, "text": "Eins. Zwei."}      # ohne Wahl: Stimme ab Werk
+    assert ruf.headers["authorization"] == "Bearer kw_app_gut" and ruf.headers["x-kellerwolke-sitzung"] == h["X-Kellerwolke-Sitzung"]
+    lang = "Das ist ein Satz mit genau so vielen Wörtern, dass er lang genug ist. " * 130
+    zeilen = [json.loads(z) for z in (await c.post("/api/v1/vorlesen", headers=h, json={"text": lang})).text.splitlines()]
+    assert len(strom(ziel)) == 3 and [z["nr"] for z in zeilen if z["art"] == "satz"] == list(range(130))
     verbindungen = {v["name"]: v for v in (await c.get("/api/v1/verbindungen", headers=h)).json()}
-    assert verbindungen["Vorlesen"]["ok"] and verbindungen["Vorlesen"]["meldung"] == "Fassung 0.1.0"
-    angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_adresse", headers=h)).json()
-    assert angebot["optionen"][0]["wert"] == "http://vl.test"
+    assert verbindungen["Vertonung"]["ok"] and verbindungen["Vertonung"]["meldung"] == "Fassung 0.17.0"
+
+
+async def test_vorlesestimme_der_app(umgebung):
+    geruest, vorlesen, ziel, c, h = umgebung
+    angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_stimme", headers=h)).json()
+    assert [o["wert"] for o in angebot["optionen"]] == [""] and not angebot["eigener_wert"]
+    await geruest.einstellungen.aendern({"vertonung_adresse": "http://vt.test"})
+    angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_stimme", headers=h)).json()
+    assert [o["wert"] for o in angebot["optionen"]] == ["", "p-1", "katalog:eins"]
+    ziel.privat_frei = False                                          # nicht freigegeben: nur der Katalog
+    angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_stimme", headers=h)).json()
+    assert [o["wert"] for o in angebot["optionen"]] == ["", "katalog:eins"]
+    await geruest.einstellungen.aendern({"vorlesen_stimme": "p-1"})
+    await c.post("/api/v1/vorlesen", headers=h, json={"text": "Zwei."})
+    assert json.loads(strom(ziel)[-1].content)["stimme"] == {"art": "klon", "knoten_id": "p-1"}
+    await geruest.einstellungen.aendern({"vorlesen_stimme": "katalog:eins"})
+    await c.post("/api/v1/vorlesen", headers=h, json={"text": "Drei."})
+    assert json.loads(strom(ziel)[-1].content)["stimme"] == {"art": "katalog", "name": "eins"}
 
 
 async def test_ablehnung_vorher_abriss_danach(umgebung):
     geruest, vorlesen, _, c, h = umgebung
-    await geruest.einstellungen.aendern({"vorlesen_adresse": "http://vl.test"})
+    await geruest.einstellungen.aendern({"vertonung_adresse": "http://vt.test"})
     r = await c.post("/api/v1/vorlesen", headers=h, json={"text": "verboten"})
     assert r.status_code == 403 and "lässt das nicht zu" in r.json()["detail"]   # nie als 401 weiter (Lehre 39)
     r = await c.post("/api/v1/vorlesen", headers=h, json={"text": "abriss"})
@@ -127,17 +163,3 @@ def test_einstellungen_ohne_feld_abgelehnt(tmp_path: Path):
                       einstellungen=Grundeinstellungen)
     with pytest.raises(TypeError):
         Vorlesen(geruest)
-
-
-async def test_vorlesestimme_der_app(umgebung):
-    geruest, vorlesen, ziel, c, h = umgebung
-    angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_stimme", headers=h)).json()
-    assert [o["wert"] for o in angebot["optionen"]] == [""] and not angebot["eigener_wert"]
-    await geruest.einstellungen.aendern({"vorlesen_adresse": "http://vl.test"})
-    angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_stimme", headers=h)).json()
-    assert [(o["wert"], o["hinweis"]) for o in angebot["optionen"]][1:] == [("eins", "Katalog"), ("privat:abc", "eigene Stimme")]
-    await c.post("/api/v1/vorlesen", headers=h, json={"text": "Eins."})
-    assert json.loads(ziel.rufe[-1].content) == {"text": "Eins."}                  # ohne Wahl: Vorgabe von Vorlesen
-    await geruest.einstellungen.aendern({"vorlesen_stimme": "privat:abc"})
-    await c.post("/api/v1/vorlesen", headers=h, json={"text": "Zwei."})
-    assert json.loads(ziel.rufe[-1].content) == {"text": "Zwei.", "stimme": "privat:abc"}

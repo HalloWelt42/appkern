@@ -1,9 +1,9 @@
 <script lang="ts">
   // Lautsprecher zum Vorlesen: liest `text` über den Weg der App (Vorgabe `/vorlesen` aus `appkern.vorlesen`, der die
-  // App Vorlesen ruft) mit dem Vorleser vor; ein zweites Tippen hält an. Solange der erste Satz noch kommt, dreht sich
+  // Vertonung ruft) mit dem Vorleser vor; ein zweites Tippen hält an. Solange der erste Satz noch kommt, dreht sich
   // das Zeichen. `text` darf eine Funktion sein, dann wird der Text erst im Tippen gebaut. Mit `beschriftung` steht
   // ein Wort neben dem Zeichen (sonst nur das Zeichen mit Hinweis beim Überfahren); es bleibt beim Lesen stehen, nur das
-  // Zeichen wechselt zu Anhalten, damit der Knopf seine Breite behält. Ist keine App Vorlesen eingetragen
+  // Zeichen wechselt zu Anhalten, damit der Knopf seine Breite behält. Ist keine Vertonung eingetragen
   // (`vorlesbar.da` falsch), zeigt der Knopf sich nicht; eine App mit eigenem Weg setzt `immer`.
   import { onMount } from "svelte";
   import { vorlesbar, vorlesbarPruefen, vorleser } from "../lib/vorlesen.svelte";

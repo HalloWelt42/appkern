@@ -1,11 +1,11 @@
-// Vorlesen in der Oberfläche jeder App. Die App reicht den Strom der App Vorlesen durch (der einen Stelle für
-// Sprachausgabe, Baustein `appkern.vorlesen`): ein POST an einen Weg der App, je Zeile ein JSON (`satz` mit dem Ton als
+// Vorlesen in der Oberfläche jeder App. Die App reicht den Strom der Vertonung durch (Baustein `appkern.vorlesen`, der
+// eine Weg zur Sprachausgabe): ein POST an einen Weg der App, je Zeile ein JSON (`satz` mit dem Ton als
 // Base64-WAV und dem Text, `ende`, `fehler`). Hier wird Satz für Satz lückenlos gespielt (ein AudioContext, die Sätze
 // vorausgeplant, nie ein Tonelement je Satz) und der laufende Satz gemeldet. Gespielt wird mit Vorlauf (vorlauf.ts):
 // erst, wenn genug Ton bereitliegt; ist der Sprechdienst ausgelastet, mehr, und reißt der Ton ab, wartet der Vorleser,
 // bis wieder genug da ist. Gestartet wird im Tippen (`umschalten`), sonst bleibt der Ton am iPhone stumm; ein zweites
 // Tippen auf dieselbe Kennung hält an. Immer nur eines spielt: beginnt das Vorlesen, hält der Einzelton an, und beginnt
-// ein Ton- oder Videoelement der Seite, endet das Vorlesen. Ob die App eine App Vorlesen eingetragen hat, sagt
+// ein Ton- oder Videoelement der Seite, endet das Vorlesen. Ob die App eine Vertonung eingetragen hat, sagt
 // `vorlesbar.da` (einmal geholt mit `vorlesbarPruefen`).
 import { hole, token } from "./api.svelte";
 import { Vorlauf } from "./vorlauf";
@@ -208,7 +208,7 @@ class Vorleser {
 
 export const vorleser = new Vorleser();
 
-/** Ist in dieser App eine App Vorlesen eingetragen? `null`: noch nicht gefragt */
+/** Ist in dieser App eine Vertonung zum Vorlesen eingetragen? `null`: noch nicht gefragt */
 export const vorlesbar = $state<{ da: boolean | null }>({ da: null });
 let gefragt: Promise<void> | null = null;
 
