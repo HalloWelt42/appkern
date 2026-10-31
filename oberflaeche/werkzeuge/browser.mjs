@@ -55,12 +55,12 @@ function richteAbraeumenEin() {
   }
 }
 
-// Öffnet einen eigenen Chrome mit einer leeren Seite
-export async function oeffneSeite({ frist = FRIST_MS } = {}) {
+// Öffnet einen eigenen Chrome mit einer leeren Seite; schalter ergänzt die festen Schalter (etwa für Erweiterungen)
+export async function oeffneSeite({ frist = FRIST_MS, schalter = [] } = {}) {
   raeumeAlteProfile();
   richteAbraeumenEin();
   const profil = fs.mkdtempSync(path.join(os.tmpdir(), `${PRAEFIX}${process.pid}-`));
-  const chrome = spawn(CHROME, [...SCHALTER, `--user-data-dir=${profil}`, "about:blank"],
+  const chrome = spawn(CHROME, [...SCHALTER, ...schalter, `--user-data-dir=${profil}`, "about:blank"],
     { stdio: ["ignore", "ignore", "ignore", "pipe", "pipe"], detached: true });   // eigene Gruppe, siehe raeumeAb
   const beendet = new Promise((r) => chrome.once("exit", r));
   const eintrag = { chrome, profil };
@@ -95,6 +95,8 @@ export async function oeffneSeite({ frist = FRIST_MS } = {}) {
   return {
     // Antwort wie im Protokoll ({ result } oder { error }); Ereignisse kommen nur von dieser Seite
     rufe: (method, params) => sende(method, params, sitzung),
+    // Aufruf an den Browser selbst statt an die Seite (etwa Extensions.loadUnpacked)
+    rufeBrowser: (method, params) => sende(method, params),
     beiEreignis: (b) => { beobachter.push(b); },
     // Chrome selbst schließen lassen und warten, bis er samt Helfern weg ist; erst dann das Profil löschen
     schliesse: async () => {
