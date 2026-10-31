@@ -1,5 +1,5 @@
 // Ansichtsprüfung (Lehren 12 und 13 der Transkription): jede Seite der App in allen Breiten, hell und dunkel, in einem
-// eigenen Bereich des geteilten Hintergrund-Browsers (browser.mjs). Misst seitliches Rollen, Überlauf über den rechten
+// unsichtbaren Chrome (browser.mjs, endet sicher mit dem Lauf). Misst seitliches Rollen, Überlauf über den rechten
 // Rand, Kontrast von Text und die Verschiebung fester Teile beim Zustandswechsel; legt von jeder Ansicht ein Bild ab.
 // Am Telefon (375, 390 und 430 Pixel, mit sicheren Rändern und Fingerbedienung wie am iPhone) misst sie zusätzlich den
 // Rahmen nach stil/rahmen.css (HELF-13): Seite fest, App schirmhoch, Kopf ganz oben mit Inhalt erst unter dem sicheren
@@ -78,7 +78,7 @@ if (mitAnmeldung) {
   token = (await anmeldung.json()).token;
 }
 
-// eigener Bereich im geteilten Hintergrund-Browser (browser.mjs, HELF-76); er verschwindet mit dem Lauf, auch beim Abbruch
+// eigener Chrome an der Leitung (browser.mjs, HELF-76); er endet mit dem Lauf, auch beim Abbruch
 const browser = await oeffneSeite({ frist: FRIST_MS });
 const rufe = browser.rufe;
 const warte = (ms) => new Promise((r) => setTimeout(r, ms));
