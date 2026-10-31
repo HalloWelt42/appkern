@@ -11,8 +11,9 @@ der Kellerwolke und im Auftrag der Person (über `geruest.verbund`).
     # mit eigener Prüfung vorher (etwa Rechte an einer Karte):
     return await vorlesen.antwort(vorlesen.zeilen(text, sitzung=sitzung))
 
-Die Vertonung nimmt je Aufruf höchstens 8000 Zeichen; längere Texte teilt der Baustein an Satzgrenzen (`appkern.saetze`)
-und zählt die Sätze über alle Teile durch. Das Format des Stroms (NDJSON, je Zeile `art` satz, ende oder fehler; `satz`
+Eine Grenze für die Länge des ganzen Textes gibt es nicht (HELF-107, Nutzer: "man muss auch paketweise riesen listen
+vorlesen können"): Die Vertonung nimmt je Aufruf höchstens 8000 Zeichen, darum teilt der Baustein an Satzgrenzen
+(`appkern.saetze`) in Pakete, ruft sie nacheinander und zählt die Sätze über alle Pakete durch. Das Format des Stroms (NDJSON, je Zeile `art` satz, ende oder fehler; `satz`
 mit `nr`, `text` und dem Ton als Base64-WAV in `ton`) liest der Vorleser der Oberfläche (`vorleser`, mit Vorlauf). Was
 vor dem ersten Satz scheitert, ist ein `VorlesenFehler` mit Grund und Status, danach kommt eine Zeile `fehler`.
 
@@ -40,8 +41,6 @@ if TYPE_CHECKING:
 
 #: der Strom der Vertonung, Satz für Satz
 STROM = "/api/v1/sprechen/strom"
-#: so viel Text nimmt der Baustein am Stück; was länger ist, lehnt er ab
-TEXT_HOECHSTENS = 100_000
 #: so groß ist ein Teil für einen Aufruf der Vertonung (sie nimmt bis 8000 Zeichen)
 TEIL_HOECHSTENS = 7_500
 #: so beginnt der Wert einer Katalogstimme (wie die Vertonung ihre Kennungen schreibt)
@@ -61,7 +60,7 @@ class VorlesenEinstellungen(BaseModel):
 
 
 class Vorlesetext(BaseModel):
-    text: str = Field(min_length=1, max_length=TEXT_HOECHSTENS)
+    text: str = Field(min_length=1)
 
 
 class VorlesenFehler(Exception):
@@ -167,8 +166,6 @@ class Vorlesen:
         es danach: eine Zeile `fehler`. Bricht der Leser ab, endet die Anfrage und die Vertonung spricht nicht weiter."""
         if not self.da:
             raise VorlesenFehler("Vorlesen ist nicht eingerichtet (Einstellungen, Verbindungen, Vertonung)", 503)
-        if len(text) > TEXT_HOECHSTENS:
-            raise VorlesenFehler(f"Der Text ist länger als {TEXT_HOECHSTENS} Zeichen", 400)
         nr, dauer_ms = 0, 0
         koerper: dict[str, Any] = {"ausschreiben": True}
         if (wahl := stimmwahl(self.stimme())) is not None:

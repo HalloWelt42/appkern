@@ -162,6 +162,9 @@ class Vorleser {
           }
         }
       }
+      // ohne Zeile `ende` oder `fehler` ist der Strom unterwegs abgerissen (HELF-107: ein Vorschaltdienst kappte ihn
+      // still nach 60 Sekunden); das Gesprochene klingt aus, gemeldet wird es trotzdem
+      if (!fertig && lauf === this.#lauf) this.fehler = "Vorlesen brach ab: die Verbindung endete vor dem Schluss";
       fertig = true;
       weiter();
       vorbei();

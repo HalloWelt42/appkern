@@ -153,9 +153,18 @@ async def test_ablehnung_vorher_abriss_danach(umgebung):
     r = await c.post("/api/v1/vorlesen", headers=h, json={"text": "abriss"})
     zeilen = [json.loads(z) for z in r.text.splitlines()]
     assert [z["art"] for z in zeilen] == ["satz", "fehler"] and "brach ab" in zeilen[1]["meldung"]
-    with pytest.raises(VorlesenFehler) as f:
-        await anext(vorlesen.zeilen("x" * 100_001))
-    assert f.value.status == 400
+
+
+async def test_langer_text_ohne_grenze_in_paketen(umgebung):
+    geruest, _, vertonung, c, h = umgebung
+    await geruest.einstellungen.aendern({"vertonung_adresse": "http://vt.test"})
+    text = "Eintrag einer langen Liste mit ein paar Wörtern. " * 3000            # 150 000 Zeichen, früher abgelehnt
+    r = await c.post("/api/v1/vorlesen", headers=h, json={"text": text})
+    zeilen = [json.loads(z) for z in r.text.splitlines()]
+    pakete = [json.loads(q.content)["text"] for q in vertonung.rufe if q.url.path.endswith("/strom")]
+    assert len(pakete) == len(teile(text)) > 15 and all(len(p) <= TEIL_HOECHSTENS for p in pakete)
+    assert zeilen[-1] == {"art": "ende", "saetze": 3000, "dauer_ms": 3_000_000}
+    assert [z["nr"] for z in zeilen[:-1]] == list(range(3000))
 
 
 def test_einstellungen_ohne_feld_abgelehnt(tmp_path: Path):
