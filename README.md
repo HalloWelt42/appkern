@@ -228,7 +228,10 @@ unverändert). Geheimnisse (`SecretStr`) gehen nur verdeckt hinaus, bis auf die 
 liefert live eine Auswahl (`Angebot` mit `Option`en aus Wert, Name und Hinweis) und was gerade gilt (`stand`), etwa
 "verbunden: Apps/Transkription" oder "gefunden: /opt/homebrew/bin/ffmpeg"; "Eigener Wert" bleibt möglich. Das Gerüst
 bietet Adressen und Zertifikatsstelle selbst an und hilft mit `geruest.leitstelle_angebot("hoeren")` (Dienste und
-Modelle der Leitstelle mit dieser Fähigkeit, lesbar benannt); `geruest.kellerwolke_apps_angebot()` (oder `await
+Modelle der Leitstelle mit dieser Fähigkeit: Titel ist der echte Modellname, `aufgabe` steht in der Auswahl klein
+dahinter, etwa "Whisper Large V3 · Spracherkennung"; gespeichert wird die Kennung, sie bleibt bei neuen Namen gültig;
+gesperrte Dienste bietet die Leitstelle nicht an). Für Text ohne Auszeichnung gibt es `Modell.anzeige` und
+`DienstEintrag.anzeige`; `geruest.kellerwolke_apps_angebot()` (oder `await
 geruest.kellerwolke_apps()`) liefert die Apps aus den Zugängen der Kellerwolke desselben Kontos (ab Kellerwolke 0.88,
 mit dem App-Schlüssel). Eine Liste von Paaren (`list[str]` mit `json_schema_extra={"paar": {"erstes": "App", "zweites": "Stimme",
 "leer": "alle Stimmen"}}`) zeigt je Eintrag zwei Auswahlen aus `Angebot.optionen` und `Angebot.zweite`, gespeichert

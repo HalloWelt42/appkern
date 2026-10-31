@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 FeldArt = Literal["text", "zahl", "schalter", "auswahl", "geheimnis", "liste", "wert"]
 
@@ -41,11 +41,13 @@ class Feld(BaseModel):
 
 
 class Option(BaseModel):
-    """Ein Wert zur Auswahl, mit lesbarem Namen und kurzem Hinweis."""
+    """Ein Wert zur Auswahl, mit lesbarem Namen und kurzem Hinweis. `aufgabe` steht klein hinter dem Titel (bei Diensten
+    der Leitstelle: Modellname als Titel, etwa "Whisper Large V3 · Spracherkennung")."""
 
     wert: str
     titel: str
     hinweis: str = ""
+    aufgabe: str = Field(default="", exclude_if=lambda w: not w)    # nur gesendet, wenn es eine gibt
 
 
 class Angebot(BaseModel):

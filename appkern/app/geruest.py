@@ -252,7 +252,7 @@ class Geruest(Generic[E]):
             except LeitstellenFehler as f:
                 return Angebot(optionen=optionen, stand=f"Leitstelle antwortet nicht: {f.meldung}")
             passend = [m for m in modelle if faehigkeit in m.faehigkeiten]
-            optionen += [Option(wert=m.id, titel=m.name or m.id, hinweis=("geladen" if m.geladen else "")
+            optionen += [Option(wert=m.id, titel=m.name or m.id, aufgabe=m.aufgabe, hinweis=("geladen" if m.geladen else "")
                                 + (f" auf {m.knoten_name or m.knoten}" if m.knoten else "")) for m in passend]
             return Angebot(optionen=optionen, stand="" if passend else "Die Leitstelle bietet dieser App dafür nichts an")
 

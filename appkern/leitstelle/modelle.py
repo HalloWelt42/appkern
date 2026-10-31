@@ -18,6 +18,11 @@ class _Modell(BaseModel):
     model_config = ConfigDict(extra="ignore", frozen=True)
 
 
+def anzeige(name: str, aufgabe: str) -> str:
+    """Modellname mit der Aufgabe dahinter, wie Leitstelle und Maschinenraum ihn zeigen."""
+    return f"{name} · {aufgabe}" if aufgabe else name
+
+
 class Messwerte(_Modell):
     """Wie sich ein Modell im Betrieb verhält, gemessen von der Leitstelle."""
 
@@ -49,7 +54,8 @@ class Modell(_Modell):
     """Ein Modell oder Dienst, den die App nutzen darf (`GET /v1/models`)."""
 
     id: str
-    name: str = ""
+    name: str = ""                                         # der echte Modellname
+    aufgabe: str = ""                                      # ab Leitstelle 0.30, bei Diensten des Maschinenraums: Spracherkennung, Sprachausgabe ...
     geladen: bool = False
     knoten: str | None = None
     knoten_name: str | None = None                         # ab Leitstelle 0.17
@@ -57,6 +63,11 @@ class Modell(_Modell):
     faehigkeiten: list[str] = Field(default_factory=list)
     gb: float | None = None
     steckbrief: Steckbrief | None = None                   # ab Leitstelle 0.15
+
+    @property
+    def anzeige(self) -> str:
+        """Für Text, wo nichts klein gesetzt werden kann: "Whisper Large V3 · Spracherkennung"."""
+        return anzeige(self.name or self.id, self.aufgabe)
 
 
 class Werkzeugaufruf(_Modell):
@@ -227,12 +238,17 @@ class DienstEintrag(_Modell):
     schlaeft, nicht_erreichbar (Wörter bleiben Zeichenketten)."""
 
     kennung: str
-    name: str = ""
+    name: str = ""                                         # der echte Modellname; ohne Modell die Aufgabe
+    aufgabe: str = ""                                      # ab Leitstelle 0.30; leer, wenn der Name sie schon nennt
     zweck: str = ""
     faehigkeiten: list[str] = Field(default_factory=list)
     zustand: str = "aus"
     rechner: list[str] = Field(default_factory=list)
     bild: Bildsteckbrief | None = None
+
+    @property
+    def anzeige(self) -> str:
+        return anzeige(self.name or self.kennung, self.aufgabe)
 
 
 class Einbettungen(_Modell):

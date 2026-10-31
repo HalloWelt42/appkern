@@ -155,14 +155,19 @@ async def test_modelle_und_einbettungen():
             return httpx.Response(200, json={"object": "list", "data": [
                 {"id": "gross", "object": "model", "x-leitstelle": {"name": "Qwen 80B", "geladen": True, "knoten": "studio",
                                                                     "extern": False, "faehigkeiten": ["text"], "gb": 48.0, "neu": 1}},
-                {"id": "klangwerk-hoeren", "object": "model"}]})
+                {"id": "klangwerk-hoeren", "object": "model"},
+                {"id": "klangwerk-ton", "object": "model", "x-leitstelle": {"name": "Tonbearbeitung", "aufgabe": ""}},
+                {"id": "klangwerk-klonen", "object": "model", "x-leitstelle": {"name": "Qwen3-TTS 1.7B Base", "aufgabe": "Sprachausgabe"}}]})
         assert json.loads(request.content) == {"input": ["a", "b"]}
         return httpx.Response(200, json={"model": "nomic", "data": [{"index": 1, "embedding": [0.2]}, {"index": 0, "embedding": [0.1]}]})
 
     async with leitstelle(handler) as ls:
         modelle = await ls.modelle()
         einbettung = await ls.einbetten(["a", "b"])
-    assert [(m.id, m.geladen, m.gb) for m in modelle] == [("gross", True, 48.0), ("klangwerk-hoeren", False, None)]
+    assert [(m.id, m.geladen, m.gb) for m in modelle] == [("gross", True, 48.0), ("klangwerk-hoeren", False, None),
+                                                         ("klangwerk-ton", False, None), ("klangwerk-klonen", False, None)]
+    # Modellname mit Aufgabe (HELF-84); ältere Leitstellen ohne Aufgabe, Dienste ohne Modell nur mit der Aufgabe als Name
+    assert [m.anzeige for m in modelle] == ["Qwen 80B", "klangwerk-hoeren", "Tonbearbeitung", "Qwen3-TTS 1.7B Base · Sprachausgabe"]
     assert einbettung.vektoren == [[0.1], [0.2]] and einbettung.modell == "nomic"
 
 

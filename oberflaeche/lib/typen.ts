@@ -106,6 +106,7 @@ export interface Option {
   wert: string;
   titel: string;
   hinweis: string;
+  aufgabe?: string;      // klein hinter dem Titel: bei Diensten der Leitstelle die Aufgabe hinter dem Modellnamen
 }
 
 export interface Angebot {

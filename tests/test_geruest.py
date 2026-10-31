@@ -52,7 +52,7 @@ class Wolke:
         if request.url.host == "ls.test" and pfad == "/v1/models":
             return httpx.Response(200, json={"data": [
                 {"id": "gross", "x-leitstelle": {"name": "Groß", "faehigkeiten": ["text"], "geladen": True, "knoten": "studio"}},
-                {"id": "klangwerk-hoeren", "x-leitstelle": {"name": "Klangwerk Hören", "faehigkeiten": ["hoeren"]}}]})
+                {"id": "klangwerk-hoeren", "x-leitstelle": {"name": "Whisper Large V3", "aufgabe": "Spracherkennung", "faehigkeiten": ["hoeren"]}}]})
         return httpx.Response(404, json={"detail": "nicht da"})
 
     @staticmethod
@@ -216,7 +216,10 @@ async def test_angebote_fuer_verbindungen_und_leitstelle(umgebung):
     assert (await hoeren()).stand.startswith("Leitstelle noch nicht eingerichtet")
     await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"leitstelle_adresse": "http://ls.test", "leitstelle_schluessel": "ls_x"}})
     angebot = await hoeren()
-    assert [(o.wert, o.titel) for o in angebot.optionen] == [("klangwerk-hoeren", "Klangwerk Hören")] and angebot.stand == ""
+    # HELF-84: der echte Modellname als Titel, die Aufgabe klein dahinter; gewählt und gespeichert wird weiter die Kennung,
+    # eine gespeicherte Auswahl ("klangwerk-hoeren") gilt also unverändert
+    assert [(o.wert, o.titel, o.aufgabe) for o in angebot.optionen] == [("klangwerk-hoeren", "Whisper Large V3", "Spracherkennung")]
+    assert angebot.stand == ""
     text = await geruest.leitstelle_angebot("text", leer="Kette der App")()
     assert [(o.wert, o.titel, o.hinweis) for o in text.optionen] == [("", "Kette der App", "die Leitstelle wählt"),
                                                                      ("gross", "Groß", "geladen auf studio")]
