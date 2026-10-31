@@ -29,7 +29,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
 
   vorne:
-    image: caddy:2.11.6-alpine
+    image: caddy:2.11.7-alpine
     container_name: __KENNUNG__-vorne
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
