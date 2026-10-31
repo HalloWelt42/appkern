@@ -205,6 +205,8 @@ button { font: inherit; color: inherit; }
 .mobil .t-reiter { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); background: var(--leiste); box-shadow: 0 -1px 0 var(--rand); }
 .mobil .t-reiter button { border: 0; background: transparent; font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: var(--marke); color: var(--text-3); padding: 0; height: 100%; min-width: 0; }
 .mobil .t-reiter button i { font-size: 21px; }
+/* viele Reiter: der Name kürzt sich mit Auslassung, statt in den Nachbarn zu laufen */
+.mobil .t-reiter-name { max-width: 100%; padding-inline: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mobil .t-reiter button.aktiv { color: var(--akzent); font-weight: 600; }
 .mobil .t-gruppe { font-size: var(--marke); text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); padding: 16px 4px 6px; }
 .mobil .t-liste { background: var(--flaeche); border-radius: var(--r3); overflow: hidden; }

@@ -77,9 +77,9 @@
   </div>
   <nav class="t-reiter" data-rahmen="fuss">
     {#each reiter as b (b.schluessel)}
-      <button class:aktiv={seite === b.schluessel} onclick={() => gehe(b.schluessel)}><i class="fa-solid {b.symbol}"></i>{b.titel}</button>
+      <button class:aktiv={seite === b.schluessel} onclick={() => gehe(b.schluessel)}><i class="fa-solid {b.symbol}"></i><span class="t-reiter-name">{b.titel}</span></button>
     {/each}
-    <button class:aktiv={seite === "auftraege"} onclick={() => gehe("auftraege")}><i class="fa-solid fa-list-check"></i>Aufträge</button>
-    <button class:aktiv={seite === "mehr" || unterMehr} onclick={() => gehe("mehr")}><i class="fa-solid fa-ellipsis"></i>Mehr</button>
+    <button class:aktiv={seite === "auftraege"} onclick={() => gehe("auftraege")}><i class="fa-solid fa-list-check"></i><span class="t-reiter-name">Aufträge</span></button>
+    <button class:aktiv={seite === "mehr" || unterMehr} onclick={() => gehe("mehr")}><i class="fa-solid fa-ellipsis"></i><span class="t-reiter-name">Mehr</span></button>
   </nav>
 </div>
