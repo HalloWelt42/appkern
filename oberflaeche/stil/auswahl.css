@@ -14,3 +14,24 @@
 .auswahl-liste button:hover, .auswahl-liste button.aktiv { background: var(--akzent-weich); color: var(--akzent); }
 .auswahl-hinweis { font-size: var(--marke); color: var(--text-3); }
 .auswahl-liste button.aktiv .auswahl-hinweis { color: var(--akzent); opacity: .8; }
+.auswahl-text.platzhalter { color: var(--text-3); }
+
+/* Liste von Paaren in den Einstellungen (teile/PaarListe.svelte): je Eintrag zwei Auswahlen und ein Knopf; schmal
+   stehen die Auswahlen untereinander, damit Namen lesbar bleiben */
+.paarliste { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.paar-zeile { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 38px; gap: 6px; align-items: center; min-width: 0; }
+.paar-zeile.neu { margin-top: 6px; }
+.paar-zeile .auswahl, .paar-zeile .auswahl-knopf { width: 100%; min-width: 0; }
+.paar-zeile .auswahl-knopf { justify-content: space-between; }
+.paar-zeile .auswahl-liste { max-width: min(420px, 90vw); }
+.paar-knopf { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border-radius: var(--r2); border: 1px solid var(--rand);
+              background: var(--flaeche); color: var(--text-2); font: inherit; font-size: var(--klein); cursor: pointer; }
+.paar-knopf:hover:not(:disabled) { color: var(--text); background: var(--akzent-weich); }
+.paar-knopf.dazu:not(:disabled) { color: var(--akzent); }
+.paar-knopf:disabled { opacity: .45; cursor: default; }
+.paar-leer { font-size: var(--klein); color: var(--text-3); }
+@media (max-width: 600px) {
+  .paar-zeile { grid-template-columns: minmax(0, 1fr) 38px; }
+  .paar-zeile > .auswahl:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .paar-zeile > .paar-knopf { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+}

@@ -38,6 +38,14 @@ class Ich(_Modell):
         return f"Apps/{self.app}"
 
 
+class AppZugang(_Modell):
+    """Ein App-Zugang des Kontos (ohne Schlüssel): unter diesem Namen meldet sich die App bei anderen Apps an."""
+
+    id: UUID
+    app: str
+    aktiv: bool = True
+
+
 class Sperre(_Modell):
     app: str
     grund: str

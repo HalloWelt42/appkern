@@ -227,7 +227,12 @@ unverändert). Geheimnisse (`SecretStr`) gehen nur verdeckt hinaus, bis auf die 
 liefert live eine Auswahl (`Angebot` mit `Option`en aus Wert, Name und Hinweis) und was gerade gilt (`stand`), etwa
 "verbunden: Apps/Transkription" oder "gefunden: /opt/homebrew/bin/ffmpeg"; "Eigener Wert" bleibt möglich. Das Gerüst
 bietet Adressen und Zertifikatsstelle selbst an und hilft mit `geruest.leitstelle_angebot("hoeren")` (Dienste und
-Modelle der Leitstelle mit dieser Fähigkeit, lesbar benannt). In der Oberfläche ist jede Gruppe ein Reiter mit eigener
+Modelle der Leitstelle mit dieser Fähigkeit, lesbar benannt). Braucht ein Anbieter die Sitzung des Menschen, der die
+Einstellungen ansieht, meldet ihn `einstellungen.anbieten_mit_sitzung(name, anbieter)` an; so liefert
+`geruest.kellerwolke_apps_angebot()` (oder `await geruest.kellerwolke_apps(sitzung)`) die Apps aus den Zugängen seiner
+Kellerwolke. Eine Liste von Paaren (`list[str]` mit `json_schema_extra={"paar": {"erstes": "App", "zweites": "Stimme",
+"leer": "alle Stimmen"}}`) zeigt je Eintrag zwei Auswahlen aus `Angebot.optionen` und `Angebot.zweite`, gespeichert
+bleibt Text je Eintrag (`erster` oder `erster:zweiter`). In der Oberfläche ist jede Gruppe ein Reiter mit eigener
 Adresse (`/einstellungen/<gruppe>`), in voller Breite.
 
 ## Protokoll
@@ -488,7 +493,8 @@ In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`
 - **Einstellungen der App** in eigener Schale: `einstellungenLaden()`, Entwurf in `einstellungen.entwurf`,
   `einstellungenSpeichern()` und `einstellungenVerwerfen()`; `<EinstellungsZeile feld melden />` zeichnet eine
   Einstellung als Zeile des Leitstands (Schalter, Zahl mit Schritten, Auswahl auch aus dem Angebot mit eigenem Wert,
-  Liste, Geheimnis mit Auge, Kopieren und Ändern). Seite, Gruppen und Leiste zum Speichern baut die App.
+  Liste, Liste von Paaren über `<PaarListe>`, Geheimnis mit Auge, Kopieren und Ändern). Seite, Gruppen und Leiste zum
+  Speichern baut die App.
 
 ### Marken
 

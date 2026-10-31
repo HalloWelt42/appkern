@@ -86,11 +86,20 @@ export interface Feld {
   groesste: number | null;
   einheit: string;
   angebot: boolean;
+  paar: Paar | null;
   wert: unknown;
   gesetzt: boolean;
   vorgabe: unknown;
   herkunft: "gespeichert" | "umgebung" | "vorgabe";
   gruppe: string | null;
+}
+
+// Liste von Paaren: je Eintrag "erster" oder "erster<trenner>zweiter"; Optionen aus dem Angebot (optionen, zweite)
+export interface Paar {
+  erstes: string;
+  zweites: string;
+  leer: string;
+  trenner: string;
 }
 
 export interface Option {
@@ -101,6 +110,7 @@ export interface Option {
 
 export interface Angebot {
   optionen: Option[];
+  zweite: Option[];
   eigener_wert: boolean;
   stand: string;
 }

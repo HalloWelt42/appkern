@@ -16,6 +16,7 @@
   import { kopieren, markieren } from "../lib/zwischenablage";
   import Auswahl from "./Auswahl.svelte";
   import Gestaltung from "./Gestaltung.svelte";
+  import PaarListe from "./PaarListe.svelte";
 
   let { reiter = [] }: { reiter?: EinstellungsReiter[] } = $props();
   let felder = $state<Feld[]>([]);
@@ -61,7 +62,7 @@
       try {
         angebote[f.name] = await hole<Angebot>(`/einstellungen/angebot/${f.name}`, { signal });
       } catch {
-        angebote[f.name] = { optionen: [], eigener_wert: true, stand: "" };
+        angebote[f.name] = { optionen: [], zweite: [], eigener_wert: true, stand: "" };
       }
     }
   }
@@ -212,6 +213,14 @@
             {#if f.art === "schalter"}
               <button class="schalter" class:an={Boolean(wert(f))} aria-label={f.titel} aria-pressed={Boolean(wert(f))}
                       onclick={() => setzen(f, !wert(f))}></button>
+            {:else if f.paar}
+              <div class="angebot">
+                <PaarListe paar={f.paar} wert={(wert(f) as string[] | null) ?? []} erste={angebote[f.name]?.optionen ?? []}
+                           zweite={angebote[f.name]?.zweite ?? []} titel={f.titel} onaendern={(liste) => setzen(f, liste)} />
+                {#if angebote[f.name]?.stand}
+                  <div class="stand"><i class="fa-solid fa-circle-info"></i><span>{angebote[f.name].stand}</span></div>
+                {/if}
+              </div>
             {:else if f.angebot && f.art === "liste"}
               <div class="angebot">
                 <span class="chips">

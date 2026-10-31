@@ -143,7 +143,7 @@ async def test_angebot_aus_dem_system(db):
     app.include_router(einstellungs_router(e))
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
         r = (await c.get("/api/v1/einstellungen/angebot/leitstelle_adresse")).json()
-        assert r == {"optionen": [{"wert": "http://pi:8530", "titel": "Pi", "hinweis": "im Heimnetz"}], "eigener_wert": True,
+        assert r == {"optionen": [{"wert": "http://pi:8530", "titel": "Pi", "hinweis": "im Heimnetz"}], "zweite": [], "eigener_wert": True,
                      "stand": "verbunden"}
 
 
@@ -223,3 +223,49 @@ async def test_auftraege_tragen_ins_protokoll_ein(db):
         assert eintraege[zwei.id].stufe == "fehler" and eintraege[zwei.id].text == "RuntimeError: Dienst weg"
     finally:
         await a.stoppen()
+
+
+class MitPaaren(BaseModel):
+    freigabe: list[str] = Field([], title="Freigabe",
+                                json_schema_extra={"paar": {"erstes": "App", "zweites": "Stimme", "leer": "alle Stimmen"}})
+    falsch: str = Field("", title="Kein Paar")
+
+
+async def test_liste_von_paaren_und_angebot_mit_sitzung(db):
+    from appkern.einstellungen import Angebot, Option
+
+    e = Einstellungen(db, MitPaaren)
+    await e.starten()
+    gesehen: list[str] = []
+
+    async def freigabe(sitzung: str) -> Angebot:
+        gesehen.append(sitzung)
+        return Angebot(optionen=[Option(wert="fundus", titel="Fundus")], zweite=[Option(wert="s1", titel="Zeit")],
+                       eigener_wert=False)
+
+    e.anbieten_mit_sitzung("freigabe", freigabe)
+    feld = {f.name: f for f in e.felder()}["freigabe"]
+    assert feld.art == "liste" and feld.angebot and feld.paar is not None
+    assert (feld.paar.erstes, feld.paar.zweites, feld.paar.leer, feld.paar.trenner) == ("App", "Stimme", "alle Stimmen", ":")
+    app = FastAPI()
+    app.include_router(einstellungs_router(e))
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        r = (await c.get("/api/v1/einstellungen/angebot/freigabe", headers={"x-kellerwolke-sitzung": "t1"})).json()
+        assert r["zweite"] == [{"wert": "s1", "titel": "Zeit", "hinweis": ""}] and gesehen == ["t1"]
+        await c.patch("/api/v1/einstellungen", json={"werte": {"freigabe": ["fundus", "medienpool:s1"]}})
+    assert e.stand.freigabe == ["fundus", "medienpool:s1"]          # gespeichert wie bisher, Text je Eintrag
+
+    async def ohne() -> Angebot:
+        return Angebot()
+
+    e.anbieten("freigabe", ohne)                                     # ein neuer Anbieter ersetzt den alten
+    assert (await e.angebot("freigabe", "t2")) == Angebot() and gesehen == ["t1"]
+
+
+def test_paar_nur_fuer_listen():
+    class Falsch(BaseModel):
+        x: str = Field("", json_schema_extra={"paar": {"erstes": "a", "zweites": "b", "leer": "c"}})
+
+    from appkern.einstellungen.dienst import _paar
+    with pytest.raises(TypeError):
+        _paar(Falsch.model_fields["x"].json_schema_extra, "text", "x")

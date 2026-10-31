@@ -26,7 +26,7 @@ import httpx
 
 from .fehler import KellerwolkeFehler, NichtErreichbar, NichtGefunden, fehler_aus
 from .modelle import (
-    Aenderungen, Aktion, Anfrage, AnfrageNeu, Herkunft, Ich, Knoten, Sperre, Version, WahlSeite,
+    Aenderungen, Aktion, Anfrage, AppZugang, AnfrageNeu, Herkunft, Ich, Knoten, Sperre, Version, WahlSeite,
 )
 
 # Was als Inhalt geschrieben werden kann.
@@ -75,6 +75,9 @@ GEDULD_S = 900.0
 """So lange wartet ein Aufruf auf eine nicht erreichbare Kellerwolke (ein Neustart des Rechners dauert wenige Minuten).
 Tests setzen APPKERN_KELLERWOLKE_GEDULD_S=0 (über appkern.testen), damit eine fehlende Kellerwolke sofort auffällt."""
 WARTEN_S = 5.0
+ABFRAGE_S = 10.0
+"""Für Abfragen, die sofort antworten müssen (Auswahl in den Einstellungen)."""
+SITZUNG = "x-kellerwolke-sitzung"
 log = logging.getLogger("appkern.kellerwolke")
 
 
@@ -163,6 +166,20 @@ class Kellerwolke:
 
     async def ich(self) -> Ich:
         return Ich.model_validate((await self._anfrage("GET", "/ich")).json())
+
+    async def app_zugaenge(self, sitzung: str) -> list[AppZugang]:
+        """Die App-Zugänge des Kontos eines angemeldeten Menschen (mit seiner Sitzung, nicht dem App-Schlüssel), etwa
+        für eine Auswahl der Apps in den Einstellungen. Ohne Sitzung `KeinRecht`; nie mit Schlüsseln."""
+        if not sitzung:
+            raise fehler_aus(403, "Nur mit der Sitzung eines angemeldeten Menschen")
+        try:
+            antwort = await self._client.get(f"{self.adresse}/api/v1/app-zugaenge", headers={SITZUNG: sitzung},
+                                             timeout=ABFRAGE_S)
+        except httpx.TransportError as f:
+            raise NichtErreichbar(f"Kellerwolke nicht erreichbar: {f}") from f
+        if antwort.status_code >= 400:
+            raise fehler_aus(antwort.status_code, _meldung(antwort))
+        return sorted((AppZugang.model_validate(z) for z in antwort.json()), key=lambda z: z.app.lower())
 
     async def knoten(self, knoten_id: UUID | str) -> Knoten:
         return Knoten.model_validate((await self._anfrage("GET", f"/knoten/{knoten_id}")).json())

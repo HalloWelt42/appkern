@@ -17,6 +17,7 @@ export { default as Hilfe } from "./teile/Hilfe.svelte";
 export { default as Hilfepunkt } from "./teile/Hilfepunkt.svelte";
 export { default as Suchfeld } from "./teile/Suchfeld.svelte";
 export { default as EinstellungsZeile } from "./teile/EinstellungsZeile.svelte";
+export { default as PaarListe } from "./teile/PaarListe.svelte";
 export { default as VorleseKnopf } from "./teile/VorleseKnopf.svelte";
 export { leiste, leisteOeffnen, leisteSchliessen } from "./lib/leiste.svelte";
 export { abfrage, anfragenEinstellen, ApiFehler, ereignisse, hole, json, seitenFehler, seitenSignal, token, verbindung,

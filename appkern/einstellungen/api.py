@@ -5,9 +5,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.params import Depends
 from pydantic import BaseModel, ValidationError
+
+from appkern.kellerwolke.zugang import SITZUNG
 
 from .dienst import Einstellungen, UnbekanntesFeld
 from .modelle import Angebot, Feld
@@ -50,10 +52,11 @@ def einstellungs_router(einstellungen: Einstellungen, *, prefix: str = "/api/v1/
             raise HTTPException(status_code=404, detail="Kein Geheimnis dieses Namens")
 
     @router.get("/angebot/{name}", response_model=Angebot)
-    async def angebot(name: str) -> Angebot:
-        """Was für ein Feld zur Wahl steht und was gerade gilt (live aus dem System)."""
+    async def angebot(name: str, request: Request) -> Angebot:
+        """Was für ein Feld zur Wahl steht und was gerade gilt (live aus dem System); manche Anbieter lesen mit der
+        Sitzung des Menschen (siehe `Einstellungen.anbieten_mit_sitzung`)."""
         try:
-            return await einstellungen.angebot(name)
+            return await einstellungen.angebot(name, request.headers.get(SITZUNG, ""))
         except UnbekanntesFeld:
             raise HTTPException(status_code=404, detail="Für dieses Feld gibt es kein Angebot")
 

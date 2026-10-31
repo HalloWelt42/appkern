@@ -25,7 +25,7 @@ from pydantic import BaseModel, SecretStr, ValidationError
 
 from appkern.datenbank import Datenbank
 
-from .modelle import Angebot, Feld, FeldArt
+from .modelle import Angebot, Feld, FeldArt, Paar
 
 M = TypeVar("M", bound=BaseModel)
 SCHEMA = [
@@ -127,6 +127,7 @@ class Einstellungen(Generic[M]):
         self._stand: M | None = None
         self._beobachter: list[Callable[[M, set[str]], Awaitable[None] | None]] = []
         self._anbieter: dict[str, Callable[[], Awaitable[Angebot]]] = {}
+        self._mit_sitzung: dict[str, Callable[[str], Awaitable[Angebot]]] = {}
 
     async def starten(self) -> M:
         await self.db.einrichten("einstellungen", SCHEMA)
@@ -151,11 +152,27 @@ class Einstellungen(Generic[M]):
     def anbieten(self, name: str, anbieter: Callable[[], Awaitable[Angebot]]) -> None:
         """Für ein Feld eine Auswahl aus dem System anbieten (siehe `Angebot`); die Oberfläche zeigt sie statt eines
         bloßen Textfelds."""
-        if name not in self.modell.model_fields:
-            raise UnbekanntesFeld(name)
+        self._eintragen(name)
         self._anbieter[name] = anbieter
 
-    async def angebot(self, name: str) -> Angebot:
+    def anbieten_mit_sitzung(self, name: str, anbieter: Callable[[str], Awaitable[Angebot]]) -> None:
+        """Wie `anbieten`, nur bekommt der Anbieter die Sitzung des Menschen, der die Einstellungen gerade ansieht (der
+        Kopf `x-kellerwolke-sitzung`), etwa um die App-Zugänge seines Kontos in der Kellerwolke zu lesen."""
+        self._eintragen(name)
+        self._mit_sitzung[name] = anbieter
+
+    def _eintragen(self, name: str) -> None:
+        if name not in self.modell.model_fields:
+            raise UnbekanntesFeld(name)
+        self._anbieter.pop(name, None)
+        self._mit_sitzung.pop(name, None)
+
+    def hat_angebot(self, name: str) -> bool:
+        return name in self._anbieter or name in self._mit_sitzung
+
+    async def angebot(self, name: str, sitzung: str = "") -> Angebot:
+        if name in self._mit_sitzung:
+            return await self._mit_sitzung[name](sitzung)
         anbieter = self._anbieter.get(name)
         if anbieter is None:
             raise UnbekanntesFeld(name)
@@ -220,7 +237,7 @@ class Einstellungen(Generic[M]):
                 name=name, titel=info.title or name, beschreibung=info.description or "", art=art, optionen=optionen,
                 beschriftungen={str(k): str(v) for k, v in (extra.get("beschriftungen") or {}).items()},
                 schritt=extra.get("schritt"), kleinste=kleinste, groesste=groesste, einheit=str(extra.get("einheit", "")),
-                angebot=name in self._anbieter,
+                angebot=self.hat_angebot(name), paar=_paar(extra, art, name),
                 wert=verdeckt(wert) if art == "geheimnis" else _json(wert), gesetzt=bool(wert) if art == "geheimnis" else True,
                 vorgabe=None if art == "geheimnis" else _json(_klartext(getattr(vorgabe, name))), herkunft=herkunft,
                 gruppe=str(extra.get("gruppe", "")) or None))
@@ -232,6 +249,16 @@ class Einstellungen(Generic[M]):
         if info is None or _art(info.annotation)[0] != "geheimnis":
             raise UnbekanntesFeld(name)
         return _klartext(getattr(self.stand, name)) or ""
+
+
+def _paar(extra: Mapping[str, Any], art: FeldArt, name: str) -> Paar | None:
+    """Die Beschreibung einer Liste von Paaren (`json_schema_extra={"paar": {...}}`); nur für Listen."""
+    roh = extra.get("paar")
+    if roh is None:
+        return None
+    if art != "liste":
+        raise TypeError(f"{name}: Paare gibt es nur für Listen")
+    return Paar.model_validate(roh)
 
 
 def _grenzen(info: Any) -> tuple[float | None, float | None]:

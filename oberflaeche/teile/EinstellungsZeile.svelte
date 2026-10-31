@@ -1,13 +1,15 @@
 <script lang="ts">
   // Eine Einstellung der App als Zeile des Leitstands (Baustein .einstellung): Name, ein Satz, was sie bewirkt, und das
   // passende Bedienelement: Schalter, Zahl mit Schritten, Auswahl mit lesbaren Namen (auch aus dem Angebot des Systems,
-  // mit eigenem Wert, wo erlaubt), Text, Liste, Geheimnis mit Auge, Kopieren und Ändern. Geänderte Werte tragen einen
-  // Punkt, bis sie gespeichert sind (Entwurf in lib/einstellungen.svelte.ts). Mit `thema` sitzt ein Hilfepunkt am Namen.
+  // mit eigenem Wert, wo erlaubt), Text, Liste, Liste von Paaren (teile/PaarListe.svelte, ganze Breite), Geheimnis mit
+  // Auge, Kopieren und Ändern. Geänderte Werte tragen einen Punkt, bis sie gespeichert sind (Entwurf in
+  // lib/einstellungen.svelte.ts). Mit `thema` sitzt ein Hilfepunkt am Namen.
   import { einstellungen, einstellungsAngebot, einstellungsGeheimnis, einstellungSetzen, einstellungsWert } from "../lib/einstellungen.svelte";
   import type { Feld, Option } from "../lib/typen";
   import { kopieren } from "../lib/zwischenablage";
   import Auswahl from "./Auswahl.svelte";
   import Hilfepunkt from "./Hilfepunkt.svelte";
+  import PaarListe from "./PaarListe.svelte";
 
   let { feld, thema = "", abschnitt = "", melden = () => {} }: {
     feld: Feld; thema?: string; abschnitt?: string; melden?: (text: string) => void;
@@ -22,16 +24,19 @@
   let geheimAendern = $state(false);
   let eigen = $state(false);
   let angebot = $state<Option[]>([]);
+  let zweite = $state<Option[]>([]);
   let eigenerWert = $state(true);
   let stand = $state("");
   $effect(() => {
     if (!feld.angebot) return;
     void einstellungsAngebot(feld.name).then((a) => {
       angebot = a.optionen;
+      zweite = a.zweite ?? [];
       eigenerWert = a.eigener_wert;
       stand = a.stand;
     }).catch(() => {
       angebot = [];
+      zweite = [];
       eigenerWert = true;
     });
   });
@@ -82,7 +87,7 @@
   }
 </script>
 
-<div class="einstellung" class:geaendert>
+<div class="einstellung" class:geaendert class:breit={!!feld.paar}>
   <div>
     <div class="name">{feld.titel}{#if thema}<Hilfepunkt {thema} {abschnitt} titel="Hilfe zu {feld.titel}" />{/if}{#if geaendert}<span
       class="einstellung-punkt" title="Geändert, noch nicht gespeichert"></span>{/if}</div>
@@ -99,6 +104,9 @@
         <button type="button" class="knopf symbol klein" title="{feld.titel} erhöhen" aria-label="{feld.titel} erhöhen" onclick={() => zahlSetzen(schritt)}><i class="fa-solid fa-plus"></i></button>
         {#if feld.einheit}<span class="einheit">{feld.einheit}</span>{/if}
       </span>
+    {:else if feld.paar}
+      <PaarListe paar={feld.paar} wert={Array.isArray(v) ? (v as string[]) : []} erste={angebot} {zweite} titel={feld.titel}
+                 onaendern={(liste) => einstellungSetzen(feld.name, liste)} />
     {:else if feld.art === "liste" && feld.angebot}
       <span class="einstellung-chips">
         {#each optionen as o (o.wert)}

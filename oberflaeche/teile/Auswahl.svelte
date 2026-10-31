@@ -1,12 +1,13 @@
 <script lang="ts" generics="T extends string | number | null">
   // Auswahl als Knopf mit aufklappender Liste (statt nativer Auswahlfelder): zeigt immer die Beschriftung, nie den
-  // Wert. Schließt bei Klick daneben und mit Escape.
+  // Wert (ohne Wahl den Platzhalter). Schließt bei Klick daneben und mit Escape.
   let {
     wert = $bindable(),
     optionen,
     symbol = "",
     titel = "",
     klein = false,
+    platzhalter = "",
     onwahl,
   }: {
     wert: T;
@@ -14,6 +15,7 @@
     symbol?: string;
     titel?: string;
     klein?: boolean;
+    platzhalter?: string;
     onwahl?: (w: T) => void;
   } = $props();
 
@@ -37,7 +39,7 @@
 <span class="auswahl" bind:this={wurzel}>
   <button class="auswahl-knopf" class:klein type="button" title={titel || undefined} aria-haspopup="listbox" aria-expanded={offen}
           onclick={() => (offen = !offen)}>
-    {#if symbol}<i class="fa-solid {symbol}"></i>{/if}{#if anzeige}<span class="auswahl-text">{anzeige}</span>{/if}<i class="fa-solid fa-chevron-down auswahl-pfeil"></i>
+    {#if symbol}<i class="fa-solid {symbol}"></i>{/if}{#if anzeige}<span class="auswahl-text">{anzeige}</span>{:else if platzhalter}<span class="auswahl-text platzhalter">{platzhalter}</span>{/if}<i class="fa-solid fa-chevron-down auswahl-pfeil"></i>
   </button>
   {#if offen}
     <span class="auswahl-liste" role="listbox">

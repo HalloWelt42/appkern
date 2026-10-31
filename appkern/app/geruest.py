@@ -258,6 +258,28 @@ class Geruest(Generic[E]):
 
         return anbieter
 
+    async def kellerwolke_apps(self, sitzung: str) -> tuple[list[Option], str]:
+        """Die Apps aus den Zugängen der Kellerwolke (Konto des Menschen, der gerade die Einstellungen ansieht) als
+        Auswahl, Wert ist der Name des Zugangs; dazu ein Satz zum Stand (leer, wenn alles da ist)."""
+        if self.kellerwolke is None:
+            return [], "Kellerwolke noch nicht eingerichtet (Reiter Verbindungen)"
+        try:
+            zugaenge = await self.kellerwolke.app_zugaenge(sitzung)
+        except KellerwolkeFehler as f:
+            return [], f"Die Apps der Kellerwolke ließen sich nicht lesen: {f}"
+        return [Option(wert=z.app, titel=z.app, hinweis="" if z.aktiv else "gesperrt") for z in zugaenge], ""
+
+    def kellerwolke_apps_angebot(self, *, leer: str | None = None):
+        """Anbieter (mit Sitzung, siehe `Einstellungen.anbieten_mit_sitzung`) für ein Feld, das eine App nennt: die Apps
+        aus den Zugängen der Kellerwolke. `leer` bietet zusätzlich den leeren Wert mit diesem Namen an."""
+
+        async def anbieter(sitzung: str) -> Angebot:
+            optionen, stand = await self.kellerwolke_apps(sitzung)
+            return Angebot(optionen=([Option(wert="", titel=leer)] if leer else []) + optionen, eigener_wert=False,
+                           stand=stand)
+
+        return anbieter
+
     def begleiter_anmelden(self, *begleiter: Begleiter) -> None:
         """Vor dem Start anmelden (siehe `Begleiter`)."""
         if self._laeuft:

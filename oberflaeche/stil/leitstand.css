@@ -450,6 +450,9 @@ select.eingabe { padding-right: var(--a5); }
 .einstellung .wert .eingabe.einstellung-text { width: min(360px, 100%); text-align: left; font-family: var(--schrift); }
 .einstellung-geheim { font-family: var(--schrift-code); font-size: var(--klein); color: var(--text-2); overflow-wrap: anywhere; }
 .einstellung-chips { display: flex; flex-wrap: wrap; gap: var(--a1); justify-content: flex-end; }
+/* Liste von Paaren braucht die ganze Breite: Bezeichnung oben, Liste darunter */
+.einstellung.breit { grid-template-columns: minmax(0, 1fr); gap: var(--a2); }
+.einstellung.breit .wert { display: block; }
 
 .schalter { width: 50px; height: 28px; border-radius: var(--r2); background: var(--karte-3); position: relative; border: 0; cursor: pointer; flex: none; }
 .schalter::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: var(--r1); background: var(--text-2); transition: left var(--schnell); }
