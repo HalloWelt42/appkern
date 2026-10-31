@@ -7,6 +7,7 @@
   // (`reiter`) stehen zwischen den erzeugten Gruppen und der Anzeige und bringen ihre Seite selbst mit. Antwortet die
   // App nicht, sagt das allein die Schale; sobald sie wieder antwortet, lädt die Seite die Einstellungen neu.
   import { onDestroy } from "svelte";
+  import { fest } from "../lib/stelle.svelte";
   import { anzeige, anzeigeSetzen, THEMEN as THEMA } from "../lib/anzeige.svelte";
   import { hole, json, seitenFehler, seitenSignal } from "../lib/api.svelte";
   import { beiRueckkehr } from "../lib/erreichbar.svelte";
@@ -313,7 +314,7 @@
     {/if}
 
     {#if geaendert.length || fehler}
-      <div class="speicherleiste">
+      <div class="speicherleiste" use:fest={"unten"}>
         {#if fehler}
           <i class="fa-solid fa-triangle-exclamation" style="color:var(--gefahr)"></i><span class="fehlerzeile">{fehler}</span>
         {:else}

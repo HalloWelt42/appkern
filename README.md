@@ -617,6 +617,15 @@ Grund; immer nur eines von beiden spielt. Gespielt wird mit Vorlauf (`lib/vorlau
 (mindestens 1,5 Sekunden); liefert der Sprechdienst langsamer als Echtzeit (ausgelastet), entsprechend mehr, höchstens 20
 Sekunden; reißt der Ton ab, wartet der Vorleser, bis wieder genug da ist, und merkt sich den größeren Vorlauf. Muss der Text erst geladen werden, schaltet `vorleser.entsperren()` im Tippen den
 Ton frei, `starten` folgt danach.
+
+**Rollen zu einer Stelle** (`lib/stelle.svelte.ts`, HELF-91): eine Wahrheit für Mitlesen, Sprünge zu Treffern und
+Abweichungen und die Auswahl. Feste Bereiche melden sich mit `use:fest={"oben"}` bzw. `"unten"` (Kopf, Telefonkopf und
+Fußleiste, Spieler, Speicherleiste tun das schon); ihre Höhe wird gemessen und per ResizeObserver am Rollfeld als
+`--fest-oben` und `--fest-unten` samt `scroll-padding` gepflegt, sodass auch Anker und Fokus sie einhalten.
+`zuStelle(el)` rollt nur das Rollfeld der Stelle (nie die Vorfahren wie `scrollIntoView`) und setzt sie ins obere
+Drittel des freien Bereichs (`nurWennNoetig` lässt eine ganz sichtbare stehen); `Mitrollen` folgt der gesprochenen
+Stelle (`folge(el)`) und rollt erst, wenn sie aus dem oberen Drittel läuft, eigenes Rollen pausiert es eine Weile.
+`freierBereich(feld)` und `stelleFrei(el)` geben die Messung her.
 Dazu die Listenstile (`.zeile`, `.stand-pille`, `.optionen`, `.knopfzeile`).
 
 ## Neue App aus der Vorlage
@@ -663,7 +672,9 @@ streng, sagt `gestaltung.toml` im Wurzelordner: `marken = "scharf"` lässt den C
 
 `appkern.testen` hilft den Tests der Apps: Werte des eigenen Testzugangs aus `backend/.env.test`, `aufraeumen`
 (Dateien vor Ordnern, mit Wiederholung) und `aktionen_zurueckziehen`. Die Ansichtsprüfung liegt bei der Oberfläche
-(`oberflaeche/werkzeuge/ansicht.mjs`).
+(`oberflaeche/werkzeuge/ansicht.mjs`); ihre Zustandswechsel können klicken, wischen, den Spieler an eine
+Zeit setzen (`zeit`) oder in ein Feld tippen (`tippen`), und mit `marke` prüft sie, dass die angesprungene Stelle danach
+ganz sichtbar und von keinem festen Kopf und keiner klebenden Leiste verdeckt ist.
 
 **Browser für Prüfungen und Skripte** (`oberflaeche/werkzeuge/browser.mjs`): `oeffneSeite()` startet einen eigenen
 unsichtbaren Chrome mit einer Seite (`rufe`, `beiEreignis`, `schliesse`), verbunden über eine Leitung statt über einen

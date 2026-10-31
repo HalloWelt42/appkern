@@ -2,6 +2,7 @@
   // Eigene Ansicht fürs Telefon: Reiter unten (Bereiche der App, Aufträge, Mehr), Band bei fehlender Verbindung.
   // Höhe, Kopf, Fußleiste und sichere Ränder kommen allein aus stil/rahmen.css (data-rahmen), wie in jeder Telefonansicht.
   import { onMount } from "svelte";
+  import { fest } from "../../lib/stelle.svelte";
   import AnfrageOeffnen from "../AnfrageOeffnen.svelte";
   import AppWeg from "../AppWeg.svelte";
   import { verbindung } from "../../lib/erreichbar.svelte";
@@ -38,7 +39,7 @@
 </script>
 
 <div class="mobil" data-rahmen="app">
-  <div class="t-kopf" data-rahmen="kopf" class:mit-aktionen={!!navigation.aktionen}>
+  <div class="t-kopf" data-rahmen="kopf" use:fest={"oben"} class:mit-aktionen={!!navigation.aktionen}>
     {#if bereich && navigation.teile.length}
       <button class="rund" aria-label="Zurück" onclick={() => gehe(seite)}><i class="fa-solid fa-chevron-left"></i></button>
     {:else if unterMehr}<button class="rund" aria-label="Zurück" onclick={() => gehe("mehr")}><i class="fa-solid fa-chevron-left"></i></button>{/if}
@@ -75,7 +76,7 @@
       <MobilAuftraege />
     {/if}
   </div>
-  <nav class="t-reiter" data-rahmen="fuss">
+  <nav class="t-reiter" data-rahmen="fuss" use:fest={"unten"}>
     {#each reiter as b (b.schluessel)}
       <button class:aktiv={seite === b.schluessel} onclick={() => gehe(b.schluessel)}><i class="fa-solid {b.symbol}"></i><span class="t-reiter-name">{b.titel}</span></button>
     {/each}

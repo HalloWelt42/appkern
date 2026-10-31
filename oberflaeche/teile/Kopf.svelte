@@ -6,6 +6,7 @@
   import { pruefen, verbindung } from "../lib/erreichbar.svelte";
   import { sitzung } from "../lib/sitzung.svelte";
   import { verbindungen } from "../lib/verbindungen.svelte";
+  import { fest } from "../lib/stelle.svelte";
 
   let { rechts }: { rechts?: Snippet } = $props();
   const app = $derived(sitzung.app!);
@@ -13,7 +14,7 @@
   const alle = $derived(verbindungen.liste.map((v) => `${v.name}: ${v.ok ? "verbunden" : v.meldung}`).join("\n"));
 </script>
 
-<header class="kopf">
+<header class="kopf" use:fest={"oben"}>
   <div class="marke"><span class="symbol"><i class="fa-solid {app.symbol}"></i></span> {app.name}
     <span class="marke-fassung" title="Fassung der App">{app.fassung}</span></div>
   <span class="rolle" title="Leitstelle verteilt Aufträge, Kellerwolke hält die Dateien, {app.name} {app.rolle}">

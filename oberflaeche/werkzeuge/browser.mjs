@@ -10,8 +10,9 @@
 //   await seite.rufe("Page.navigate", { url });
 //   await seite.schliesse();
 //
-// Schalter: stumm, Kamera und Mikrofon als Attrappe ohne Rückfrage, ohne Zwischenspeicher für Zurück (verlassene Seiten
-// hielten sonst ihre Ereignisströme offen). Umgebung: CHROME (Programm).
+// Schalter: stumm, Abspielen ohne vorheriges Antippen (Prüfungen klicken per Skript), Kamera und Mikrofon als Attrappe
+// ohne Rückfrage, ohne Zwischenspeicher für Zurück (verlassene Seiten hielten sonst ihre Ereignisströme offen).
+// Umgebung: CHROME (Programm).
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -19,7 +20,7 @@ import { spawn } from "node:child_process";
 
 const CHROME = process.env.CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PRAEFIX = "appkern-browser-";
-const SCHALTER = ["--headless=new", "--hide-scrollbars", "--mute-audio", "--no-first-run",
+const SCHALTER = ["--headless=new", "--hide-scrollbars", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--no-first-run",
   "--disable-features=BackForwardCache", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream",
   "--remote-debugging-pipe"];
 const FRIST_MS = 30000;          // Vorgabe: so lange wartet ein Aufruf auf seine Antwort

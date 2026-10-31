@@ -4,6 +4,7 @@
   // `stoppBei`: hält an dieser Zeit an (Bearbeiten, "Nur diesen Beitrag").
   import { arbeit } from "../lib/arbeit.svelte";
   import { marke } from "../lib/zeit";
+  import { fest } from "../lib/stelle.svelte";
 
   interface Spur {
     von: number;
@@ -132,7 +133,7 @@
        onpause={() => (laeuft = false)} onended={() => (laeuft = false)}
        onloadedmetadata={() => (gesamt = Number.isFinite(ton.duration) ? ton.duration : 0)}></audio>
 
-<div class={kompakt ? "t-spieler" : "spieler"}>
+<div class={kompakt ? "t-spieler" : "spieler"} use:fest={kompakt ? "unten" : "oben"}>
   <button class="gross" title={laeuft ? "Anhalten (Leertaste)" : "Abspielen (Leertaste)"} onclick={umschalten}>
     <i class="fa-solid {laeuft ? 'fa-pause' : 'fa-play'}"></i></button>
   {#if !kompakt}

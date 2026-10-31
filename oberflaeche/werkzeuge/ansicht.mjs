@@ -18,7 +18,11 @@
 //                 { "name": "aufnehmen", "pfad": "/aufnahmen", "nur": [1440, 390],
 //                   "wechsel": [ { "klick": "Aufnehmen", "fest": [".rek-leiste"] } ] } ] }
 // `klick` ist ein CSS-Selektor oder der Text eines Knopfs, `wischen` ("links" oder "rechts") ein Wischen quer über die
-// Mitte; `fest` sind Teile, die sich beim Wechsel nicht bewegen dürfen. `speicher` belegt localStorage vor dem Laden.
+// Mitte, `zeit` (Sekunden) setzt den Spieler wie beim Abspielen an diese Stelle, `tippen` ({"feld": Selektor, "text": ...,
+// "taste": "Enter"}) schreibt in ein Feld und drückt die Taste; `fest` sind Teile, die sich beim Wechsel nicht bewegen
+// dürfen; `marke` (Selektor) ist die Stelle, zu der der Wechsel rollt: sie muss danach ganz sichtbar und von nichts
+// verdeckt sein, weder von einem festen Kopf noch von einer klebenden Leiste (HELF-91), etwa
+//   { "zeit": 150, "marke": ".wort.jetzt" }  oder  { "klick": "[aria-label='Nächste Abweichung']", "marke": ".abw-gewaehlt" } `speicher` belegt localStorage vor dem Laden.
 // Detailseiten holen ihren Pfad aus einer Abfrage der App (mit der Testanmeldung); {weg.zum.wert} wird gefüllt:
 //   { "name": "plan", "abfrage": "/api/v1/plaene?anzahl=1", "pfad": "/vertonen/{eintraege.0.id}" }
 // Gibt die Abfrage keinen Wert her, ist das ein Befund (die Seite fehlt sonst still in der Prüfung).
@@ -331,6 +335,39 @@ const klicken = (ziel) => werte(`(() => { let e = null; try { e = document.query
   e ??= [...document.querySelectorAll("button, a, [role=button]")].find((k) => k.textContent.trim().includes(${JSON.stringify(ziel)}));
   if (!e) return false; e.click(); return true; })()`);
 
+// Spieler an eine Stelle (wie beim Abspielen): das erste Ton- oder Videoelement, mit dem Ereignis, das der Spieler hört
+const zeitSetzen = (s) => werte(`(() => { const m = document.querySelector("audio, video"); if (!m) return false;
+  m.currentTime = ${Number(s)}; m.dispatchEvent(new Event("timeupdate")); return true; })()`);
+
+// In ein Feld schreiben (wie getippt) und eine Taste drücken, wie ein Mensch erst nach dem Tippen (die App verarbeitet
+// die Eingabe vorher fertig)
+const tippen = async ({ feld, text = "", taste = "Enter" }) => {
+  const da = await werte(`(() => { const e = document.querySelector(${JSON.stringify(feld)});
+    if (!e) return false; e.focus(); e.value = ${JSON.stringify(text)}; e.dispatchEvent(new Event("input", { bubbles: true })); return true; })()`);
+  if (!da || !taste) return da;
+  await warte(150);
+  return werte(`(() => { const e = document.querySelector(${JSON.stringify(feld)}); if (!e) return false;
+    e.dispatchEvent(new KeyboardEvent("keydown", { key: ${JSON.stringify(taste)}, bubbles: true })); return true; })()`);
+};
+
+// Die Marke nach einem Sprung (HELF-91): ganz im Fenster und an jedem Rand von nichts verdeckt (elementFromPoint trifft
+// sie selbst, nicht einen festen Kopf, eine klebende Leiste oder den abschneidenden Rand des Rollfelds); liefert den
+// Befund oder null
+const markePruefen = (sel) => werte(`((sel) => {
+  const m = [...document.querySelectorAll(sel)].find((e) => e.getClientRects().length);
+  if (!m) return "fehlt";
+  const r = m.getBoundingClientRect();
+  const lage = Math.round(r.top) + " bis " + Math.round(r.bottom) + " von " + innerHeight + " px";
+  if (r.top < 0 || r.bottom > innerHeight) return "außerhalb des Fensters (" + lage + ")";
+  const x = r.left + Math.min(r.width / 2, 8);
+  for (const y of [r.top + 1, r.top + r.height / 2, r.bottom - 1]) {
+    const e = document.elementFromPoint(x, y);
+    if (e !== m && !m.contains(e)) return "verdeckt von " + (e ? e.tagName.toLowerCase() + [...e.classList].slice(0, 2).map((k) => "." + k).join("") : "nichts")
+      + " (" + lage + ")";
+  }
+  return null;
+})(${JSON.stringify(sel)})`);
+
 // Wischen quer über die Mitte ("links" oder "rechts"), als Maus mit gedrückter Taste: kommt als Pointer-Ereignisse an
 const wischen = async (richtung, breite, hoehe) => {
   const [von, nach] = richtung === "links" ? [0.7, 0.3] : [0.3, 0.7];
@@ -398,18 +435,24 @@ for (const thema of themen) {
       fs.writeFileSync(path.join(ausgabe, `${name}.png`), Buffer.from(bild.result.data, "base64"));
       for (const [i, w] of (seite.wechsel ?? []).entries()) {
         const vorher = await lage(w.fest ?? []);
-        if (w.wischen) await wischen(w.wischen, b, h);
-        else if (!(await klicken(w.klick))) {
+        const was = w.wischen ? `wischen ${w.wischen}` : w.zeit != null ? `Zeit ${w.zeit} s` : w.tippen ? `tippen in ${w.tippen.feld}` : w.klick;
+        const getan = w.wischen ? (await wischen(w.wischen, b, h), true)
+          : w.zeit != null ? await zeitSetzen(w.zeit) : w.tippen ? await tippen(w.tippen) : await klicken(w.klick);
+        if (!getan) {
           // beim Rahmen fehlt dem Probebetrieb oft nur der Inhalt für den Wechsel: Hinweis statt Befund
-          if (nurRahmen) console.log(`Hinweis: ${name}: Wechsel ${i + 1}: "${w.klick}" nicht gefunden`);
-          else befunde.push(`${name}: Wechsel ${i + 1}: "${w.klick}" nicht gefunden`);
+          if (nurRahmen) console.log(`Hinweis: ${name}: Wechsel ${i + 1}: "${was}" nicht gefunden`);
+          else befunde.push(`${name}: Wechsel ${i + 1}: "${was}" nicht gefunden`);
           break;
         }
         await warte(w.warten_ms ?? 1200);
+        if (w.marke && !nurRahmen) {
+          const m = await markePruefen(w.marke);
+          if (m) befunde.push(`${name}: Wechsel ${i + 1} (${was}): Marke ${w.marke} ${m}`);
+        }
         const nachher = await lage(w.fest ?? []);
         (w.fest ?? []).forEach((s, j) => {
           if (vorher[j] && nachher[j] && JSON.stringify(vorher[j]) !== JSON.stringify(nachher[j]))
-            befunde.push(`${name}: Wechsel ${i + 1} (${w.klick}) verschiebt ${s}: ${vorher[j]} -> ${nachher[j]}`);
+            befunde.push(`${name}: Wechsel ${i + 1} (${was}) verschiebt ${s}: ${vorher[j]} -> ${nachher[j]}`);
         });
         const mw = await werte(MESSEN);
         if (mw.seitlich) befunde.push(`${name}-wechsel${i + 1}: rollt seitlich`);
