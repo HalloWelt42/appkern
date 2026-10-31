@@ -662,6 +662,12 @@ streng, sagt `gestaltung.toml` im Wurzelordner: `marken = "scharf"` lässt den C
 (Dateien vor Ordnern, mit Wiederholung) und `aktionen_zurueckziehen`. Die Ansichtsprüfung liegt bei der Oberfläche
 (`oberflaeche/werkzeuge/ansicht.mjs`).
 
+**Browser für Prüfungen und Skripte** (`oberflaeche/werkzeuge/browser.mjs`): ein geteilter unsichtbarer Chrome für alle
+gleichzeitigen Läufe. `oeffneSeite()` gibt einen eigenen Bereich mit einer Seite (`rufe`, `beiEreignis`, `schliesse`);
+Chrome räumt ihn weg, sobald der Lauf endet, auch beim Absturz. Ein Wächter schließt Chrome nach Leerlauf
+(`APPKERN_BROWSER_LEERLAUF_S`, Vorgabe 120); endet der Wächter, endet auch Chrome. Jedes Skript, das einen Browser
+braucht, nutzt diesen Weg und startet nie selbst einen Chrome.
+
 ## Einbinden
 
 In der `pyproject.toml` einer App:

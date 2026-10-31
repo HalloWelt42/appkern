@@ -1,6 +1,6 @@
 // Ansichtsprüfung (Lehren 12 und 13 der Transkription): jede Seite der App in allen Breiten, hell und dunkel, in einem
-// unsichtbaren Chrome. Misst seitliches Rollen, Überlauf über den rechten Rand, Kontrast von Text und die Verschiebung
-// fester Teile beim Zustandswechsel; legt von jeder Ansicht ein Bild ab.
+// eigenen Bereich des geteilten Hintergrund-Browsers (browser.mjs). Misst seitliches Rollen, Überlauf über den rechten
+// Rand, Kontrast von Text und die Verschiebung fester Teile beim Zustandswechsel; legt von jeder Ansicht ein Bild ab.
 // Am Telefon (375, 390 und 430 Pixel, mit sicheren Rändern und Fingerbedienung wie am iPhone) misst sie zusätzlich den
 // Rahmen nach stil/rahmen.css (HELF-13): Seite fest, App schirmhoch, Kopf ganz oben mit Inhalt erst unter dem sicheren
 // Rand und in seiner Höhe, Fußleiste ganz unten, nicht verdeckt und nicht zu hoch, Eingaben ab 16 px, keine eigene Regel
@@ -32,7 +32,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync, spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
+import { oeffneSeite } from "./browser.mjs";
 
 // Telefone wie am iPhone: Breite, Höhe und sichere Ränder oben und unten (Statusleiste mit Kamera-Insel, Home-Balken)
 const TELEFONE = [[375, 812, 50, 34], [390, 844, 47, 34], [430, 932, 59, 34]];
@@ -43,7 +44,6 @@ const STEMPEL = path.join(os.homedir(), "Library", "Caches", "Appkern", "rahmen"
 const THEMEN = ["hell", "dunkel"];
 const KONTRAST_MIN = 3;          // darunter ist Text auch groß kaum lesbar (WCAG für große Schrift)
 const FRIST_MS = 30000;
-const CHROME = process.env.CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 const argumente = process.argv.slice(2);
 const basis = argumente.find((a) => !a.startsWith("--") && !argumente[argumente.indexOf(a) - 1]?.startsWith("--"));
@@ -78,24 +78,13 @@ if (mitAnmeldung) {
   token = (await anmeldung.json()).token;
 }
 
-const profil = fs.mkdtempSync(path.join(os.tmpdir(), "ansicht-"));
-// ohne Zwischenspeicher für Zurück: sonst halten verlassene Seiten ihre Ereignisströme offen, bis keine Verbindung frei ist
-const chrome = spawn(CHROME, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--disable-features=BackForwardCache",
-  "--use-fake-ui-for-media-stream",
-  "--use-fake-device-for-media-stream", "--remote-debugging-port=0", "--remote-allow-origins=*", `--user-data-dir=${profil}`,
-  "about:blank"], { stdio: "ignore" });
+// eigener Bereich im geteilten Hintergrund-Browser (browser.mjs, HELF-76); er verschwindet mit dem Lauf, auch beim Abbruch
+const browser = await oeffneSeite({ frist: FRIST_MS });
+const rufe = browser.rufe;
 const warte = (ms) => new Promise((r) => setTimeout(r, ms));
-let port;
-for (let i = 0; i < 900 && !port; i++) { await warte(100); try { port = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split("\n")[0]; } catch { /* noch nicht */ } }
-const ws = new WebSocket((await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((z) => z.type === "page").webSocketDebuggerUrl);
-await new Promise((r) => ws.addEventListener("open", r));
-let n = 0;
-const offen = new Map();
 const befunde = [];
 let ansicht = "";               // die gerade geprüfte Ansicht, für Befunde aus Ereignissen
-ws.addEventListener("message", (e) => {
-  const m = JSON.parse(e.data);
-  if (m.id && offen.has(m.id)) { offen.get(m.id)(m); offen.delete(m.id); }
+browser.beiEreignis((m) => {
   // Fehler in der Konsole und im Netz (nicht geladene Dateien) sind Befunde der gerade geprüften Ansicht; die Prüfung des
   // Rahmens (--rahmen) zählt sie nicht (sie läuft oft gegen einen Probebetrieb, dem Dienste fehlen), die volle Prüfung schon
   if (nurRahmen && m.method !== "Page.javascriptDialogOpening") return;
@@ -110,14 +99,8 @@ ws.addEventListener("message", (e) => {
   }
   if (m.method === "Page.javascriptDialogOpening") {
     befunde.push(`${ansicht}: Browser-Dialog (${m.params.type}): ${m.params.message.slice(0, 80)}`);
-    ws.send(JSON.stringify({ id: ++n, method: "Page.handleJavaScriptDialog", params: { accept: true } }));
+    rufe("Page.handleJavaScriptDialog", { accept: true }).catch(() => { /* Dialog schon zu */ });
   }
-});
-const rufe = (method, params = {}) => new Promise((r, f) => {
-  const id = ++n;
-  const frist = setTimeout(() => { offen.delete(id); f(new Error(`keine Antwort auf ${method} binnen ${FRIST_MS / 1000} s`)); }, FRIST_MS);
-  offen.set(id, (m) => { clearTimeout(frist); r(m); });
-  ws.send(JSON.stringify({ id, method, params }));
 });
 const werte = async (ausdruck) => {
   const r = await rufe("Runtime.evaluate", { expression: ausdruck, returnByValue: true, awaitPromise: true });
@@ -442,8 +425,7 @@ for (const thema of themen) {
     }
   }
 }
-ws.close();
-chrome.kill();
+await browser.schliesse();
 if (nurRahmen && !befunde.length && !nur) stempeln();
 for (const b of befunde) console.log(b);
 console.log(befunde.length ? `${befunde.length} Befunde; Bilder in ${ausgabe}` : `Keine Befunde; Bilder in ${ausgabe}`);
