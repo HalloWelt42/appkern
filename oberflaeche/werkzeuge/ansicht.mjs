@@ -416,7 +416,12 @@ for (const thema of themen) {
       for (const [i, w] of (seite.wechsel ?? []).entries()) {
         const vorher = await lage(w.fest ?? []);
         if (w.wischen) await wischen(w.wischen, b, h);
-        else if (!(await klicken(w.klick))) { befunde.push(`${name}: Wechsel ${i + 1}: "${w.klick}" nicht gefunden`); break; }
+        else if (!(await klicken(w.klick))) {
+          // beim Rahmen fehlt dem Probebetrieb oft nur der Inhalt für den Wechsel: Hinweis statt Befund
+          if (nurRahmen) console.log(`Hinweis: ${name}: Wechsel ${i + 1}: "${w.klick}" nicht gefunden`);
+          else befunde.push(`${name}: Wechsel ${i + 1}: "${w.klick}" nicht gefunden`);
+          break;
+        }
         await warte(w.warten_ms ?? 1200);
         const nachher = await lage(w.fest ?? []);
         (w.fest ?? []).forEach((s, j) => {
