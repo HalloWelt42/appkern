@@ -351,21 +351,25 @@ const tippen = async ({ feld, text = "", taste = "Enter" }) => {
 };
 
 // Die Marke nach einem Sprung (HELF-91): ganz im Fenster und an jedem Rand von nichts verdeckt (elementFromPoint trifft
-// sie selbst, nicht einen festen Kopf, eine klebende Leiste oder den abschneidenden Rand des Rollfelds); liefert den
-// Befund oder null
+// sie selbst, nicht einen festen Kopf, eine klebende Leiste oder den abschneidenden Rand des Rollfelds). Steht dieselbe
+// Stelle mehrfach da (etwa in beiden Fassungen eines Vergleichs), genügt eine davon; liefert den Befund oder null
 const markePruefen = (sel) => werte(`((sel) => {
-  const m = [...document.querySelectorAll(sel)].find((e) => e.getClientRects().length);
-  if (!m) return "fehlt";
-  const r = m.getBoundingClientRect();
-  const lage = Math.round(r.top) + " bis " + Math.round(r.bottom) + " von " + innerHeight + " px";
-  if (r.top < 0 || r.bottom > innerHeight) return "außerhalb des Fensters (" + lage + ")";
-  const x = r.left + Math.min(r.width / 2, 8);
-  for (const y of [r.top + 1, r.top + r.height / 2, r.bottom - 1]) {
-    const e = document.elementFromPoint(x, y);
-    if (e !== m && !m.contains(e)) return "verdeckt von " + (e ? e.tagName.toLowerCase() + [...e.classList].slice(0, 2).map((k) => "." + k).join("") : "nichts")
-      + " (" + lage + ")";
-  }
-  return null;
+  const marken = [...document.querySelectorAll(sel)].filter((e) => e.getClientRects().length);
+  if (!marken.length) return "fehlt";
+  const befund = (m) => {
+    const r = m.getBoundingClientRect();
+    const lage = Math.round(r.top) + " bis " + Math.round(r.bottom) + " von " + innerHeight + " px";
+    if (r.top < 0 || r.bottom > innerHeight) return "außerhalb des Fensters (" + lage + ")";
+    const x = r.left + Math.min(r.width / 2, 8);
+    for (const y of [r.top + 1, r.top + r.height / 2, r.bottom - 1]) {
+      const e = document.elementFromPoint(x, y);
+      if (e !== m && !m.contains(e)) return "verdeckt von " + (e ? e.tagName.toLowerCase() + [...e.classList].slice(0, 2).map((k) => "." + k).join("") : "nichts")
+        + " (" + lage + ")";
+    }
+    return null;
+  };
+  const alle = marken.map(befund);
+  return alle.includes(null) ? null : alle[0] + (alle.length > 1 ? " (und " + (alle.length - 1) + " weitere ebenso)" : "");
 })(${JSON.stringify(sel)})`);
 
 // Wischen quer über die Mitte ("links" oder "rechts"), als Maus mit gedrückter Taste: kommt als Pointer-Ereignisse an
