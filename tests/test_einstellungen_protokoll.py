@@ -231,35 +231,27 @@ class MitPaaren(BaseModel):
     falsch: str = Field("", title="Kein Paar")
 
 
-async def test_liste_von_paaren_und_angebot_mit_sitzung(db):
+async def test_liste_von_paaren(db):
     from appkern.einstellungen import Angebot, Option
 
     e = Einstellungen(db, MitPaaren)
     await e.starten()
-    gesehen: list[str] = []
 
-    async def freigabe(sitzung: str) -> Angebot:
-        gesehen.append(sitzung)
+    async def freigabe() -> Angebot:
         return Angebot(optionen=[Option(wert="fundus", titel="Fundus")], zweite=[Option(wert="s1", titel="Zeit")],
                        eigener_wert=False)
 
-    e.anbieten_mit_sitzung("freigabe", freigabe)
+    e.anbieten("freigabe", freigabe)
     feld = {f.name: f for f in e.felder()}["freigabe"]
     assert feld.art == "liste" and feld.angebot and feld.paar is not None
     assert (feld.paar.erstes, feld.paar.zweites, feld.paar.leer, feld.paar.trenner) == ("App", "Stimme", "alle Stimmen", ":")
     app = FastAPI()
     app.include_router(einstellungs_router(e))
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
-        r = (await c.get("/api/v1/einstellungen/angebot/freigabe", headers={"x-kellerwolke-sitzung": "t1"})).json()
-        assert r["zweite"] == [{"wert": "s1", "titel": "Zeit", "hinweis": ""}] and gesehen == ["t1"]
+        r = (await c.get("/api/v1/einstellungen/angebot/freigabe")).json()
+        assert r["zweite"] == [{"wert": "s1", "titel": "Zeit", "hinweis": ""}] and not r["eigener_wert"]
         await c.patch("/api/v1/einstellungen", json={"werte": {"freigabe": ["fundus", "medienpool:s1"]}})
     assert e.stand.freigabe == ["fundus", "medienpool:s1"]          # gespeichert wie bisher, Text je Eintrag
-
-    async def ohne() -> Angebot:
-        return Angebot()
-
-    e.anbieten("freigabe", ohne)                                     # ein neuer Anbieter ersetzt den alten
-    assert (await e.angebot("freigabe", "t2")) == Angebot() and gesehen == ["t1"]
 
 
 def test_paar_nur_fuer_listen():

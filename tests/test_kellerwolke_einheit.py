@@ -209,14 +209,13 @@ async def test_beobachten_verbindet_neu_und_setzt_fort(monkeypatch):
     assert runden == [0, 3, 3]  # nach dem Abbruch am letzten Stand fortgesetzt
 
 
-async def test_app_zugaenge_nur_mit_sitzung():
+async def test_apps_des_kontos():
     def handler(anfrage: httpx.Request):
-        assert anfrage.url.path == "/api/v1/app-zugaenge"
-        assert anfrage.headers["x-kellerwolke-sitzung"] == "sitzung1" and "authorization" not in anfrage.headers
-        return httpx.Response(200, json=[{"id": str(uuid4()), "app": "Zusage", "aktiv": True, "erstellt_am": JETZT},
-                                         {"id": str(uuid4()), "app": "bombel", "aktiv": False, "erstellt_am": JETZT}])
+        assert anfrage.headers["Authorization"] == "Bearer kw_app_geheim"
+        if anfrage.url.path != "/api/v1/ablage/apps":
+            return httpx.Response(404, json={"detail": "Not Found"})
+        return httpx.Response(200, json=[{"app": "Zusage", "aktiv": True}, {"app": "bombel", "aktiv": False}])
 
-    kw = wolke(handler)
-    assert [(z.app, z.aktiv) for z in await kw.app_zugaenge("sitzung1")] == [("bombel", False), ("Zusage", True)]
-    with pytest.raises(KellerwolkeFehler):
-        await kw.app_zugaenge("")
+    assert [(z.app, z.aktiv) for z in await wolke(handler).apps()] == [("bombel", False), ("Zusage", True)]
+    with pytest.raises(NichtGefunden):                              # ältere Kellerwolke
+        await wolke(lambda a: httpx.Response(404, json={"detail": "Not Found"})).apps()

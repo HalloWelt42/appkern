@@ -39,9 +39,8 @@ class Ich(_Modell):
 
 
 class AppZugang(_Modell):
-    """Ein App-Zugang des Kontos (ohne Schlüssel): unter diesem Namen meldet sich die App bei anderen Apps an."""
+    """Ein App-Zugang des Kontos, nur Name und ob er aktiv ist: unter diesem Namen meldet sich die App bei anderen an."""
 
-    id: UUID
     app: str
     aktiv: bool = True
 
