@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node node_modules/appkern-oberflaeche/oberflaeche/werkzeuge/symbol-einbetten.mjs dist",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
