@@ -20,10 +20,11 @@
   import type { Snippet } from "svelte";
   import { anzeige } from "../lib/anzeige.svelte";
 
-  // `kopf`, `navigation`, `fuss`: was die App in Kopf (rechts), Seitenleiste (unter den Bereichen) und Fußleiste zeigt
-  let { bereiche, oeffnen, einstellungen = [], kopf, navigation: navZusatz, fuss }: {
+  // `kopf`, `kopfMitte`, `navigation`, `fuss`: was die App in Kopf (rechts und Mitte), Seitenleiste (unter den
+  // Bereichen) und Fußleiste zeigt
+  let { bereiche, oeffnen, einstellungen = [], kopf, kopfMitte, navigation: navZusatz, fuss }: {
     bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string; einstellungen?: EinstellungsReiter[];
-    kopf?: Snippet; navigation?: Snippet; fuss?: Snippet } = $props();
+    kopf?: Snippet; kopfMitte?: Snippet; navigation?: Snippet; fuss?: Snippet } = $props();
 
   onMount(() => {
     const auftraegeStoppen = verfolgen();
@@ -40,7 +41,7 @@
 </script>
 
 <div class="fenster-voll">
-  <Kopf rechts={kopf} />
+  <Kopf rechts={kopf} mitte={kopfMitte} />
   {#if !verbindung.ok}
     <AppWeg />
   {:else if fassung.neu}

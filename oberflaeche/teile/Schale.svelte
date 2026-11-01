@@ -20,11 +20,12 @@
   // lädt die Seite von selbst neu. `ruhig`: ob die App gerade neu laden darf (etwa nicht während einer Aufnahme).
   // `oeffnen`: wohin eine Anfrage zum Öffnen aus der Kellerwolke führt (Weg /anfrage/<id>), etwa die Ansicht der Datei.
   // `einstellungen`: eigene Reiter der App in den Einstellungen (neben den erzeugten Gruppen).
-  // `ansicht`: das Thema, bis der Mensch in diesem Browser wählt. `kopf`, `navigation`, `fuss`: eigene
-  // Teile der App in Kopf (rechts), Seitenleiste (unter den Bereichen) und Fußleiste am Rechner.
-  let { bereiche = [], fassung, ruhig, oeffnen, einstellungen = [], ansicht = {}, kopf, navigation: navZusatz, fuss }: {
+  // `ansicht`: das Thema, bis der Mensch in diesem Browser wählt. `kopf`, `kopfMitte`, `navigation`, `fuss`: eigene
+  // Teile der App in Kopf (rechts und Mitte, etwa eine Suche), Seitenleiste (unter den Bereichen) und Fußleiste am Rechner.
+  let { bereiche = [], fassung, ruhig, oeffnen, einstellungen = [], ansicht = {}, kopf, kopfMitte, navigation: navZusatz, fuss }: {
     bereiche?: Bereich[]; fassung: string; ruhig?: () => boolean; oeffnen?: (a: Anfrage) => Promise<string> | string;
-    einstellungen?: EinstellungsReiter[]; ansicht?: AnzeigeVorgabe; kopf?: Snippet; navigation?: Snippet; fuss?: Snippet } = $props();
+    einstellungen?: EinstellungsReiter[]; ansicht?: AnzeigeVorgabe; kopf?: Snippet; kopfMitte?: Snippet; navigation?: Snippet;
+    fuss?: Snippet } = $props();
 
   anzeigeStarten(untrack(() => ansicht));     // nur die Vorgabe beim Start; danach gilt die Wahl im Browser
   // Flächenfarbe des Symbols aus der App-Angabe (Kopf, Anmeldung)
@@ -67,5 +68,5 @@
 {:else if geraet.mobil}
   <MobilSchale bereiche={bereiche.filter((b) => b.geraete !== "rechner")} {oeffnen} {einstellungen} />
 {:else}
-  <Rechner bereiche={bereiche.filter((b) => b.geraete !== "telefon")} {oeffnen} {einstellungen} {kopf} navigation={navZusatz} {fuss} />
+  <Rechner bereiche={bereiche.filter((b) => b.geraete !== "telefon")} {oeffnen} {einstellungen} {kopf} {kopfMitte} navigation={navZusatz} {fuss} />
 {/if}

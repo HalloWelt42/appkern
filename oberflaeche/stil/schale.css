@@ -20,6 +20,7 @@ button { font: inherit; color: inherit; }
 .marke .symbol i { font-size: 14px; }
 .rolle { font-size: var(--klein); color: var(--text-2); display: inline-flex; align-items: center; gap: 7px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rolle i { color: var(--akzent); }
+.kopf-mitte { flex: 1; min-width: 0; display: flex; justify-content: center; }
 .kopf-rechts { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .pille { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 10px; border-radius: var(--r2); background: var(--flaeche-2); font-size: var(--klein); color: var(--text-2); white-space: nowrap; }
 .pille .punkt { width: 9px; height: 9px; border-radius: 50%; background: var(--gut); }
