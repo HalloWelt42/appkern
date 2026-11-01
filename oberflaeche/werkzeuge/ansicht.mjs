@@ -6,6 +6,8 @@
 // Rand und in seiner Höhe, Fußleiste ganz unten, nicht verdeckt und nicht zu hoch, Eingaben ab 16 px, keine eigene Regel
 // für die Web-App-Ansicht am Rahmen, viewport-fit=cover; dazu Tippen ohne Zoom (HELF-69): jedes Eingabefeld ab 16 px, das
 // Zoomen mit zwei Fingern nicht gesperrt; dazu schmale Ränder (HELF-70): der Inhalt nutzt mindestens 90 Prozent der Breite.
+// Flucht von Karten (WIKI-6): Karten mit data-karte im selben Behälter und auf gleicher Höhe tragen ihre Fußzeile
+// (data-fuss, etwa Lesestand oder Knopfreihe) auf einer Linie; zum Einschalten je Karte, ohne Kennzeichen keine Prüfung.
 // --rahmen prüft nur das (Telefonbreiten, hell) und hält einen
 // befundfreien Lauf für den Stand von frontend/ fest; ohne diesen Nachweis rollt das Ausrollen nicht aus. Eine App ohne
 // Telefonansicht trägt "rahmen": false in ihre ansicht.json ein.
@@ -182,8 +184,23 @@ const MESSEN = `(() => {
       geschnitten.push(weg(e) + " (" + e.scrollWidth + " statt " + e.clientWidth + (weitest ? "; am weitesten: " + weg(weitest) + " '" + (weitest.textContent || "").trim().slice(0, 30) + "'" : "") + ")");
     }
   }
+  // Flucht: Karten einer Reihe (data-karte, Geschwister, Oberkanten höchstens 3 Pixel auseinander) mit ihrer Fußzeile
+  // (data-fuss) auf einer Linie; sonst steht etwa ein Lesestand unter einem zweizeiligen Titel tiefer als daneben
+  const flucht = [];
+  for (const behaelter of new Set([...document.querySelectorAll("[data-karte]")].map((k) => k.parentElement))) {
+    const karten = [...behaelter.children].filter((k) => k.hasAttribute("data-karte") && k.querySelector("[data-fuss]") && k.getBoundingClientRect().height)
+      .map((k) => ({ k, oben: k.getBoundingClientRect().top, unten: k.querySelector("[data-fuss]").getBoundingClientRect().bottom }))
+      .sort((a, b) => a.oben - b.oben);
+    const reihen = [];
+    for (const k of karten) { const r = reihen.at(-1); if (r && k.oben - r[0].oben <= 3) r.push(k); else reihen.push([k]); }
+    for (const r of reihen) {
+      if (r.length < 2) continue;
+      const u = r.map((x) => x.unten);
+      if (Math.max(...u) - Math.min(...u) > 2) flucht.push(weg(r[0].k) + " (Fußzeilen von " + Math.round(Math.min(...u)) + " bis " + Math.round(Math.max(...u)) + " px)");
+    }
+  }
   return { seitlich: document.documentElement.scrollWidth > breite + 1, ueber: [...new Set(ueber)].slice(0, 5), kontrast: [...new Set(kontrast)].slice(0, 5),
-           geschnitten: [...new Set(geschnitten)].slice(0, 5) };
+           geschnitten: [...new Set(geschnitten)].slice(0, 5), flucht: [...new Set(flucht)].slice(0, 5) };
 })()`;
 
 // Rahmen am Telefon (stil/rahmen.css): die Sollwerte (Kopf- und Fußhöhe) liest die Messung aus der Seite selbst, die
@@ -438,6 +455,7 @@ for (const thema of themen) {
       for (const u of m.ueber) befunde.push(`${name}: läuft rechts über: ${u}`);
       for (const k of m.kontrast) befunde.push(`${name}: Kontrast unter ${KONTRAST_MIN}: ${k}`);
       for (const g of m.geschnitten) befunde.push(`${name}: breiter als sein Rahmen: ${g}`);
+      for (const f of m.flucht) befunde.push(`${name}: Karten einer Reihe, Fußzeilen nicht auf einer Linie: ${f}`);
       const bild = await rufe("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(ausgabe, `${name}.png`), Buffer.from(bild.result.data, "base64"));
       for (const [i, w] of (seite.wechsel ?? []).entries()) {
@@ -466,6 +484,7 @@ for (const thema of themen) {
         for (const u of mw.ueber) befunde.push(`${name}-wechsel${i + 1}: läuft rechts über: ${u}`);
         for (const k of mw.kontrast) befunde.push(`${name}-wechsel${i + 1}: Kontrast unter ${KONTRAST_MIN}: ${k}`);
         for (const g of mw.geschnitten) befunde.push(`${name}-wechsel${i + 1}: breiter als sein Rahmen: ${g}`);
+        for (const f of mw.flucht) befunde.push(`${name}-wechsel${i + 1}: Karten einer Reihe, Fußzeilen nicht auf einer Linie: ${f}`);
         const nach = await rufe("Page.captureScreenshot", { format: "png" });
         fs.writeFileSync(path.join(ausgabe, `${name}-wechsel${i + 1}.png`), Buffer.from(nach.result.data, "base64"));
       }
