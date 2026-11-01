@@ -29,6 +29,8 @@ export { sitzung } from "./lib/sitzung.svelte";
 export { fassung, ruhig } from "./lib/fassung.svelte";
 export { adresse, gehe, navigation } from "./lib/navigation.svelte";
 export { wann, seit, dauer } from "./lib/format";
+// Kopieren mit Ersatzweg über ein Textfeld (http im Heimnetz); gibt zurück, ob es geklappt hat
+export { kopieren, markieren as inhaltAuswaehlen } from "./lib/zwischenablage";
 export { ereignisseBenennen } from "./lib/ereignisse";
 export { anfrage, anfrageOeffnen, dateiSymbol, daneben, inKellerwolke, istMedium, ROLLEN, waehlen, wahl, zurueckZurKellerwolke } from "./lib/kellerwolke";
 export { arbeit, arbeitsfrei } from "./lib/arbeit.svelte";
