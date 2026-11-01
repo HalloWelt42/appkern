@@ -165,13 +165,16 @@ const MESSEN = `(() => {
     if (wert < ${KONTRAST_MIN}) kontrast.push(weg(e) + " (" + wert.toFixed(2) + ": " + e.textContent.trim().slice(0, 30) + ")");
   }
   // Inhalt breiter als sein schneidender Rahmen (etwa eine Tabelle, deren rechte Spalten im Rollfeld verschwinden); Kürzen mit
-  // Auslassungspunkten ist gewollt und zählt nicht
+  // Auslassungspunkten ist gewollt und zählt nicht. Ein eigenes Rollfeld für Überbreites (Tabelle, Diagramm, Code: rollt nur
+  // seitlich, overflow-x auto oder scroll) ist erlaubt (Nutzer: Überbreites bekommt sein eigenes Rollfeld, nie die Seite);
+  // rollt ein Bereich auch senkrecht, ist er eine Hauptfläche, und dort bleibt seitlicher Überlauf ein Befund
   const geschnitten = [];
   for (const e of document.querySelectorAll("body *")) {
     const s = stil(e);
     // Eingabefelder rollen ihren Text selbst; das ist kein Überlauf der Seite
     if (s.display === "none" || s.overflowX === "visible" || s.textOverflow === "ellipsis" || ["INPUT", "TEXTAREA", "SELECT"].includes(e.tagName)) continue;
-    if (e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0) {
+    const eigenesRollfeld = (s.overflowX === "auto" || s.overflowX === "scroll") && e.scrollHeight <= e.clientHeight + 1;
+    if (e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0 && !eigenesRollfeld) {
       // was am weitesten hinausragt (ohne den Rahmen selbst), damit der Befund die Ursache nennt
       const rand = e.getBoundingClientRect().left + e.clientWidth;
       let weitest = null, mass = 0;
