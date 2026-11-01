@@ -54,6 +54,28 @@ def test_stil_findet_streifen_und_important(tmp_path):
         (8, "einseitiger Rahmen"), (9, "einseitiger Rahmen"), (13, "einseitiger Rahmen")]
 
 
+def test_stil_streifen_nur_an_kantigen_kaesten(tmp_path):
+    # Nutzer 01.11.2026: farbige Streifen links sind erlaubt, wenn der Kasten ganz kantig ist; gerundet bleiben sie
+    # verboten (gebogene Klammern), ebenso einseitige Rahmenlinien
+    css = _datei(tmp_path, "a.css", "\n".join([
+        ".x { box-shadow: inset 3px 0 0 var(--akzent); border-radius: 0; }",           # 1 kantig: erlaubt
+        ".x { border-radius: 0px; box-shadow: var(--schatten), inset 3px 0 0 var(--gut); }",  # 2 kantig, mit Schatten
+        ".x { box-shadow: inset 3px 0 0 var(--akzent); border-radius: var(--r2); }",   # 3 gerundet
+        ".x { box-shadow: inset 3px 0 0 var(--akzent); }",                             # 4 ohne Angabe zur Rundung
+        ".x { border-left: 3px solid var(--akzent); border-radius: 0; }",              # 5 Rahmenlinie bleibt verboten
+    ]))
+    assert _regeln_der(stil_pruefen([css], tmp_path)) == [
+        (3, "einseitiger Schatten"), (4, "einseitiger Schatten"), (5, "einseitiger Rahmen")]
+    html = _datei(tmp_path, "b.html", '<div style="box-shadow: inset 3px 0 0 var(--gut); border-radius: 0"></div>')
+    assert stil_pruefen([html], tmp_path) == []
+
+
+def test_stil_entwuerfe_ohne_klassen_der_schale(tmp_path):
+    # Entwürfe laden die Schale direkt; ihre Regeln ändern keine App mit (wie bei den Marken)
+    css = _datei(tmp_path, "mockups/stil.css", ".stand { color: red; }\n.x { color: red !important; }")
+    assert _regeln_der(stil_pruefen([css], tmp_path, {"stand"})) == [(2, "!important")]
+
+
 def test_stil_regeln_auf_klassen_der_schale(tmp_path):
     schale = {"knopf", "stand", "t-zeile", "mobil", "klein"}
     css = _datei(tmp_path, "app.css", "\n".join([

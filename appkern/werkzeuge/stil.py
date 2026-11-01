@@ -2,13 +2,15 @@
 
 - kein `!important` (die Kaskade löst Konflikte über Spezifität und Reihenfolge)
 - keine einseitigen Streifen: Rahmen oder Schatten mit Versatz zu einer Seite ohne Unschärfe (`border-left`,
-  `inset 3px 0 0`, Unterstreichung des aktiven Reiters); erlaubt sind nur Trennlinien von 1px in einer Randfarbe
-  (`var(--rand)`, `var(--rand-stark)`) zwischen Flächen
+  `inset 3px 0 0`, Unterstreichung des aktiven Reiters); erlaubt sind Trennlinien von 1px in einer Randfarbe
+  (`var(--rand)`, `var(--rand-stark)`) zwischen Flächen und, seit 01.11.2026 (Nutzer: "Boxen mit Leuchtstreifen links
+  komplett kantig"), ein Streifen per Schatten an einem ganz kantigen Kasten (`border-radius: 0` in derselben Regel)
 - keine Regeln auf Klassen der Schale: eine App-Regel muss eine eigene Klasse tragen (auch als Erweiterung wie
   `.knopf.klein`); sonst ändert sie Teile der Schale mit (so lief die Statuszeile der Einstellungen über)
 
 Geprüft werden CSS-Dateien, `<style>`-Blöcke und `style`-Angaben in Svelte und HTML; Klassen nur in CSS-Dateien und
-`:global(...)`, weil Svelte die Regeln seiner Blöcke ohnehin auf die eigene Komponente begrenzt.
+`:global(...)`, weil Svelte die Regeln seiner Blöcke ohnehin auf die eigene Komponente begrenzt, und nicht in Entwürfen
+(`mockups`, `docs`, `prototyp`): sie laden die Schale direkt und ändern keine App mit.
 """
 
 import re
@@ -24,6 +26,7 @@ EINSEITIG_SENKRECHT = {"border-left", "border-right", "border-inline-start", "bo
 EINSEITIG_WAAGRECHT = {"border-top", "border-bottom", "border-block-start", "border-block-end",
                        "border-top-width", "border-bottom-width"}
 OHNE = {"0", "0px", "none", "hidden", "initial", "unset", "inherit"}
+ENTWUERFE = {"mockups", "docs", "prototyp"}     # Ordner mit Entwürfen: keine Prüfung auf Klassen der Schale
 
 
 @dataclass
@@ -144,6 +147,11 @@ def _streifen_im_schatten(wert: str) -> str | None:
     return None
 
 
+def _kantig(block: str) -> bool:
+    """Setzt die Regel die Ecken auf 0? Dann ist ein Streifen per Schatten erlaubt (kein gebogener Bogen)."""
+    return any(name == "border-radius" and wert.strip() in ("0", "0px") for name, wert, _ in deklarationen(block))
+
+
 def _deklarationen_pruefen(block: str, zeile: int, datei: str) -> list[Befund]:
     befunde = []
     for name, wert, versatz in deklarationen(block):
@@ -157,7 +165,7 @@ def _deklarationen_pruefen(block: str, zeile: int, datei: str) -> list[Befund]:
             breiten = [_rahmenbreite(t) for t in wert.split()]
             if len(set(breiten)) > 1:
                 befunde.append(Befund(datei=datei, zeile=wo, regel="einseitiger Rahmen", text=text))
-        elif name == "box-shadow" and (streifen := _streifen_im_schatten(wert)):
+        elif name == "box-shadow" and (streifen := _streifen_im_schatten(wert)) and not _kantig(block):
             befunde.append(Befund(datei=datei, zeile=wo, regel="einseitiger Schatten", text=f"{name}: {streifen}"))
     return befunde
 
@@ -225,6 +233,7 @@ def stil_pruefen(dateien: list[Path], wurzel: Path, schale: set[str] | None = No
             continue
         name = str(p.relative_to(wurzel))
         text = p.read_text(encoding="utf-8", errors="replace")
+        klassen_pruefen = schale is not None and not ENTWUERFE & set(p.relative_to(wurzel).parts)
         if p.suffix == ".css":
             bloecke = [(text, 1)]
         else:
@@ -234,7 +243,7 @@ def stil_pruefen(dateien: list[Path], wurzel: Path, schale: set[str] | None = No
         for block, erste in bloecke:
             for r in regeln(block, erste):
                 befunde += _deklarationen_pruefen(r.deklarationen, r.zeile, name)
-                if schale is None or r.im_rahmen.startswith("@keyframes"):
+                if not klassen_pruefen or r.im_rahmen.startswith("@keyframes"):
                     continue
                 for s in r.selektoren:
                     if p.suffix != ".css":
