@@ -3,6 +3,7 @@
   // weiteres; von anderswo (anderes Gerät, hinter einem Vorschaltdienst, in Docker) mit dem einmaligen
   // Einrichtungscode aus einer Datei am Rechner der App. `app.einrichtungscode` nennt nur, wo er liegt, nie den Code.
   import { einrichtenMit, sitzung } from "../lib/sitzung.svelte";
+  import AppSymbol from "./AppSymbol.svelte";
 
   const app = $derived(sitzung.app!);
   let adresse = $state("");
@@ -27,7 +28,7 @@
 
 <div class="anmeldung" style="height:100vh; height:100dvh">
   <form class="anmelde-karte" style="width:min(520px, 94vw)" onsubmit={los}>
-    <div class="marke"><span class="symbol"><i class="fa-solid {app.symbol}"></i></span> {app.name}</div>
+    <div class="marke"><AppSymbol {app} /> {app.name}</div>
     <div class="rolle"><i class="fa-solid fa-wave-square"></i>erste Einrichtung</div>
     <div class="hinweis-kw">
       <i class="fa-solid fa-cloud"></i>

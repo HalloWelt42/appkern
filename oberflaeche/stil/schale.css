@@ -18,6 +18,7 @@ button { font: inherit; color: inherit; }
 .marke .symbol { width: 28px; height: 28px; border-radius: var(--r2); display: grid; place-items: center; color: var(--auf-farbe); flex: none;
                  background: var(--symbol-flaeche); }
 .marke .symbol i { font-size: 14px; }
+.marke .symbol-bild { width: 32px; height: 32px; display: block; flex: none; }   /* freigestelltes Bild, kein Kasten */
 .rolle { font-size: var(--klein); color: var(--text-2); display: inline-flex; align-items: center; gap: 7px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rolle i { color: var(--akzent); }
 .kopf-mitte { flex: 1; min-width: 0; display: flex; justify-content: center; }

@@ -91,6 +91,7 @@ class AppInfo(BaseModel):
     kennung: str
     rolle: str
     symbol: str
+    symbolbild: str = ""        # freigestelltes Bild der App (Pfad, etwa /favicon.svg); statt des Zeichens im Kasten
     farbe: str = "#2f7ce0"      # Flächenfarbe des Symbols (Kopf, Startbild, Telefon)
     fassung: str
     appkern: str
@@ -129,7 +130,8 @@ async def _begrenzt(name: str, adresse: str, pruefung: Awaitable[Verbindung]) ->
 
 class Geruest(Generic[E]):
     def __init__(self, *, name: str, kennung: str, rolle: str, fassung: str, daten: Path, einstellungen: type[E],
-                 arten: Sequence[Art] = (), symbol: str = "fa-cube", farbe: str = "#2f7ce0", oberflaeche: Path | None = None,
+                 arten: Sequence[Art] = (), symbol: str = "fa-cube", symbolbild: str = "", farbe: str = "#2f7ce0",
+                 oberflaeche: Path | None = None,
                  gleichzeitig: int = 1, angebote: Sequence[AppAngebot] = (), leseverbindungen: int = LESER,
                  push: bool = False, sicherungen: Path | None = None,
                  transport: httpx.AsyncBaseTransport | None = None) -> None:
@@ -138,8 +140,11 @@ class Geruest(Generic[E]):
         `push`: Mitteilungen aufs Gerät (appkern/push, braucht das Extra `push`); dann steht `self.push` bereit.
         `sicherungen`: Ordner der Sicherungen (`appkern.app.sicherung`); ohne Angabe `sicherungen` neben dem
         Datenordner, im Container /app/sicherungen (eingebunden wie in der Vorlage, dorthin sichert auch das Ausrollen).
+        `symbolbild`: Pfad eines freigestellten Bildes der App, das sie selbst ausliefert (etwa "/favicon.svg"); Kopf,
+        Anmeldung und Einrichtung zeigen es statt des Zeichens `symbol` im Kasten der App-Farbe.
         `transport` nur für Tests: alle Verbindungen nach außen gehen dann über ihn."""
         self.name, self.kennung, self.rolle, self.symbol, self.fassung = name, kennung, rolle, symbol, fassung
+        self.symbolbild = symbolbild
         self.farbe = farbe
         self._weitere_verbindungen: list[tuple[str, Callable[[], Awaitable[Verbindung]]]] = []
         self.daten = Path(daten)
@@ -483,7 +488,8 @@ class Geruest(Generic[E]):
     # --- Schnittstelle ----------------------------------------------------------------------------------------
 
     def info(self) -> AppInfo:
-        return AppInfo(name=self.name, kennung=self.kennung, rolle=self.rolle, symbol=self.symbol, farbe=self.farbe, fassung=self.fassung,
+        return AppInfo(name=self.name, kennung=self.kennung, rolle=self.rolle, symbol=self.symbol, symbolbild=self.symbolbild,
+                       farbe=self.farbe, fassung=self.fassung,
                        appkern=appkern.__version__, einrichtung_noetig=self.einrichtung_noetig, besitzer=self.besitzer,
                        kellerwolke=self.einstellungen.stand.kellerwolke_adresse.rstrip("/"),
                        oberflaeche=self.oberflaeche_fassung(),

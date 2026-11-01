@@ -383,6 +383,9 @@ async def test_weitere_verbindungen_und_farbe(umgebung):
     geruest.verbindung_anmelden("Fundus", fundus)
     geruest.verbindung_anmelden("Befehlsdienst", kaputt)
     assert (await c.get("/api/v1/app")).json()["farbe"] == "#2f7ce0"
+    assert (await c.get("/api/v1/app")).json()["symbolbild"] == ""          # ohne Bild: Zeichen im Kasten
+    geruest.symbolbild = "/favicon.svg"
+    assert (await c.get("/api/v1/app")).json()["symbolbild"] == "/favicon.svg"
     await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
     h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
     liste = (await c.get("/api/v1/verbindungen", headers=h)).json()

@@ -132,6 +132,10 @@ def test_ausrollen_prueft_den_tondienst_statt_ffmpeg():
     with pytest.raises(ValidationError):
         Ziel.model_validate({**angaben, "ton": True})
     assert Ziel.model_validate({**angaben, "ton": True, "leitstelle": "http://pi:8530"}).ton
+    assert Ziel.model_validate(angaben).symbole == "deckend"                  # Vorgabe: Startbildschirm deckend
+    assert Ziel.model_validate({**angaben, "symbole": "durchsichtig"}).symbole == "durchsichtig"
+    with pytest.raises(ValidationError):
+        Ziel.model_validate({**angaben, "symbole": "bunt"})
 
 
 def test_ausrollen_mit_eigener_zieldatei(tmp_path):

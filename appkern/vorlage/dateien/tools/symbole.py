@@ -2,7 +2,9 @@
 """Leitet aus frontend/public/symbol.svg den Symbolsatz für Browser-Tabs, Startbildschirm und PWA ab.
 
 Einzige Quelle ist symbol.svg: ein Rechteck über die ganze Fläche als Grund, danach das Motiv. Die Hintergrundfarbe
-der App kommt aus site.webmanifest (background_color). Erzeugt in frontend/public:
+der App kommt aus site.webmanifest (background_color). Fehlt der Grund, ist das Symbol freigestellt: dann bleiben alle
+Bilder durchsichtig, auch die des Startbildschirms (iOS füllt sie dann selbst; im Ausrollen `symbole = "durchsichtig"`
+in deploy/ausrollen.toml). Erzeugt in frontend/public:
   favicon.svg                                   Kopie der Quelle für moderne Browser
   favicon.ico                                   16, 32 und 48 in einer Datei
   favicon-32.png                                wie die Quelle, mit durchsichtigen Ecken (Tab im Browser)
@@ -22,7 +24,6 @@ from __future__ import annotations
 import io
 import json
 import shutil
-import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -46,17 +47,22 @@ def flach(bild: Image.Image, farbe: str) -> Image.Image:
     return Image.alpha_composite(Image.new("RGBA", bild.size, farbe), bild).convert("RGB")
 
 
+def grund_von(wurzel: ET.Element) -> ET.Element | None:
+    """Das Rechteck über die ganze Fläche; ohne es ist das Symbol freigestellt."""
+    _, _, breite, hoehe = (float(z) for z in wurzel.get("viewBox", "").split())
+    return next((k for k in wurzel if k.tag == f"{{{SVG}}}rect" and float(k.get("width", 0)) == breite
+                 and float(k.get("height", 0)) == hoehe), None)
+
+
 def maskierbar(svg: bytes) -> bytes:
-    """Grund randlos über die ganze Fläche, Motiv um die Mitte auf SICHERE_ZONE verkleinert."""
+    """Grund randlos über die ganze Fläche (freigestellt: ohne Grund), Motiv um die Mitte auf SICHERE_ZONE verkleinert."""
     ET.register_namespace("", SVG)
     wurzel = ET.fromstring(svg)
     _, _, breite, hoehe = (float(z) for z in wurzel.get("viewBox", "").split())
-    grund = next((k for k in wurzel if k.tag == f"{{{SVG}}}rect" and float(k.get("width", 0)) == breite
-                  and float(k.get("height", 0)) == hoehe), None)
-    if grund is None:
-        sys.exit(f"{QUELLE}: Rechteck über die ganze Fläche (Grund) fehlt")
-    grund.attrib.pop("rx", None)
-    grund.attrib.pop("ry", None)
+    grund = grund_von(wurzel)
+    if grund is not None:
+        grund.attrib.pop("rx", None)
+        grund.attrib.pop("ry", None)
     motiv = [k for k in wurzel if k is not grund and k.tag != f"{{{SVG}}}defs"]
     x, y = breite / 2, hoehe / 2
     gruppe = ET.SubElement(wurzel, f"{{{SVG}}}g", transform=f"translate({x:g} {y:g}) scale({SICHERE_ZONE}) translate({-x:g} {-y:g})")
@@ -68,19 +74,24 @@ def maskierbar(svg: bytes) -> bytes:
 
 def main() -> None:
     quelle = QUELLE.read_bytes()
+    ET.register_namespace("", SVG)
+    freigestellt = grund_von(ET.fromstring(quelle)) is None
     farbe = json.loads((OEFFENTLICH / "site.webmanifest").read_text(encoding="utf-8"))["background_color"]
+
+    def startbild(bild: Image.Image) -> Image.Image:
+        return bild if freigestellt else flach(bild, farbe)
     shutil.copyfile(QUELLE, OEFFENTLICH / "favicon.svg")
 
     ico = [rastern(quelle, g) for g in (48, 32, 16)]
     ico[0].save(OEFFENTLICH / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)], append_images=ico[1:])
     rastern(quelle, 32).save(OEFFENTLICH / "favicon-32.png", optimize=True)
     for groesse in (192, 512):
-        flach(rastern(quelle, groesse), farbe).save(OEFFENTLICH / f"icon-{groesse}.png", optimize=True)
+        startbild(rastern(quelle, groesse)).save(OEFFENTLICH / f"icon-{groesse}.png", optimize=True)
     rand = maskierbar(quelle)
     for groesse in (192, 512):
         rastern(rand, groesse).save(OEFFENTLICH / f"icon-maskable-{groesse}.png", optimize=True)
-    flach(rastern(quelle, 180), farbe).save(OEFFENTLICH / "apple-touch-icon.png", optimize=True)
-    print(f"Symbolsatz aus {QUELLE.name} erzeugt in {OEFFENTLICH}")
+    startbild(rastern(quelle, 180)).save(OEFFENTLICH / "apple-touch-icon.png", optimize=True)
+    print(f"Symbolsatz aus {QUELLE.name} erzeugt in {OEFFENTLICH}" + (" (freigestellt, durchsichtig)" if freigestellt else ""))
 
 
 if __name__ == "__main__":

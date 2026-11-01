@@ -6,6 +6,7 @@ export interface AppInfo {
   kennung: string;
   rolle: string;
   symbol: string;
+  symbolbild?: string;            // freigestelltes Bild der App statt des Zeichens im Kasten (ab Appkern 0.73)
   farbe?: string;                 // Flächenfarbe des Symbols (ab Appkern 0.40)
   fassung: string;
   appkern: string;

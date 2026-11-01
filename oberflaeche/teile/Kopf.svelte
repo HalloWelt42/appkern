@@ -6,6 +6,7 @@
   import type { Snippet } from "svelte";
   import { pruefen, verbindung } from "../lib/erreichbar.svelte";
   import { sitzung } from "../lib/sitzung.svelte";
+  import AppSymbol from "./AppSymbol.svelte";
   import { verbindungen } from "../lib/verbindungen.svelte";
   import { fest } from "../lib/stelle.svelte";
 
@@ -16,7 +17,7 @@
 </script>
 
 <header class="kopf" use:fest={"oben"}>
-  <div class="marke"><span class="symbol"><i class="fa-solid {app.symbol}"></i></span> {app.name}
+  <div class="marke"><AppSymbol {app} /> {app.name}
     <span class="marke-fassung" title="Fassung der App">{app.fassung}</span></div>
   {#if mitte}
     <div class="kopf-mitte">{@render mitte()}</div>

@@ -2,6 +2,7 @@
   // Anmeldung mit dem Kellerwolke-Konto: Passwort oder Code vom Rechner (Kellerwolke, Einstellungen, Geräte).
   import { CODE_LAENGE, codeAusLinkNehmen, codeNormal, geraeteArt, namensvorschlag } from "../lib/kopplung";
   import { anmelden, koppeln, sitzung } from "../lib/sitzung.svelte";
+  import AppSymbol from "./AppSymbol.svelte";
 
   const ausLink = codeAusLinkNehmen();
   const app = $derived(sitzung.app!);
@@ -31,7 +32,7 @@
 <div class="anmeldung" style="height:100vh; height:100dvh">
   {#if modus === "passwort"}
     <form class="anmelde-karte" onsubmit={(e) => los(e, () => anmelden(kennung, passwort))}>
-      <div class="marke"><span class="symbol"><i class="fa-solid {app.symbol}"></i></span> {app.name}</div>
+      <div class="marke"><AppSymbol {app} /> {app.name}</div>
       <div class="rolle"><i class="fa-solid fa-wave-square"></i>{app.rolle}</div>
       <div class="hinweis-kw">
         <i class="fa-solid fa-cloud"></i>

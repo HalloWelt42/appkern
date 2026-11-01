@@ -20,7 +20,7 @@ Aufgerufen vom Mac aus über `tools/ausrollen.sh`. Bricht beim ersten Fehler ab:
    mit --auslaufen zuerst wieder her.
 6. über HTTPS melden Server, gebaute Oberfläche und version.json dieselbe Fassung; die Seite kommt über HTTP/2; Symbole
    für Tab, Startbildschirm und Web-App sowie das Manifest antworten mit 200 und dem richtigen Typ, die Symbole des
-   Startbildschirms sind deckend (sonst zeigt iOS keins)
+   Startbildschirms sind deckend (sonst zeigt iOS keins), außer die App stellt `symbole = "durchsichtig"` ein
 7. nur nach einem gelungenen Ausrollen: auf dem Pi verwaiste Abbilder entfernen (der vorige Stand jeder App, die dort
    baut) und den Baucache auf `baucache_gb` kürzen (Vorgabe 20, `BAUCACHE_GB` in der Umgebung geht vor); nach einem
    Fehlschlag bleibt alles, das alte Abbild ist dann der Rückweg
@@ -38,6 +38,7 @@ import sys
 import tempfile
 import time
 import tomllib
+from typing import Literal
 from pathlib import Path
 
 from collections.abc import Mapping
@@ -67,6 +68,9 @@ class Ziel(BaseModel):
     leitstelle: str | None = None   # Adresse der Leitstelle, vom Pi aus erreichbar (nötig mit Ton)
     auslaufen: Auslaufen | None = None   # Weg für --auslaufen (Apps, die tagelang durcharbeiten)
     baucache_gb: int = Field(BAUCACHE_GB, ge=1)   # so viel Baucache bleibt nach dem Aufräumen auf dem Rechner, in GB
+    # "deckend": Startbildschirm-Symbole ohne durchsichtige Stellen (sonst füllt iOS sie schwarz oder zeigt keins);
+    # "durchsichtig": die App will ihr Symbol freigestellt auch dort (Entscheidung des Nutzers, mit Grund in der Datei)
+    symbole: Literal["deckend", "durchsichtig"] = "deckend"
 
     @model_validator(mode="after")
     def _ton_braucht_leitstelle(self) -> "Ziel":
@@ -430,11 +434,12 @@ def pruefen(z: Ziel, wurzel: Path) -> None:
         if not antwort.startswith(f"200 {typ}"):
             raise Abbruch(f"Symbol {pfad}: {antwort} (erwartet 200 {typ})")
     hausstelle = Path(_lauf(["mkcert", "-CAROOT"])) / "rootCA.pem"
-    for pfad in DECKEND:
-        daten = subprocess.run(["curl", "-s", "--cacert", str(hausstelle), f"{z.adresse}/{pfad}"], capture_output=True).stdout
-        if not _deckend(daten):
-            raise Abbruch(f"Symbol {pfad} hat durchsichtige Stellen (iOS zeigt dann keins): python3 tools/symbole.py")
-    print("HTTP/2 über den Vorschaltdienst, Symbole deckend, Manifest in Ordnung")
+    if z.symbole == "deckend":
+        for pfad in DECKEND:
+            daten = subprocess.run(["curl", "-s", "--cacert", str(hausstelle), f"{z.adresse}/{pfad}"], capture_output=True).stdout
+            if not _deckend(daten):
+                raise Abbruch(f"Symbol {pfad} hat durchsichtige Stellen (iOS zeigt dann keins): python3 tools/symbole.py")
+    print(f"HTTP/2 über den Vorschaltdienst, Symbole {z.symbole}, Manifest in Ordnung")
 
 
 def aufraeumen(z: Ziel) -> None:
