@@ -255,6 +255,31 @@ async def test_gleichzeitig_grenze(db):
         await dienst.stoppen()
 
 
+async def test_hoechstens_je_art_laesst_andere_arten_vor(db):
+    """Zwei lange Aufträge einer Art mit hoechstens=1: der zweite wartet, ein Auftrag einer anderen Art läuft daneben."""
+    freigabe = asyncio.Event()
+
+    async def lang(k: Kontext):
+        await freigabe.wait()
+
+    async def kurz(k: Kontext):
+        return {"ok": True}
+
+    dienst = Auftraege(db, [Art(name="lang", titel="Lang", arbeit=lang, hoechstens=1),
+                            Art(name="kurz", titel="Kurz", arbeit=kurz)], gleichzeitig=2)
+    await dienst.starten()
+    try:
+        erster, zweiter = (await dienst.einreihen("lang")).id, (await dienst.einreihen("lang")).id
+        k = (await dienst.einreihen("kurz")).id
+        await bis(dienst, k, "fertig")
+        assert (await dienst.holen(erster)).zustand == "laeuft"
+        assert (await dienst.holen(zweiter)).zustand == "wartet"
+        freigabe.set()
+        await bis(dienst, zweiter, "fertig")
+    finally:
+        await dienst.stoppen()
+
+
 async def test_liste_seitenweise_und_aufraeumen(dienst):
     ids = [(await dienst.einreihen("zaehlen", {"texte": ["x"]}, stapel="s1")).id for _ in range(5)]
     for i in ids:

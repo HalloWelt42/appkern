@@ -101,7 +101,9 @@ class Art:
     """Eine Art von Auftrag.
 
     `nach_neustart`: "fortsetzen" reiht einen beim Neustart laufenden Auftrag wieder ein (mit Zwischenstand),
-    "anhalten" zeigt ihn als unterbrochen. `fortsetzbar`: Wiederholen übernimmt den Zwischenstand.
+    "anhalten" zeigt ihn als unterbrochen. `fortsetzbar`: Wiederholen übernimmt den Zwischenstand. `hoechstens`: so
+    viele Aufträge dieser Art laufen höchstens nebeneinander (0: nur die Grenze aller Aufträge); so wartet etwa eine
+    kurze Arbeit nicht hinter einer Reihe langer Aufträge einer anderen Art.
     """
 
     name: str
@@ -111,6 +113,7 @@ class Art:
     phasen: Sequence[Phase] = ()
     fortsetzbar: bool = False
     nach_neustart: Literal["fortsetzen", "anhalten"] = "anhalten"
+    hoechstens: int = 0
 
 
 @dataclass
@@ -395,10 +398,15 @@ class Auftraege:
                                  (json.dumps(stand, ensure_ascii=False), auftrag_id))
 
     async def _nehmen(self) -> dict[str, Any] | None:
-        """Den ältesten wartenden Auftrag atomar übernehmen, der nicht zurückgestellt ist."""
+        """Den ältesten wartenden Auftrag atomar übernehmen, der nicht zurückgestellt ist und dessen Art noch Platz hat."""
 
         def arbeit(v):
+            laufen = {z["art"]: z["n"] for z in v.execute("SELECT art, count(*) AS n FROM auftrag WHERE zustand='laeuft' "
+                                                           "GROUP BY art").fetchall()}
             for z in v.execute("SELECT * FROM auftrag WHERE zustand='wartet' ORDER BY erstellt_am, id").fetchall():
+                art = self.arten.get(z["art"])
+                if art and art.hoechstens and laufen.get(z["art"], 0) >= art.hoechstens:
+                    continue
                 if self._grund(dict(z)):
                     continue
                 v.execute("UPDATE auftrag SET zustand='laeuft', begonnen_am=coalesce(begonnen_am, ?) WHERE id=?",
