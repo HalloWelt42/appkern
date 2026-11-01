@@ -14,6 +14,9 @@ const fassungEinsetzen = {
 export default defineConfig({
   plugins: [svelte(), fassungEinsetzen],
   define: { __APP_FASSUNG__: JSON.stringify(FASSUNG) },
+  // Die Oberfläche des Appkerns kommt als Svelte-Quelltext mit TypeScript; Vite bündelt sie nicht vor, sie wird wie
+  // eigener Code übersetzt (sonst scheitert das Vorbündeln an den .svelte.ts-Dateien)
+  optimizeDeps: { exclude: ["appkern-oberflaeche"] },
   server: {
     port: __DEVPORT__,
     strictPort: true,
