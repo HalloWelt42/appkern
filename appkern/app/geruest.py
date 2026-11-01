@@ -25,7 +25,7 @@ import logging
 import os
 import re
 import ssl
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Sequence
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Generic, TypeVar
@@ -604,11 +604,14 @@ class Geruest(Generic[E]):
             app.include_router(router)
         return app
 
-    def oberflaeche_ausliefern(self, app: FastAPI) -> None:
+    def oberflaeche_ausliefern(self, app: FastAPI, seiten: Iterable[str] = ()) -> None:
         """Die gebaute Oberfläche; zuletzt einbinden (fängt alle übrigen Pfade). Unbekannte Seiten bekommen index.html
         (die Oberfläche liest ihren Weg selbst); Pfade unter /api und fehlende Dateien (ein Weg mit Dateiendung, etwa
-        /manifest.webmanifest) bekommen 404, damit der Browser nie eine Seite als Datei nimmt."""
+        /manifest.webmanifest) bekommen 404, damit der Browser nie eine Seite als Datei nimmt. `seiten`: Bereiche, deren
+        Unterwege immer Seiten sind, auch mit Punkt am Ende (etwa /lesen/<buch>/function.array-map.php in Nachschlag,
+        wo der Weg einen Pfad aus einem Buch trägt)."""
         wurzel = self.oberflaeche.resolve() if self.oberflaeche else None
+        immer_seite = {s.strip("/") for s in seiten}
 
         @app.api_route("/{pfad:path}", methods=["GET", "HEAD"], include_in_schema=False)
         async def seite(pfad: str):
@@ -621,6 +624,6 @@ class Geruest(Generic[E]):
                 kopf = {"Cache-Control": "public, max-age=31536000, immutable"} if pfad.startswith("assets/") \
                     else {"Cache-Control": "no-cache"}
                 return FileResponse(datei, headers=kopf)
-            if DATEIENDUNG.search(pfad.rsplit("/", 1)[-1]):
+            if DATEIENDUNG.search(pfad.rsplit("/", 1)[-1]) and pfad.split("/", 1)[0] not in immer_seite:
                 return JSONResponse({"detail": "Nicht gefunden"}, status_code=404)
             return FileResponse(wurzel / "index.html", headers={"Cache-Control": "no-cache"})

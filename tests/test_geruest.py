@@ -74,7 +74,7 @@ async def umgebung(tmp_path: Path):
     geruest = Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
                       einstellungen=ProbeEinstellungen, oberflaeche=dist, transport=httpx.MockTransport(Wolke()))
     app = geruest.fastapi()
-    geruest.oberflaeche_ausliefern(app)
+    geruest.oberflaeche_ausliefern(app, seiten=["lesen"])
     await geruest.starten()
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as client:
         yield geruest, app, client
@@ -143,9 +143,10 @@ async def test_oberflaeche_ausliefern(umgebung):
     r = await c.get("/assets/a.js")
     assert r.text == "1" and "immutable" in r.headers["cache-control"]
     assert (await c.get("/api/v1/gibtsnicht")).status_code == 404
-    for datei in ("/manifest.webmanifest", "/assets/fehlt.js", "/favicon.ico", "/irgendwo/bild.PNG"):
+    for datei in ("/manifest.webmanifest", "/assets/fehlt.js", "/favicon.ico", "/irgendwo/bild.PNG", "/sonst/seite.php"):
         assert (await c.get(datei)).status_code == 404, datei          # fehlende Datei, nie die Startseite
-    for seite in ("/transkripte/abc/12.5", "/einstellungen/verbindungen", "/a.b/c"):
+    for seite in ("/transkripte/abc/12.5", "/einstellungen/verbindungen", "/a.b/c", "/lesen/buch/function.array-map.php",
+                  "/lesen/buch/language.types.array"):
         r = await c.get(seite)
         assert r.status_code == 200 and "Probe" in r.text, seite        # Seiten ohne Dateiendung bleiben Seiten
     assert (await c.get("/../../etc/passwd")).status_code in (200, 404)        # nie außerhalb der Oberfläche
