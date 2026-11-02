@@ -473,13 +473,20 @@ def _leitstelle_zugang(z: Ziel, erneuern: bool, client: httpx.Client | None) -> 
 
 
 def _kellerwolke_zugang(z: Ziel, erneuern: bool) -> None:
+    """Schlüssel und Adresse der Kellerwolke als feste Einstellungen: die Adresse, die die App gerade nutzt (sonst die aus
+    der privaten Wahrheit); mit beiden braucht auch eine frische App keine Einrichtung von Hand."""
     assert z.zugaenge is not None and z.zugaenge.kellerwolke
-    feld = _fest(z, "KELLERWOLKE_SCHLUESSEL")
+    feld, feld_adresse = _fest(z, "KELLERWOLKE_SCHLUESSEL"), _fest(z, "KELLERWOLKE_ADRESSE")
+    info = _app_info(z)
+    if not _in_umgebung(z, feld_adresse):
+        adresse = info.get("kellerwolke") or haus_ziel("kellerwolke")[2]
+        _umgebung_setzen(z, {feld_adresse: adresse})
+        print(f"Kellerwolke: Adresse fest ({adresse})", flush=True)
     if not erneuern and _in_umgebung(z, feld):
         print(f"Kellerwolke: {z.zugaenge.name} vorhanden, Schlüssel bleibt", flush=True)
         return
-    rechner, wurzel = haus_ziel("kellerwolke")
-    eingerichtet = bool(_besitzer(z))
+    rechner, wurzel, _ = haus_ziel("kellerwolke")
+    eingerichtet = bool(info.get("besitzer"))
     schluessel, meldung = app_zugang(rechner, wurzel, z.zugaenge.kellerwolke, z.zugaenge.name)
     if eingerichtet and " angelegt" in meldung:
         # Die App hat schon einen Zugang, aber nicht unter diesem Namen oder Konto: der neue zeigte auf einen leeren Zweig.
@@ -490,23 +497,24 @@ def _kellerwolke_zugang(z: Ziel, erneuern: bool) -> None:
     print(f"Kellerwolke: {meldung}", flush=True)
 
 
-def _besitzer(z: Ziel) -> str:
-    """Wem die laufende App in der Kellerwolke gehört (leer: noch nicht eingerichtet oder nicht erreichbar)."""
+def _app_info(z: Ziel) -> dict:
+    """Was die laufende App über sich sagt (/api/v1/app: besitzer, Adresse der Kellerwolke); leer, wenn sie noch nicht
+    läuft oder nicht erreichbar ist."""
     try:
-        return json.loads(_curl(z, "--max-time", "10", f"{z.adresse}/api/v1/app") or "{}").get("besitzer") or ""
+        return json.loads(_curl(z, "--max-time", "10", f"{z.adresse}/api/v1/app") or "{}")
     except (Abbruch, ValueError):
-        return ""
+        return {}
 
 
-def haus_ziel(name: str) -> tuple[str, str]:
-    """Rechner und Ordner eines Dienstes des Hauses aus der privaten Wahrheit (handbuch ziel <name>)."""
+def haus_ziel(name: str) -> tuple[str, str, str]:
+    """Rechner, Ordner und Adresse eines Dienstes des Hauses aus der privaten Wahrheit (handbuch ziel <name>)."""
     erg = subprocess.run(["handbuch", "ziel", name, "--toml"], capture_output=True, text=True)
     if erg.returncode != 0:
         raise Abbruch(f"{name}: kein Ziel in der privaten Wahrheit (handbuch ziel {name})")
     ziel = tomllib.loads(erg.stdout)
-    if not ziel.get("rechner") or not ziel.get("wurzel"):
-        raise Abbruch(f"{name}: in der privaten Wahrheit fehlen rechner oder wurzel")
-    return ziel["rechner"], ziel["wurzel"]
+    if not ziel.get("rechner") or not ziel.get("wurzel") or not ziel.get("adresse"):
+        raise Abbruch(f"{name}: in der privaten Wahrheit fehlen rechner, wurzel oder adresse")
+    return ziel["rechner"], ziel["wurzel"], ziel["adresse"]
 
 
 def app_zugang(rechner: str, wurzel: str, konto: str, app: str) -> tuple[str, str]:

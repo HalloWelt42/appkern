@@ -580,13 +580,14 @@ def test_zugang_zur_kellerwolke_neu_nur_wenn_noetig(monkeypatch, capsys):
     in_env = {"wert": "0"}
     monkeypatch.setattr(a, "_ssh", lambda z, skript: in_env["wert"])
     monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: geschrieben.append(dict(werte)))
-    monkeypatch.setattr(a, "haus_ziel", lambda name: ("pi@pi", "/mnt/data/kellerwolke"))
-    monkeypatch.setattr(a, "_besitzer", lambda z: "admin")
+    monkeypatch.setattr(a, "haus_ziel", lambda name: ("pi@pi", "/mnt/data/kellerwolke", "https://pi:39280"))
+    monkeypatch.setattr(a, "_app_info", lambda z: {"besitzer": "admin", "kellerwolke": "http://pi:39278"})
     monkeypatch.setattr(a, "app_zugang", lambda *x: gerufen.append(x) or ("kw_app_neu", f"Zugang {x[3]} für {x[2]} erneuert"))
     z = _ziel_mit_zugaengen(zugaenge={"name": "Nachschlag", "kellerwolke": "admin"})
     a.zugaenge_besorgen(z)
     assert gerufen == [("pi@pi", "/mnt/data/kellerwolke", "admin", "Nachschlag")]
-    assert geschrieben == [{"NACHSCHLAG_FEST_KELLERWOLKE_SCHLUESSEL": "kw_app_neu"}]
+    assert geschrieben == [{"NACHSCHLAG_FEST_KELLERWOLKE_ADRESSE": "http://pi:39278"},     # die Adresse, die sie nutzt
+                           {"NACHSCHLAG_FEST_KELLERWOLKE_SCHLUESSEL": "kw_app_neu"}]
     in_env["wert"] = "1"
     a.zugaenge_besorgen(z)
     assert len(gerufen) == 1                                      # steht schon in der .env: bleibt
@@ -604,9 +605,9 @@ def test_kellerwolke_angelegt_obwohl_eingerichtet_bricht_ab(monkeypatch):
     geschrieben: list = []
     monkeypatch.setattr(a, "_ssh", lambda z, skript: "0")
     monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: geschrieben.append(werte))
-    monkeypatch.setattr(a, "haus_ziel", lambda name: ("pi@pi", "/mnt/data/kellerwolke"))
-    monkeypatch.setattr(a, "_besitzer", lambda z: "admin")
+    monkeypatch.setattr(a, "haus_ziel", lambda name: ("pi@pi", "/mnt/data/kellerwolke", "https://pi:39280"))
+    monkeypatch.setattr(a, "_app_info", lambda z: {"besitzer": "admin", "kellerwolke": "http://pi:39278"})
     monkeypatch.setattr(a, "app_zugang", lambda *x: ("kw_app_neu", "Zugang Nachschlg für admin angelegt; Schlüssel in /tmp/x (600)"))
     with pytest.raises(a.Abbruch):
         a.zugaenge_besorgen(_ziel_mit_zugaengen(zugaenge={"name": "Nachschlg", "kellerwolke": "admin"}))
-    assert geschrieben == []
+    assert not any("NACHSCHLAG_FEST_KELLERWOLKE_SCHLUESSEL" in w for w in geschrieben)
