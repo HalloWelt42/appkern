@@ -436,9 +436,6 @@ select.eingabe { padding-right: var(--a5); }
   padding: var(--a3) var(--a4); border-top: 1px solid var(--rand);
 }
 .einstellung:first-of-type { border-top: 0; }
-/* fest: vom Ausrollen gesetzt (HELF-77), nur angezeigt */
-.einstellung-fest { display: inline-flex; align-items: center; gap: var(--a2); min-width: 0; color: var(--text-2); overflow-wrap: anywhere; }
-.einstellung-fest i { color: var(--text-3); }
 .einstellung .name { font-weight: 600; display: flex; align-items: center; gap: var(--a2); }
 .einstellung .erklaerung { font-size: var(--klein); color: var(--text-3); margin-top: 2px; }
 .einstellung .wert { display: flex; gap: var(--a2); justify-content: flex-end; align-items: center; }

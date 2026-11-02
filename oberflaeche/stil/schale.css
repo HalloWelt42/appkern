@@ -370,3 +370,8 @@ a.knopf.primaer { color: var(--auf-akzent); }
   .nav-zusatz, .nav-ansicht, .nav-oben .rund { display: none; }
   .geruest.eingeklappt .nav-text { display: none; }
 }
+
+/* Einstellung, die das Ausrollen setzt (HELF-77): nur angezeigt, mit Schloss; in der Seite Einstellungen und in den
+   Zeilen des Leitstands gleich */
+.einstellung-fest { display: inline-flex; align-items: center; gap: var(--a2); min-width: 0; color: var(--text-2); overflow-wrap: anywhere; }
+.einstellung-fest i { color: var(--text-3); }
