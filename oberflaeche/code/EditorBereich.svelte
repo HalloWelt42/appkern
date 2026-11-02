@@ -4,10 +4,12 @@
   // anderes Beispiel), folgt der Editor. Mit `mitHaltepunkten` eine Rinne für Haltepunkte des Debuggers.
   import { onDestroy, onMount } from "svelte";
   import type { EditorView } from "@codemirror/view";
-  import { erstelleEditor, haltepunkteSchalten } from "./editor/editor";
+  import type { Funktionsbestand } from "./editor/aufrufe";
+  import { bestandSetzen, erstelleEditor, haltepunkteSchalten } from "./editor/editor";
   import { setzeZeilenMarke } from "./editor/zeilenmarke";
 
-  let { sprache, code = $bindable(), markierteZeile = null, befehle = [], mitHaltepunkten = false, haltepunkte = $bindable([]) }: {
+  let { sprache, code = $bindable(), markierteZeile = null, befehle = [], mitHaltepunkten = false, haltepunkte = $bindable([]),
+        bestand = null }: {
     sprache: string;
     code: string;
     /** hervorgehobene Zeile (ab 1), etwa beim Abspielen eines Laufs */
@@ -17,6 +19,8 @@
     /** Rinne für Haltepunkte des Debuggers; die gesetzten Zeilen stehen in `haltepunkte` */
     mitHaltepunkten?: boolean;
     haltepunkte?: number[];
+    /** Funktionen der gewählten Fassung: unbekannte Aufrufe werden markiert, die übrigen vorgeschlagen; wechselt live */
+    bestand?: Funktionsbestand | null;
   } = $props();
 
   let host: HTMLDivElement | undefined = $state();
@@ -52,6 +56,10 @@
 
   $effect(() => {
     if (view) setzeZeilenMarke(view, markierteZeile);
+  });
+
+  $effect(() => {
+    if (view) bestandSetzen(view, bestand);
   });
 
   onDestroy(() => {

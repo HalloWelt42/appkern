@@ -29,7 +29,8 @@ export interface Schritt {
 }
 
 export interface Aufzeichnung {
-  art: "python" | "javascript";
+  /** Sprache des Laufs ("python", "javascript"; ausgeführt ohne Schritte auch "php") */
+  art: string;
   schritte: Schritt[];
   ausgabe: string;
   fehler?: string | null;

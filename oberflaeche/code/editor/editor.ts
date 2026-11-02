@@ -32,6 +32,7 @@ import {
   rectangularSelection,
 } from "@codemirror/view";
 
+import { funktionsbestand, type Funktionsbestand } from "./aufrufe";
 import { haltepunkte } from "./haltepunkte";
 import { deutscheTexte } from "./phrasen";
 import { klassischesSchema } from "./schema";
@@ -82,11 +83,19 @@ export function haltepunkteSchalten(view: EditorView, beiHaltepunkten?: (zeilen:
   view.dispatch({ effects: haltepunktRinne.reconfigure(beiHaltepunkten ? haltepunkte(beiHaltepunkten) : []) });
 }
 
+// Der Funktionsbestand der gewählten Fassung wechselt mit ihr, während der Editor steht (WIKI-52)
+const bestandFach = new Compartment();
+
+export function bestandSetzen(view: EditorView, bestand: Funktionsbestand | null): void {
+  view.dispatch({ effects: bestandFach.reconfigure(bestand ? funktionsbestand(bestand) : []) });
+}
+
 export function erstelleEditor(opts: EditorOptionen): EditorView {
   const state = EditorState.create({
     doc: opts.initialerCode,
     extensions: [
       haltepunktRinne.of(opts.beiHaltepunkten ? haltepunkte(opts.beiHaltepunkten) : []),
+      bestandFach.of([]),
       lineNumbers(),
       highlightActiveLineGutter(),
       foldGutter(),
