@@ -136,7 +136,9 @@ async function senden(pfad: string, init: AnfrageOptionen, signal: AbortSignal):
     const antwort = await fetch(`/api/v1${pfad}`, {
       ...rest,
       signal: steuerung.signal,
-      headers: { "Content-Type": "application/json", "X-Kellerwolke-Sitzung": token(), ...(rest.headers ?? {}) },
+      // Formulare (etwa Dateien zum Hochladen) beschriftet der Browser selbst, mit der Grenze der Teile
+      headers: { ...(rest.body instanceof FormData ? {} : { "Content-Type": "application/json" }), "X-Kellerwolke-Sitzung": token(),
+                 ...(rest.headers ?? {}) },
     });
     const text = await antwort.text();
     if (vomVorschaltdienst(antwort)) {
