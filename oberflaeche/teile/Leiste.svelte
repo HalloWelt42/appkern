@@ -6,7 +6,8 @@
   let { children }: { children: Snippet } = $props();
 </script>
 
-<svelte:window onkeydown={(e) => e.key === "Escape" && leisteSchliessen()} />
+<!-- Escape schließt die Leiste, außer etwas darüber (Bildansicht, Ebene) hat es schon für sich genommen -->
+<svelte:window onkeydown={(e) => e.key === "Escape" && !e.defaultPrevented && leisteSchliessen()} />
 
 {#if leiste.offen}<button class="leiste-schleier" aria-label="Leiste schließen" onclick={leisteSchliessen}></button>{/if}
 <aside class="leiste" class:offen={leiste.offen}>
