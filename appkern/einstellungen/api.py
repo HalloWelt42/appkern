@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 from pydantic import BaseModel, ValidationError
 
-from .dienst import Einstellungen, UnbekanntesFeld
+from .dienst import Einstellungen, FestesFeld, UnbekanntesFeld
 from .modelle import Angebot, Feld
 
 
@@ -36,6 +36,8 @@ def einstellungs_router(einstellungen: Einstellungen, *, prefix: str = "/api/v1/
             await einstellungen.aendern(eingabe.werte)
         except UnbekanntesFeld as f:
             raise HTTPException(status_code=422, detail=f"Unbekannte Einstellung: {f.args[0]}")
+        except FestesFeld as f:
+            raise HTTPException(status_code=409, detail=f"Vom Ausrollen gesetzt, hier nicht änderbar: {f.args[0]}")
         except ValidationError as f:
             fehler = "; ".join(f"{'.'.join(str(t) for t in e['loc'])}: {e['msg']}" for e in f.errors())
             raise HTTPException(status_code=422, detail=fehler)

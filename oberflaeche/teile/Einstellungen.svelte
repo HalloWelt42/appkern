@@ -175,7 +175,7 @@
     neuerEintrag[f.name] = "";
   }
 
-  const HERKUNFT = { gespeichert: "gespeichert", umgebung: "aus der Umgebung", vorgabe: "Vorgabe" } as const;
+  const HERKUNFT = { gespeichert: "gespeichert", umgebung: "aus der Umgebung", vorgabe: "Vorgabe", fest: "vom Ausrollen gesetzt" } as const;
 </script>
 
 <!-- Lesestufe mittel (Grundschrift 17, kleine Texte und Marken 15 Pixel): die Seite besteht aus Erklärungen zum Lesen;
@@ -203,7 +203,8 @@
             <div class="was">
               <div class="name">
                 {f.titel}
-                <span class="herkunft {f.herkunft}" title={f.herkunft === "umgebung" ? "Beim Start aus der Umgebung; hier ändern überschreibt sie" : ""}>{HERKUNFT[f.herkunft]}</span>
+                <span class="herkunft {f.herkunft}" title={f.herkunft === "umgebung" ? "Beim Start aus der Umgebung; hier ändern überschreibt sie"
+                  : f.herkunft === "fest" ? "Das Ausrollen setzt diesen Wert; hier lässt er sich nicht ändern" : ""}>{HERKUNFT[f.herkunft]}</span>
                 {#if f.herkunft === "gespeichert" && !(f.name in aenderungen)}
                   <button class="zuruecksetzen" onclick={() => (aenderungen[f.name] = null)}>zurücksetzen</button>
                 {/if}
@@ -211,7 +212,9 @@
               </div>
               {#if f.beschreibung}<div class="beschreibung">{f.beschreibung}</div>{/if}
             </div>
-            {#if f.art === "schalter"}
+            {#if f.herkunft === "fest"}
+              <div class="einstellung-fest"><i class="fa-solid fa-lock"></i><span>{f.art === "schalter" ? (f.wert ? "an" : "aus") : String(f.wert ?? "")}</span></div>
+            {:else if f.art === "schalter"}
               <button class="schalter" class:an={Boolean(wert(f))} aria-label={f.titel} aria-pressed={Boolean(wert(f))}
                       onclick={() => setzen(f, !wert(f))}></button>
             {:else if f.paar}

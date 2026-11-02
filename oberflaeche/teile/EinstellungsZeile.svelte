@@ -16,7 +16,7 @@
   } = $props();
 
   const EIGEN = "\u0000eigen";
-  const HERKUNFT = { gespeichert: "", umgebung: " (gesetzt über die Umgebung des Rechners)", vorgabe: "" } as const;
+  const HERKUNFT = { gespeichert: "", umgebung: " (gesetzt über die Umgebung des Rechners)", vorgabe: "", fest: " (vom Ausrollen gesetzt, hier nicht änderbar)" } as const;
   const v = $derived(einstellungsWert(feld.name));
   const geaendert = $derived(feld.name in einstellungen.entwurf);
   let aufgedeckt = $state("");
@@ -94,7 +94,9 @@
     <div class="erklaerung">{feld.beschreibung}{HERKUNFT[feld.herkunft]}{#if stand} · {stand}{/if}</div>
   </div>
   <div class="wert">
-    {#if feld.art === "schalter"}
+    {#if feld.herkunft === "fest"}
+      <div class="einstellung-fest"><i class="fa-solid fa-lock"></i><span>{feld.art === "schalter" ? (feld.wert ? "an" : "aus") : String(feld.wert ?? "")}</span></div>
+    {:else if feld.art === "schalter"}
       <button class="schalter" class:an={!!v} type="button" role="switch" aria-checked={!!v} aria-label={feld.titel}
               onclick={() => einstellungSetzen(feld.name, !v)}></button>
     {:else if feld.art === "zahl"}

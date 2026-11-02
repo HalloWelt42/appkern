@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, SecretStr, ValidationError
 
 from appkern.auftraege import Art, Auftraege
 from appkern.datenbank import Datenbank
-from appkern.einstellungen import Einstellungen, UnbekanntesFeld
+from appkern.einstellungen import Einstellungen, FestesFeld, UnbekanntesFeld
 from appkern.einstellungen.api import einstellungs_router
 from appkern.protokoll import Protokoll
 from appkern.protokoll.api import protokoll_router
@@ -51,6 +51,24 @@ async def test_herkunft_vorgabe_umgebung_gespeichert(db):
     # None setzt zurück: dann gilt wieder die Umgebung.
     await e2.aendern({"leitstelle_adresse": None})
     assert e2.stand.leitstelle_adresse == "http://pi:8530"
+
+
+async def test_fest_vom_ausrollen_geht_vor_und_bleibt(db):
+    """HELF-77: <PRAEFIX>FEST_<FELD> (vom Ausrollen) geht vor dem Gespeicherten, lässt sich nicht ändern und ist als fest
+    gekennzeichnet; Geheimnisse bleiben verdeckt."""
+    e = Einstellungen(db, AppEinstellungen, umgebung_praefix="T3_", umgebung={})
+    await e.starten()
+    await e.aendern({"leitstelle_adresse": "http://alt:8530", "leitstelle_schluessel": "ls_alt"})
+    fest = {"T3_FEST_LEITSTELLE_ADRESSE": "http://pi:8530", "T3_FEST_LEITSTELLE_SCHLUESSEL": "ls_neu_geheim"}
+    e2 = Einstellungen(db, AppEinstellungen, umgebung_praefix="T3_", umgebung=fest)
+    stand = await e2.starten()
+    assert stand.leitstelle_adresse == "http://pi:8530" and stand.leitstelle_schluessel.get_secret_value() == "ls_neu_geheim"
+    felder = {f.name: f for f in e2.felder()}
+    assert felder["leitstelle_adresse"].herkunft == "fest" and felder["leitstelle_schluessel"].herkunft == "fest"
+    assert "ls_neu_geheim" not in str(felder["leitstelle_schluessel"].wert)
+    with pytest.raises(FestesFeld):
+        await e2.aendern({"leitstelle_schluessel": "ls_anders"})
+    assert await e2.aendern({"sprache": "en"}) == {"sprache"}          # übrige Felder bleiben änderbar
 
 
 async def test_pruefung_alles_oder_nichts(db):

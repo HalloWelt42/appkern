@@ -3,7 +3,8 @@
 Die App beschreibt ihre Einstellungen als Pydantic-Modell (Vorgaben, `Field(title=..., description=...)`, Auswahl über
 `Literal`, Geheimnisse als `SecretStr`). Gespeichert wird, was in der Oberfläche gesetzt wurde; `None` setzt zurück.
 Ein Wert kommt aus der Datenbank (was in der Oberfläche gesetzt wurde), sonst aus der Umgebung (`<PRAEFIX><FELD>` in Großbuchstaben, etwa beim ersten Start),
-sonst aus der Vorgabe des Modells.
+sonst aus der Vorgabe des Modells. Fest ist ein Wert aus `<PRAEFIX>FEST_<FELD>` (etwa Zugänge, die das Ausrollen setzt,
+HELF-77): er geht vor dem Gespeicherten, lässt sich nicht ändern und wird in der Oberfläche nur angezeigt.
 
 Geheimnisse gehen in `felder()` nur verdeckt hinaus (bis auf die letzten vier Zeichen); `geheimnis()` deckt eines auf
 (für das Auge in der Oberfläche). In Protokoll und Ausgaben erscheinen sie nie.
@@ -41,6 +42,10 @@ SCHEMA = [
 
 class UnbekanntesFeld(KeyError):
     pass
+
+
+class FestesFeld(Exception):
+    """Eine Einstellung ist fest (aus `<PRAEFIX>FEST_<FELD>`, etwa vom Ausrollen) und lässt sich hier nicht ändern."""
 
 
 def verdeckt(wert: str) -> str:
@@ -138,8 +143,11 @@ class Einstellungen(Generic[M]):
     def _aus_umgebung(self) -> dict[str, Any]:
         return aus_umgebung(self.modell, self.praefix, self._umgebung)
 
+    def _fest(self) -> dict[str, Any]:
+        return aus_umgebung(self.modell, f"{self.praefix}FEST_", self._umgebung)
+
     def _bauen(self, gespeichert: dict[str, Any]) -> M:
-        return self.modell.model_validate({**self._aus_umgebung(), **gespeichert})
+        return self.modell.model_validate({**self._aus_umgebung(), **gespeichert, **self._fest()})
 
     @property
     def stand(self) -> M:
@@ -171,6 +179,9 @@ class Einstellungen(Generic[M]):
         unbekannt = set(werte) - set(self.modell.model_fields)
         if unbekannt:
             raise UnbekanntesFeld(", ".join(sorted(unbekannt)))
+        fest = set(werte) & set(self._fest())
+        if fest:
+            raise FestesFeld(", ".join(sorted(fest)))
         alt = self.stand
         neu_gespeichert = dict(self._gespeichert)
         for name, wert in werte.items():
@@ -208,12 +219,13 @@ class Einstellungen(Generic[M]):
     def felder(self) -> list[Feld]:
         """Beschreibung für die Oberfläche; Geheimnisse verdeckt."""
         vorgabe = self.modell()
-        aus_umgebung = self._aus_umgebung()
+        aus_umgebung, fest = self._aus_umgebung(), self._fest()
         felder = []
         for name, info in self.modell.model_fields.items():
             art, optionen = _art(info.annotation)
             wert = _klartext(getattr(self.stand, name))
-            herkunft = "gespeichert" if name in self._gespeichert else ("umgebung" if name in aus_umgebung else "vorgabe")
+            herkunft = ("fest" if name in fest else "gespeichert" if name in self._gespeichert
+                        else "umgebung" if name in aus_umgebung else "vorgabe")
             extra = info.json_schema_extra if isinstance(info.json_schema_extra, dict) else {}
             kleinste, groesste = _grenzen(info)
             felder.append(Feld(

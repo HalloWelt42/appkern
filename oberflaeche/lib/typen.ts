@@ -98,7 +98,7 @@ export interface Feld {
   wert: unknown;
   gesetzt: boolean;
   vorgabe: unknown;
-  herkunft: "gespeichert" | "umgebung" | "vorgabe";
+  herkunft: "gespeichert" | "umgebung" | "vorgabe" | "fest";   // fest: vom Ausrollen gesetzt, nicht änderbar
   gruppe: string | null;
 }
 

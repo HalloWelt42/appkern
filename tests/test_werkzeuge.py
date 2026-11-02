@@ -499,3 +499,72 @@ def test_rahmen_ist_die_eine_wahrheit_der_telefonansicht():
     rahmen = (wurzel / "stil" / "rahmen.css").read_text()
     assert "safe-area-inset-bottom)" not in rahmen.split("*/", 1)[1]
     assert "maximum-scale" not in (Path(__file__).parent.parent / "appkern" / "vorlage" / "dateien" / "frontend" / "index.html").read_text()
+
+
+def _ziel_mit_zugaengen(**art):
+    from appkern.werkzeuge.ausrollen import Ziel
+    return Ziel(**{"kennung": "nachschlag", "rechner": "pi@pi", "wurzel": "/mnt/data/nachschlag", "adresse": "https://pi:8711",
+                   "repo": "https://example.invalid/r.git", "namen": ["pi"], "leitstelle": "http://pi:8530",
+                   "zugaenge": {"name": "Nachschlag", "leitstelle": ["text", "einbettung"]}, **art})
+
+
+def _leitstelle(anwendungen: list[dict], gesehen: list[tuple[str, str, dict | None]]):
+    import httpx
+
+    def antwort(request: httpx.Request) -> httpx.Response:
+        koerper = json.loads(request.content) if request.content else None
+        gesehen.append((request.method, request.url.path, koerper))
+        if request.url.path == "/api/lage":
+            return httpx.Response(200, json={"anwendungen": anwendungen})
+        if request.url.path == "/api/anwendungen":
+            return httpx.Response(200, json={"kennung": "a1", "name": koerper["name"], "schluessel": "ls_neu"})
+        if request.url.path.endswith("/schluessel/neu"):
+            return httpx.Response(200, json={"schluessel": "ls_erneuert"})
+        if request.url.path.endswith("/schluessel"):
+            return httpx.Response(200, json={"schluessel": "ls_vorhanden"})
+        return httpx.Response(200, json={"kennung": "a1", "name": "Nachschlag"})
+    return httpx.Client(base_url="http://pi:8530", transport=httpx.MockTransport(antwort))
+
+
+def test_zugang_zur_leitstelle_anlegen_uebernehmen_erneuern(monkeypatch, capsys):
+    """HELF-77: Das Ausrollen legt den Zugang an (mit den erklärten Fähigkeiten), übernimmt einen vorhandenen samt
+    Schlüssel, ergänzt fehlende Fähigkeiten (nie weniger) und erneuert nur auf Wunsch; der Schlüssel geht nur als feste
+    Einstellung in die .env und erscheint nie in der Ausgabe."""
+    from appkern.werkzeuge import ausrollen as a
+    geschrieben: list[dict] = []
+    in_env = {"wert": ""}
+    monkeypatch.setattr(a, "_ssh", lambda z, skript: in_env["wert"])
+    monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: geschrieben.append(dict(werte)))
+    z = _ziel_mit_zugaengen()
+
+    gesehen: list = []
+    a.zugaenge_besorgen(z, client=_leitstelle([], gesehen))
+    assert ("POST", "/api/anwendungen", {"name": "Nachschlag", "faehigkeiten": ["einbettung", "text"]}) in gesehen
+    assert geschrieben[-1] == {"NACHSCHLAG_FEST_LEITSTELLE_SCHLUESSEL": "ls_neu", "NACHSCHLAG_FEST_LEITSTELLE_ADRESSE": "http://pi:8530"}
+
+    vorhanden = [{"kennung": "a7", "name": "nachschlag", "prioritaet": 1, "faehigkeiten": ["text", "uebersetzen"], "zonen": ["heim"],
+                  "extern_erlaubt": False, "gleichzeitig": 4, "ketten": {"text": ["qwen"]}, "docker_projekte": []}]
+    gesehen = []
+    a.zugaenge_besorgen(z, client=_leitstelle(vorhanden, gesehen))
+    put = next(k for m, p, k in gesehen if m == "PUT")
+    assert put["faehigkeiten"] == ["einbettung", "text", "uebersetzen"] and put["ketten"] == {"text": ["qwen"]}
+    assert ("POST", "/api/anwendungen/a7/schluessel", None) in gesehen
+    assert geschrieben[-1]["NACHSCHLAG_FEST_LEITSTELLE_SCHLUESSEL"] == "ls_vorhanden"
+
+    # Steht der Schlüssel schon in der .env, bleibt er; erneuert wird nur auf Wunsch
+    in_env["wert"] = "1"
+    vorher = len(geschrieben)
+    gesehen = []
+    a.zugaenge_besorgen(z, client=_leitstelle(vorhanden, gesehen))
+    assert len(geschrieben) == vorher and not any(p.endswith("/schluessel") for _, p, _ in gesehen)
+    a.zugaenge_besorgen(z, erneuern=True, client=_leitstelle(vorhanden, gesehen))
+    assert geschrieben[-1]["NACHSCHLAG_FEST_LEITSTELLE_SCHLUESSEL"] == "ls_erneuert"
+    ausgabe = capsys.readouterr().out
+    assert "ls_" not in ausgabe and "Schlüssel erneuert" in ausgabe and "angelegt" in ausgabe
+
+
+def test_zugaenge_brauchen_die_leitstelle():
+    import pytest
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
+        _ziel_mit_zugaengen(leitstelle=None)

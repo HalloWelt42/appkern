@@ -36,7 +36,7 @@ class Feld(BaseModel):
     wert: Any = None              # bei Geheimnissen verdeckt
     gesetzt: bool = True          # bei Geheimnissen: ist einer hinterlegt?
     vorgabe: Any = None
-    herkunft: Literal["gespeichert", "umgebung", "vorgabe"]
+    herkunft: Literal["gespeichert", "umgebung", "vorgabe", "fest"]   # fest: vom Ausrollen gesetzt, nicht änderbar
     gruppe: str | None = None
 
 

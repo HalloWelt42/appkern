@@ -8,7 +8,7 @@
                                                      Handbuch aus Marken und Katalog neu schreiben oder prüfen
     python -m appkern.werkzeuge fassung [patch|minor|major|id]
     python -m appkern.werkzeuge appkern              Appkern in Oberfläche und Backend auf den neuesten Commit heben
-    python -m appkern.werkzeuge ausrollen [--ziel DATEI] [--ergaenzung DATEI] [--auslaufen]  auf den Pi nach deploy/ausrollen.toml (oder DATEI)
+    python -m appkern.werkzeuge ausrollen [--ziel DATEI] [--ergaenzung DATEI] [--auslaufen] [--zugaenge-erneuern]  auf den Pi nach deploy/ausrollen.toml (oder DATEI)
 """
 
 import argparse
@@ -109,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--pruefen", action="store_true")
     aus = befehle.add_parser("ausrollen")
     aus.add_argument("--sofort", action="store_true", help="nicht auf laufende Aufträge warten (bricht sie ab)")
+    aus.add_argument("--zugaenge-erneuern", action="store_true",
+                     help="Schlüssel der Zugänge erneuern (der alte gilt sofort nicht mehr; etwa bei Verdacht)")
     aus.add_argument("--auslaufen", action="store_true",
                      help="anhalten, den laufenden Schritt auslaufen lassen, ausrollen, danach weiter wie vorher ([auslaufen] im Ziel)")
     aus.add_argument("--ziel", type=Path, default=ZIEL_DATEI, metavar="DATEI",
@@ -122,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
         print(hochzaehlen(wurzel / "version.json", a.art))
         return 0
     if a.befehl == "ausrollen":
-        return ausrollen(wurzel, a.sofort, a.ziel, a.auslaufen, a.ergaenzung)
+        return ausrollen(wurzel, a.sofort, a.ziel, a.auslaufen, a.ergaenzung, a.zugaenge_erneuern)
     if a.befehl == "gestaltung":
         if not gestaltung.ist_quelle(wurzel):
             print("Abbruch: die Gestaltung entsteht nur im Appkern (Marken und Katalog fehlen hier)", file=sys.stderr)

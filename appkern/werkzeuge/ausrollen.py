@@ -43,6 +43,7 @@ from pathlib import Path
 
 from collections.abc import Mapping
 
+import httpx
 from pydantic import BaseModel, Field, model_validator
 
 SCHWELLE_S = 60 * 86400
@@ -53,6 +54,13 @@ SYMBOLE = {"favicon.ico": "image/", "favicon-32.png": "image/png", "apple-touch-
            "icon-192.png": "image/png", "icon-512.png": "image/png", "icon-maskable-512.png": "image/png",
            "site.webmanifest": "application/manifest+json"}
 DECKEND = ("icon-192.png", "icon-512.png", "apple-touch-icon.png")
+
+
+class Zugaenge(BaseModel):
+    """Zugänge, die das Ausrollen besorgt (HELF-77, docs/ZUGAENGE.md): kein Schlüssel wird mehr von Hand eingetragen."""
+
+    name: str = Field(min_length=1)       # Name der App in der Leitstelle
+    leitstelle: list[str] = Field(min_length=1)   # Fähigkeiten, die die App braucht (text, einbettung, bild_erzeugen ...)
 
 
 class Ziel(BaseModel):
@@ -71,11 +79,18 @@ class Ziel(BaseModel):
     # "deckend": Startbildschirm-Symbole ohne durchsichtige Stellen (sonst füllt iOS sie schwarz oder zeigt keins);
     # "durchsichtig": die App will ihr Symbol freigestellt auch dort (Entscheidung des Nutzers, mit Grund in der Datei)
     symbole: Literal["deckend", "durchsichtig"] = "deckend"
+    zugaenge: Zugaenge | None = None   # Zugänge, die das Ausrollen besorgt (Abschnitt [zugaenge])
 
     @model_validator(mode="after")
     def _ton_braucht_leitstelle(self) -> "Ziel":
         if self.ton and not self.leitstelle:
             raise ValueError("Mit ton = true braucht das Ziel leitstelle (Prüfung des Tondienstes)")
+        return self
+
+    @model_validator(mode="after")
+    def _zugaenge_brauchen_leitstelle(self) -> "Ziel":
+        if self.zugaenge and not self.leitstelle:
+            raise ValueError("Mit [zugaenge] braucht das Ziel leitstelle (dort entsteht der Zugang)")
         return self
 
     @model_validator(mode="after")
@@ -390,6 +405,63 @@ def auslaufen(z: Ziel, wurzel: Path) -> None:
         time.sleep(5)
 
 
+def zugaenge_besorgen(z: Ziel, erneuern: bool = False, client: httpx.Client | None = None) -> None:
+    """Der Zugang der App zur Leitstelle (HELF-77): fehlt er, legt die Leitstelle ihn mit den erklärten Fähigkeiten an;
+    gibt es ihn, kommen fehlende Fähigkeiten dazu (nie weniger) und sein Schlüssel wird übernommen, erneuert nur auf
+    Wunsch. Der Schlüssel geht nur über die Eingabe von ssh als feste Einstellung in die .env der App
+    (<KENNUNG>_FEST_LEITSTELLE_SCHLUESSEL, Rechte 600) und erscheint nie in einer Ausgabe."""
+    if z.zugaenge is None:
+        return
+    _schritt("Zugänge")
+    praefix = f"{z.kennung.upper()}_FEST_"
+    schon = _ssh(z, f"cd {shlex.quote(z.wurzel)} 2>/dev/null && grep -c '^{praefix}LEITSTELLE_SCHLUESSEL=' .env || true") not in ("", "0")
+    eigen = client is None
+    c = client or httpx.Client(base_url=z.leitstelle or "", timeout=30)
+    try:
+        def json_von(antwort: httpx.Response) -> dict:
+            if antwort.status_code >= 400:
+                raise Abbruch(f"Leitstelle {antwort.request.method} {antwort.request.url.path}: {antwort.status_code} {antwort.text[:200]}")
+            return antwort.json()
+
+        erklaert = set(z.zugaenge.leitstelle)
+        anwendungen = json_von(c.get("/api/lage")).get("anwendungen", [])
+        a = next((x for x in anwendungen if x["name"].lower() == z.zugaenge.name.lower()), None)
+        if a is None:
+            neu = json_von(c.post("/api/anwendungen", json={"name": z.zugaenge.name, "faehigkeiten": sorted(erklaert)}))
+            schluessel, was = neu["schluessel"], f"in der Leitstelle angelegt ({', '.join(sorted(erklaert))})"
+        else:
+            fehlen = erklaert - set(a["faehigkeiten"])
+            if fehlen:
+                daten = {k: a[k] for k in ("name", "prioritaet", "zonen", "extern_erlaubt", "gleichzeitig", "ketten", "docker_projekte")}
+                json_von(c.put(f"/api/anwendungen/{a['kennung']}", json={**daten, "faehigkeiten": sorted(set(a["faehigkeiten"]) | erklaert)}))
+            pfad = f"/api/anwendungen/{a['kennung']}/schluessel" + ("/neu" if erneuern else "")
+            schluessel = json_von(c.post(pfad))["schluessel"] if erneuern or not schon else None
+            was = ("Schlüssel erneuert" if erneuern else "Schlüssel übernommen" if schluessel else "vorhanden, Schlüssel bleibt") + (
+                f"; Fähigkeiten dazu: {', '.join(sorted(fehlen))}" if fehlen else "")
+    finally:
+        if eigen:
+            c.close()
+    if schluessel:
+        werte = {f"{praefix}LEITSTELLE_SCHLUESSEL": schluessel, f"{praefix}LEITSTELLE_ADRESSE": z.leitstelle or ""}
+        _umgebung_setzen(z, werte)
+    print(f"Leitstelle: {z.zugaenge.name} {was}", flush=True)
+
+
+def _umgebung_setzen(z: Ziel, werte: Mapping[str, str]) -> None:
+    """Zeilen der .env auf dem Rechner setzen (übrige bleiben); die Werte gehen nur über die Eingabe von ssh."""
+    skript = ("import json, os, sys\n"
+              "neu = json.load(sys.stdin)\n"
+              "os.umask(0o077)\n"
+              "alt = [z for z in (open('.env').read().splitlines() if os.path.exists('.env') else []) if z.split('=', 1)[0] not in neu]\n"
+              "open('.env', 'w').write(''.join(z + chr(10) for z in alt + [k + '=' + w for k, w in neu.items()]))\n"
+              "os.chmod('.env', 0o600)\n")
+    befehl = f"mkdir -p {shlex.quote(z.wurzel)} && cd {shlex.quote(z.wurzel)} && python3 -c {shlex.quote(skript)}"
+    erg = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", z.rechner, befehl],
+                         input=json.dumps(dict(werte)), capture_output=True, text=True)
+    if erg.returncode != 0:
+        raise Abbruch(f".env auf {z.rechner} nicht geschrieben: {(erg.stderr or erg.stdout).strip()[:200]}")
+
+
 def bauen(z: Ziel) -> None:
     """Das neue Abbild entsteht, während der alte Stand weiterläuft."""
     _schritt("Bauen")
@@ -465,7 +537,7 @@ def aufgeraeumt(abbilder: str, baucache: str, grenze_gb: int) -> str:
 
 
 def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI, auslaufen_lassen: bool = False,
-              ergaenzung: Path | None = None) -> int:
+              ergaenzung: Path | None = None, zugaenge_erneuern: bool = False) -> int:
     try:
         z = laden(wurzel, datei, ergaenzung)
     except (OSError, ValueError) as f:
@@ -482,6 +554,7 @@ def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI, ausl
         else:
             ruhe_abwarten(z, sofort)
         sichern(z)
+        zugaenge_besorgen(z, zugaenge_erneuern)
         starten(z)
         pruefen(z, wurzel)
         fortsetzen(z, wurzel)
