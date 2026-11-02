@@ -568,3 +568,45 @@ def test_zugaenge_brauchen_die_leitstelle():
     from pydantic import ValidationError
     with pytest.raises(ValidationError):
         _ziel_mit_zugaengen(leitstelle=None)
+
+
+def test_zugang_zur_kellerwolke_neu_nur_wenn_noetig(monkeypatch, capsys):
+    """HELF-77: Mit Konto der Kellerwolke besorgt das Ausrollen auch den App-Schlüssel dort (über app_zugang auf ihrem
+    Rechner, laut privater Wahrheit), solange die .env keinen hat, sonst nur auf Wunsch; der Schlüssel bleibt aus der
+    Ausgabe."""
+    from appkern.werkzeuge import ausrollen as a
+    geschrieben: list[dict] = []
+    gerufen: list[tuple] = []
+    in_env = {"wert": "0"}
+    monkeypatch.setattr(a, "_ssh", lambda z, skript: in_env["wert"])
+    monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: geschrieben.append(dict(werte)))
+    monkeypatch.setattr(a, "haus_ziel", lambda name: ("pi@pi", "/mnt/data/kellerwolke"))
+    monkeypatch.setattr(a, "_besitzer", lambda z: "admin")
+    monkeypatch.setattr(a, "app_zugang", lambda *x: gerufen.append(x) or ("kw_app_neu", f"Zugang {x[3]} für {x[2]} erneuert"))
+    z = _ziel_mit_zugaengen(zugaenge={"name": "Nachschlag", "kellerwolke": "admin"})
+    a.zugaenge_besorgen(z)
+    assert gerufen == [("pi@pi", "/mnt/data/kellerwolke", "admin", "Nachschlag")]
+    assert geschrieben == [{"NACHSCHLAG_FEST_KELLERWOLKE_SCHLUESSEL": "kw_app_neu"}]
+    in_env["wert"] = "1"
+    a.zugaenge_besorgen(z)
+    assert len(gerufen) == 1                                      # steht schon in der .env: bleibt
+    a.zugaenge_besorgen(z, erneuern=True)
+    assert len(gerufen) == 2
+    ausgabe = capsys.readouterr().out
+    assert "kw_app_neu" not in ausgabe and "vorhanden, Schlüssel bleibt" in ausgabe and "erneuert" in ausgabe
+
+
+def test_kellerwolke_angelegt_obwohl_eingerichtet_bricht_ab(monkeypatch):
+    """Ein neuer Zugang für eine schon eingerichtete App heißt: Name oder Konto passen nicht; dann kommt kein Schlüssel
+    in die .env, die laufende App behält ihren."""
+    import pytest
+    from appkern.werkzeuge import ausrollen as a
+    geschrieben: list = []
+    monkeypatch.setattr(a, "_ssh", lambda z, skript: "0")
+    monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: geschrieben.append(werte))
+    monkeypatch.setattr(a, "haus_ziel", lambda name: ("pi@pi", "/mnt/data/kellerwolke"))
+    monkeypatch.setattr(a, "_besitzer", lambda z: "admin")
+    monkeypatch.setattr(a, "app_zugang", lambda *x: ("kw_app_neu", "Zugang Nachschlg für admin angelegt; Schlüssel in /tmp/x (600)"))
+    with pytest.raises(a.Abbruch):
+        a.zugaenge_besorgen(_ziel_mit_zugaengen(zugaenge={"name": "Nachschlg", "kellerwolke": "admin"}))
+    assert geschrieben == []

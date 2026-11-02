@@ -59,8 +59,15 @@ DECKEND = ("icon-192.png", "icon-512.png", "apple-touch-icon.png")
 class Zugaenge(BaseModel):
     """Zugänge, die das Ausrollen besorgt (HELF-77, docs/ZUGAENGE.md): kein Schlüssel wird mehr von Hand eingetragen."""
 
-    name: str = Field(min_length=1)       # Name der App in der Leitstelle
-    leitstelle: list[str] = Field(min_length=1)   # Fähigkeiten, die die App braucht (text, einbettung, bild_erzeugen ...)
+    name: str = Field(min_length=1)       # Name der App in Leitstelle und Kellerwolke
+    leitstelle: list[str] = []            # Fähigkeiten, die die App in der Leitstelle braucht (text, einbettung ...)
+    kellerwolke: str | None = None        # Konto der Kellerwolke, dem die App gehört: dann auch ihr App-Schlüssel dort
+
+    @model_validator(mode="after")
+    def _etwas(self) -> "Zugaenge":
+        if not self.leitstelle and not self.kellerwolke:
+            raise ValueError("[zugaenge] nennt weder Fähigkeiten der Leitstelle noch ein Konto der Kellerwolke")
+        return self
 
 
 class Ziel(BaseModel):
@@ -89,7 +96,7 @@ class Ziel(BaseModel):
 
     @model_validator(mode="after")
     def _zugaenge_brauchen_leitstelle(self) -> "Ziel":
-        if self.zugaenge and not self.leitstelle:
+        if self.zugaenge and self.zugaenge.leitstelle and not self.leitstelle:
             raise ValueError("Mit [zugaenge] braucht das Ziel leitstelle (dort entsteht der Zugang)")
         return self
 
@@ -406,15 +413,34 @@ def auslaufen(z: Ziel, wurzel: Path) -> None:
 
 
 def zugaenge_besorgen(z: Ziel, erneuern: bool = False, client: httpx.Client | None = None) -> None:
-    """Der Zugang der App zur Leitstelle (HELF-77): fehlt er, legt die Leitstelle ihn mit den erklärten Fähigkeiten an;
-    gibt es ihn, kommen fehlende Fähigkeiten dazu (nie weniger) und sein Schlüssel wird übernommen, erneuert nur auf
-    Wunsch. Der Schlüssel geht nur über die Eingabe von ssh als feste Einstellung in die .env der App
-    (<KENNUNG>_FEST_LEITSTELLE_SCHLUESSEL, Rechte 600) und erscheint nie in einer Ausgabe."""
+    """Die Zugänge der App (HELF-77, docs/ZUGAENGE.md), als feste Einstellungen in ihrer .env (<KENNUNG>_FEST_...,
+    Rechte 600); ein Schlüssel geht nur über die Eingabe von ssh dorthin und erscheint nie in einer Ausgabe.
+    Leitstelle: fehlt die App, wird sie mit den erklärten Fähigkeiten angelegt; gibt es sie, kommen fehlende Fähigkeiten
+    dazu (nie weniger) und ihr Schlüssel wird übernommen, erneuert nur auf Wunsch.
+    Kellerwolke: ihr Werkzeug app_zugang auf ihrem Rechner legt den App-Zugang an oder gibt ihm einen neuen Schlüssel
+    (vorhandene gibt die Kellerwolke nicht noch einmal heraus); das geschieht, solange die .env noch keinen hat, sonst
+    nur auf Wunsch."""
     if z.zugaenge is None:
         return
     _schritt("Zugänge")
-    praefix = f"{z.kennung.upper()}_FEST_"
-    schon = _ssh(z, f"cd {shlex.quote(z.wurzel)} 2>/dev/null && grep -c '^{praefix}LEITSTELLE_SCHLUESSEL=' .env || true") not in ("", "0")
+    if z.zugaenge.leitstelle:
+        _leitstelle_zugang(z, erneuern, client)
+    if z.zugaenge.kellerwolke:
+        _kellerwolke_zugang(z, erneuern)
+
+
+def _fest(z: Ziel, feld: str) -> str:
+    return f"{z.kennung.upper()}_FEST_{feld}"
+
+
+def _in_umgebung(z: Ziel, schluessel: str) -> bool:
+    """Ob die .env der App einen Wert für `schluessel` hat (nur gezählt, nie gelesen)."""
+    return _ssh(z, f"cd {shlex.quote(z.wurzel)} 2>/dev/null && grep -c '^{schluessel}=' .env || true") not in ("", "0")
+
+
+def _leitstelle_zugang(z: Ziel, erneuern: bool, client: httpx.Client | None) -> None:
+    assert z.zugaenge is not None
+    schon = _in_umgebung(z, _fest(z, "LEITSTELLE_SCHLUESSEL"))
     eigen = client is None
     c = client or httpx.Client(base_url=z.leitstelle or "", timeout=30)
     try:
@@ -442,9 +468,60 @@ def zugaenge_besorgen(z: Ziel, erneuern: bool = False, client: httpx.Client | No
         if eigen:
             c.close()
     if schluessel:
-        werte = {f"{praefix}LEITSTELLE_SCHLUESSEL": schluessel, f"{praefix}LEITSTELLE_ADRESSE": z.leitstelle or ""}
-        _umgebung_setzen(z, werte)
+        _umgebung_setzen(z, {_fest(z, "LEITSTELLE_SCHLUESSEL"): schluessel, _fest(z, "LEITSTELLE_ADRESSE"): z.leitstelle or ""})
     print(f"Leitstelle: {z.zugaenge.name} {was}", flush=True)
+
+
+def _kellerwolke_zugang(z: Ziel, erneuern: bool) -> None:
+    assert z.zugaenge is not None and z.zugaenge.kellerwolke
+    feld = _fest(z, "KELLERWOLKE_SCHLUESSEL")
+    if not erneuern and _in_umgebung(z, feld):
+        print(f"Kellerwolke: {z.zugaenge.name} vorhanden, Schlüssel bleibt", flush=True)
+        return
+    rechner, wurzel = haus_ziel("kellerwolke")
+    eingerichtet = bool(_besitzer(z))
+    schluessel, meldung = app_zugang(rechner, wurzel, z.zugaenge.kellerwolke, z.zugaenge.name)
+    if eingerichtet and " angelegt" in meldung:
+        # Die App hat schon einen Zugang, aber nicht unter diesem Namen oder Konto: der neue zeigte auf einen leeren Zweig.
+        # Die laufende App behält ihren Schlüssel; den neuen, leeren Zugang in der Kellerwolke wieder löschen.
+        raise Abbruch(f"Kellerwolke: {meldung}, obwohl die App schon eingerichtet ist; Name oder Konto in [zugaenge] "
+                      "prüfen und den neuen Zugang in der Kellerwolke löschen (Einstellungen, Zugänge)")
+    _umgebung_setzen(z, {feld: schluessel})
+    print(f"Kellerwolke: {meldung}", flush=True)
+
+
+def _besitzer(z: Ziel) -> str:
+    """Wem die laufende App in der Kellerwolke gehört (leer: noch nicht eingerichtet oder nicht erreichbar)."""
+    try:
+        return json.loads(_curl(z, "--max-time", "10", f"{z.adresse}/api/v1/app") or "{}").get("besitzer") or ""
+    except (Abbruch, ValueError):
+        return ""
+
+
+def haus_ziel(name: str) -> tuple[str, str]:
+    """Rechner und Ordner eines Dienstes des Hauses aus der privaten Wahrheit (handbuch ziel <name>)."""
+    erg = subprocess.run(["handbuch", "ziel", name, "--toml"], capture_output=True, text=True)
+    if erg.returncode != 0:
+        raise Abbruch(f"{name}: kein Ziel in der privaten Wahrheit (handbuch ziel {name})")
+    ziel = tomllib.loads(erg.stdout)
+    if not ziel.get("rechner") or not ziel.get("wurzel"):
+        raise Abbruch(f"{name}: in der privaten Wahrheit fehlen rechner oder wurzel")
+    return ziel["rechner"], ziel["wurzel"]
+
+
+def app_zugang(rechner: str, wurzel: str, konto: str, app: str) -> tuple[str, str]:
+    """Der App-Zugang in der Kellerwolke über ihr Werkzeug (tools/app_zugang.py auf ihrem Rechner): legt ihn an oder gibt
+    ihm einen neuen Schlüssel. Der Schlüssel kommt nur über die Ausgabe von ssh zurück (eine Datei mit 600, gleich
+    wieder gelöscht); zurück kommen Schlüssel und Meldung des Werkzeugs (ohne Schlüssel)."""
+    skript = (f"cd {shlex.quote(wurzel)} && d=$(mktemp) && trap 'rm -f \"$d\"' EXIT && "
+              f"backend/.venv/bin/python tools/app_zugang.py --konto {shlex.quote(konto)} --app {shlex.quote(app)} "
+              f"--datei \"$d\" --erneuern >&2 && cat \"$d\"")
+    erg = subprocess.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", rechner, skript], capture_output=True, text=True)
+    meldung = erg.stderr.strip().splitlines()[-1] if erg.stderr.strip() else ""
+    schluessel = erg.stdout.strip()
+    if erg.returncode != 0 or not schluessel:
+        raise Abbruch(f"Kellerwolke: Zugang {app} nicht besorgt: {meldung[:200]}")
+    return schluessel, meldung
 
 
 def _umgebung_setzen(z: Ziel, werte: Mapping[str, str]) -> None:

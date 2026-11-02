@@ -28,3 +28,15 @@ Angezeigt wird kein Schlüssel, weder im Ausrollen noch in einer Oberfläche.
 4. Übernahme bestehender Zugänge: gibt es die App in der Leitstelle schon, wird ihr Zugang übernommen; der Schlüssel
    wechselt dabei nur, wenn die Leitstelle ihn nicht noch einmal herausgeben kann (dann einmalig neu, ohne Anzeige).
 5. Prüfung: Tests im Appkern mit nachgestellter Leitstelle und Kellerwolke; Pilot Nachschlag im Betrieb.
+
+## Stand
+
+- Leitstelle (02.11.2026): umgesetzt; Nachschlag, Assistent, Vertonung, Transkription und Fundus holen ihren Zugang
+  beim Ausrollen. Nicht dabei: Codeschmiede (nutzt die Leitstelle nicht), Zusage und TubeVault (eigenes Ausrollen).
+- Kellerwolke: `[zugaenge] kellerwolke = "<Konto>"` (das Konto, dem die App gehört). Das Ausrollen ruft auf dem Rechner
+  der Kellerwolke (Ort aus `handbuch ziel kellerwolke`) ihr Werkzeug `tools/app_zugang.py --erneuern` auf: Zugang
+  anlegen oder neuer Schlüssel. Vorhandene Schlüssel gibt die Kellerwolke nicht heraus, darum bekommt eine eingerichtete
+  App beim ersten Umstellen einmal einen neuen; danach bleibt er, bis `--zugaenge-erneuern`. Meldet das Werkzeug
+  "angelegt", obwohl die App schon einen Besitzer hat, passen Name oder Konto nicht: das Ausrollen bricht ab, bevor der
+  Schlüssel in die .env kommt.
+
