@@ -6,10 +6,12 @@
   import type { EditorView } from "@codemirror/view";
   import type { Funktionsbestand } from "./editor/aufrufe";
   import { bestandSetzen, erstelleEditor, haltepunkteSchalten } from "./editor/editor";
+  import { werteSetzen } from "./editor/werte";
   import { setzeZeilenMarke } from "./editor/zeilenmarke";
+  import type { Rahmen } from "./aufzeichnung";
 
   let { sprache, code = $bindable(), markierteZeile = null, befehle = [], mitHaltepunkten = false, haltepunkte = $bindable([]),
-        bestand = null }: {
+        bestand = null, werte = null }: {
     sprache: string;
     code: string;
     /** hervorgehobene Zeile (ab 1), etwa beim Abspielen eines Laufs */
@@ -21,6 +23,8 @@
     haltepunkte?: number[];
     /** Funktionen der gewählten Fassung: unbekannte Aufrufe werden markiert, die übrigen vorgeschlagen; wechselt live */
     bestand?: Funktionsbestand | null;
+    /** Rahmen des Schritts, auf dem der Debugger steht: Werte beim Überfahren eines Namens (WIKI-53) */
+    werte?: readonly Rahmen[] | null;
   } = $props();
 
   let host: HTMLDivElement | undefined = $state();
@@ -60,6 +64,10 @@
 
   $effect(() => {
     if (view) bestandSetzen(view, bestand);
+  });
+
+  $effect(() => {
+    if (view) werteSetzen(view, werte);
   });
 
   onDestroy(() => {

@@ -2,19 +2,23 @@
   // Debugger neben dem Editor (aus der Codeschmiede, WIKI-48; nur am Rechner): Steuerleiste, Zeitleiste aller
   // Schritte, Aufrufstapel, Speicher und Ausgabe bis zum gezeigten Schritt. Der Lauf ist eine fertige Aufzeichnung,
   // darum geht jeder Schritt auch rückwärts. Die gezeigte Zeile meldet der Baustein nach außen (`zeile`), der Editor
-  // markiert sie. Woher der Lauf kommt, weiß nur die Sitzung (DebugSitzung).
+  // markiert sie; ebenso die Rahmen dieses Schritts (`rahmen`), deren Werte der Editor beim Überfahren zeigt. Woher
+  // der Lauf kommt, weiß nur die Sitzung (DebugSitzung).
   import { untrack } from "svelte";
+  import type { Rahmen } from "./aufzeichnung";
   import type { DebugSitzung } from "./debugger/sitzung.svelte";
   import { aufrufstapel, istEintritt, istHalt, springe, start, tiefe, type Ziel } from "./debugger/steuerung";
   import Speicherbild from "./Speicherbild.svelte";
 
-  let { sitzung, sprache, code, zeile = $bindable(null) }: {
+  let { sitzung, sprache, code, zeile = $bindable(null), rahmen = $bindable(null) }: {
     sitzung: DebugSitzung;
     sprache: string;
     /** Code im Editor; weicht er vom aufgezeichneten ab, ist der Lauf veraltet */
     code: string;
     /** gezeigte Zeile, solange der Lauf zum Code passt */
     zeile?: number | null;
+    /** Rahmen des gezeigten Schritts mit ihren Variablen, solange der Lauf zum Code passt */
+    rahmen?: readonly Rahmen[] | null;
   } = $props();
 
   let i = $state(0);
@@ -37,6 +41,7 @@
   });
   $effect(() => {
     zeile = aktuell && !veraltet ? aktuell.zeile : null;
+    rahmen = aktuell && !veraltet ? aktuell.rahmen : null;
   });
 
   function gehe(ziel: Ziel) {

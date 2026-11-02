@@ -38,6 +38,7 @@ import { deutscheTexte } from "./phrasen";
 import { klassischesSchema } from "./schema";
 import { syntaxpruefung } from "./syntaxpruefung";
 import { vervollstaendigung } from "./vervollstaendigung";
+import { werteAnzeige } from "./werte";
 import { zeilenMarke } from "./zeilenmarke";
 
 const SPRACHEN_EXTENSIONS = {
@@ -96,6 +97,7 @@ export function erstelleEditor(opts: EditorOptionen): EditorView {
     extensions: [
       haltepunktRinne.of(opts.beiHaltepunkten ? haltepunkte(opts.beiHaltepunkten) : []),
       bestandFach.of([]),
+      werteAnzeige,
       lineNumbers(),
       highlightActiveLineGutter(),
       foldGutter(),
