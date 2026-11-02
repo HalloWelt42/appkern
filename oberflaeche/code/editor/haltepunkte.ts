@@ -68,7 +68,8 @@ export function haltepunkte(beiAenderung: (zeilen: number[]) => void): Extension
     }),
     aussehen,
     EditorView.updateListener.of((upd) => {
-      if (upd.startState.field(punkte) !== upd.state.field(punkte)) beiAenderung(zeilen(upd.state));
+      // beim Einschalten (die Rinne kommt erst mit diesem Schritt dazu) fehlt das Feld im Zustand davor
+      if (upd.startState.field(punkte, false) !== upd.state.field(punkte)) beiAenderung(zeilen(upd.state));
     }),
   ];
 }
