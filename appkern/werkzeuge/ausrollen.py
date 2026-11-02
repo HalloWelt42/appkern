@@ -423,6 +423,9 @@ def zugaenge_besorgen(z: Ziel, erneuern: bool = False, client: httpx.Client | No
     if z.zugaenge is None:
         return
     _schritt("Zugänge")
+    # Ohne env_file kämen die festen Werte nicht im Container an, und ein erneuerter Schlüssel ließe die App ohne Zugang
+    if _ssh(z, f"cd {shlex.quote(z.wurzel)} && grep -c 'env_file' {shlex.quote(z.compose)} || true") in ("", "0"):
+        raise Abbruch(f"{z.compose} lädt die .env nicht (env_file fehlt); die Zugänge kämen nicht in der App an")
     if z.zugaenge.leitstelle:
         _leitstelle_zugang(z, erneuern, client)
     if z.zugaenge.kellerwolke:

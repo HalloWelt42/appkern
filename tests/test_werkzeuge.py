@@ -533,7 +533,7 @@ def test_zugang_zur_leitstelle_anlegen_uebernehmen_erneuern(monkeypatch, capsys)
     from appkern.werkzeuge import ausrollen as a
     geschrieben: list[dict] = []
     in_env = {"wert": ""}
-    monkeypatch.setattr(a, "_ssh", lambda z, skript: in_env["wert"])
+    monkeypatch.setattr(a, "_ssh", lambda z, skript: "1" if "env_file" in skript else in_env["wert"])
     monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: geschrieben.append(dict(werte)))
     z = _ziel_mit_zugaengen()
 
@@ -578,7 +578,7 @@ def test_zugang_zur_kellerwolke_neu_nur_wenn_noetig(monkeypatch, capsys):
     geschrieben: list[dict] = []
     gerufen: list[tuple] = []
     in_env = {"wert": "0"}
-    monkeypatch.setattr(a, "_ssh", lambda z, skript: in_env["wert"])
+    monkeypatch.setattr(a, "_ssh", lambda z, skript: "1" if "env_file" in skript else in_env["wert"])
     monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: geschrieben.append(dict(werte)))
     monkeypatch.setattr(a, "haus_ziel", lambda name: ("pi@pi", "/mnt/data/kellerwolke", "https://pi:39280"))
     monkeypatch.setattr(a, "_app_info", lambda z: {"besitzer": "admin", "kellerwolke": "http://pi:39278"})
@@ -603,7 +603,7 @@ def test_kellerwolke_angelegt_obwohl_eingerichtet_bricht_ab(monkeypatch):
     import pytest
     from appkern.werkzeuge import ausrollen as a
     geschrieben: list = []
-    monkeypatch.setattr(a, "_ssh", lambda z, skript: "0")
+    monkeypatch.setattr(a, "_ssh", lambda z, skript: "1" if "env_file" in skript else "0")
     monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: geschrieben.append(werte))
     monkeypatch.setattr(a, "haus_ziel", lambda name: ("pi@pi", "/mnt/data/kellerwolke", "https://pi:39280"))
     monkeypatch.setattr(a, "_app_info", lambda z: {"besitzer": "admin", "kellerwolke": "http://pi:39278"})
@@ -611,3 +611,17 @@ def test_kellerwolke_angelegt_obwohl_eingerichtet_bricht_ab(monkeypatch):
     with pytest.raises(a.Abbruch):
         a.zugaenge_besorgen(_ziel_mit_zugaengen(zugaenge={"name": "Nachschlg", "kellerwolke": "admin"}))
     assert not any("NACHSCHLAG_FEST_KELLERWOLKE_SCHLUESSEL" in w for w in geschrieben)
+
+
+def test_zugaenge_nur_wenn_die_app_ihre_env_laedt(monkeypatch):
+    """Lädt die Compose-Datei der App die .env nicht, bricht der Schritt ab, bevor er etwas setzt oder erneuert
+    (Befund Transkription 03.11.2026: der erneuerte Kellerwolke-Schlüssel kam nicht an)."""
+    import pytest
+    from appkern.werkzeuge import ausrollen as a
+    gerufen: list = []
+    monkeypatch.setattr(a, "_ssh", lambda z, skript: "0" if "env_file" in skript else "0")
+    monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: gerufen.append(werte))
+    monkeypatch.setattr(a, "app_zugang", lambda *x: gerufen.append(x) or ("k", "erneuert"))
+    with pytest.raises(a.Abbruch, match="env_file"):
+        a.zugaenge_besorgen(_ziel_mit_zugaengen(zugaenge={"name": "Nachschlag", "kellerwolke": "admin"}))
+    assert gerufen == []

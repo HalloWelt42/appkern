@@ -39,4 +39,5 @@ Angezeigt wird kein Schlüssel, weder im Ausrollen noch in einer Oberfläche.
   App beim ersten Umstellen einmal einen neuen; danach bleibt er, bis `--zugaenge-erneuern`. Meldet das Werkzeug
   "angelegt", obwohl die App schon einen Besitzer hat, passen Name oder Konto nicht: das Ausrollen bricht ab, bevor der
   Schlüssel in die .env kommt.
-
+- Voraussetzung: Die Compose-Datei der App lädt die .env (`env_file`); sonst bricht der Schritt ab, bevor er etwas setzt
+  (Befund 03.11.2026: bei der Transkription fehlte env_file, der erneuerte Kellerwolke-Schlüssel kam nicht an).
