@@ -85,6 +85,10 @@ button { font: inherit; color: inherit; }
 .balken span { display: block; height: 100%; background: var(--akzent); border-radius: 3px; }
 .unterzeile { display: flex; gap: 12px; font-size: var(--klein); color: var(--text-2); margin-top: 6px; }
 .unterzeile .rechts { margin-left: auto; color: var(--text-3); }
+/* woher ein Auftrag kommt: Verweis in der App (Zeile und Leiste der Aufträge) */
+a.herkunft { display: inline-flex; align-items: center; gap: 6px; color: var(--akzent); text-decoration: none; font-size: var(--klein); }
+a.herkunft:hover { text-decoration: underline; }
+a.herkunft i { font-size: var(--marke); }
 .zustand { font-size: var(--marke); padding: 2px 10px; border-radius: var(--r1); font-weight: 600; white-space: nowrap; }
 .zustand.laeuft { background: var(--akzent-weich); color: var(--akzent); }
 .zustand.wartet { background: var(--flaeche-2); color: var(--text-2); }

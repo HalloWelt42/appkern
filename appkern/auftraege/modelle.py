@@ -23,6 +23,16 @@ class Phase(BaseModel):
     symbol: str = ""
 
 
+class Herkunft(BaseModel):
+    """Woher ein Auftrag kommt, als Verweis in der App: `titel` beschriftet ihn ("Zum Artikel"), `ziel` ist der Weg in
+    der Oberfläche wie für `gehe` ("lesen/<buch>/<pfad>")."""
+
+    model_config = ConfigDict(frozen=True)
+
+    titel: str
+    ziel: str
+
+
 class Auftrag(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -43,6 +53,7 @@ class Auftrag(BaseModel):
     wiederholung_von: str | None = None
     von: str = ""                         # wer oder was ihn angestoßen hat (Konto, App, Zeitplan); leer: unbekannt
     zurueckgestellt: str = ""             # wartend, aber von der App zurückgehalten, mit Grund; leer: darf beginnen
+    herkunft: Herkunft | None = None      # Verweis dorthin, woher er kommt (Regel der Art aus der Eingabe); leer: keiner
     erstellt_am: datetime
     begonnen_am: datetime | None = None
     beendet_am: datetime | None = None

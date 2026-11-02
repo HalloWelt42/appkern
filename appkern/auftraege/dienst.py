@@ -32,7 +32,7 @@ from appkern.datenbank import Datenbank
 from appkern.leitstelle.arbeit import LAUFENDE_ARBEIT
 from appkern.protokoll import Protokoll
 
-from .modelle import OFFEN, WIEDERHOLBAR, Auftrag, Phase, Seite, Zahlen, Zustand
+from .modelle import OFFEN, WIEDERHOLBAR, Auftrag, Herkunft, Phase, Seite, Zahlen, Zustand
 
 logger = logging.getLogger("appkern.auftraege")
 
@@ -114,6 +114,9 @@ class Art:
     fortsetzbar: bool = False
     nach_neustart: Literal["fortsetzen", "anhalten"] = "anhalten"
     hoechstens: int = 0
+    herkunft: Callable[[dict[str, Any]], Herkunft | None] | None = None
+    """Woher ein Auftrag dieser Art kommt, aus seiner Eingabe (etwa der Artikel, der übersetzt wird); gilt auch für
+    Aufträge, die schon erledigt sind."""
 
 
 @dataclass
@@ -372,17 +375,28 @@ class Auftraege:
             logger.exception("Regel zum Zurückstellen")
             return ""
 
+    @staticmethod
+    def _herkunft(art: Art | None, eingabe: dict[str, Any]) -> Herkunft | None:
+        if art is None or art.herkunft is None:
+            return None
+        try:
+            return art.herkunft(eingabe)
+        except Exception:  # noqa: BLE001 - eine Regel der App darf die Liste nie anhalten
+            logger.exception("Herkunft eines Auftrags (%s)", art.name)
+            return None
+
     def _als_auftrag(self, z: dict[str, Any], *, mit_grund: bool = True) -> Auftrag:
         art = self.arten.get(z["art"])
         zurueck = self._grund(z) if mit_grund and z["zustand"] == "wartet" else ""
+        eingabe = json.loads(z["eingabe"])
         return Auftrag(
-            id=z["id"], art=z["art"], titel=z["titel"], zustand=z["zustand"], eingabe=json.loads(z["eingabe"]),
+            id=z["id"], art=z["art"], titel=z["titel"], zustand=z["zustand"], eingabe=eingabe,
             ergebnis=json.loads(z["ergebnis"]) if z["ergebnis"] else None, fehler=z["fehler"],
             fortschritt=z["fortschritt"], schritt=z["schritt"], phase=z["phase"],
             phasen=list(art.phasen) if art else [], abbruch_gewuenscht=bool(z["abbruch"]),
             fortsetzbar=bool(art and art.fortsetzbar), stapel=z["stapel"], wiederholung_von=z["wiederholung_von"],
             erstellt_am=z["erstellt_am"], begonnen_am=z["begonnen_am"], beendet_am=z["beendet_am"], von=z.get("von") or "",
-            zurueckgestellt=zurueck)
+            zurueckgestellt=zurueck, herkunft=self._herkunft(art, eingabe))
 
     async def _fortschritt(self, auftrag_id: str, anteil: float | None, schritt: str, phase: str | None) -> None:
         anteil = None if anteil is None else min(1.0, max(0.0, anteil))

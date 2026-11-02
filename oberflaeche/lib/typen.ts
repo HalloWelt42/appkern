@@ -42,6 +42,12 @@ export interface Phase {
   symbol: string;
 }
 
+/** Woher ein Auftrag kommt: Beschriftung ("Zum Artikel") und Weg in der App wie für `gehe`. */
+export interface Herkunft {
+  titel: string;
+  ziel: string;
+}
+
 export interface Auftrag {
   id: string;
   art: string;
@@ -60,6 +66,7 @@ export interface Auftrag {
   wiederholung_von: string | null;
   von: string;                    // wer oder was ihn angestoßen hat (Konto, App, Zeitplan); leer: unbekannt
   zurueckgestellt: string;        // wartend, aber von der App zurückgehalten, mit Grund
+  herkunft?: Herkunft | null;     // woher er kommt, als Verweis in der App; leer: keiner
   erstellt_am: string;
   begonnen_am: string | null;
   beendet_am: string | null;

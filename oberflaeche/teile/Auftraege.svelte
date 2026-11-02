@@ -5,7 +5,7 @@
   import { auftraege, entfernen, laden, mehrLaden, phasenStand, type Filter } from "../lib/auftraege.svelte";
   import { beiRueckkehr } from "../lib/erreichbar.svelte";
   import { dauer, wann } from "../lib/format";
-  import { gehe } from "../lib/navigation.svelte";
+  import { adresse, gehe } from "../lib/navigation.svelte";
   import AuftragZeile from "./AuftragZeile.svelte";
   import Leiste from "./Leiste.svelte";
 
@@ -77,6 +77,11 @@
         <span class="fassung">{wann(gewaehlt.begonnen_am ?? gewaehlt.erstellt_am)}{#if gewaehlt.beendet_am}, {dauer(gewaehlt.begonnen_am, gewaehlt.beendet_am)}{/if}</span>
       </div>
       <div class="rollfeld">
+        {#if gewaehlt.herkunft}
+          {@const h = gewaehlt.herkunft}
+          <div class="abschnitt">Herkunft</div>
+          <a class="herkunft" href={adresse(h.ziel)} onclick={(e) => { e.preventDefault(); gehe(h.ziel); }}><i class="fa-solid fa-arrow-right"></i>{h.titel}</a>
+        {/if}
         {#if gewaehlt.phasen.length}
           <div class="abschnitt">Schritte</div>
           <div class="phasen-liste">

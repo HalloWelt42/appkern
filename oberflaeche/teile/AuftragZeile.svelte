@@ -1,8 +1,10 @@
 <script lang="ts">
-  // Ein Auftrag in der Liste: Titel, Zeit, Schritte, Fortschritt, Fehler, Abbrechen oder Wiederholen.
+  // Ein Auftrag in der Liste: Titel, Zeit, Schritte, Fortschritt, Fehler, Abbrechen oder Wiederholen, und woher er
+  // kommt (Verweis dorthin, etwa zum Artikel).
   import { abbrechen, auftraege, wiederholen } from "../lib/auftraege.svelte";
   import { seit, wann } from "../lib/format";
   import { leisteOeffnen } from "../lib/leiste.svelte";
+  import { adresse, gehe } from "../lib/navigation.svelte";
   import type { Auftrag } from "../lib/typen";
   import Schritte from "./Schritte.svelte";
 
@@ -46,7 +48,16 @@
     {:else if a.zustand === "wartet"}
       <div class="unterzeile"><span>{a.zurueckgestellt ? `zurückgestellt: ${a.zurueckgestellt}` : a.schritt || "wartet auf einen freien Platz"}</span></div>
     {/if}
-    {#if a.von}<div class="unterzeile"><span>angestoßen von {a.von}</span></div>{/if}
+    {#if a.von || a.herkunft}
+      <div class="unterzeile">
+        {#if a.von}<span>angestoßen von {a.von}</span>{/if}
+        {#if a.herkunft}
+          {@const h = a.herkunft}
+          <a class="herkunft" href={adresse(h.ziel)} onclick={(e) => { e.preventDefault(); e.stopPropagation(); gehe(h.ziel); }}
+             onkeydown={(e) => e.stopPropagation()}><i class="fa-solid fa-arrow-right"></i>{h.titel}</a>
+        {/if}
+      </div>
+    {/if}
     {#if a.fehler && a.zustand !== "fertig"}<div class="fehlertext">{a.fehler}</div>{/if}
     {#if fehler}<div class="fehlerzeile">{fehler}</div>{/if}
   </div>

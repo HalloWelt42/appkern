@@ -12,7 +12,8 @@ import pytest
 from fastapi import FastAPI
 from pydantic import BaseModel, ValidationError
 
-from appkern.auftraege import Art, AuftragAbgebrochen, AuftragFehler, Auftraege, FalscherZustand, Kontext, Phase, UnbekannteArt
+from appkern.auftraege import (Art, AuftragAbgebrochen, AuftragFehler, Auftraege, FalscherZustand, Herkunft, Kontext, Phase,
+                               UnbekannteArt)
 from appkern.auftraege.api import auftrags_router
 from appkern.datenbank import Datenbank
 
@@ -212,6 +213,34 @@ async def test_von_wem_und_zurueckgestellt_statt_fehlgeschlagen(dienst):
     assert (await dienst.wiederholen(gehalten.id)).von == "Zeitplan"                 # ohne Angabe: wer ihn anstieß
     await dienst.db.ausfuehren("UPDATE auftrag SET zustand='fehler' WHERE id=?", (von_hand.id,))
     assert (await dienst.wiederholen(von_hand.id, von="Anna")).von == "Anna"
+
+
+async def test_herkunft_aus_der_eingabe_auch_fuer_erledigte(db):
+    """Die Regel der Art bildet aus der Eingabe den Verweis, woher ein Auftrag kommt (auch für erledigte und alte
+    Aufträge, nichts wird dafür gespeichert); eine kaputte Regel lässt die Herkunft weg, die Liste bleibt."""
+    async def zaehlen(k: Kontext):
+        return {"zeichen": sum(len(t) for t in k.eingabe.texte)}
+
+    def herkunft(eingabe):
+        if eingabe["texte"] == ["kaputt"]:
+            raise KeyError("texte")
+        return Herkunft(titel="Zu den Texten", ziel=f"texte/{eingabe['texte'][0]}")
+
+    async def nichts(k: Kontext):
+        return {}
+
+    a = Auftraege(db, [Art("zaehlen", "Zeichen zählen", zaehlen, eingabe=Texte, herkunft=herkunft), Art("ohne", "Ohne", nichts)])
+    await a.starten()
+    try:
+        fertig = await bis(a, (await a.einreihen("zaehlen", Texte(texte=["abc"]))).id, "fertig")
+        assert fertig.herkunft == Herkunft(titel="Zu den Texten", ziel="texte/abc")
+        assert (await a.liste()).eintraege[0].herkunft.ziel == "texte/abc"
+        kaputt = await bis(a, (await a.einreihen("zaehlen", Texte(texte=["kaputt"]))).id, "fertig")
+        assert kaputt.herkunft is None
+        ohne = await bis(a, (await a.einreihen("ohne", {"texte": ["x"]})).id, "fertig")
+        assert ohne.herkunft is None
+    finally:
+        await a.stoppen()
 
 
 async def test_neustart_haelt_an_oder_setzt_fort(tmp_path: Path):
