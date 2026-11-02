@@ -89,7 +89,7 @@ const anzeige = hoverTooltip((view, pos): Tooltip | null => {
   const mitDollar = !name.startsWith("$") && davor.endsWith("$");
   const fund = finden(rahmen, mitDollar ? [`$${name}`, name] : [name]);
   if (!fund) return null;
-  return { pos: mitDollar ? wort.from - 1 : wort.from, end: wort.to, above: true, create: () => ({ dom: feld(fund) }) };
+  return { pos: mitDollar ? wort.from - 1 : wort.from, end: wort.to, create: () => ({ dom: feld(fund) }) };
 });
 
 /** Für erstelleEditor: das Feld mit den Rahmen und die Anzeige beim Überfahren */
