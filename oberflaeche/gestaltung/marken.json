@@ -831,6 +831,318 @@
    ]
   },
   {
+   "name": "Editor",
+   "text": "Das klassische Schema einer verbreiteten Entwicklungsumgebung (ältere Fassung) für den Editor, die Ausgabe darunter und den Debugger (appkern-oberflaeche/code, aus der Codeschmiede, WIKI-48). Der Editor liest nur diese Marken und folgt so dem Thema, ohne neu zu entstehen.",
+   "marken": [
+    {
+     "name": "--ed-schema",
+     "art": "wert",
+     "zweck": "Farbschema der Bedienteile im Editor (Suchleiste, Ankreuzfelder)",
+     "werte": {
+      "hell": "light",
+      "dunkel": "dark"
+     }
+    },
+    {
+     "name": "--ed-grund",
+     "art": "farbe",
+     "zweck": "Grund des Editors",
+     "werte": {
+      "hell": "#ffffff",
+      "dunkel": "#2b2b2b"
+     }
+    },
+    {
+     "name": "--ed-text",
+     "art": "farbe",
+     "zweck": "Text und Namen",
+     "werte": {
+      "hell": "#000000",
+      "dunkel": "#a9b7c6"
+     }
+    },
+    {
+     "name": "--ed-rand",
+     "art": "farbe",
+     "zweck": "Rinne mit Zeilennummern und Haltepunkten",
+     "werte": {
+      "hell": "#f0f0f0",
+      "dunkel": "#313335"
+     }
+    },
+    {
+     "name": "--ed-nr",
+     "art": "farbe",
+     "zweck": "Zeilennummern",
+     "werte": {
+      "hell": "#999999",
+      "dunkel": "#606366"
+     }
+    },
+    {
+     "name": "--ed-zeile",
+     "art": "farbe",
+     "zweck": "Zeile mit der Schreibmarke",
+     "werte": {
+      "hell": "#fffae3",
+      "dunkel": "#323232"
+     }
+    },
+    {
+     "name": "--ed-auswahl",
+     "art": "farbe",
+     "zweck": "Auswahl",
+     "werte": {
+      "hell": "#a6d2ff",
+      "dunkel": "#214283"
+     }
+    },
+    {
+     "name": "--ed-cursor",
+     "art": "farbe",
+     "zweck": "Schreibmarke",
+     "werte": {
+      "hell": "#000000",
+      "dunkel": "#bbbbbb"
+     }
+    },
+    {
+     "name": "--ed-flaeche",
+     "art": "farbe",
+     "zweck": "Hinweise, Vorschläge und Suchleiste",
+     "werte": {
+      "hell": "#f2f2f2",
+      "dunkel": "#3c3f41"
+     }
+    },
+    {
+     "name": "--ed-linie",
+     "art": "farbe",
+     "zweck": "Rahmen von Hinweisen und Suchleiste",
+     "werte": {
+      "hell": "#c9c9c9",
+      "dunkel": "#4b4f51"
+     }
+    },
+    {
+     "name": "--ed-kw",
+     "art": "farbe",
+     "zweck": "Schlüsselwörter",
+     "werte": {
+      "hell": "#000080",
+      "dunkel": "#cc7832"
+     }
+    },
+    {
+     "name": "--ed-str",
+     "art": "farbe",
+     "zweck": "Zeichenketten",
+     "werte": {
+      "hell": "#008000",
+      "dunkel": "#6a8759"
+     }
+    },
+    {
+     "name": "--ed-zahl",
+     "art": "farbe",
+     "zweck": "Zahlen",
+     "werte": {
+      "hell": "#0000ff",
+      "dunkel": "#6897bb"
+     }
+    },
+    {
+     "name": "--ed-kom",
+     "art": "farbe",
+     "zweck": "Kommentare",
+     "werte": {
+      "hell": "#808080",
+      "dunkel": "#808080"
+     }
+    },
+    {
+     "name": "--ed-dokukom",
+     "art": "farbe",
+     "zweck": "Dokumentationskommentare",
+     "werte": {
+      "hell": "#808080",
+      "dunkel": "#629755"
+     }
+    },
+    {
+     "name": "--ed-fn",
+     "art": "farbe",
+     "zweck": "Namen von Funktionen",
+     "werte": {
+      "hell": "#00627a",
+      "dunkel": "#ffc66d"
+     }
+    },
+    {
+     "name": "--ed-feld",
+     "art": "farbe",
+     "zweck": "Eigenschaften und Namen im Speicherbild",
+     "werte": {
+      "hell": "#660e7a",
+      "dunkel": "#9876aa"
+     }
+    },
+    {
+     "name": "--ed-dekorator",
+     "art": "farbe",
+     "zweck": "Dekoratoren und Anmerkungen",
+     "werte": {
+      "hell": "#808000",
+      "dunkel": "#bbb529"
+     }
+    },
+    {
+     "name": "--ed-marke",
+     "art": "farbe",
+     "zweck": "Elemente in HTML",
+     "werte": {
+      "hell": "#000080",
+      "dunkel": "#e8bf6a"
+     }
+    },
+    {
+     "name": "--ed-attribut",
+     "art": "farbe",
+     "zweck": "Attribute in HTML, Eigenschaften in CSS",
+     "werte": {
+      "hell": "#0000ff",
+      "dunkel": "#bababa"
+     }
+    },
+    {
+     "name": "--ed-wert",
+     "art": "farbe",
+     "zweck": "Werte von Attributen und in CSS",
+     "werte": {
+      "hell": "#008000",
+      "dunkel": "#a5c261"
+     }
+    },
+    {
+     "name": "--ed-verweis",
+     "art": "farbe",
+     "zweck": "Verweise",
+     "werte": {
+      "hell": "#0000ff",
+      "dunkel": "#287bde"
+     }
+    },
+    {
+     "name": "--ed-fehler",
+     "art": "farbe",
+     "zweck": "Fehler in der Schreibweise",
+     "werte": {
+      "hell": "#e00000",
+      "dunkel": "#bc3f3c"
+     }
+    },
+    {
+     "name": "--ed-warnung",
+     "art": "farbe",
+     "zweck": "Warnungen",
+     "werte": {
+      "hell": "#a36b00",
+      "dunkel": "#be9117"
+     }
+    },
+    {
+     "name": "--ed-klammer",
+     "art": "farbe",
+     "zweck": "passende Klammer: Grund",
+     "werte": {
+      "hell": "#99ccff",
+      "dunkel": "#3b514d"
+     }
+    },
+    {
+     "name": "--ed-klammer-text",
+     "art": "farbe",
+     "zweck": "passende Klammer: Zeichen",
+     "werte": {
+      "hell": "#000000",
+      "dunkel": "#ffef28"
+     }
+    },
+    {
+     "name": "--ed-treffer",
+     "art": "farbe",
+     "zweck": "gleiche Stellen und Suchtreffer",
+     "werte": {
+      "hell": "#e4e4ff",
+      "dunkel": "#32593d"
+     }
+    },
+    {
+     "name": "--ed-konsole",
+     "art": "farbe",
+     "zweck": "Ausgabe unter dem Code",
+     "werte": {
+      "hell": "#f7f7f7",
+      "dunkel": "#1e1f22"
+     }
+    },
+    {
+     "name": "--ed-konsole-text",
+     "art": "farbe",
+     "zweck": "Text der Ausgabe",
+     "werte": {
+      "hell": "#1f2328",
+      "dunkel": "#d6dde5"
+     }
+    },
+    {
+     "name": "--ed-luecke",
+     "art": "farbe",
+     "zweck": "Lücken zum Ausfüllen",
+     "werte": {
+      "hell": "#eefaf8",
+      "dunkel": "#1f2a29"
+     }
+    },
+    {
+     "name": "--ed-haltepunkt",
+     "art": "farbe",
+     "zweck": "Haltepunkte des Debuggers",
+     "werte": {
+      "hell": "#e5534b",
+      "dunkel": "#ff6b68"
+     }
+    },
+    {
+     "name": "--ed-speicher-reihe",
+     "art": "farbe",
+     "zweck": "Speicherbild: Listen und Tupel als Fächerreihe",
+     "werte": {
+      "hell": "#f2b84b",
+      "dunkel": "#f2b84b"
+     }
+    },
+    {
+     "name": "--ed-speicher-wert",
+     "art": "farbe",
+     "zweck": "Speicherbild: einfache Werte als Kasten",
+     "werte": {
+      "hell": "#4f8fd6",
+      "dunkel": "#4f8fd6"
+     }
+    },
+    {
+     "name": "--ed-geaendert",
+     "art": "farbe",
+     "zweck": "Speicherbild und Debugger: im Schritt geändert, gerade hier",
+     "werte": {
+      "hell": "#9a6a00",
+      "dunkel": "#e3b341"
+     }
+    }
+   ]
+  },
+  {
    "name": "Schatten und Schleier",
    "text": "Karten heben sich leicht ab; Schwebendes (Fenster, Menüs, Meldungen) deutlich.",
    "marken": [

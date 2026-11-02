@@ -6,6 +6,7 @@
   "type": "module",
   "files": [
     "oberflaeche/index.ts",
+    "oberflaeche/code/",
     "oberflaeche/lib/",
     "oberflaeche/teile/",
     "oberflaeche/stil/",
@@ -13,17 +14,36 @@
     "oberflaeche/werkzeuge/"
   ],
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.12",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@codemirror/lang-php": "^6.0.2",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/search": "^6.7.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
     "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource-variable/work-sans": "^5.3.0",
     "@fontsource/barlow": "^5.2.8",
     "@fontsource/chakra-petch": "^5.3.0",
     "@fortawesome/fontawesome-free": "^6.6.0",
+    "@lezer/highlight": "^1.2.5",
     "marked": "^17.0.6"
   },
   "exports": {
     ".": {
       "svelte": "./oberflaeche/index.ts",
       "default": "./oberflaeche/index.ts"
+    },
+    "./code": {
+      "svelte": "./oberflaeche/code/index.ts",
+      "default": "./oberflaeche/code/index.ts"
     },
     "./stil.css": "./oberflaeche/stil/alles.css",
     "./marken.css": "./oberflaeche/stil/marken.css",

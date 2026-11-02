@@ -212,6 +212,47 @@ Farben für Code in Antworten und Belegen (Assistent): wie verbreitete Editoren,
 | `--code-zahl` | `#c2410c` | `#ffb38a` | Zahlen und feste Werte |
 | `--code-titel` | `#1d64c8` | `#7cc0ff` | Namen von Funktionen und Abschnitten |
 
+### Editor
+
+Das klassische Schema einer verbreiteten Entwicklungsumgebung (ältere Fassung) für den Editor, die Ausgabe darunter und den Debugger (appkern-oberflaeche/code, aus der Codeschmiede, WIKI-48). Der Editor liest nur diese Marken und folgt so dem Thema, ohne neu zu entstehen.
+
+| Marke | hell | dunkel | Zweck |
+|---|---|---|---|
+| `--ed-schema` | `light` | `dark` | Farbschema der Bedienteile im Editor (Suchleiste, Ankreuzfelder) |
+| `--ed-grund` | `#ffffff` | `#2b2b2b` | Grund des Editors |
+| `--ed-text` | `#000000` | `#a9b7c6` | Text und Namen |
+| `--ed-rand` | `#f0f0f0` | `#313335` | Rinne mit Zeilennummern und Haltepunkten |
+| `--ed-nr` | `#999999` | `#606366` | Zeilennummern |
+| `--ed-zeile` | `#fffae3` | `#323232` | Zeile mit der Schreibmarke |
+| `--ed-auswahl` | `#a6d2ff` | `#214283` | Auswahl |
+| `--ed-cursor` | `#000000` | `#bbbbbb` | Schreibmarke |
+| `--ed-flaeche` | `#f2f2f2` | `#3c3f41` | Hinweise, Vorschläge und Suchleiste |
+| `--ed-linie` | `#c9c9c9` | `#4b4f51` | Rahmen von Hinweisen und Suchleiste |
+| `--ed-kw` | `#000080` | `#cc7832` | Schlüsselwörter |
+| `--ed-str` | `#008000` | `#6a8759` | Zeichenketten |
+| `--ed-zahl` | `#0000ff` | `#6897bb` | Zahlen |
+| `--ed-kom` | `#808080` | `#808080` | Kommentare |
+| `--ed-dokukom` | `#808080` | `#629755` | Dokumentationskommentare |
+| `--ed-fn` | `#00627a` | `#ffc66d` | Namen von Funktionen |
+| `--ed-feld` | `#660e7a` | `#9876aa` | Eigenschaften und Namen im Speicherbild |
+| `--ed-dekorator` | `#808000` | `#bbb529` | Dekoratoren und Anmerkungen |
+| `--ed-marke` | `#000080` | `#e8bf6a` | Elemente in HTML |
+| `--ed-attribut` | `#0000ff` | `#bababa` | Attribute in HTML, Eigenschaften in CSS |
+| `--ed-wert` | `#008000` | `#a5c261` | Werte von Attributen und in CSS |
+| `--ed-verweis` | `#0000ff` | `#287bde` | Verweise |
+| `--ed-fehler` | `#e00000` | `#bc3f3c` | Fehler in der Schreibweise |
+| `--ed-warnung` | `#a36b00` | `#be9117` | Warnungen |
+| `--ed-klammer` | `#99ccff` | `#3b514d` | passende Klammer: Grund |
+| `--ed-klammer-text` | `#000000` | `#ffef28` | passende Klammer: Zeichen |
+| `--ed-treffer` | `#e4e4ff` | `#32593d` | gleiche Stellen und Suchtreffer |
+| `--ed-konsole` | `#f7f7f7` | `#1e1f22` | Ausgabe unter dem Code |
+| `--ed-konsole-text` | `#1f2328` | `#d6dde5` | Text der Ausgabe |
+| `--ed-luecke` | `#eefaf8` | `#1f2a29` | Lücken zum Ausfüllen |
+| `--ed-haltepunkt` | `#e5534b` | `#ff6b68` | Haltepunkte des Debuggers |
+| `--ed-speicher-reihe` | `#f2b84b` | `#f2b84b` | Speicherbild: Listen und Tupel als Fächerreihe |
+| `--ed-speicher-wert` | `#4f8fd6` | `#4f8fd6` | Speicherbild: einfache Werte als Kasten |
+| `--ed-geaendert` | `#9a6a00` | `#e3b341` | Speicherbild und Debugger: im Schritt geändert, gerade hier |
+
 ### Schatten und Schleier
 
 Karten heben sich leicht ab; Schwebendes (Fenster, Menüs, Meldungen) deutlich.
