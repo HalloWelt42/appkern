@@ -116,6 +116,26 @@ async def test_vorrede_warten_und_nachladen():
     assert ereignisse[-1].text == "11 Grad."
 
 
+async def test_erste_runde_erzwingt_ein_werkzeug():
+    """Mit `zuerst` muss das Modell in der ersten Runde genau dieses Werkzeug aufrufen (auch aus dem Vorrat); danach ist
+    alles wieder frei (HELF-97: ein behauptetes Bild wird wirklich erzeugt)."""
+    def merken() -> ModellWerkzeug:
+        async def ausfuehren(a: Ort) -> WerkzeugErgebnis:
+            return WerkzeugErgebnis(text="gemerkt")
+        return ModellWerkzeug("merken", "Merkt etwas.", Ort, ausfuehren, nur_lesend=False)
+
+    fassade = Fassade(aufrufe(("a", "get_weather", {"ort": "Zeitz"})), text("11 Grad."))
+    async with leitstelle(fassade) as ls:
+        ereignisse = [e async for e in Schleife().laufen(ls, [Nachricht.nutzer("x")], [merken()], nachladbar=[wetter([])],
+                                                          zuerst="get_weather", temperature=0.2)]
+    erste, zweite = fassade.gesehen
+    assert [t["function"]["name"] for t in erste["tools"]] == ["get_weather"] and erste["tool_choice"] == "required"
+    assert erste["temperature"] == 0.2
+    assert "tool_choice" not in zweite and sorted(t["function"]["name"] for t in zweite["tools"]) == ["get_weather", "merken"]
+    assert [e.werkzeug for e in ereignisse if isinstance(e, Ergebnis)] == ["get_weather"]
+    assert ereignisse[-1].text == "11 Grad."
+
+
 async def test_rundengrenze():
     fassade = Fassade(*(aufrufe((f"a{i}", "get_weather", {"ort": "Zeitz"})) for i in range(3)))
     async with leitstelle(fassade) as ls:

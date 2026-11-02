@@ -190,24 +190,33 @@ class Schleife:
 
     async def laufen(self, leitstelle: Leitstelle, nachrichten: Sequence[Nachricht], werkzeuge: Sequence[Werkzeug], *,
                      modell: str | None = None, titel: str = "", prioritaet: Prioritaet | None = None,
-                     nachladbar: Sequence[Werkzeug] = (), runden: int | None = None,
+                     nachladbar: Sequence[Werkzeug] = (), runden: int | None = None, zuerst: str | None = None,
                      **optionen: Any) -> AsyncIterator[Schleifenereignis]:
         """`nachrichten`: System, Verlauf und Frage; die Schleife hängt Aufrufe und Ergebnisse an eine eigene Kopie.
         `nachladbar`: Werkzeuge, die das Modell bei Bedarf über `weitere_werkzeuge` dazuholt (spart Kontext).
+        `zuerst`: Werkzeug, das das Modell in der ersten Runde aufrufen muss (etwa wenn es ein Ergebnis nur behauptet
+        hat): es ist dann das einzige angebotene, mit `tool_choice: required`; das wirkt bei jedem OpenAI-kompatiblen
+        Dienst, auch ohne Wahl eines Werkzeugs beim Namen. Ab der zweiten Runde sind wieder alle da.
         `optionen` gehen an jeden Aufruf des Modells (temperature, max_tokens ...)."""
         verlauf = list(nachrichten)
         aktiv: dict[str, Werkzeug] = {w.name: w for w in werkzeuge}
         vorrat: dict[str, Werkzeug] = {w.name: w for w in nachladbar if w.name not in aktiv}
+        if zuerst in vorrat:
+            aktiv[zuerst] = vorrat.pop(zuerst)
         nr = 0
         grenze = runden or self.runden
         for runde in range(1, grenze + 1):
-            schemata = [w.fuer_fassade() for w in aktiv.values()]
-            if vorrat:
-                schemata.append(self._nachladen_schema(vorrat))
-            yield RundeBeginnt(runde=runde, werkzeuge=list(aktiv))
+            erzwungen = runde == 1 and zuerst in aktiv
+            if erzwungen:
+                schemata, wahl = [aktiv[zuerst].fuer_fassade()], {"tool_choice": "required"}
+            else:
+                schemata, wahl = [w.fuer_fassade() for w in aktiv.values()], {}
+                if vorrat:
+                    schemata.append(self._nachladen_schema(vorrat))
+            yield RundeBeginnt(runde=runde, werkzeuge=[zuerst] if erzwungen else list(aktiv))
             text, ende = "", Ende()
             async for e in leitstelle.chat_strom(verlauf, modell=modell, titel=titel, prioritaet=prioritaet,
-                                                 **({"tools": schemata} if schemata else {}), **optionen):
+                                                 **({"tools": schemata} if schemata else {}), **{**optionen, **wahl}):
                 if isinstance(e, Wartet):
                     yield Warten(runde=runde, grund=e.grund, sekunden=e.sekunden)
                 elif isinstance(e, Stueck):
