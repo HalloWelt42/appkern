@@ -248,18 +248,20 @@ class BildSchritte(_Modell):
 
 
 class Bildsteckbrief(_Modell):
-    """Was ein Bilddienst annimmt (PROTOKOLL 4.8 der Leitstelle), sobald er einmal lief."""
+    """Was ein Bilddienst annimmt (PROTOKOLL 4.8 der Leitstelle), sobald er einmal lief. Was der Dienst nicht nennt, kommt
+    als null: Größen (dann gelten die Vorgabegrenzen der Leitstelle), Schritte (gehen ungeprüft an den Dienst), Anzahl,
+    Lizenz und Lizenzhinweis."""
 
     modell: str = ""
     name: str = ""
     kann_bearbeiten: bool = False
     vorlagen_max: int | None = None                        # Bildvorlagen je Anfrage, wenn es bearbeiten kann (Leitstelle 0.32)
-    groessen: BildGroessen = Field(default_factory=BildGroessen)
-    schritte: BildSchritte = Field(default_factory=BildSchritte)
-    anzahl_max: int = 1
+    groessen: BildGroessen | None = None
+    schritte: BildSchritte | None = None
+    anzahl_max: int | None = None
     beschreibung_max_token: int | None = None
-    lizenz: str = ""
-    lizenz_hinweis: str = ""                               # was die Lizenz für die Nutzung der Bilder heißt, in einem Satz
+    lizenz: str | None = None
+    lizenz_hinweis: str | None = None                      # was die Lizenz für die Nutzung der Bilder heißt; die Leitstelle schickt null, wenn keiner da ist
     parameter_mrd: float | None = None
 
 

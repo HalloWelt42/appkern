@@ -221,12 +221,18 @@ async def test_bilder_mit_vorlagen_groesse_und_schritten_im_ergebnis():
 async def test_bild_steckbrief_mit_vorlagen_und_lizenzhinweis():
     def handler(request: httpx.Request):
         return httpx.Response(200, json={"object": "list", "data": [
+            {"kennung": "bildwerk-moss-image", "zustand": "aus", "faehigkeiten": ["bild_erzeugen"],
+             "bild": {"modell": "moss-image", "kann_bearbeiten": False, "vorlagen_max": None, "lizenz_hinweis": None, "lizenz": None,
+                      "groessen": None, "schritte": None, "anzahl_max": None}},
             {"kennung": "bildwerk-flux2-klein", "zustand": "aus", "faehigkeiten": ["bild_erzeugen"],
              "bild": {"modell": "flux2-klein", "kann_bearbeiten": True, "vorlagen_max": 4,
                       "lizenz_hinweis": "Nur nicht-kommerzielle Nutzung der Bilder.", "schritte": {"vorgabe": 4, "kleinste": 4, "groesste": 4}}}]})
 
     async with leitstelle(handler) as ls:
-        bild = (await ls.dienste())[0].bild
+        moss, klein = (await ls.dienste())
+    assert moss.bild is not None and moss.bild.lizenz_hinweis is None          # die Leitstelle schickt null, wenn es keinen gibt
+    assert moss.bild.groessen is None and moss.bild.schritte is None and moss.bild.anzahl_max is None
+    bild = klein.bild
     assert bild is not None and bild.kann_bearbeiten and bild.vorlagen_max == 4 and bild.lizenz_hinweis.startswith("Nur nicht")
 
 
