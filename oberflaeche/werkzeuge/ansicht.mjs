@@ -204,7 +204,7 @@ const MESSEN = `(() => {
   // Kartenraster ohne Kennzeichen (IMG-19): Behälter mit display grid und mindestens zwei Spalten, deren Kinder mit
   // gleicher erster Klasse wie Karten aussehen (eigene Fläche oder Schatten, Text), aber kein data-karte tragen
   const ungekennzeichnet = [];
-  const flaeche = (e) => { const t = stil(e); return t.boxShadow !== "none" || (t.backgroundColor !== "rgba(0, 0, 0, 0)" && t.backgroundColor !== "transparent"); };
+  const kartenflaeche = (e) => { const t = stil(e); return t.boxShadow !== "none" || (t.backgroundColor !== "rgba(0, 0, 0, 0)" && t.backgroundColor !== "transparent"); };
   for (const b of document.querySelectorAll("body *")) {
     const sb = stil(b);
     if (sb.display !== "grid" || b.children.length < 2) continue;
@@ -212,7 +212,7 @@ const MESSEN = `(() => {
     const linke = new Set(kinder.map((k) => Math.round(k.getBoundingClientRect().left)));
     if (kinder.length < 2 || linke.size < 2) continue;
     const klasse = kinder[0].classList[0];
-    const gleiche = kinder.filter((k) => klasse && k.classList[0] === klasse && !k.hasAttribute("data-karte") && flaeche(k)
+    const gleiche = kinder.filter((k) => klasse && k.classList[0] === klasse && !k.hasAttribute("data-karte") && kartenflaeche(k)
                                          && (k.innerText || "").trim().length >= 8 && k.children.length >= 2);
     if (gleiche.length >= 2 && gleiche.length === kinder.filter((k) => k.classList[0] === klasse).length)
       ungekennzeichnet.push(weg(b) + " (" + gleiche.length + " Karten ." + klasse + " ohne data-karte; Baustein Karte des Appkerns nehmen)");
