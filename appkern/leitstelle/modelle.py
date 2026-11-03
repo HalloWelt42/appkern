@@ -213,7 +213,9 @@ class Bilder(_Modell):
     bilder: list[Bild]
     startwert: int | None = None
     modell: str | None = None
-    dauer_ms: int | None = None
+    dauer_ms: int | None = None                            # Rechenzeit im Dienst, ohne Warten auf Start oder Platz
+    groesse: str | None = None                             # wie gerechnet wurde ("BxH")
+    schritte: int | None = None                            # None: nach Vorgabe des Dienstes, ohne dass die Leitstelle sie kennt
     auftrag: str | None = None
 
 
@@ -251,11 +253,13 @@ class Bildsteckbrief(_Modell):
     modell: str = ""
     name: str = ""
     kann_bearbeiten: bool = False
+    vorlagen_max: int | None = None                        # Bildvorlagen je Anfrage, wenn es bearbeiten kann (Leitstelle 0.32)
     groessen: BildGroessen = Field(default_factory=BildGroessen)
     schritte: BildSchritte = Field(default_factory=BildSchritte)
     anzahl_max: int = 1
     beschreibung_max_token: int | None = None
     lizenz: str = ""
+    lizenz_hinweis: str = ""                               # was die Lizenz für die Nutzung der Bilder heißt, in einem Satz
     parameter_mrd: float | None = None
 
 

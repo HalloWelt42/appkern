@@ -19,6 +19,7 @@ export { default as Suchfeld } from "./teile/Suchfeld.svelte";
 export { default as EinstellungsZeile } from "./teile/EinstellungsZeile.svelte";
 export { default as PaarListe } from "./teile/PaarListe.svelte";
 export { default as VorleseKnopf } from "./teile/VorleseKnopf.svelte";
+export { default as BildErzeugen } from "./teile/BildErzeugen.svelte";
 export { leiste, leisteOeffnen, leisteSchliessen } from "./lib/leiste.svelte";
 export { abfrage, anfragenEinstellen, ApiFehler, ereignisse, hole, json, seitenFehler, seitenSignal, token, verbindung,
          type AnfrageOptionen, type FehlerArt } from "./lib/api.svelte";
@@ -52,6 +53,9 @@ export { abbrechen as aufnahmeAbbrechen, alsDatei as aufnahmeAlsDatei, aufnahme,
          type LiveStueck, type NachDerAufnahme } from "./lib/aufnahme.svelte";
 export { farbe, genau, groesse, lesen, marke, sprache, SPRACHEN } from "./lib/zeit";
 export type * from "./lib/typen";
+export { anpassen as bildwahlAnpassen, dauerText, festeSchritte, formate as bildformate, pixel as bildpixel, schaetzung as bildschaetzung,
+         schrittBereich, seitenName, type BildGroessen, type Bildmessung, type Bildmodell, type BildSchritte, type Bildvorlage,
+         type Erzeugungswahl, type Format as Bildformat, type Schaetzung as Bildschaetzung } from "./lib/bilderzeugung";
 
 // Bausteine für eine App mit eigener Schale (eigene Gestaltung statt der gemeinsamen): Start der Sitzung, Anmeldung,
 // Koppeln, erste Einrichtung, Abmelden, Verfolgen von Aufträgen, Fassung, Weg und Verbindungen. Die Logik bleibt hier,

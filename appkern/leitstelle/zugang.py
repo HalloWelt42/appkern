@@ -267,11 +267,13 @@ class Leitstelle:
     async def bilder_erzeugen(self, beschreibung: str, *, groesse: str | None = "1024x1024", anzahl: int = 1,
                               startwert: int | None = None, modell: str | None = None, titel: str = "",
                               prioritaet: Prioritaet | None = None, schritte: int | None = None,
-                              alternativen: Sequence[str] = ()) -> AsyncIterator[Bildereignis]:
+                              alternativen: Sequence[str] = (), vorlagen: Sequence[bytes] = ()) -> AsyncIterator[Bildereignis]:
         """Bilder über die Fähigkeit bild_erzeugen (`/v1/images/generations` als Strom): `Wartet`, solange der Auftrag
         wartet (etwa weil der Bilddienst erst startet), `Rechnet`, solange er rechnet, zuletzt `Bilder`. `groesse`
         None und `schritte` None: die Vorgabe des Modells (Steckbrief). `alternativen`: weitere Bildmodelle in der
-        Reihenfolge der App, falls das gewählte nicht kann; gewählt wird nur aus dieser Liste."""
+        Reihenfolge der App, falls das gewählte nicht kann; gewählt wird nur aus dieser Liste. `vorlagen`: 1 bis 4
+        Bildvorlagen (Stil, Bezug) in der Reihenfolge ihres Gewichts, nur für Modelle, deren Bild-Steckbrief
+        `kann_bearbeiten` meldet, höchstens `vorlagen_max` (Leitstelle 0.32)."""
         koerper: dict[str, Any] = {"prompt": beschreibung, "n": anzahl, "response_format": "b64_json", "stream": True}
         if groesse:
             koerper["size"] = groesse
@@ -283,6 +285,8 @@ class Leitstelle:
             koerper["model"] = modell
         if alternativen:
             koerper["alternativen"] = list(alternativen)
+        if vorlagen:
+            koerper["images"] = [base64.b64encode(v).decode("ascii") for v in vorlagen]
         async for e in self._bildstrom("/v1/images/generations", titel, prioritaet, json=koerper):
             yield e
 
@@ -342,6 +346,7 @@ class Leitstelle:
                     yield Bilder(bilder=[Bild(daten=base64.b64decode(b["b64_json"]), beschreibung=b.get("revised_prompt") or "")
                                          for b in daten.get("data") or [] if b.get("b64_json")],
                                  startwert=zusatz.get("seed"), modell=zusatz.get("modell"), dauer_ms=zusatz.get("dauer_ms"),
+                                 groesse=zusatz.get("groesse"), schritte=zusatz.get("schritte"),
                                  auftrag=auftrag)
         except httpx.TransportError as f:
             raise NichtErreichbar(f"Leitstelle nicht erreichbar: {type(f).__name__}") from f

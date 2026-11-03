@@ -202,6 +202,34 @@ async def test_dienste_mit_bild_steckbrief():
     assert dienste[1].zustand == "aus" and dienste[1].bild is None
 
 
+async def test_bilder_mit_vorlagen_groesse_und_schritten_im_ergebnis():
+    png = b"\x89PNG\r\n\x1a\nbild"
+
+    def handler(request: httpx.Request):
+        koerper = json.loads(request.content)
+        assert koerper["images"] == [base64.b64encode(b"stil-eins").decode(), base64.b64encode(b"stil-zwei").decode()]
+        antwort = {"created": 1, "data": [{"b64_json": base64.b64encode(png).decode()}],
+                   "x-leitstelle": {"seed": 5, "modell": "bildwerk-flux2-klein", "groesse": "1024x1024", "schritte": 4, "dauer_ms": 21000}}
+        return httpx.Response(200, content=f"data: {json.dumps(antwort)}\n\ndata: [DONE]\n\n".encode(),
+                              headers={"content-type": "text/event-stream"})
+
+    async with leitstelle(handler) as ls:
+        fertig = [e async for e in ls.bilder_erzeugen("Turm", modell="bildwerk-flux2-klein", vorlagen=[b"stil-eins", b"stil-zwei"])][-1]
+    assert isinstance(fertig, Bilder) and fertig.groesse == "1024x1024" and fertig.schritte == 4 and fertig.dauer_ms == 21000
+
+
+async def test_bild_steckbrief_mit_vorlagen_und_lizenzhinweis():
+    def handler(request: httpx.Request):
+        return httpx.Response(200, json={"object": "list", "data": [
+            {"kennung": "bildwerk-flux2-klein", "zustand": "aus", "faehigkeiten": ["bild_erzeugen"],
+             "bild": {"modell": "flux2-klein", "kann_bearbeiten": True, "vorlagen_max": 4,
+                      "lizenz_hinweis": "Nur nicht-kommerzielle Nutzung der Bilder.", "schritte": {"vorgabe": 4, "kleinste": 4, "groesste": 4}}}]})
+
+    async with leitstelle(handler) as ls:
+        bild = (await ls.dienste())[0].bild
+    assert bild is not None and bild.kann_bearbeiten and bild.vorlagen_max == 4 and bild.lizenz_hinweis.startswith("Nur nicht")
+
+
 async def test_bilder_mit_vorlage_als_formular():
     png = b"\x89PNG\r\n\x1a\nbild"
 
