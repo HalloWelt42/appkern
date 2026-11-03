@@ -4,8 +4,8 @@
   // Modellen, die Bildvorlagen annehmen (nur zeigen, was geht); Format als feste Auswahl, Iterationstiefe im Bereich des
   // Modells, Varianten bis zur Höchstzahl, Zeitabschätzung aus eigenen Messungen. Woher Vorlagen kommen (Ziehen, Auswahl
   // aus dem ImageVault), sagt die App über ihre Rückrufe.
-  import { anpassen, ausVerhaeltnis, dauerText, einrasten, festeSchritte, flaechenBereich, formatFrei, formate, pixel, schaetzung,
-           schrittBereich, startwahl, type Bildmodell, type Bildvorlage, type Eingerastet, type Erzeugungswahl } from "../lib/bilderzeugung";
+  import { anpassen, dauerText, endformat, endformatAusVerhaeltnis, festeSchritte, flaechenBereich, formate, pixel, schaetzung,
+           schrittBereich, startwahl, type Bildmodell, type Bildvorlage, type Erzeugungswahl } from "../lib/bilderzeugung";
 
   let { modelle, wahl = $bindable(), vorlagen = $bindable([]), ondateien, onwaehlen }: {
     modelle: Bildmodell[];
@@ -22,28 +22,37 @@
   const schritteJetzt = $derived(wahl.schritte ?? fest);
   let ueber = $state(false);
 
-  // Eigenes Format: Breite und Höhe oder Seitenverhältnis mit Fläche, eingerastet auf das, was das Modell annimmt
-  const frei = $derived(modell ? formatFrei(modell) : false);
+  // Eigenes Format (Endformat): beliebige Maße oder Seitenverhältnis mit Fläche; gerechnet wird im nächsten erlaubten Maß
+  // des Modells, danach verkleinert der Server auf das Endformat und schneidet bei Bedarf mittig zu
   const flaeche = $derived(modell ? flaechenBereich(modell) : null);
-  const vorgeschlagen = $derived(modell ? formate(modell).some((f) => f.groesse === wahl.groesse) : true);
+  const vorgeschlagen = $derived(modell ? !wahl.ende && formate(modell).some((f) => f.groesse === wahl.groesse) : true);
+  const ergebnis = $derived(modell && !vorgeschlagen ? endformat(modell, pixel(wahl.ende ?? wahl.groesse).b, pixel(wahl.ende ?? wahl.groesse).h) : null);
+  const lesbar = (g: string) => g.replace("x", " × ");
+  const eigenKachel = $derived(kachel(vorgeschlagen ? "1600x900" : (wahl.ende ?? wahl.groesse)));
   let eigenOffen = $state(false);
-  let eingabe = $state<"masse" | "verhaeltnis">("verhaeltnis");
-  let breite = $state(1600);
+  let eingabe = $state<"masse" | "verhaeltnis">("masse");
+  let breite = $state(1500);
   let hoehe = $state(900);
   let verhaeltnis = $state("21:9");
   let megapixel = $state(1);
-  let eingerastet = $state<Eingerastet | null>(null);
+  let ungueltig = $state(false);
 
   function eigenesFormat() {
     if (!modell) return;
-    const e = eingabe === "masse" ? einrasten(modell, breite, hoehe) : ausVerhaeltnis(modell, verhaeltnis, megapixel);
-    eingerastet = e;
-    wahl = { ...wahl, groesse: e.groesse };
+    const e = eingabe === "masse" ? endformat(modell, breite, hoehe) : endformatAusVerhaeltnis(modell, verhaeltnis, megapixel);
+    ungueltig = !e;
+    if (e) wahl = { ...wahl, groesse: e.rechnen, ende: e.ende === e.rechnen ? null : e.ende };
   }
   function eigenOeffnen() {
     eigenOffen = true;
     if (flaeche) megapixel = Math.round(flaeche.vorgabe * 10) / 10;
     eigenesFormat();
+  }
+  // beim Wechsel des Modells bleibt ein eigenes Endformat; das Rechenformat bestimmt das neue Modell
+  function modellWaehlen(m: Bildmodell) {
+    if (m.id === modell?.id) return;
+    const ende = vorgeschlagen ? null : (wahl.ende ?? wahl.groesse);
+    wahl = ende ? anpassen(m, { ...startwahl(m), ende }) : startwahl(m);
   }
 
   // jede Wahl so, dass das gewählte Modell sie annimmt; Vorlagen nur so viele, wie es lesen kann
@@ -76,7 +85,7 @@
         {#each modelle as m (m.id)}
           {@const b = schrittBereich(m)}
           {@const f = festeSchritte(m)}
-          <button type="button" class="ez-modell" class:an={m.id === modell.id} onclick={() => { if (m.id !== modell.id) wahl = startwahl(m); }}>
+          <button type="button" class="ez-modell" class:an={m.id === modell.id} onclick={() => modellWaehlen(m)}>
             <span class="ez-modell-kopf"><b>{m.name}</b>
               <span class="etikett" class:gut={m.geladen}>{m.geladen ? "geladen" : m.ladezeit_s !== null ? `nicht geladen, Laden etwa ${dauerText(m.ladezeit_s)}` : "nicht geladen"}</span></span>
             {#if m.zweck}<span class="ez-leise">{m.zweck}</span>{/if}
@@ -122,45 +131,42 @@
         {#each formate(modell) as f (f.groesse)}
           {@const k = kachel(f.groesse)}
           {@const p = pixel(f.groesse)}
-          <button type="button" class="ez-format" class:an={f.groesse === wahl.groesse} onclick={() => { eigenOffen = false; wahl = { ...wahl, groesse: f.groesse }; }}>
+          <button type="button" class="ez-format" class:an={vorgeschlagen && f.groesse === wahl.groesse} onclick={() => { eigenOffen = false; wahl = { ...wahl, groesse: f.groesse, ende: null }; }}>
             <span class="ez-rahmen"><span style:width="{k.breite}px" style:height="{k.hoehe}px"></span></span>
             <span class="ez-format-text"><b>{f.name}</b><span>{p.b} × {p.h}{f.vorgabe ? ", Vorgabe" : ""}</span></span>
           </button>
         {/each}
-        {#if frei}
-          {@const k = kachel(vorgeschlagen ? "1600x900" : wahl.groesse)}
-          <button type="button" class="ez-format" class:an={!vorgeschlagen || eigenOffen} onclick={eigenOeffnen}>
-            <span class="ez-rahmen eigen"><span style:width="{k.breite}px" style:height="{k.hoehe}px"></span></span>
-            <span class="ez-format-text"><b>Eigenes Format</b><span>{vorgeschlagen ? "Maße oder Verhältnis" : `${pixel(wahl.groesse).b} × ${pixel(wahl.groesse).h}`}</span></span>
-          </button>
-        {/if}
+        <button type="button" class="ez-format" class:an={!vorgeschlagen || eigenOffen} onclick={eigenOeffnen}>
+          <span class="ez-rahmen eigen"><span style:width="{eigenKachel.breite}px" style:height="{eigenKachel.hoehe}px"></span></span>
+          <span class="ez-format-text"><b>Eigenes Format</b><span>{vorgeschlagen ? "beliebige Maße" : lesbar(wahl.ende ?? wahl.groesse)}</span></span>
+        </button>
       </div>
-      {#if frei && (eigenOffen || !vorgeschlagen)}
+      {#if eigenOffen || !vorgeschlagen}
         <div class="ez-eigen">
           <div class="segment ez-eingabeart">
-            <button type="button" class:aktiv={eingabe === "verhaeltnis"} onclick={() => { eingabe = "verhaeltnis"; eigenesFormat(); }}>Seitenverhältnis und Größe</button>
             <button type="button" class:aktiv={eingabe === "masse"} onclick={() => { eingabe = "masse"; eigenesFormat(); }}>Breite und Höhe</button>
+            <button type="button" class:aktiv={eingabe === "verhaeltnis"} onclick={() => { eingabe = "verhaeltnis"; eigenesFormat(); }}>Seitenverhältnis und Größe</button>
           </div>
           {#if eingabe === "masse"}
             <div class="ez-masse">
               <label>Breite<input type="number" inputmode="numeric" min="1" bind:value={breite} onchange={eigenesFormat} /></label>
               <span class="ez-mal">×</span>
               <label>Höhe<input type="number" inputmode="numeric" min="1" bind:value={hoehe} onchange={eigenesFormat} /></label>
-              <span class="ez-leise">Pixel</span>
+              <span class="ez-leise">Pixel, auch kleiner als das Modell rechnet (etwa 16 × 16)</span>
             </div>
           {:else}
             <div class="ez-masse">
               <label>Seitenverhältnis<input type="text" bind:value={verhaeltnis} placeholder="etwa 21:9, 3:2, 4:5" onchange={eigenesFormat} /></label>
               {#if flaeche}
-                <label class="ez-groesse">Größe <span class="ez-wert-klein">{megapixel.toFixed(1).replace(".", ",")} Megapixel</span>
-                  <input type="range" min={flaeche.kleinste} max={flaeche.groesste} step="0.1" bind:value={megapixel} oninput={eigenesFormat} /></label>
+                <label class="ez-groesse">Größe <span class="ez-wert-klein">{megapixel.toLocaleString("de-DE", { maximumFractionDigits: 2 })} Megapixel</span>
+                  <input type="range" min={flaeche.kleinste} max={flaeche.groesste} step="0.01" bind:value={megapixel} oninput={eigenesFormat} /></label>
               {/if}
             </div>
           {/if}
-          {#if eingerastet}
-            <div class="ez-ergebnis"><b>ergibt {pixel(eingerastet.groesse).b} × {pixel(eingerastet.groesse).h}</b>
-              {#if eingerastet.angepasst.length}<span class="ez-leise">angepasst: {eingerastet.angepasst.join(", ")}</span>
-              {:else}<span class="ez-leise">so, wie eingegeben</span>{/if}</div>
+          {#if ungueltig}<div class="ez-ergebnis"><span class="ez-leise">Seitenverhältnis wie 21:9 angeben.</span></div>
+          {:else if ergebnis}
+            <div class="ez-ergebnis"><b>{ergebnis.hinweis}</b>
+              {#if ergebnis.angepasst.length}<span class="ez-leise">{ergebnis.angepasst.join(", ")}</span>{/if}</div>
           {/if}
         </div>
       {/if}

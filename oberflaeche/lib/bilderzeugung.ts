@@ -40,7 +40,8 @@ export interface Bildmodell {
 /** Eine gewählte Stilvorlage: Kennung (etwa im ImageVault), Adresse der Vorschau, Name */
 export interface Bildvorlage { id: string; adresse: string; name: string }
 
-export interface Erzeugungswahl { modell: string; groesse: string; schritte: number | null; anzahl: number }
+/** Was erzeugt wird: `groesse` ist das Rechenformat des Modells, `ende` ein eigenes Endformat (danach verkleinert), sonst null */
+export interface Erzeugungswahl { modell: string; groesse: string; schritte: number | null; anzahl: number; ende?: string | null }
 export interface Format { groesse: string; name: string; vorgabe: boolean }
 
 const VERHAELTNISSE: [number, string][] = [[1, "1:1"], [16 / 9, "16:9 quer"], [9 / 16, "9:16 hoch"], [4 / 3, "4:3 quer"], [3 / 4, "3:4 hoch"],
@@ -94,7 +95,8 @@ export function startwahl(m: Bildmodell): Erzeugungswahl {
                        anzahl: m.vorgabe.anzahl ?? 1 });
 }
 
-/** Ob das Modell ein eigenes Format annimmt: nur mit Steckbrief und einem Spielraum bei Kanten oder Fläche */
+/** Ob das Modell frei wählbare Maße annimmt (sonst rechnet es nur in seinen festen Formaten): nur mit Steckbrief und
+ *  einem Spielraum bei Kanten oder Fläche */
 export function formatFrei(m: Bildmodell): boolean {
   const g = m.groessen;
   if (!g) return false;
@@ -103,75 +105,110 @@ export function formatFrei(m: Bildmodell): boolean {
   return kanten && flaeche;
 }
 
-export interface Eingerastet { groesse: string; angepasst: string[] }
+/** Eigenes Endformat: gerechnet wird im nächsten erlaubten Maß des Modells (`rechnen`), danach verkleinert der Server auf
+ *  `ende` und schneidet bei Bedarf mittig zu. `hinweis` sagt das in einem Satz, `angepasst`, was am Wunsch begrenzt wurde. */
+export interface Endformat { rechnen: string; ende: string; zuschnitt: boolean; hinweis: string; angepasst: string[] }
 
-/** Breite und Höhe auf das erlaubte Maß des Modells eingerastet (Kantenraster, kleinste und größte Kante, Fläche von bis,
- *  alles aus dem Steckbrief); `angepasst` sagt in Worten, was sich geändert hat. */
-export function einrasten(m: Bildmodell, breite: number, hoehe: number): Eingerastet {
-  const g = m.groessen;
+const masz = (b: number, h: number) => `${b}x${h}`;
+const lesbar = (g: string) => g.replace("x", " × ");
+
+/** Rechenformat zu einem beliebigen Endformat: gleiches Seitenverhältnis so gut es geht, nie kleiner als das Endformat
+ *  (es wird nur verkleinert), auf dem Kantenraster und innerhalb von Kanten und Fläche aus dem Steckbrief. Ein Endformat,
+ *  das größer ist, als das Modell rechnen kann, wird mit gleichem Verhältnis auf dieses Maß begrenzt. Modelle mit festen
+ *  Formaten rechnen im passendsten ihrer Formate. */
+export function endformat(m: Bildmodell, breite: number, hoehe: number): Endformat {
   const angepasst: string[] = [];
-  if (!g || !(breite > 0) || !(hoehe > 0)) return { groesse: g?.vorgabe ?? "1024x1024", angepasst: ["ungültige Angabe, Vorgabe des Modells"] };
-  const r = Math.max(1, g.raster);
-  let b = breite, h = hoehe;
-  const skalieren = (f: number) => { b *= f; h *= f; };
-  if (g.kante_max !== null && Math.max(b, h) > g.kante_max) {
-    skalieren(g.kante_max / Math.max(b, h));
-    angepasst.push(`verkleinert auf höchstens ${g.kante_max} Pixel je Kante`);
-  }
-  if (g.kante_min !== null && Math.min(b, h) < g.kante_min) {
-    skalieren(g.kante_min / Math.min(b, h));
-    angepasst.push(`vergrößert auf mindestens ${g.kante_min} Pixel je Kante`);
-  }
-  if (g.pixel_max !== null && b * h > g.pixel_max) {
-    skalieren(Math.sqrt(g.pixel_max / (b * h)));
-    angepasst.push(`Fläche verkleinert auf höchstens ${(g.pixel_max / 1e6).toFixed(2).replace(".", ",")} Megapixel`);
-  }
-  if (g.pixel_min !== null && b * h < g.pixel_min) {
-    skalieren(Math.sqrt(g.pixel_min / (b * h)));
-    angepasst.push(`Fläche vergrößert auf mindestens ${(g.pixel_min / 1e6).toFixed(2).replace(".", ",")} Megapixel`);
-  }
-  // aufs Raster: zur nächsten Stufe, aber nie über eine Obergrenze oder unter eine Untergrenze
-  const rund = (x: number) => {
-    let v = Math.max(r, Math.round(x / r) * r);
-    if (g.kante_max !== null && v > g.kante_max) v = Math.floor(g.kante_max / r) * r;
-    if (g.kante_min !== null && v < g.kante_min) v = Math.ceil(g.kante_min / r) * r;
-    return v;
-  };
-  let nb = rund(b), nh = rund(h);
-  if (g.pixel_max !== null) while (nb * nh > g.pixel_max && nb > r && nh > r) { if (nb >= nh) nb -= r; else nh -= r; }
-  if (g.pixel_min !== null) while (nb * nh < g.pixel_min) { if (nb <= nh) nb += r; else nh += r; }
-  if (nb !== Math.round(b) || nh !== Math.round(h)) angepasst.push(`auf Vielfache von ${r} Pixel gerundet`);
-  return { groesse: `${nb}x${nh}`, angepasst };
-}
-
-/** Breite und Höhe aus einem Seitenverhältnis ("21:9") und einer Fläche in Megapixeln, eingerastet */
-export function ausVerhaeltnis(m: Bildmodell, verhaeltnis: string, megapixel: number): Eingerastet {
-  const [x, y] = verhaeltnis.split(/[:x/]/).map((t) => Number(t.trim().replace(",", ".")));
-  if (!(x > 0) || !(y > 0) || !(megapixel > 0)) return { groesse: m.groessen?.vorgabe ?? "1024x1024", angepasst: ["Seitenverhältnis wie 21:9 angeben"] };
-  const h = Math.sqrt((megapixel * 1e6) / (x / y));
-  return einrasten(m, (x / y) * h, h);
-}
-
-/** Bereich der Fläche in Megapixeln, den das Modell annimmt (für die Wahl der Größe) */
-export function flaechenBereich(m: Bildmodell): { kleinste: number; groesste: number; vorgabe: number } | null {
+  let eb = Math.max(1, Math.round(breite)), eh = Math.max(1, Math.round(hoehe));
   const g = m.groessen;
-  if (!g) return null;
-  const vorgabe = pixel(g.vorgabe).mp;
-  const kleinste = (g.pixel_min ?? (g.kante_min ?? 256) ** 2) / 1e6;
-  const groesste = (g.pixel_max ?? (g.kante_max ?? 2048) ** 2) / 1e6;
-  return { kleinste, groesste, vorgabe };
+  let rb: number, rh: number;
+  if (g && formatFrei(m)) {
+    const r = Math.max(1, g.raster);
+    const kmin = g.kante_min ?? r, kmax = g.kante_max ?? Infinity, pmin = g.pixel_min ?? 0, pmax = g.pixel_max ?? Infinity;
+    const auf = (x: number) => Math.min(Math.floor(kmax / r) * r, Math.ceil(x / r) * r);
+    // größer als rechenbar: mit gleichem Verhältnis auf die größte Kante und die größte Fläche begrenzen
+    const f = Math.min(1, kmax / Math.max(eb, eh), Math.sqrt(pmax / (eb * eh)));
+    if (f < 1) {
+      eb = Math.max(1, Math.min(kmax, Math.round(eb * f)));
+      eh = Math.max(1, Math.min(kmax, Math.round(eh * f)));
+      angepasst.push(`Endformat auf ${eb} × ${eh} begrenzt, größer rechnet das Modell nicht`);
+    }
+    const v = eb / eh;
+    rb = Math.max(auf(eb), auf(kmin));
+    rh = Math.max(auf(eh), auf(kmin));
+    // Verhältnis annähern, ohne eine Seite unter das Endformat zu bringen
+    if (rb / rh < v) rb = Math.max(rb, auf(rh * v)); else if (rb / rh > v) rh = Math.max(rh, auf(rb / v));
+    if (rb * rh < pmin) {
+      const s = Math.sqrt(pmin / (rb * rh));
+      rb = auf(rb * s);
+      rh = auf(rh * s);
+    }
+    // auf die Fläche zurück, wo das Aufrunden darüber führte: an der Seite mit dem meisten Spielraum zum Endformat
+    while (rb * rh > pmax) {
+      if (rb - r >= Math.max(eb, kmin) && (rb - eb >= rh - eh || rh - r < Math.max(eh, kmin))) rb -= r;
+      else if (rh - r >= Math.max(eh, kmin)) rh -= r;
+      else break;
+    }
+    // kein Spielraum mehr (etwa ein langes Format an der größten Fläche): das Rechenformat auf die Fläche, das Endformat
+    // mit gleichem Verhältnis so weit begrenzen, dass es nur verkleinert wird
+    if (rb * rh > pmax) {
+      while (rb * rh > pmax && Math.max(rb, rh) - r >= kmin) { if (rb >= rh) rb -= r; else rh -= r; }
+      const f2 = Math.min(1, rb / eb, rh / eh);
+      eb = Math.max(1, Math.floor(eb * f2));
+      eh = Math.max(1, Math.floor(eh * f2));
+      angepasst.push(`Endformat auf ${eb} × ${eh} begrenzt, damit die Fläche des Modells reicht`);
+    }
+  } else {
+    // feste Formate: das, welches das Endformat abdeckt und im Verhältnis am nächsten liegt; sonst das größte
+    const kandidaten = formate(m).map((f) => pixel(f.groesse));
+    const v = eb / eh;
+    const abdeckend = kandidaten.filter((k) => k.b >= eb && k.h >= eh);
+    const wahl = (abdeckend.length ? abdeckend : kandidaten)
+      .sort((a, b) => Math.abs(Math.log(a.b / a.h / v)) - Math.abs(Math.log(b.b / b.h / v)) || a.mp - b.mp)[0];
+    rb = wahl.b;
+    rh = wahl.h;
+    if (!abdeckend.length) {
+      const f = Math.min(rb / eb, rh / eh);
+      eb = Math.max(1, Math.floor(eb * f));
+      eh = Math.max(1, Math.floor(eh * f));
+      angepasst.push(`Endformat auf ${eb} × ${eh} begrenzt, größer rechnet das Modell nicht`);
+    }
+  }
+  const rechnen = masz(rb, rh), ende = masz(eb, eh);
+  const zuschnitt = Math.abs(rb / rh - eb / eh) > 0.005;
+  const hinweis = rechnen === ende ? `gerechnet in ${lesbar(rechnen)}, so wie gewünscht`
+    : `gerechnet in ${lesbar(rechnen)}, danach auf ${lesbar(ende)} verkleinert${zuschnitt ? " und mittig zugeschnitten" : ""}`;
+  return { rechnen, ende, zuschnitt, hinweis, angepasst };
+}
+
+/** Endformat aus einem Seitenverhältnis ("21:9") und einer Fläche in Megapixeln */
+export function endformatAusVerhaeltnis(m: Bildmodell, verhaeltnis: string, megapixel: number): Endformat | null {
+  const [x, y] = verhaeltnis.split(/[:x/]/).map((t) => Number(t.trim().replace(",", ".")));
+  if (!(x > 0) || !(y > 0) || !(megapixel > 0)) return null;
+  const h = Math.sqrt((megapixel * 1e6) / (x / y));
+  return endformat(m, (x / y) * h, h);
+}
+
+/** Bereich der Fläche in Megapixeln für die Wahl der Größe: von winzig bis zur größten Fläche des Modells */
+export function flaechenBereich(m: Bildmodell): { kleinste: number; groesste: number; vorgabe: number } {
+  const g = m.groessen;
+  const vorgabe = pixel(g?.vorgabe ?? "1024x1024").mp;
+  const groesste = g ? (g.pixel_max ?? (g.kante_max ?? 2048) ** 2) / 1e6 : vorgabe;
+  return { kleinste: 0.01, groesste, vorgabe };
 }
 
 /** Die Wahl so angepasst, dass das Modell sie annimmt (Format aus der Auswahl oder ein eingerastetes eigenes, Schritte im
  *  Bereich, Varianten bis anzahl_max) */
 export function anpassen(m: Bildmodell, wahl: Erzeugungswahl): Erzeugungswahl {
   const liste = formate(m);
-  const eigen = formatFrei(m) && /^\d+x\d+$/.test(wahl.groesse)
-    && einrasten(m, pixel(wahl.groesse).b, pixel(wahl.groesse).h).groesse === wahl.groesse;
-  const groesse = liste.some((f) => f.groesse === wahl.groesse) || eigen ? wahl.groesse : (liste.find((f) => f.vorgabe) ?? liste[0]).groesse;
+  // mit eigenem Endformat: das Rechenformat dazu, für das gerade gewählte Modell neu bestimmt
+  if (wahl.ende && /^\d+x\d+$/.test(wahl.ende)) {
+    const e = endformat(m, pixel(wahl.ende).b, pixel(wahl.ende).h);
+    return { ...anpassen(m, { ...wahl, ende: null, groesse: liste[0].groesse }), groesse: e.rechnen, ende: e.ende === e.rechnen ? null : e.ende };
+  }
+  const groesse = liste.some((f) => f.groesse === wahl.groesse) ? wahl.groesse : (liste.find((f) => f.vorgabe) ?? liste[0]).groesse;
   const bereich = schrittBereich(m);
   const schritte = bereich ? Math.min(bereich.groesste, Math.max(bereich.kleinste, wahl.schritte ?? bereich.vorgabe)) : null;
-  return { modell: m.id, groesse, schritte, anzahl: Math.min(Math.max(1, wahl.anzahl), Math.max(1, m.anzahl_max)) };
+  return { modell: m.id, groesse, schritte, anzahl: Math.min(Math.max(1, wahl.anzahl), Math.max(1, m.anzahl_max)), ende: null };
 }
 
 export interface Schaetzung { je_bild_s: number | null; laden_s: number | null; gesamt_s: number | null }
