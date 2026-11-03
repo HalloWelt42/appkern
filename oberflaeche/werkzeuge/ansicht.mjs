@@ -8,6 +8,8 @@
 // Zoomen mit zwei Fingern nicht gesperrt; dazu schmale Ränder (HELF-70): der Inhalt nutzt mindestens 90 Prozent der Breite.
 // Flucht von Karten (WIKI-6): Karten mit data-karte im selben Behälter und auf gleicher Höhe tragen ihre Fußzeile
 // (data-fuss, etwa Lesestand oder Knopfreihe) auf einer Linie; zum Einschalten je Karte, ohne Kennzeichen keine Prüfung.
+// Damit das nicht unbemerkt fehlt (IMG-19): kartenähnliche Geschwister in einem Raster mit mindestens zwei Spalten
+// (gleiche Klasse, eigene Fläche oder Schatten, mit Text) ohne data-karte sind ein Befund; der Baustein Karte setzt es.
 // --rahmen prüft nur das (Telefonbreiten, hell) und hält einen
 // befundfreien Lauf für den Stand von frontend/ fest; ohne diesen Nachweis rollt das Ausrollen nicht aus. Eine App ohne
 // Telefonansicht trägt "rahmen": false in ihre ansicht.json ein.
@@ -199,8 +201,25 @@ const MESSEN = `(() => {
       if (Math.max(...u) - Math.min(...u) > 2) flucht.push(weg(r[0].k) + " (Fußzeilen von " + Math.round(Math.min(...u)) + " bis " + Math.round(Math.max(...u)) + " px)");
     }
   }
+  // Kartenraster ohne Kennzeichen (IMG-19): Behälter mit display grid und mindestens zwei Spalten, deren Kinder mit
+  // gleicher erster Klasse wie Karten aussehen (eigene Fläche oder Schatten, Text), aber kein data-karte tragen
+  const ungekennzeichnet = [];
+  const flaeche = (e) => { const t = stil(e); return t.boxShadow !== "none" || (t.backgroundColor !== "rgba(0, 0, 0, 0)" && t.backgroundColor !== "transparent"); };
+  for (const b of document.querySelectorAll("body *")) {
+    const sb = stil(b);
+    if (sb.display !== "grid" || b.children.length < 2) continue;
+    const kinder = [...b.children].filter((k) => k.getBoundingClientRect().width > 80 && k.getBoundingClientRect().height > 40);
+    const linke = new Set(kinder.map((k) => Math.round(k.getBoundingClientRect().left)));
+    if (kinder.length < 2 || linke.size < 2) continue;
+    const klasse = kinder[0].classList[0];
+    const gleiche = kinder.filter((k) => klasse && k.classList[0] === klasse && !k.hasAttribute("data-karte") && flaeche(k)
+                                         && (k.innerText || "").trim().length >= 8 && k.children.length >= 2);
+    if (gleiche.length >= 2 && gleiche.length === kinder.filter((k) => k.classList[0] === klasse).length)
+      ungekennzeichnet.push(weg(b) + " (" + gleiche.length + " Karten ." + klasse + " ohne data-karte; Baustein Karte des Appkerns nehmen)");
+  }
   return { seitlich: document.documentElement.scrollWidth > breite + 1, ueber: [...new Set(ueber)].slice(0, 5), kontrast: [...new Set(kontrast)].slice(0, 5),
-           geschnitten: [...new Set(geschnitten)].slice(0, 5), flucht: [...new Set(flucht)].slice(0, 5) };
+           geschnitten: [...new Set(geschnitten)].slice(0, 5), flucht: [...new Set(flucht)].slice(0, 5),
+           ungekennzeichnet: [...new Set(ungekennzeichnet)].slice(0, 5) };
 })()`;
 
 // Rahmen am Telefon (stil/rahmen.css): die Sollwerte (Kopf- und Fußhöhe) liest die Messung aus der Seite selbst, die
@@ -456,6 +475,7 @@ for (const thema of themen) {
       for (const k of m.kontrast) befunde.push(`${name}: Kontrast unter ${KONTRAST_MIN}: ${k}`);
       for (const g of m.geschnitten) befunde.push(`${name}: breiter als sein Rahmen: ${g}`);
       for (const f of m.flucht) befunde.push(`${name}: Karten einer Reihe, Fußzeilen nicht auf einer Linie: ${f}`);
+      for (const f of m.ungekennzeichnet ?? []) befunde.push(`${name}: Kartenraster ohne Kennzeichen: ${f}`);
       const bild = await rufe("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(ausgabe, `${name}.png`), Buffer.from(bild.result.data, "base64"));
       for (const [i, w] of (seite.wechsel ?? []).entries()) {
