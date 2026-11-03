@@ -4,8 +4,8 @@
   // Modellen, die Bildvorlagen annehmen (nur zeigen, was geht); Format als feste Auswahl, Iterationstiefe im Bereich des
   // Modells, Varianten bis zur Höchstzahl, Zeitabschätzung aus eigenen Messungen. Woher Vorlagen kommen (Ziehen, Auswahl
   // aus dem ImageVault), sagt die App über ihre Rückrufe.
-  import { anpassen, dauerText, festeSchritte, formate, pixel, schaetzung, schrittBereich, startwahl, type Bildmodell,
-           type Bildvorlage, type Erzeugungswahl } from "../lib/bilderzeugung";
+  import { anpassen, ausVerhaeltnis, dauerText, einrasten, festeSchritte, flaechenBereich, formatFrei, formate, pixel, schaetzung,
+           schrittBereich, startwahl, type Bildmodell, type Bildvorlage, type Eingerastet, type Erzeugungswahl } from "../lib/bilderzeugung";
 
   let { modelle, wahl = $bindable(), vorlagen = $bindable([]), ondateien, onwaehlen }: {
     modelle: Bildmodell[];
@@ -21,6 +21,30 @@
   const zeit = $derived(modell ? schaetzung(modell, wahl) : null);
   const schritteJetzt = $derived(wahl.schritte ?? fest);
   let ueber = $state(false);
+
+  // Eigenes Format: Breite und Höhe oder Seitenverhältnis mit Fläche, eingerastet auf das, was das Modell annimmt
+  const frei = $derived(modell ? formatFrei(modell) : false);
+  const flaeche = $derived(modell ? flaechenBereich(modell) : null);
+  const vorgeschlagen = $derived(modell ? formate(modell).some((f) => f.groesse === wahl.groesse) : true);
+  let eigenOffen = $state(false);
+  let eingabe = $state<"masse" | "verhaeltnis">("verhaeltnis");
+  let breite = $state(1600);
+  let hoehe = $state(900);
+  let verhaeltnis = $state("21:9");
+  let megapixel = $state(1);
+  let eingerastet = $state<Eingerastet | null>(null);
+
+  function eigenesFormat() {
+    if (!modell) return;
+    const e = eingabe === "masse" ? einrasten(modell, breite, hoehe) : ausVerhaeltnis(modell, verhaeltnis, megapixel);
+    eingerastet = e;
+    wahl = { ...wahl, groesse: e.groesse };
+  }
+  function eigenOeffnen() {
+    eigenOffen = true;
+    if (flaeche) megapixel = Math.round(flaeche.vorgabe * 10) / 10;
+    eigenesFormat();
+  }
 
   // jede Wahl so, dass das gewählte Modell sie annimmt; Vorlagen nur so viele, wie es lesen kann
   $effect(() => {
@@ -98,12 +122,48 @@
         {#each formate(modell) as f (f.groesse)}
           {@const k = kachel(f.groesse)}
           {@const p = pixel(f.groesse)}
-          <button type="button" class="ez-format" class:an={f.groesse === wahl.groesse} onclick={() => (wahl = { ...wahl, groesse: f.groesse })}>
+          <button type="button" class="ez-format" class:an={f.groesse === wahl.groesse} onclick={() => { eigenOffen = false; wahl = { ...wahl, groesse: f.groesse }; }}>
             <span class="ez-rahmen"><span style:width="{k.breite}px" style:height="{k.hoehe}px"></span></span>
             <span class="ez-format-text"><b>{f.name}</b><span>{p.b} × {p.h}{f.vorgabe ? ", Vorgabe" : ""}</span></span>
           </button>
         {/each}
+        {#if frei}
+          {@const k = kachel(vorgeschlagen ? "1600x900" : wahl.groesse)}
+          <button type="button" class="ez-format" class:an={!vorgeschlagen || eigenOffen} onclick={eigenOeffnen}>
+            <span class="ez-rahmen eigen"><span style:width="{k.breite}px" style:height="{k.hoehe}px"></span></span>
+            <span class="ez-format-text"><b>Eigenes Format</b><span>{vorgeschlagen ? "Maße oder Verhältnis" : `${pixel(wahl.groesse).b} × ${pixel(wahl.groesse).h}`}</span></span>
+          </button>
+        {/if}
       </div>
+      {#if frei && (eigenOffen || !vorgeschlagen)}
+        <div class="ez-eigen">
+          <div class="segment ez-eingabeart">
+            <button type="button" class:aktiv={eingabe === "verhaeltnis"} onclick={() => { eingabe = "verhaeltnis"; eigenesFormat(); }}>Seitenverhältnis und Größe</button>
+            <button type="button" class:aktiv={eingabe === "masse"} onclick={() => { eingabe = "masse"; eigenesFormat(); }}>Breite und Höhe</button>
+          </div>
+          {#if eingabe === "masse"}
+            <div class="ez-masse">
+              <label>Breite<input type="number" inputmode="numeric" min="1" bind:value={breite} onchange={eigenesFormat} /></label>
+              <span class="ez-mal">×</span>
+              <label>Höhe<input type="number" inputmode="numeric" min="1" bind:value={hoehe} onchange={eigenesFormat} /></label>
+              <span class="ez-leise">Pixel</span>
+            </div>
+          {:else}
+            <div class="ez-masse">
+              <label>Seitenverhältnis<input type="text" bind:value={verhaeltnis} placeholder="etwa 21:9, 3:2, 4:5" onchange={eigenesFormat} /></label>
+              {#if flaeche}
+                <label class="ez-groesse">Größe <span class="ez-wert-klein">{megapixel.toFixed(1).replace(".", ",")} Megapixel</span>
+                  <input type="range" min={flaeche.kleinste} max={flaeche.groesste} step="0.1" bind:value={megapixel} oninput={eigenesFormat} /></label>
+              {/if}
+            </div>
+          {/if}
+          {#if eingerastet}
+            <div class="ez-ergebnis"><b>ergibt {pixel(eingerastet.groesse).b} × {pixel(eingerastet.groesse).h}</b>
+              {#if eingerastet.angepasst.length}<span class="ez-leise">angepasst: {eingerastet.angepasst.join(", ")}</span>
+              {:else}<span class="ez-leise">so, wie eingegeben</span>{/if}</div>
+          {/if}
+        </div>
+      {/if}
     </div>
 
     <div class="ez-feld">
@@ -188,6 +248,20 @@
   .ez-format.an .ez-rahmen span { box-shadow: inset 0 0 0 2px var(--akzent); }
   .ez-format-text { display: flex; flex-direction: column; min-width: 0; font-size: var(--klein); line-height: 1.3; }
   .ez-format-text span { color: var(--text-2); font-family: var(--schrift-zahl); font-size: var(--marke); }
+  .ez-rahmen.eigen span { box-shadow: inset 0 0 0 2px var(--text-3); border: 0; }
+  .ez-eigen { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3); border-radius: var(--r3); background: var(--flaeche-2); }
+  .ez-eingabeart { align-self: flex-start; flex-wrap: wrap; max-width: 100%; }
+  .ez-masse { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--a2) var(--a3); }
+  .ez-masse label { display: flex; flex-direction: column; gap: 4px; font-size: var(--klein); color: var(--text-2); }
+  .ez-masse input[type="number"], .ez-masse input[type="text"] { width: 130px; height: var(--knopf-hoehe); padding: 0 10px; border: 0; border-radius: var(--r2);
+    background: var(--flaeche); box-shadow: inset 0 0 0 1px var(--rand-stark); font: inherit; font-size: var(--gross); color: var(--text); }
+  .ez-masse input[type="number"] { font-family: var(--schrift-zahl); }
+  .ez-mal { padding-bottom: 8px; color: var(--text-3); }
+  .ez-groesse { flex: 1; min-width: 180px; }
+  .ez-groesse input { width: 100%; accent-color: var(--akzent-flaeche); }
+  .ez-wert-klein { font-family: var(--schrift-zahl); color: var(--text); }
+  .ez-ergebnis { display: flex; flex-wrap: wrap; gap: 4px var(--a3); align-items: baseline; font-size: var(--klein); }
+  .ez-ergebnis b { font-family: var(--schrift-zahl); }
   .ez-regler { display: flex; align-items: center; gap: var(--a3); }
   .ez-regler input { flex: 1; min-width: 0; accent-color: var(--akzent-flaeche); }
   .ez-wert { min-width: 3ch; text-align: right; font-family: var(--schrift-zahl); font-size: var(--titel); font-weight: 600; }

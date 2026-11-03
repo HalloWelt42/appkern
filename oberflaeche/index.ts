@@ -53,9 +53,9 @@ export { abbrechen as aufnahmeAbbrechen, alsDatei as aufnahmeAlsDatei, aufnahme,
          type LiveStueck, type NachDerAufnahme } from "./lib/aufnahme.svelte";
 export { farbe, genau, groesse, lesen, marke, sprache, SPRACHEN } from "./lib/zeit";
 export type * from "./lib/typen";
-export { anpassen as bildwahlAnpassen, dauerText, festeSchritte, formate as bildformate, pixel as bildpixel, schaetzung as bildschaetzung,
+export { anpassen as bildwahlAnpassen, ausVerhaeltnis, dauerText, einrasten, flaechenBereich, formatFrei, festeSchritte, formate as bildformate, pixel as bildpixel, schaetzung as bildschaetzung,
          schrittBereich, seitenName, startwahl as bildStartwahl, type BildGroessen, type Bildmessung, type Bildmodell, type BildSchritte, type Bildvorlage,
-         type Erzeugungswahl, type Format as Bildformat, type Schaetzung as Bildschaetzung } from "./lib/bilderzeugung";
+         type Eingerastet, type Erzeugungswahl, type Format as Bildformat, type Schaetzung as Bildschaetzung } from "./lib/bilderzeugung";
 
 // Bausteine für eine App mit eigener Schale (eigene Gestaltung statt der gemeinsamen): Start der Sitzung, Anmeldung,
 // Koppeln, erste Einrichtung, Abmelden, Verfolgen von Aufträgen, Fassung, Weg und Verbindungen. Die Logik bleibt hier,
