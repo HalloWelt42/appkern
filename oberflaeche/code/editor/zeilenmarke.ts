@@ -25,6 +25,11 @@ export const zeilenMarke = StateField.define<DecorationSet>({
   provide: (feld) => EditorView.decorations.from(feld),
 });
 
+// Eine gesetzte Zeile rollt zugleich in die Mitte des Editors, damit sie zu sehen ist (Schritte im Debugger, Sprung
+// aus einer Gliederung).
 export function setzeZeilenMarke(view: EditorView, zeile: number | null): void {
-  view.dispatch({ effects: setzen.of(zeile) });
+  const gueltig = zeile !== null && zeile >= 1 && zeile <= view.state.doc.lines;
+  view.dispatch({
+    effects: gueltig ? [setzen.of(zeile), EditorView.scrollIntoView(view.state.doc.line(zeile).from, { y: "center" })] : setzen.of(zeile),
+  });
 }
