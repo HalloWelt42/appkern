@@ -32,7 +32,9 @@ Angezeigt wird kein Schlüssel, weder im Ausrollen noch in einer Oberfläche.
 ## Stand
 
 - Leitstelle (02.11.2026): umgesetzt; Nachschlag, Assistent, Vertonung, Transkription und Fundus holen ihren Zugang
-  beim Ausrollen. Nicht dabei: Codeschmiede (nutzt die Leitstelle nicht), Zusage und TubeVault (eigenes Ausrollen).
+  beim Ausrollen. Mit `[zugaenge] bildarchiv = true` wird die App in der Leitstelle zum Bildarchiv (IMG-3,
+  PROTOKOLL 6.3 der Leitstelle): sie holt jedes Bild ab, das eine andere App über die Leitstelle erzeugt; beim
+  Anlegen und nachträglich gesetzt, nie zurückgenommen. Nicht dabei: Codeschmiede (nutzt die Leitstelle nicht), Zusage und TubeVault (eigenes Ausrollen).
 - Kellerwolke: `[zugaenge] kellerwolke = "<Konto>"` (das Konto, dem die App gehört). Das Ausrollen ruft auf dem Rechner
   der Kellerwolke (Ort aus `handbuch ziel kellerwolke`) ihr Werkzeug `tools/app_zugang.py --erneuern` auf: Zugang
   anlegen oder neuer Schlüssel. Vorhandene Schlüssel gibt die Kellerwolke nicht heraus, darum bekommt eine eingerichtete

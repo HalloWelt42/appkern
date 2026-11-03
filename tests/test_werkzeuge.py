@@ -563,6 +563,26 @@ def test_zugang_zur_leitstelle_anlegen_uebernehmen_erneuern(monkeypatch, capsys)
     assert "ls_" not in ausgabe and "Schlüssel erneuert" in ausgabe and "angelegt" in ausgabe
 
 
+def test_zugang_zur_leitstelle_als_bildarchiv(monkeypatch):
+    """IMG-3: [zugaenge] bildarchiv = true macht die App in der Leitstelle zum Bildarchiv, beim Anlegen und nachträglich;
+    ist sie es schon, ändert das Ausrollen nichts."""
+    from appkern.werkzeuge import ausrollen as a
+    monkeypatch.setattr(a, "_ssh", lambda z, skript: "1")
+    monkeypatch.setattr(a, "_umgebung_setzen", lambda z, werte: None)
+    z = _ziel_mit_zugaengen(zugaenge={"name": "Nachschlag", "leitstelle": ["text"], "bildarchiv": True})
+    gesehen: list = []
+    a.zugaenge_besorgen(z, client=_leitstelle([], gesehen))
+    assert ("POST", "/api/anwendungen", {"name": "Nachschlag", "faehigkeiten": ["text"], "bildarchiv": True}) in gesehen
+    vorhanden = {"kennung": "a7", "name": "Nachschlag", "prioritaet": 1, "faehigkeiten": ["text"], "zonen": ["heim"],
+                 "extern_erlaubt": False, "gleichzeitig": 4, "ketten": {}, "docker_projekte": [], "bildarchiv": False}
+    gesehen = []
+    a.zugaenge_besorgen(z, client=_leitstelle([vorhanden], gesehen))
+    assert next(k for m, p, k in gesehen if m == "PUT")["bildarchiv"] is True
+    gesehen = []
+    a.zugaenge_besorgen(z, client=_leitstelle([vorhanden | {"bildarchiv": True}], gesehen))
+    assert not any(m == "PUT" for m, _, _ in gesehen)
+
+
 def test_zugaenge_brauchen_die_leitstelle():
     import pytest
     from pydantic import ValidationError

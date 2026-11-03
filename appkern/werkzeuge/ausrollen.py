@@ -61,6 +61,7 @@ class Zugaenge(BaseModel):
 
     name: str = Field(min_length=1)       # Name der App in Leitstelle und Kellerwolke
     leitstelle: list[str] = []            # Fähigkeiten, die die App in der Leitstelle braucht (text, einbettung ...)
+    bildarchiv: bool = False              # in der Leitstelle ein Bildarchiv: holt erzeugte Bilder anderer Apps ab (Bildablage)
     kellerwolke: str | None = None        # Konto der Kellerwolke, dem die App gehört: dann auch ihr App-Schlüssel dort
 
     @model_validator(mode="after")
@@ -456,17 +457,21 @@ def _leitstelle_zugang(z: Ziel, erneuern: bool, client: httpx.Client | None) -> 
         anwendungen = json_von(c.get("/api/lage")).get("anwendungen", [])
         a = next((x for x in anwendungen if x["name"].lower() == z.zugaenge.name.lower()), None)
         if a is None:
-            neu = json_von(c.post("/api/anwendungen", json={"name": z.zugaenge.name, "faehigkeiten": sorted(erklaert)}))
-            schluessel, was = neu["schluessel"], f"in der Leitstelle angelegt ({', '.join(sorted(erklaert))})"
+            neu = json_von(c.post("/api/anwendungen", json={"name": z.zugaenge.name, "faehigkeiten": sorted(erklaert),
+                                                            **({"bildarchiv": True} if z.zugaenge.bildarchiv else {})}))
+            schluessel, was = neu["schluessel"], f"in der Leitstelle angelegt ({', '.join(sorted(erklaert))})" + (
+                ", als Bildarchiv" if z.zugaenge.bildarchiv else "")
         else:
             fehlen = erklaert - set(a["faehigkeiten"])
-            if fehlen:
+            archiv_neu = z.zugaenge.bildarchiv and not a.get("bildarchiv")
+            if fehlen or archiv_neu:
                 daten = {k: a[k] for k in ("name", "prioritaet", "zonen", "extern_erlaubt", "gleichzeitig", "ketten", "docker_projekte")}
-                json_von(c.put(f"/api/anwendungen/{a['kennung']}", json={**daten, "faehigkeiten": sorted(set(a["faehigkeiten"]) | erklaert)}))
+                json_von(c.put(f"/api/anwendungen/{a['kennung']}", json={**daten, "faehigkeiten": sorted(set(a["faehigkeiten"]) | erklaert),
+                                                                        **({"bildarchiv": True} if archiv_neu else {})}))
             pfad = f"/api/anwendungen/{a['kennung']}/schluessel" + ("/neu" if erneuern else "")
             schluessel = json_von(c.post(pfad))["schluessel"] if erneuern or not schon else None
             was = ("Schlüssel erneuert" if erneuern else "Schlüssel übernommen" if schluessel else "vorhanden, Schlüssel bleibt") + (
-                f"; Fähigkeiten dazu: {', '.join(sorted(fehlen))}" if fehlen else "")
+                f"; Fähigkeiten dazu: {', '.join(sorted(fehlen))}" if fehlen else "") + ("; jetzt Bildarchiv" if archiv_neu else "")
     finally:
         if eigen:
             c.close()
