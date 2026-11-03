@@ -217,9 +217,27 @@ const MESSEN = `(() => {
     if (gleiche.length >= 2 && gleiche.length === kinder.filter((k) => k.classList[0] === klasse).length)
       ungekennzeichnet.push(weg(b) + " (" + gleiche.length + " Karten ." + klasse + " ohne data-karte; Baustein Karte des Appkerns nehmen)");
   }
+  // Seitenkopf bleibt stehen (IMG-16, Regel "Kopf sticky, Rollfelder"): ab 1000 Pixel Breite rollt nur der Inhalt.
+  // Kopf ist [data-seitenkopf] (Baustein Seite des Appkerns), sonst die erste Überschrift h1 der Seite. Jedes Rollfeld
+  // und die Seite selbst werden ans Ende gerollt; steht der Kopf danach woanders oder außerhalb, ist das ein Befund.
+  const kopfweg = [];
+  if (breite >= 1000) {
+    const kopf = document.querySelector("[data-seitenkopf]") || document.querySelector(".seite h1, main h1, h1");
+    if (kopf && kopf.getBoundingClientRect().height) {
+      const vorher = kopf.getBoundingClientRect().top;
+      const rollend = [document.scrollingElement, ...[...document.querySelectorAll("body *")].filter((e) => {
+        const t = stil(e); return (t.overflowY === "auto" || t.overflowY === "scroll") && e.scrollHeight > e.clientHeight + 40; })];
+      const stand = rollend.map((e) => e.scrollTop);
+      for (const e of rollend) e.scrollTop = e.scrollHeight;
+      const nachher = kopf.getBoundingClientRect();
+      if (Math.abs(nachher.top - vorher) > 2 || nachher.bottom <= 0)
+        kopfweg.push(weg(kopf) + " (Kopf rollt mit: von " + Math.round(vorher) + " nach " + Math.round(nachher.top) + " px; Baustein Seite des Appkerns nehmen)");
+      rollend.forEach((e, i) => { e.scrollTop = stand[i]; });
+    }
+  }
   return { seitlich: document.documentElement.scrollWidth > breite + 1, ueber: [...new Set(ueber)].slice(0, 5), kontrast: [...new Set(kontrast)].slice(0, 5),
            geschnitten: [...new Set(geschnitten)].slice(0, 5), flucht: [...new Set(flucht)].slice(0, 5),
-           ungekennzeichnet: [...new Set(ungekennzeichnet)].slice(0, 5) };
+           ungekennzeichnet: [...new Set(ungekennzeichnet)].slice(0, 5), kopfweg };
 })()`;
 
 // Rahmen am Telefon (stil/rahmen.css): die Sollwerte (Kopf- und Fußhöhe) liest die Messung aus der Seite selbst, die
@@ -476,6 +494,7 @@ for (const thema of themen) {
       for (const g of m.geschnitten) befunde.push(`${name}: breiter als sein Rahmen: ${g}`);
       for (const f of m.flucht) befunde.push(`${name}: Karten einer Reihe, Fußzeilen nicht auf einer Linie: ${f}`);
       for (const f of m.ungekennzeichnet ?? []) befunde.push(`${name}: Kartenraster ohne Kennzeichen: ${f}`);
+      for (const f of m.kopfweg ?? []) befunde.push(`${name}: Seitenkopf bleibt beim Rollen nicht stehen: ${f}`);
       const bild = await rufe("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(ausgabe, `${name}.png`), Buffer.from(bild.result.data, "base64"));
       for (const [i, w] of (seite.wechsel ?? []).entries()) {

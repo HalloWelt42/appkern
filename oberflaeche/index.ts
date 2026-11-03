@@ -24,6 +24,7 @@ export { default as Vollansicht } from "./teile/Vollansicht.svelte";
 export { default as Nachladen } from "./teile/Nachladen.svelte";
 export { default as Karte } from "./teile/Karte.svelte";
 export { default as KartenRaster } from "./teile/KartenRaster.svelte";
+export { default as Seite } from "./teile/Seite.svelte";
 export { leiste, leisteOeffnen, leisteSchliessen } from "./lib/leiste.svelte";
 export { abfrage, anfragenEinstellen, ApiFehler, ereignisse, hole, json, seitenFehler, seitenSignal, token, verbindung,
          type AnfrageOptionen, type FehlerArt } from "./lib/api.svelte";
