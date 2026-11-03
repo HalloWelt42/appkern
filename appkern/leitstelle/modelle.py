@@ -179,6 +179,32 @@ class Bild(_Modell):
     beschreibung: str = ""                 # wie der Dienst die Beschreibung umgesetzt hat, falls er sie ändert
 
 
+class AbgelegtesBild(_Modell):
+    """Ein erzeugtes Bild in der Bildablage der Leitstelle (PROTOKOLL 6.3 der Leitstelle), das auf die Abholung durch
+    ein Bildarchiv wartet: wer es erzeugt hat, mit welcher Beschreibung, welchem Modell und Startwert."""
+
+    kennung: str
+    anwendung: str                         # Name der App, die das Bild erzeugt hat
+    auftrag: str
+    familie: str                           # das Bildmodell
+    beschreibung: str                      # der Prompt
+    seed: int
+    breite: int
+    hoehe: int
+    schritte: int | None = None
+    nummer: int = 0                        # Stelle im Ergebnis, wenn ein Auftrag mehrere Bilder erzeugt hat
+    bytes: int
+    erzeugt_s: float                       # Unix-Zeit
+
+
+class Bildablage(_Modell):
+    """Die ältesten wartenden Bilder der Bildablage, dazu wie viele insgesamt warten."""
+
+    bilder: list[AbgelegtesBild]
+    wartend: int
+    bytes: int
+
+
 class Bilder(_Modell):
     """Ergebnis von `bilder_erzeugen`: die Bilder, der Startwert (gleiche Beschreibung und gleicher Startwert ergeben
     das gleiche Bild) und wer rechnete."""

@@ -377,3 +377,27 @@ async def test_einbettung_meldet_die_lage():
     async with leitstelle(handler) as ls:
         e = await ls.einbetten(["a"], prioritaet="hintergrund")
     assert e.lage == "engpass" and e.vektoren == [[0.1, 0.2]]
+
+
+async def test_bildablage_abholen_und_quittieren():
+    """IMG-3: ein Bildarchiv holt die Bildablage der Leitstelle ab (PROTOKOLL 6.3): Liste, Bild, Quittung."""
+    gesehen: list[tuple[str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        gesehen.append((request.method, str(request.url.path) + ("?" + request.url.query.decode() if request.url.query else "")))
+        assert request.headers["authorization"] == "Bearer ls_geheim"
+        if request.url.path == "/v1/bildablage":
+            return httpx.Response(200, json={"bilder": [{"kennung": "k1", "anwendung": "Redaktion", "auftrag": "a1", "familie": "moss",
+                                                          "beschreibung": "Ein Leuchtturm", "seed": 5, "breite": 512, "hoehe": 512,
+                                                          "schritte": 8, "nummer": 0, "bytes": 4, "erzeugt_s": 1.5}],
+                                             "wartend": 1, "bytes": 4})
+        if request.method == "GET":
+            return httpx.Response(200, content=b"\x89PNG", headers={"content-type": "image/png"})
+        return httpx.Response(204)
+
+    l = leitstelle(handler)
+    ablage = await l.bildablage(5)
+    assert ablage.wartend == 1 and ablage.bilder[0].beschreibung == "Ein Leuchtturm" and ablage.bilder[0].anwendung == "Redaktion"
+    assert await l.abgelegtes_bild("k1") == b"\x89PNG"
+    await l.abgeholt("k1")
+    assert gesehen == [("GET", "/v1/bildablage?anzahl=5"), ("GET", "/v1/bildablage/k1"), ("DELETE", "/v1/bildablage/k1")]

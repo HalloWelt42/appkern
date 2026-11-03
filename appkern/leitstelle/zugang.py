@@ -31,7 +31,7 @@ import httpx
 
 from .fehler import LeitstellenFehler, NichtErreichbar, fehler_aus
 from .modelle import (
-    Bild, Bilder, Bildereignis, ChatAntwort, DienstEintrag, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Rechnet,
+    Bild, Bildablage, Bilder, Bildereignis, ChatAntwort, DienstEintrag, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Rechnet,
     Stueck, Verbrauch, Wartet, Werkzeugaufruf,
 )
 from .arbeit import KOPF as ARBEIT_KOPF, LAUFENDE_ARBEIT
@@ -285,6 +285,22 @@ class Leitstelle:
             koerper["alternativen"] = list(alternativen)
         async for e in self._bildstrom("/v1/images/generations", titel, prioritaet, json=koerper):
             yield e
+
+    # --- Bildablage (PROTOKOLL 6.3 der Leitstelle): nur für eine App mit dem Recht bildarchiv ---------------------------
+
+    async def bildablage(self, anzahl: int = 20) -> Bildablage:
+        """Die ältesten Bilder, die andere Apps erzeugt haben und die auf die Abholung warten."""
+        antwort = await self._senden("GET", "/v1/bildablage", kopf=dict(self._schluessel_kopf), timeout=ABFRAGE,
+                                     params={"anzahl": anzahl})
+        return Bildablage.model_validate(antwort.json())
+
+    async def abgelegtes_bild(self, kennung: str) -> bytes:
+        """Das Bild selbst (PNG)."""
+        return (await self._senden("GET", f"/v1/bildablage/{kennung}", kopf=dict(self._schluessel_kopf))).content
+
+    async def abgeholt(self, kennung: str) -> None:
+        """Quittieren: erst, wenn das Bild sicher beim Archiv liegt; danach ist es in der Leitstelle weg."""
+        await self._senden("DELETE", f"/v1/bildablage/{kennung}", kopf=dict(self._schluessel_kopf), timeout=ABFRAGE)
 
     async def bilder_bearbeiten(self, beschreibung: str, vorlage: bytes, *, groesse: str | None = None, anzahl: int = 1,
                                 startwert: int | None = None, modell: str | None = None, titel: str = "",
