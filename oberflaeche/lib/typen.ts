@@ -226,3 +226,12 @@ export interface Anfrage {
   erstellt_am: string;
   gueltig_bis: string;
 }
+
+// --- Vollansicht eines Bildes (IMG-15, teile/Vollansicht.svelte) ---------------------------------------------------
+export interface VollansichtBild {
+  adresse: string;          // Adresse des Bildes in voller Auflösung
+  alt?: string;
+  titel?: string;
+  breite?: number;
+  hoehe?: number;
+}

@@ -20,6 +20,8 @@ export { default as EinstellungsZeile } from "./teile/EinstellungsZeile.svelte";
 export { default as PaarListe } from "./teile/PaarListe.svelte";
 export { default as VorleseKnopf } from "./teile/VorleseKnopf.svelte";
 export { default as BildErzeugen } from "./teile/BildErzeugen.svelte";
+export { default as Vollansicht } from "./teile/Vollansicht.svelte";
+export { default as Nachladen } from "./teile/Nachladen.svelte";
 export { leiste, leisteOeffnen, leisteSchliessen } from "./lib/leiste.svelte";
 export { abfrage, anfragenEinstellen, ApiFehler, ereignisse, hole, json, seitenFehler, seitenSignal, token, verbindung,
          type AnfrageOptionen, type FehlerArt } from "./lib/api.svelte";
