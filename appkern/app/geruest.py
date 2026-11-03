@@ -40,7 +40,7 @@ import appkern
 from appkern.anfragen import Abholer, Angebot as AppAngebot
 from appkern.anfragen.api import anfragen_router
 from appkern.anmeldung import Anmeldung, Konto
-from appkern.anmeldung.api import angemeldet, anmeldungs_router, inhalt_cookie
+from appkern.anmeldung.api import INHALT_PFAD, angemeldet, anmeldungs_router, inhalt_cookie
 from appkern.auftraege import Art, Auftraege
 from appkern.auftraege.api import auftrags_router
 from appkern.datenbank import LESER, Datenbank
@@ -133,7 +133,7 @@ class Geruest(Generic[E]):
                  arten: Sequence[Art] = (), symbol: str = "fa-cube", symbolbild: str = "", farbe: str = "#2f7ce0",
                  oberflaeche: Path | None = None,
                  gleichzeitig: int = 1, angebote: Sequence[AppAngebot] = (), leseverbindungen: int = LESER,
-                 push: bool = False, sicherungen: Path | None = None,
+                 push: bool = False, sicherungen: Path | None = None, seiten: Sequence[str] = (),
                  transport: httpx.AsyncBaseTransport | None = None) -> None:
         """`angebote`: was die App mit Dateien der Kellerwolke kann (Aktionen im Dateimenü, Dateiwahl in der App).
         `leseverbindungen`: so viele Lesungen der Datenbank laufen nebeneinander (neben dem Schreiben).
@@ -142,6 +142,8 @@ class Geruest(Generic[E]):
         Datenordner, im Container /app/sicherungen (eingebunden wie in der Vorlage, dorthin sichert auch das Ausrollen).
         `symbolbild`: Pfad eines freigestellten Bildes der App, das sie selbst ausliefert (etwa "/favicon.svg"); Kopf,
         Anmeldung und Einrichtung zeigen es statt des Zeichens `symbol` im Kasten der App-Farbe.
+        `seiten`: Pfade, unter denen die App gebaute Seiten hinter der Anmeldung ausliefert (etwa "/vorschau"); dort gilt
+        das Inhalts-Cookie mit, geschützt mit `self.seite_lesen` (ohne Anmeldung zur Anmeldung der App).
         `transport` nur für Tests: alle Verbindungen nach außen gehen dann über ihn."""
         self.name, self.kennung, self.rolle, self.symbol, self.fassung = name, kennung, rolle, symbol, fassung
         self.symbolbild = symbolbild
@@ -177,6 +179,8 @@ class Geruest(Generic[E]):
         #: Name des Inhalts-Cookies dieser App (je App eigen, damit Apps auf demselben Rechner es nicht überschreiben)
         self.inhalt_cookie = inhalt_cookie(self.kennung)
         self.lesen = Depends(angemeldet(self.anmeldung, cookie=self.inhalt_cookie))
+        self.seite_lesen = Depends(angemeldet(self.anmeldung, cookie=self.inhalt_cookie, umleiten="/"))
+        self.inhalt_pfade = (INHALT_PFAD, *seiten)
         self._pflege: asyncio.Task | None = None
         self.abholer = Abholer(angebote, self.auftraege, lambda: self.kellerwolke,
                                lambda: self.einstellungen.stand.adresse or None)
@@ -598,7 +602,8 @@ class Geruest(Generic[E]):
         app = FastAPI(title=self.name, version=self.fassung, lifespan=lebenszyklus, docs_url="/docs" if doku else None,
                       redoc_url="/redoc" if doku else None, openapi_url="/openapi.json" if doku else None)
         app.include_router(self._grund_router())
-        app.include_router(anmeldungs_router(self.anmeldung, protokoll=self.protokoll, cookie=self.inhalt_cookie))
+        app.include_router(anmeldungs_router(self.anmeldung, protokoll=self.protokoll, cookie=self.inhalt_cookie,
+                                         inhalt_pfade=self.inhalt_pfade))
         if self.abholer.angebote:
             app.include_router(anfragen_router(self.abholer, lambda: self.kellerwolke, self.mensch))
         if self.push is not None:

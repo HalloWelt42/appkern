@@ -338,3 +338,26 @@ async def test_inhalts_cookie_je_app():
         assert {"app_inhalt_pinnwand", "app_inhalt_leitstelle"} <= set(dose.keys())
         assert dose.get("app_inhalt_pinnwand") == token                  # nicht überschrieben
         assert (await p.get("/api/v1/inhalt/bild")).json() == {"konto": "chef"}
+
+
+async def test_cookie_auch_fuer_seiten_und_umleitung_zur_anmeldung():
+    s = Schein()
+    a = anmeldung(s)
+    app = FastAPI()
+    app.include_router(anmeldungs_router(a, inhalt_pfade=("/api/v1/inhalt", "/vorschau")))
+    seite = angemeldet(a, cookie=True, umleiten="/")
+
+    @app.get("/vorschau/{pfad:path}")
+    async def vorschau(pfad: str, konto=Depends(seite)):
+        return {"konto": konto.name}
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        r = await c.get("/vorschau/artikel/", headers={"accept": "text/html"})
+        assert r.status_code == 303 and r.headers["location"] == "/"          # Browser ohne Anmeldung: zur Anmeldung
+        assert (await c.get("/vorschau/artikel/")).status_code == 401         # andere Aufrufer: wie bisher
+        token = (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]
+        r = await c.post("/api/v1/anmeldung/zugang", headers={"X-Kellerwolke-Sitzung": token})
+        assert sorted(k.path for k in c.cookies.jar if k.name == COOKIE) == ["/api/v1/inhalt", "/vorschau"]
+        assert (await c.get("/vorschau/artikel/", headers={"accept": "text/html"})).json() == {"konto": "chef"}
+        await c.post("/api/v1/anmeldung/abmelden", headers={"X-Kellerwolke-Sitzung": token})
+        assert [k for k in c.cookies.jar if k.name == COOKIE] == []
