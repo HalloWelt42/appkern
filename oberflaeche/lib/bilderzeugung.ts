@@ -51,11 +51,15 @@ export function pixel(groesse: string): { b: number; h: number; mp: number } {
   return { b, h, mp: (b * h) / 1e6 };
 }
 
-/** Name des Seitenverhältnisses ("16:9 quer"), sonst "B:H" */
+const ggt = (a: number, b: number): number => (b ? ggt(b, a % b) : a);
+
+/** Name des Seitenverhältnisses ("16:9 quer"), sonst das gekürzte Verhältnis mit Lage ("9:7 quer") */
 export function seitenName(groesse: string): string {
   const { b, h } = pixel(groesse);
   const treffer = VERHAELTNISSE.find(([v]) => Math.abs(b / h - v) / v < 0.03);
-  return treffer ? treffer[1] : `${b}:${h}`;
+  if (treffer) return treffer[1];
+  const t = ggt(b, h);
+  return `${b / t}:${h / t} ${b > h ? "quer" : "hoch"}`;
 }
 
 /** Feste Auswahl der Formate: die empfohlenen Größen des Steckbriefs und seine Vorgabe; ohne Steckbrief nur die Vorgabe
@@ -63,7 +67,11 @@ export function seitenName(groesse: string): string {
 export function formate(m: Bildmodell): Format[] {
   const vorgabe = m.vorgabe.groesse ?? m.groessen?.vorgabe ?? "1024x1024";
   const alle = [...new Set([m.groessen?.vorgabe ?? "1024x1024", ...(m.groessen?.empfohlen ?? [])])];
-  return alle.map((groesse) => ({ groesse, name: seitenName(groesse), vorgabe: groesse === vorgabe }));
+  // gleiche Verhältnisse nach Größe unterscheiden: das kleinste heißt schlicht, größere "groß" und "sehr groß"
+  const zusatz = ["", " groß", " sehr groß"];
+  const rang = (g: string) => alle.filter((x) => seitenName(x) === seitenName(g) && pixel(x).mp < pixel(g).mp).length;
+  return alle.map((groesse) => ({ groesse, name: seitenName(groesse) + (zusatz[rang(groesse)] ?? ` ${rang(groesse) + 1}`),
+                                  vorgabe: groesse === vorgabe }));
 }
 
 /** Bereich der Iterationstiefe, oder null, wenn der Dienst mit seinen eigenen Schritten rechnet (oder nur eine Zahl kann) */
@@ -110,5 +118,6 @@ export function schaetzung(m: Bildmodell, wahl: Erzeugungswahl): Schaetzung {
 }
 
 export function dauerText(s: number): string {
-  return s < 90 ? `${Math.max(1, Math.round(s))} Sekunden` : `${Math.round(s / 60)} Minuten`;
+  const n = s < 90 ? Math.max(1, Math.round(s)) : Math.round(s / 60);
+  return s < 90 ? `${n} ${n === 1 ? "Sekunde" : "Sekunden"}` : `${n} ${n === 1 ? "Minute" : "Minuten"}`;
 }
