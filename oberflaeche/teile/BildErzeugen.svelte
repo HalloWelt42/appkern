@@ -4,7 +4,7 @@
   // Modellen, die Bildvorlagen annehmen (nur zeigen, was geht); Format als feste Auswahl, Iterationstiefe im Bereich des
   // Modells, Varianten bis zur Höchstzahl, Zeitabschätzung aus eigenen Messungen. Woher Vorlagen kommen (Ziehen, Auswahl
   // aus dem ImageVault), sagt die App über ihre Rückrufe.
-  import { anpassen, dauerText, festeSchritte, formate, pixel, schaetzung, schrittBereich, type Bildmodell,
+  import { anpassen, dauerText, festeSchritte, formate, pixel, schaetzung, schrittBereich, startwahl, type Bildmodell,
            type Bildvorlage, type Erzeugungswahl } from "../lib/bilderzeugung";
 
   let { modelle, wahl = $bindable(), vorlagen = $bindable([]), ondateien, onwaehlen }: {
@@ -52,7 +52,7 @@
         {#each modelle as m (m.id)}
           {@const b = schrittBereich(m)}
           {@const f = festeSchritte(m)}
-          <button type="button" class="ez-modell" class:an={m.id === modell.id} onclick={() => (wahl = { ...wahl, modell: m.id })}>
+          <button type="button" class="ez-modell" class:an={m.id === modell.id} onclick={() => { if (m.id !== modell.id) wahl = startwahl(m); }}>
             <span class="ez-modell-kopf"><b>{m.name}</b>
               <span class="etikett" class:gut={m.geladen}>{m.geladen ? "geladen" : m.ladezeit_s !== null ? `nicht geladen, Laden etwa ${dauerText(m.ladezeit_s)}` : "nicht geladen"}</span></span>
             {#if m.zweck}<span class="ez-leise">{m.zweck}</span>{/if}

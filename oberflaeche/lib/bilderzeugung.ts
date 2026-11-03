@@ -34,7 +34,7 @@ export interface Bildmodell {
   anzahl_max: number;
   ladezeit_s: number | null;           // gemessen von der Leitstelle; null: noch nicht gemessen
   messung: Bildmessung;
-  vorgabe: { groesse: string | null; schritte: number | null };   // Vorgaben der App je Modell
+  vorgabe: { groesse: string | null; schritte: number | null; anzahl: number | null };   // Vorgaben der App je Modell
 }
 
 /** Eine gewählte Stilvorlage: Kennung (etwa im ImageVault), Adresse der Vorschau, Name */
@@ -78,6 +78,12 @@ export function schrittBereich(m: Bildmodell): { kleinste: number; groesste: num
 export function festeSchritte(m: Bildmodell): number | null {
   const s = m.schritte;
   return s && s.groesste !== null && s.groesste === s.kleinste ? s.kleinste : null;
+}
+
+/** Erste Wahl für ein Modell: die Vorgaben der App, sonst die des Modells */
+export function startwahl(m: Bildmodell): Erzeugungswahl {
+  return anpassen(m, { modell: m.id, groesse: m.vorgabe.groesse ?? m.groessen?.vorgabe ?? "1024x1024", schritte: null,
+                       anzahl: m.vorgabe.anzahl ?? 1 });
 }
 
 /** Die Wahl so angepasst, dass das Modell sie annimmt (Format aus der Auswahl, Schritte im Bereich, Varianten bis anzahl_max) */

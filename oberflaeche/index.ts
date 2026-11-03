@@ -54,7 +54,7 @@ export { abbrechen as aufnahmeAbbrechen, alsDatei as aufnahmeAlsDatei, aufnahme,
 export { farbe, genau, groesse, lesen, marke, sprache, SPRACHEN } from "./lib/zeit";
 export type * from "./lib/typen";
 export { anpassen as bildwahlAnpassen, dauerText, festeSchritte, formate as bildformate, pixel as bildpixel, schaetzung as bildschaetzung,
-         schrittBereich, seitenName, type BildGroessen, type Bildmessung, type Bildmodell, type BildSchritte, type Bildvorlage,
+         schrittBereich, seitenName, startwahl as bildStartwahl, type BildGroessen, type Bildmessung, type Bildmodell, type BildSchritte, type Bildvorlage,
          type Erzeugungswahl, type Format as Bildformat, type Schaetzung as Bildschaetzung } from "./lib/bilderzeugung";
 
 // Bausteine für eine App mit eigener Schale (eigene Gestaltung statt der gemeinsamen): Start der Sitzung, Anmeldung,
