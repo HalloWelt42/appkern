@@ -37,7 +37,8 @@
 /* das Suchfeld braucht Platz für Text, Zähler und drei Knöpfe: im schmalen Fenster rückt es unter Alle und Thema */
 .hilfe-suchzeile { display: flex; flex-wrap: wrap; gap: var(--a2); align-items: stretch; }
 .hilfe-suchzeile .suche { flex: 1 1 18em; max-width: none; min-width: 0; }
-.hilfe-bereich { flex: none; display: flex; min-height: 42px; border: 1px solid var(--rand); border-radius: var(--r2); overflow: hidden; }
+/* Alle und Thema so hoch wie der Suchkasten daneben (beide nach der Knopfhöhe der Vorlage) */
+.hilfe-bereich { flex: none; display: flex; height: var(--knopf-hoehe); border: 1px solid var(--rand); border-radius: var(--r2); overflow: hidden; }
 .hilfe-bereich button {
   border: 0; padding: 0 var(--a3); background: var(--karte); color: var(--text-2); font-size: var(--klein); cursor: pointer;
 }
