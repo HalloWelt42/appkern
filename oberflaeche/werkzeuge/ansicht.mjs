@@ -224,7 +224,7 @@ const MESSEN = `(() => {
       ungekennzeichnet.push(weg(b) + " (" + gleiche.length + " Karten ." + klasse + " ohne data-karte; Baustein Karte des Appkerns nehmen)");
   }
   // Seitenkopf bleibt stehen (IMG-16, Regel "Kopf sticky, Rollfelder"): ab 1000 Pixel Breite rollt nur der Inhalt.
-  // Kopf ist [data-seitenkopf] (Baustein Seite des Appkerns), sonst die erste Überschrift h1 der Seite. Jedes Rollfeld
+  // Kopf ist [data-seitenkopf] (Baustein Seitenkopf des Appkerns), sonst die erste Überschrift h1 der Seite. Jedes Rollfeld
   // und die Seite selbst werden ans Ende gerollt; steht der Kopf danach woanders oder außerhalb, ist das ein Befund.
   const kopfweg = [];
   if (breite >= 1000) {
@@ -237,7 +237,7 @@ const MESSEN = `(() => {
       for (const e of rollend) e.scrollTop = e.scrollHeight;
       const nachher = kopf.getBoundingClientRect();
       if (Math.abs(nachher.top - vorher) > 2 || nachher.bottom <= 0)
-        kopfweg.push(weg(kopf) + " (Kopf rollt mit: von " + Math.round(vorher) + " nach " + Math.round(nachher.top) + " px; Baustein Seite des Appkerns nehmen)");
+        kopfweg.push(weg(kopf) + " (Kopf rollt mit: von " + Math.round(vorher) + " nach " + Math.round(nachher.top) + " px; Baustein Seitenkopf des Appkerns nehmen)");
       rollend.forEach((e, i) => { e.scrollTop = stand[i]; });
     }
     // Suchfelder und Filter (input type=search, role=search, data-filter) oben in einem Rollfeld gehören in den Kopf: sie
@@ -251,7 +251,7 @@ const MESSEN = `(() => {
       const vor = teil.getBoundingClientRect().top, alt = e.scrollTop;
       e.scrollTop = e.scrollHeight;
       if (Math.abs(teil.getBoundingClientRect().top - vor) > 2)
-        kopfweg.push(weg(teil) + " (Bedienteil rollt mit dem Inhalt in " + weg(e) + "; in den Kopf des Bausteins Seite)");
+        kopfweg.push(weg(teil) + " (Bedienteil rollt mit dem Inhalt in " + weg(e) + "; in den Baustein Seitenkopf)");
       e.scrollTop = alt;
     }
   }
