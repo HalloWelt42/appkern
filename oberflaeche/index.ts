@@ -21,6 +21,7 @@ export { default as PaarListe } from "./teile/PaarListe.svelte";
 export { default as VorleseKnopf } from "./teile/VorleseKnopf.svelte";
 export { default as BildErzeugen } from "./teile/BildErzeugen.svelte";
 export { default as Vollansicht } from "./teile/Vollansicht.svelte";
+export { default as Blaettern } from "./teile/Blaettern.svelte";
 export { default as Nachladen } from "./teile/Nachladen.svelte";
 export { default as Karte } from "./teile/Karte.svelte";
 export { default as KartenRaster } from "./teile/KartenRaster.svelte";
