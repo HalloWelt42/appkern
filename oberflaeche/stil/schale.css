@@ -56,7 +56,8 @@ button { font: inherit; color: inherit; }
 .seite { display: flex; flex-direction: column; min-height: 0; }
 .seiten-kopf { padding: 12px 16px 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .seiten-kopf h1 { margin: 0; font-size: var(--seitentitel); font-weight: 700; margin-right: 8px; }
-.rollfeld { flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; padding: 0 16px 16px; }
+/* --rollfeld-oben: oberer Innenabstand; feste Tabellenköpfe kleben um ihn höher, bündig an der Oberkante (HELF-151) */
+.rollfeld { --rollfeld-oben: 0px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: clip; padding: var(--rollfeld-oben) 16px 16px; }
 
 .segment { display: inline-flex; background: var(--flaeche-2); border-radius: var(--r2); padding: 3px; }
 .segment span { padding: 4px 11px; border-radius: var(--r1); font-size: var(--klein); color: var(--text-2); cursor: pointer; white-space: nowrap; }
@@ -144,8 +145,10 @@ a.herkunft i { font-size: var(--marke); }
 .zuruecksetzen { font-size: var(--marke); color: var(--akzent); cursor: pointer; margin-left: 6px; }
 
 /* ----- Protokoll ----- */
-.tabelle { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--flaeche); border-radius: var(--r3); box-shadow: var(--schatten); overflow: hidden; font-size: var(--klein); }
-.tabelle th { position: sticky; top: 0; background: var(--flaeche-2); text-align: left; font-weight: 600; color: var(--text-2); padding: 8px 12px; font-size: var(--marke); text-transform: uppercase; letter-spacing: .04em; }
+.tabelle { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--flaeche); border-radius: var(--r3); box-shadow: var(--schatten); overflow: clip; font-size: var(--klein); }
+/* clip statt hidden: rundet ab, ohne die Tabelle zum Rollbehälter zu machen; sonst klebt der Kopf an der Tabelle statt am
+   Rollfeld und rollt mit dem Inhalt weg (HELF-151) */
+.tabelle th { position: sticky; top: calc(-1 * var(--rollfeld-oben, 0px)); z-index: 2; background: var(--flaeche-2); text-align: left; font-weight: 600; color: var(--text-2); padding: 8px 12px; font-size: var(--marke); text-transform: uppercase; letter-spacing: .04em; }
 .tabelle td { padding: 8px 12px; border-top: 1px solid var(--rand); vertical-align: top; }
 .tabelle td.zeit { color: var(--text-3); white-space: nowrap; }
 .tabelle td.ereignis code { font-family: var(--schrift-code); font-size: calc(var(--gross) - 1px); color: var(--text-2); }
@@ -233,9 +236,10 @@ a.herkunft i { font-size: var(--marke); }
 .mobil .seiten-kopf { padding: 4px 0 10px; }
 .mobil .tabelle td.zeit { white-space: normal; }
 .mobil .seiten-kopf h1 { display: none; }
-.mobil .seite .rollfeld { overflow: visible; }
+/* hier rollt die Telefonschale, nicht das Rollfeld: feste Tabellenköpfe kleben bei 0 */
+.mobil .seite .rollfeld { --rollfeld-oben: 0px; overflow: visible; }
 /* der Seitenrand kommt einmal vom Inhalt der Schale; ein Rollfeld setzt am Telefon keinen zweiten darauf (HELF-70) */
-.mobil .rollfeld { padding: 0; }
+.mobil .rollfeld { --rollfeld-oben: 0px; padding: 0; }
 .mobil .leiste { display: none; }
 .mobil .suche { min-width: 0; flex: 1; }
 .eingabe .wert.markierbar { user-select: all; -webkit-user-select: all; }
@@ -252,7 +256,7 @@ a.herkunft i { font-size: var(--marke); }
 .reiter-punkt { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--akzent); margin-left: 6px; vertical-align: 2px; }
 
 /* ----- Einstellungen in voller Breite ----- */
-.einstellungen .rollfeld { padding-top: 18px; }
+.einstellungen .rollfeld { --rollfeld-oben: 18px; padding-top: var(--rollfeld-oben); }
 .karte.breit { max-width: none; }
 .einstellungen .feld { grid-template-columns: minmax(0, 1fr) minmax(300px, 44%); }
 .einstellungen .speicherleiste { max-width: none; }
