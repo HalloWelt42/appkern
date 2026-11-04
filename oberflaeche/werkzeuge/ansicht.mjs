@@ -207,7 +207,8 @@ const MESSEN = `(() => {
   // gleicher erster Klasse wie Karten aussehen (eigene Fläche oder Schatten, Text), aber kein data-karte tragen. Ein
   // Kind, das selbst ein Bedienteil ist (Knopf, Beschriftung eines Wahlfelds, Wahl), ist eine Wahlkachel, keine Karte;
   // ein Kind, das selbst Karten hält (Spalte einer Tafel), ist ein Behälter. Eine Kennzahl-Kachel (Zahl und Beschriftung)
-  // trägt data-kennzahl und ist ausgenommen: sie hat nichts, was über eine Reihe fluchten müsste
+  // trägt data-kennzahl und ist ausgenommen: sie hat nichts, was über eine Reihe fluchten müsste; ebenso ein Arbeitsbereich
+  // eines Seitenaufbaus (data-bereich, etwa Formular neben Notizen), der nebeneinander steht, aber keine Reihe gleicher Dinge ist
   const ungekennzeichnet = [];
   const bedienteil = (e) => ["BUTTON", "LABEL", "A"].includes(e.tagName) || ["radio", "option", "checkbox", "tab"].includes(e.getAttribute("role") ?? "");
   const kartenflaeche = (e) => { const t = stil(e); return t.boxShadow !== "none" || (t.backgroundColor !== "rgba(0, 0, 0, 0)" && t.backgroundColor !== "transparent"); };
@@ -218,7 +219,7 @@ const MESSEN = `(() => {
     const linke = new Set(kinder.map((k) => Math.round(k.getBoundingClientRect().left)));
     if (kinder.length < 2 || linke.size < 2) continue;
     const klasse = kinder[0].classList[0];
-    const gleiche = kinder.filter((k) => klasse && k.classList[0] === klasse && !k.hasAttribute("data-karte") && !bedienteil(k) && !k.hasAttribute("data-kennzahl") && !k.querySelector("[data-karte]") && kartenflaeche(k)
+    const gleiche = kinder.filter((k) => klasse && k.classList[0] === klasse && !k.hasAttribute("data-karte") && !bedienteil(k) && !k.hasAttribute("data-kennzahl") && !k.hasAttribute("data-bereich") && !k.querySelector("[data-karte]") && kartenflaeche(k)
                                          && (k.innerText || "").trim().length >= 8 && k.children.length >= 2);
     // Spalten einer Tafel: hält eines der Geschwister Karten, sind alle Behälter (auch leere Spalten). Bereiche eines
     // Seitenaufbaus (Formular neben Leiste) sind verschieden breit; Karten eines Rasters sind gleich breit
