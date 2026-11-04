@@ -166,9 +166,10 @@ code, .code { font-family: var(--schrift-code); font-size: 0.92em; background: v
 .schale > .haupt.rahmen { overflow: hidden; padding: 0; display: flex; flex-direction: column; }
 .rahmen-kopf { flex: none; padding: var(--a5) var(--a6) var(--a3); }
 .rahmen-kopf .seitenkopf { margin-bottom: var(--a4); }
-.rollfeld { flex: 1; min-height: 0; overflow-y: auto; padding: var(--a2) var(--a6) var(--a6); }
+/* --rollfeld-oben: oberer Innenabstand; feste Tabellenköpfe kleben um ihn höher, bündig an der Oberkante (HELF-151) */
+.rollfeld { --rollfeld-oben: var(--a2); flex: 1; min-height: 0; overflow-y: auto; padding: var(--rollfeld-oben) var(--a6) var(--a6); }
 .spalten { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: var(--a4); padding: 0 var(--a6); }
-.spalten > .rollfeld { padding: var(--a2) var(--a1) var(--a6); }
+.spalten > .rollfeld { padding: var(--rollfeld-oben) var(--a1) var(--a6); }
 .spalten.breit-rechts { grid-template-columns: minmax(0, 1fr) 520px; }
 .spalten.schmal-rechts { grid-template-columns: minmax(0, 1fr) 400px; }
 
@@ -475,9 +476,11 @@ select.eingabe { padding-right: var(--a5); }
 /* Tabellen */
 .tabelle { width: 100%; border-collapse: collapse; font-size: var(--klein); }
 .tabelle th { text-align: left; font-size: var(--marke); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3);
-              padding: var(--a2) var(--a3); position: sticky; top: 0; background: var(--bereich); }
+              padding: var(--a2) var(--a3); position: sticky; top: calc(-1 * var(--rollfeld-oben, 0px)); z-index: 2; background: var(--bereich); }
 .tabelle td { padding: 10px var(--a3); border-top: 1px solid var(--rand); vertical-align: middle; }
-.tabelle tr:hover td { background: var(--karte); }
+/* Hover nur für echte Zeilen; eine Zeile mit einer Zelle über alle Spalten (etwa das Kartenraster der Dienste eines
+   Rechners) ist ein eigener Bereich und wird beim Überfahren nicht ganz markiert (HELF-151) */
+.tabelle tr:not(:has(> td[colspan])):hover td { background: var(--karte); }
 .tabelle td.zahl, .tabelle th.zahl { text-align: right; }
 /* Tabelle, die in schmalem Raum je Zeile eine Karte wird, statt abgeschnitten zu werden oder seitlich zu rollen: der
    Behälter trägt die Klasse tabellen-raum, die Tabelle die Klasse karten, jede Zelle ihr Etikett in data-titel. Die erste
@@ -488,7 +491,7 @@ select.eingabe { padding-right: var(--a5); }
   .tabelle.karten thead { display: none; }
   .tabelle.karten tr { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: var(--a2) var(--a4);
                        padding: var(--a3); border-top: 1px solid var(--rand); }
-  .tabelle.karten tr:hover { background: var(--karte); }
+  .tabelle.karten tr:not(:has(> td[colspan])):hover { background: var(--karte); }
   .tabelle.karten tr:hover td { background: none; }
   .tabelle.karten td { display: block; padding: 0; border: 0; min-width: 0; text-align: left; overflow-wrap: anywhere; }
   .tabelle.karten td:first-child, .tabelle.karten td[colspan] { grid-column: 1 / -1; }

@@ -249,9 +249,29 @@ const MESSEN = `(() => {
       e.scrollTop = alt;
     }
   }
+  // Fester Tabellenkopf deckt ab (HELF-151): Rollfelder mit einem klebenden Tabellenkopf ein Stück rollen; der Kopf muss
+  // dann bündig an der Oberkante des Rollfelds stehen (keine Lücke, durch die gerollter Inhalt scheint, nicht abgeschnitten) und zuoberst
+  // liegen (keine Zelle oder Marke malt darüber)
+  const kopfluecke = [];
+  for (const e of [...document.querySelectorAll("body *")].filter((x) => {
+    const t = stil(x); return (t.overflowY === "auto" || t.overflowY === "scroll") && x.scrollHeight > x.clientHeight + 120; })) {
+    const th = [...e.querySelectorAll("thead th")].find((x) => stil(x).position === "sticky" && x.getBoundingClientRect().height);
+    if (!th) continue;
+    const alt = e.scrollTop;
+    e.scrollTop = Math.min(e.scrollHeight - e.clientHeight, th.offsetTop + 160);
+    const r = th.getBoundingClientRect(), oben = e.getBoundingClientRect().top + (parseFloat(stil(e).borderTopWidth) || 0);
+    if (r.top - oben > 1.5 && r.top - oben < 60)
+      kopfluecke.push(weg(th) + " (klebt " + Math.round(r.top - oben) + " px unter der Oberkante von " + weg(e) + "; gerollter Inhalt scheint durch)");
+    if (r.top - oben < -1.5)
+      kopfluecke.push(weg(th) + " (klebt " + Math.round(oben - r.top) + " px über der Oberkante von " + weg(e) + "; oben abgeschnitten)");
+    const oberst = document.elementFromPoint(r.left + Math.min(20, r.width / 2), r.top + r.height / 2);
+    if (oberst && !th.closest("thead").contains(oberst))
+      kopfluecke.push(weg(th) + " (wird beim Rollen überdeckt von " + weg(oberst) + ")");
+    e.scrollTop = alt;
+  }
   return { seitlich: document.documentElement.scrollWidth > breite + 1, ueber: [...new Set(ueber)].slice(0, 5), kontrast: [...new Set(kontrast)].slice(0, 5),
            geschnitten: [...new Set(geschnitten)].slice(0, 5), flucht: [...new Set(flucht)].slice(0, 5),
-           ungekennzeichnet: [...new Set(ungekennzeichnet)].slice(0, 5), kopfweg };
+           ungekennzeichnet: [...new Set(ungekennzeichnet)].slice(0, 5), kopfweg, kopfluecke: [...new Set(kopfluecke)].slice(0, 5) };
 })()`;
 
 // Rahmen am Telefon (stil/rahmen.css): die Sollwerte (Kopf- und Fußhöhe) liest die Messung aus der Seite selbst, die
@@ -509,6 +529,7 @@ for (const thema of themen) {
       for (const f of m.flucht) befunde.push(`${name}: Karten einer Reihe, Fußzeilen nicht auf einer Linie: ${f}`);
       for (const f of m.ungekennzeichnet ?? []) befunde.push(`${name}: Kartenraster ohne Kennzeichen: ${f}`);
       for (const f of m.kopfweg ?? []) befunde.push(`${name}: Seitenkopf bleibt beim Rollen nicht stehen: ${f}`);
+      for (const f of m.kopfluecke ?? []) befunde.push(`${name}: fester Tabellenkopf deckt nicht ab: ${f}`);
       const bild = await rufe("Page.captureScreenshot", { format: "png" });
       fs.writeFileSync(path.join(ausgabe, `${name}.png`), Buffer.from(bild.result.data, "base64"));
       for (const [i, w] of (seite.wechsel ?? []).entries()) {
