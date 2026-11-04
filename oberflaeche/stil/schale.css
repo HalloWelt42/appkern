@@ -63,6 +63,9 @@ button { font: inherit; color: inherit; }
 .segment span { padding: 4px 11px; border-radius: var(--r1); font-size: var(--klein); color: var(--text-2); cursor: pointer; white-space: nowrap; }
 .segment span.aktiv { background: var(--flaeche); color: var(--text); font-weight: 600; box-shadow: var(--schatten); }
 .suche { display: inline-flex; align-items: center; gap: 8px; height: var(--knopf-hoehe); padding: 0 12px; border-radius: var(--r2); background: var(--flaeche); border: 1px solid var(--rand); color: var(--text-3); font-size: var(--klein); min-width: 180px; }
+/* das Eingabefeld im Kasten ohne eigenen Rahmen und Grund; den Fokus zeigt der Kasten */
+.suche input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--text); font: inherit; }
+.suche:focus-within { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
 .knopf { display: inline-flex; align-items: center; gap: 8px; height: var(--knopf-hoehe); padding: 0 12px; border-radius: var(--r2); border: 1px solid var(--rand); background: var(--flaeche-2); color: var(--text); cursor: pointer; font-size: var(--klein); white-space: nowrap; }
 .knopf.primaer { background: var(--akzent-flaeche); color: var(--auf-akzent); border-color: transparent; font-weight: 600; }
 .knopf.gefahr { color: var(--gefahr); }
