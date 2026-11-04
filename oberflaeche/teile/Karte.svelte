@@ -4,24 +4,38 @@
   // Höhe), Kopf, Angaben, Fuß. Der Fuß sitzt immer unten (margin-top: auto); data-karte und data-fuss sind fest eingebaut,
   // damit die Fluchtprüfung des Appkerns (werkzeuge/ansicht.mjs) jede Karte erfasst. In KartenRaster.svelte stellen,
   // das alle Karten einer Reihe gleich hoch macht. Mit `onwahl` ist die ganze obere Karte eine Klickfläche; Knöpfe im
-  // Fuß bleiben eigene Ziele. Klassen mit dem Kürzel kb-, damit nichts mit der Schale zusammenfällt.
+  // Fuß bleiben eigene Ziele; mit `href` ist sie ein Verweis (Mittelklick, neuer Tab), `onwahl` fängt dann den Klick.
+  // Weitere Angaben (etwa draggable und ondragstart für Tafeln) gehen an die Karte selbst; ist sie ziehbar, zieht der
+  // Verweis nicht als Adresse mit. Klassen mit dem Kürzel kb-, damit nichts mit der Schale zusammenfällt.
   import type { Snippet } from "svelte";
 
-  let { bild = undefined, bildAlt = "", verhaeltnis = "4 / 3", symbol = "fa-image", gewaehlt = false, titel = "", onwahl,
-        kopf, children, fuss, marken, flaeche }:
+  import type { HTMLAttributes } from "svelte/elements";
+
+  let { bild = undefined, bildAlt = "", verhaeltnis = "4 / 3", symbol = "fa-image", gewaehlt = false, titel = "", href, onwahl,
+        kopf, children, fuss, marken, flaeche, ...rest }:
     { bild?: string | null; bildAlt?: string; verhaeltnis?: string; symbol?: string; gewaehlt?: boolean; titel?: string;
-      onwahl?: () => void; kopf?: Snippet; children?: Snippet; fuss?: Snippet; marken?: Snippet; flaeche?: Snippet } = $props();
+      href?: string; onwahl?: () => void; kopf?: Snippet; children?: Snippet; fuss?: Snippet; marken?: Snippet; flaeche?: Snippet }
+    & Omit<HTMLAttributes<HTMLElement>, "title" | "children"> = $props();
 
   // eine Bildfläche gibt es, sobald die Karte eine haben soll (bild nicht undefined oder eigener Inhalt `flaeche`, etwa
   // ein Mosaik), auch wenn das Bild selbst fehlt; ihre Höhe folgt immer dem Seitenverhältnis
   const mitFlaeche = $derived(bild !== undefined || !!flaeche);
-  // in einer klickbaren Karte (button) nur Inline-Inhalt, sonst Blöcke wie Formulare und Listen
-  const innen = $derived(onwahl ? "span" : "div");
+  // in einer klickbaren Karte (Verweis oder Knopf) nur Inline-Inhalt, sonst Blöcke wie Formulare und Listen
+  const klickbar = $derived(!!href || !!onwahl);
+  const oben = $derived(href ? "a" : onwahl ? "button" : "div");
+  const innen = $derived(klickbar ? "span" : "div");
+  function klick(e: MouseEvent) {
+    if (!onwahl) return;
+    if (href && (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0)) return;    // neuer Tab bleibt dem Verweis
+    e.preventDefault();
+    onwahl();
+  }
 </script>
 
-<article class="kb" class:kb-gewaehlt={gewaehlt} data-karte>
-  <svelte:element this={onwahl ? "button" : "div"} class="kb-oben" class:kb-klickbar={!!onwahl} title={titel || undefined}
-                  onclick={onwahl} type={onwahl ? "button" : undefined} role={onwahl ? undefined : "presentation"}>
+<article class="kb" class:kb-gewaehlt={gewaehlt} data-karte {...rest}>
+  <svelte:element this={oben} class="kb-oben" class:kb-klickbar={klickbar} title={titel || undefined} {href}
+                  draggable={href && rest.draggable ? "false" : undefined}
+                  onclick={klick} type={oben === "button" ? "button" : undefined} role={klickbar ? undefined : "presentation"}>
     {#if mitFlaeche}
       <svelte:element this={innen} class="kb-flaeche" style:aspect-ratio={verhaeltnis}>
         {#if flaeche}{@render flaeche()}
@@ -41,7 +55,7 @@
         box-shadow: var(--schatten); overflow: hidden; }
   .kb-gewaehlt { box-shadow: 0 0 0 2px var(--akzent-flaeche), var(--schatten); }
   .kb-oben { display: flex; flex-direction: column; gap: var(--a2); flex: 1 1 auto; min-width: 0; padding: 0 0 var(--a2);
-             border: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
+             border: 0; background: transparent; color: inherit; font: inherit; text-align: left; text-decoration: none; }
   .kb-klickbar { cursor: pointer; }
   .kb-klickbar:hover .kb-kopf { color: var(--akzent); }
   .kb-flaeche { position: relative; display: grid; place-items: center; width: 100%; overflow: hidden; background: var(--mulde); }
