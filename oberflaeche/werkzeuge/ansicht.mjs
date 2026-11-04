@@ -187,11 +187,13 @@ const MESSEN = `(() => {
     }
   }
   // Flucht: Karten einer Reihe (data-karte, Geschwister, Oberkanten höchstens 3 Pixel auseinander) mit ihrer Fußzeile
-  // (data-fuss) auf einer Linie; sonst steht etwa ein Lesestand unter einem zweizeiligen Titel tiefer als daneben
+  // (data-fuss) auf einer Linie; sonst steht etwa ein Lesestand unter einem zweizeiligen Titel tiefer als daneben. Eine
+  // leere, nicht gezeigte Fußzeile zählt nicht: Karten ohne Fuß haben nichts, was fluchten müsste
   const flucht = [];
+  const fussVon = (k) => { const f = k.querySelector("[data-fuss]"); return f && f.getBoundingClientRect().height ? f : null; };
   for (const behaelter of new Set([...document.querySelectorAll("[data-karte]")].map((k) => k.parentElement))) {
-    const karten = [...behaelter.children].filter((k) => k.hasAttribute("data-karte") && k.querySelector("[data-fuss]") && k.getBoundingClientRect().height)
-      .map((k) => ({ k, oben: k.getBoundingClientRect().top, unten: k.querySelector("[data-fuss]").getBoundingClientRect().bottom }))
+    const karten = [...behaelter.children].filter((k) => k.hasAttribute("data-karte") && fussVon(k) && k.getBoundingClientRect().height)
+      .map((k) => ({ k, oben: k.getBoundingClientRect().top, unten: fussVon(k).getBoundingClientRect().bottom }))
       .sort((a, b) => a.oben - b.oben);
     const reihen = [];
     for (const k of karten) { const r = reihen.at(-1); if (r && k.oben - r[0].oben <= 3) r.push(k); else reihen.push([k]); }
@@ -202,8 +204,10 @@ const MESSEN = `(() => {
     }
   }
   // Kartenraster ohne Kennzeichen (IMG-19): Behälter mit display grid und mindestens zwei Spalten, deren Kinder mit
-  // gleicher erster Klasse wie Karten aussehen (eigene Fläche oder Schatten, Text), aber kein data-karte tragen
+  // gleicher erster Klasse wie Karten aussehen (eigene Fläche oder Schatten, Text), aber kein data-karte tragen. Ein
+  // Kind, das selbst ein Bedienteil ist (Knopf, Beschriftung eines Wahlfelds, Wahl), ist eine Wahlkachel, keine Karte
   const ungekennzeichnet = [];
+  const bedienteil = (e) => ["BUTTON", "LABEL", "A"].includes(e.tagName) || ["radio", "option", "checkbox", "tab"].includes(e.getAttribute("role") ?? "");
   const kartenflaeche = (e) => { const t = stil(e); return t.boxShadow !== "none" || (t.backgroundColor !== "rgba(0, 0, 0, 0)" && t.backgroundColor !== "transparent"); };
   for (const b of document.querySelectorAll("body *")) {
     const sb = stil(b);
@@ -212,7 +216,7 @@ const MESSEN = `(() => {
     const linke = new Set(kinder.map((k) => Math.round(k.getBoundingClientRect().left)));
     if (kinder.length < 2 || linke.size < 2) continue;
     const klasse = kinder[0].classList[0];
-    const gleiche = kinder.filter((k) => klasse && k.classList[0] === klasse && !k.hasAttribute("data-karte") && kartenflaeche(k)
+    const gleiche = kinder.filter((k) => klasse && k.classList[0] === klasse && !k.hasAttribute("data-karte") && !bedienteil(k) && kartenflaeche(k)
                                          && (k.innerText || "").trim().length >= 8 && k.children.length >= 2);
     if (gleiche.length >= 2 && gleiche.length === kinder.filter((k) => k.classList[0] === klasse).length)
       ungekennzeichnet.push(weg(b) + " (" + gleiche.length + " Karten ." + klasse + " ohne data-karte; Baustein Karte des Appkerns nehmen)");

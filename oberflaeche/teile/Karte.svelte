@@ -33,7 +33,7 @@
     {#if kopf}<svelte:element this={innen} class="kb-kopf">{@render kopf()}</svelte:element>{/if}
     {#if children}<svelte:element this={innen} class="kb-angaben">{@render children()}</svelte:element>{/if}
   </svelte:element>
-  <div class="kb-fuss" data-fuss>{@render fuss?.()}</div>
+  {#if fuss}<div class="kb-fuss" data-fuss>{@render fuss()}</div>{/if}
 </article>
 
 <style>
@@ -52,5 +52,4 @@
              line-height: 1.35; min-height: calc(2lh + var(--a3)); min-width: 0; overflow-wrap: anywhere; }
   .kb-angaben { display: flex; flex-direction: column; gap: 4px; padding: 0 var(--a4); font-size: var(--klein); color: var(--text-2); min-width: 0; }
   .kb-fuss { margin-top: auto; display: flex; align-items: center; gap: var(--a2); flex-wrap: wrap; padding: 0 var(--a4) var(--a3); min-height: 0; }
-  .kb-fuss:empty { display: none; }
 </style>
