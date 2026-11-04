@@ -578,7 +578,8 @@ select.eingabe { padding-right: var(--a5); }
 @media (max-width: 1240px) {
   .rolle { display: none; }
   .spalten, .spalten.breit-rechts, .spalten.schmal-rechts { grid-template-columns: minmax(0, 1fr); overflow-y: auto; gap: var(--a5); padding-bottom: var(--a5); }
-  .spalten > .rollfeld { overflow: visible; min-height: auto; flex: none; padding: 0; }
+  /* hier rollt .spalten ohne oberen Abstand, das innere Rollfeld rollt nicht: feste Tabellenköpfe kleben bei 0 (HELF-151) */
+  .spalten > .rollfeld { --rollfeld-oben: 0px; overflow: visible; min-height: auto; flex: none; padding: 0; }
   .einstellung { grid-template-columns: minmax(0, 1fr) 240px; }
   .kopf .suche { max-width: 320px; }
   .hauptregler-leiste { left: var(--nav-breite); }
