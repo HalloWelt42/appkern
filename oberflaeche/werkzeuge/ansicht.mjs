@@ -220,7 +220,13 @@ const MESSEN = `(() => {
     const klasse = kinder[0].classList[0];
     const gleiche = kinder.filter((k) => klasse && k.classList[0] === klasse && !k.hasAttribute("data-karte") && !bedienteil(k) && !k.hasAttribute("data-kennzahl") && !k.querySelector("[data-karte]") && kartenflaeche(k)
                                          && (k.innerText || "").trim().length >= 8 && k.children.length >= 2);
-    if (gleiche.length >= 2 && gleiche.length === kinder.filter((k) => k.classList[0] === klasse).length)
+    // Spalten einer Tafel: hält eines der Geschwister Karten, sind alle Behälter (auch leere Spalten). Bereiche eines
+    // Seitenaufbaus (Formular neben Leiste) sind verschieden breit; Karten eines Rasters sind gleich breit
+    const alle = kinder.filter((k) => k.classList[0] === klasse);
+    const behaelter = alle.some((k) => k.querySelector("[data-karte]"));
+    const breiten = gleiche.map((k) => k.getBoundingClientRect().width);
+    const gleichBreit = breiten.length && Math.max(...breiten) - Math.min(...breiten) <= 2;
+    if (gleiche.length >= 2 && gleiche.length === alle.length && !behaelter && gleichBreit)
       ungekennzeichnet.push(weg(b) + " (" + gleiche.length + " Karten ." + klasse + " ohne data-karte; Baustein Karte des Appkerns nehmen)");
   }
   // Seitenkopf bleibt stehen (IMG-16, Regel "Kopf sticky, Rollfelder"): ab 1000 Pixel Breite rollt nur der Inhalt.
