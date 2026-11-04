@@ -234,6 +234,20 @@ const MESSEN = `(() => {
         kopfweg.push(weg(kopf) + " (Kopf rollt mit: von " + Math.round(vorher) + " nach " + Math.round(nachher.top) + " px; Baustein Seite des Appkerns nehmen)");
       rollend.forEach((e, i) => { e.scrollTop = stand[i]; });
     }
+    // Suchfelder und Filter (input type=search, role=search, data-filter) oben in einem Rollfeld gehören in den Kopf: sie
+    // dürfen beim Rollen nicht wandern; Formulare (Angaben, Einstellungen) rollen dagegen zu Recht mit
+    for (const e of [...document.querySelectorAll("body *")].filter((x) => {
+      const t = stil(x); return (t.overflowY === "auto" || t.overflowY === "scroll") && x.scrollHeight > x.clientHeight + 40; })) {
+      const oben = e.getBoundingClientRect().top;
+      const teil = [...e.querySelectorAll("input[type=search], [role=search], [data-filter]")]
+        .find((x) => x.getBoundingClientRect().height && x.getBoundingClientRect().top - oben < 240);
+      if (!teil) continue;
+      const vor = teil.getBoundingClientRect().top, alt = e.scrollTop;
+      e.scrollTop = e.scrollHeight;
+      if (Math.abs(teil.getBoundingClientRect().top - vor) > 2)
+        kopfweg.push(weg(teil) + " (Bedienteil rollt mit dem Inhalt in " + weg(e) + "; in den Kopf des Bausteins Seite)");
+      e.scrollTop = alt;
+    }
   }
   return { seitlich: document.documentElement.scrollWidth > breite + 1, ueber: [...new Set(ueber)].slice(0, 5), kontrast: [...new Set(kontrast)].slice(0, 5),
            geschnitten: [...new Set(geschnitten)].slice(0, 5), flucht: [...new Set(flucht)].slice(0, 5),
