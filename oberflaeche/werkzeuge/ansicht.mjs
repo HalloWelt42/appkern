@@ -261,9 +261,14 @@ const MESSEN = `(() => {
     const t = stil(x); return (t.overflowY === "auto" || t.overflowY === "scroll") && x.scrollHeight > x.clientHeight + 120; })) {
     const th = [...e.querySelectorAll("thead th")].find((x) => stil(x).position === "sticky" && x.getBoundingClientRect().height);
     if (!th) continue;
-    const alt = e.scrollTop;
-    e.scrollTop = Math.min(e.scrollHeight - e.clientHeight, th.offsetTop + 160);
-    const r = th.getBoundingClientRect(), oben = e.getBoundingClientRect().top + (parseFloat(stil(e).borderTopWidth) || 0);
+    // so weit rollen, dass die Tabelle die Oberkante noch deckt; eine kurze Tabelle, deren Kopf mit ihr wegrollt, zählt nicht
+    const alt = e.scrollTop, oben = e.getBoundingClientRect().top + (parseFloat(stil(e).borderTopWidth) || 0);
+    const tab = th.closest("table").getBoundingClientRect(), kopf = th.getBoundingClientRect();
+    const start = kopf.top - oben + alt, ende = tab.bottom - oben + alt - 2 * kopf.height;
+    const ziel = Math.min(e.scrollHeight - e.clientHeight, start + 160, ende);
+    if (ziel < start + 40) continue;
+    e.scrollTop = ziel;
+    const r = th.getBoundingClientRect();
     if (r.top - oben > 1.5 && r.top - oben < 60)
       kopfluecke.push(weg(th) + " (klebt " + Math.round(r.top - oben) + " px unter der Oberkante von " + weg(e) + "; gerollter Inhalt scheint durch)");
     if (r.top - oben < -1.5)
