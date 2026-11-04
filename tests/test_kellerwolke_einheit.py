@@ -219,3 +219,27 @@ async def test_apps_des_kontos():
     assert [(z.app, z.aktiv) for z in await wolke(handler).apps()] == [("bombel", False), ("Zusage", True)]
     with pytest.raises(NichtGefunden):                              # ältere Kellerwolke
         await wolke(lambda a: httpx.Response(404, json={"detail": "Not Found"})).apps()
+
+
+async def test_papierkorb_lesen_und_zurueckholen():
+    ordner, bild = str(uuid4()), knoten_json("a.png")
+    eintrag = {**bild, "geloescht_am": JETZT, "begleiter": [knoten_json("a.bild.json", rolle="bild", haupt_id=bild["id"])]}
+
+    def handler(anfrage: httpx.Request):
+        weg = anfrage.url.path
+        if weg == "/api/v1/ablage/papierkorb":
+            assert anfrage.url.params["ordner"] == ordner
+            return httpx.Response(200, json=[eintrag] if anfrage.url.params["ab"] == "0" else [])
+        if weg == f"/api/v1/ablage/papierkorb/{bild['id']}/inhalt":
+            return httpx.Response(200, content=b"{}")
+        if weg == f"/api/v1/ablage/knoten/{bild['id']}/wiederherstellen" and anfrage.method == "POST":
+            return httpx.Response(200, json={**bild, "name": "a (2).png"})
+        return httpx.Response(404, json={"detail": "Nicht im Papierkorb"})
+
+    kw = wolke(handler)
+    alle = [k async for k in kw.alle_im_papierkorb(ordner)]
+    assert [(k.name, [b.rolle for b in k.begleiter]) for k in alle] == [("a.png", ["bild"])]
+    assert await kw.papierkorb_ganz(bild["id"]) == b"{}"
+    assert (await kw.wiederherstellen(bild["id"])).name == "a (2).png"
+    with pytest.raises(NichtGefunden):
+        await kw.wiederherstellen(uuid4())

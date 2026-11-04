@@ -75,6 +75,13 @@ class Knoten(_Modell):
         return self.typ == "ordner"
 
 
+class ImPapierkorb(Knoten):
+    """Ein Eintrag im Papierkorb unter einem Ordner der App, mit den Begleitern, die mit ihm gelöscht wurden."""
+
+    geloescht_am: datetime
+    begleiter: list[Knoten] = Field(default_factory=list)
+
+
 class Version(_Modell):
     """Eine Fassung einer Datei; ändert sich nie. Zurückholen: Inhalt lesen und als neue Version schreiben."""
 

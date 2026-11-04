@@ -47,6 +47,7 @@ async with Kellerwolke("http://192.168.1.20:39277", schluessel) as kw:
 |---|---|
 | Lesen | `ich`, `knoten`, `pfad`, `finden`, `kinder`, `alle_kinder` (seitenweise), `lesen` (Strom, auch Bereiche), `lesen_ganz`, `herunterladen` (nie halb) |
 | Schreiben | `ordner` (Pfad mit allen Teilen), `schreiben` (aus Bytes, Datei oder Strom, ohne Gesamtpuffer), `neue_version`, `felder_setzen`, `umziehen` (verschieben und umbenennen, Begleiter ziehen mit), `loeschen` (in den Papierkorb des Kontos) |
+| Papierkorb | `papierkorb` und `alle_im_papierkorb` (was unter einem Ordner der App gelöscht wurde, mit mitgelöschten Begleitern), `papierkorb_ganz` (Inhalt lesen), `wiederherstellen` (an den alten Ort, Begleiter mit); endgültig löscht nur das Konto (Kellerwolke ab 0.89) |
 | Zusammenarbeit | `sperren` und `entsperren` für lange Arbeiten, `herkunft_setzen`, `herkunft`, `herkunft_entfernen`, `suchen` nach Feldern |
 | Änderungen | `aenderungen` (seit einem Stand), `ereignisse` (eine Verbindung), `beobachten` (verbindet sich nach einem Abbruch neu und setzt am letzten Stand fort) |
 | Versionen | `versionen` (neueste zuerst, aktuelle markiert), `version_lesen` (Strom, auch Bereiche), `version_ganz`; zurückholen heißt: alten Inhalt als `neue_version` schreiben |

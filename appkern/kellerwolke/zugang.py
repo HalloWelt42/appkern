@@ -26,7 +26,7 @@ import httpx
 
 from .fehler import KellerwolkeFehler, NichtErreichbar, NichtGefunden, fehler_aus
 from .modelle import (
-    Aenderungen, Aktion, Anfrage, AppZugang, AnfrageNeu, Herkunft, Ich, Knoten, Sperre, Version, WahlSeite,
+    Aenderungen, Aktion, Anfrage, AppZugang, AnfrageNeu, Herkunft, Ich, ImPapierkorb, Knoten, Sperre, Version, WahlSeite,
 )
 
 # Was als Inhalt geschrieben werden kann.
@@ -291,6 +291,32 @@ class Kellerwolke:
         """In den Papierkorb des Kontos (wiederherstellbar). Freigegebene Ordner selbst und von anderen Apps gesperrte
         Dateien bleiben (`KeinRecht`, `Gesperrt`)."""
         await self._anfrage("DELETE", f"/knoten/{knoten_id}")
+
+    async def papierkorb(self, ordner_id: UUID | str, ab: int = 0, anzahl: int = 200) -> list[ImPapierkorb]:
+        """Was unter einem lesbaren Ordner im Papierkorb liegt (Kellerwolke ab 0.89), zuletzt gelöschtes zuerst; je
+        Eintrag die mitgelöschten Begleiter. Was in einem gelöschten Ordner steckt, zählt mit ihm."""
+        antwort = await self._anfrage("GET", "/papierkorb", params={"ordner": str(ordner_id), "ab": ab, "anzahl": anzahl})
+        return [ImPapierkorb.model_validate(k) for k in antwort.json()]
+
+    async def alle_im_papierkorb(self, ordner_id: UUID | str) -> AsyncIterator[ImPapierkorb]:
+        ab = 0
+        while True:
+            seite = await self.papierkorb(ordner_id, ab, _SEITE)
+            for k in seite:
+                yield k
+            if len(seite) < _SEITE:
+                return
+            ab += _SEITE
+
+    async def papierkorb_ganz(self, knoten_id: UUID | str) -> bytes:
+        """Inhalt einer Datei im Papierkorb (Eintrag oder mitgelöschter Begleiter), nur für kleine Inhalte."""
+        return b"".join([d async for d in self._stroemen(f"/papierkorb/{knoten_id}/inhalt", None, None)])
+
+    async def wiederherstellen(self, knoten_id: UUID | str) -> Knoten:
+        """Einen Eintrag aus dem Papierkorb an den alten Ort zurück (Schreibrecht dort), Begleiter mit; ein inzwischen
+        vergebener Name bekommt einen Zusatz."""
+        antwort = await self._anfrage("POST", f"/knoten/{knoten_id}/wiederherstellen")
+        return Knoten.model_validate(antwort.json())
 
     async def felder_setzen(self, knoten_id: UUID | str, aenderung: dict[str, Any]) -> Knoten:
         """Freie Felder einmischen; ein Feld mit None wird entfernt."""
