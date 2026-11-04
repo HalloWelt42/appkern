@@ -10,8 +10,11 @@
   const mehr = $derived(gesamt === null || geladen < gesamt);
   let ende = $state<HTMLDivElement>();
 
-  // in Sicht: nachladen, solange es mehr gibt, nicht gerade geladen wird und kein Fehler steht
+  // in Sicht: nachladen, solange es mehr gibt, nicht gerade geladen wird und kein Fehler steht. Nach jedem Laden neu
+  // beobachten: ein Beobachter meldet nur Wechsel, ein Ende, das nach dem Laden noch in Sicht ist, sonst nie wieder
   $effect(() => {
+    void geladen;
+    void laedt;
     if (!ende) return;
     const beobachter = new IntersectionObserver((e) => {
       if (e.some((x) => x.isIntersecting) && mehr && !laedt && !fehler) onmehr();
