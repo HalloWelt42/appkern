@@ -46,6 +46,8 @@ from collections.abc import Mapping
 import httpx
 from pydantic import BaseModel, Field, model_validator
 
+from .regeln import regeln_pruefen
+
 SCHWELLE_S = 60 * 86400
 BAUCACHE_GB = 20         # Vorgabe: so viel Baucache bleibt nach dem Aufräumen (Einstellung baucache_gb, BAUCACHE_GB)
 SICHERUNGEN = "sicherungen"   # Ordner der Sicherungen im Ordner der App (im Abbild /app/sicherungen, siehe Vorlage)
@@ -181,6 +183,11 @@ def stand_und_tests(z: Ziel, wurzel: Path) -> None:
     _lauf(["git", "fetch", "-q", "origin"], ort=wurzel)
     if _lauf(["git", "rev-parse", "HEAD"], ort=wurzel) != _lauf(["git", "rev-parse", f"origin/{z.zweig}"], ort=wurzel):
         raise Abbruch(f"Erst pushen ({z.zweig} ist nicht auf origin).")
+    # Harte Architekturregeln über das ganze Repo: auch was an den Haken vorbei committet wurde, geht nicht in Betrieb
+    regelbefunde = regeln_pruefen([wurzel / n for n in _lauf(["git", "ls-files"], ort=wurzel).splitlines()], wurzel)
+    if regelbefunde:
+        print("\n".join(str(b) for b in regelbefunde[:20]))
+        raise Abbruch(f"{len(regelbefunde)} Befunde der Architekturregeln (python -m appkern.werkzeuge regeln)")
     tests = subprocess.run([".venv/bin/python", "-m", "pytest", "-q", "--tb=short"], cwd=wurzel / "backend",
                            capture_output=True, text=True)
     print((tests.stdout.strip().splitlines() or [""])[-1])

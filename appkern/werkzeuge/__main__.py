@@ -4,6 +4,9 @@
                                                      vorgemerkt ist), vormerken, vorgemerkte Dateien prüfen
     python -m appkern.werkzeuge pruefen [PFAD ...]   Zeichen, Stil und Marken prüfen (ohne Pfade: alle Dateien im Repo)
     python -m appkern.werkzeuge marken [PFAD ...]    nur die Marken der Gestaltung, mit Zahl je Regel und Datei
+    python -m appkern.werkzeuge regeln [PFAD ...]    nur die harten Architekturregeln (architektur/regeln.toml), ohne
+                                                     Pfade über das ganze Repo; Ausnahmen nur mit Freigabe am Ticket
+    python -m appkern.werkzeuge nachricht DATEI      Commit-Nachricht prüfen (beginnt mit Ticket-Kennung "ABC-12: ")
     python -m appkern.werkzeuge gestaltung [--pruefen]   (nur im Appkern) Daten der Seite Gestaltung und Seite im
                                                      Handbuch aus Marken und Katalog neu schreiben oder prüfen
     python -m appkern.werkzeuge fassung [patch|minor|major|id]
@@ -21,6 +24,7 @@ from .befund import Befund
 from .ausrollen import ZIEL_DATEI, Abbruch, ausrollen
 from .fassung import hochzaehlen
 from .marken import marken_pruefen, strenge, zusammenfassung
+from .regeln import regeln_pruefen, regelwerk
 from .stil import schalen_klassen, stil_pruefen
 from .stand import anheben
 from .zeichen import zeichen_pruefen
@@ -59,7 +63,7 @@ def _laedt_stil(quellen: Path) -> bool:
 def pruefen(wurzel: Path, dateien: list[Path]) -> int:
     """Zeichen und Stil halten den Commit immer auf; die Marken der Gestaltung nur, wenn gestaltung.toml sie scharf
     schaltet, sonst werden sie gemeldet (so wird eine App erst sauber und dann scharf geschaltet)."""
-    befunde = zeichen_pruefen(dateien, wurzel) + stil_pruefen(dateien, wurzel, _schale(wurzel))
+    befunde = zeichen_pruefen(dateien, wurzel) + stil_pruefen(dateien, wurzel, _schale(wurzel)) + regeln_pruefen(dateien, wurzel)
     marken = marken_pruefen(dateien, wurzel)
     scharf = strenge(wurzel) == "scharf"
     for b in befunde + (marken if scharf else []):
@@ -76,7 +80,8 @@ def pruefen(wurzel: Path, dateien: list[Path]) -> int:
     alle = befunde + (marken if scharf else [])
     if alle:
         print(f"Abbruch: {len(alle)} Befunde (Zeichen nur gerade, Stil ohne !important, einseitige Streifen und "
-              "Regeln auf Klassen der Schale" + (", nur Marken des Appkerns, Ausnahme mit Kommentar und Grund" if scharf else "")
+              "Regeln auf Klassen der Schale" + (", harte Architekturregeln aus architektur/regeln.toml, Ausnahme nur mit "
+              "Freigabe des Nutzers am Ticket" if regelwerk(wurzel) else "") + (", nur Marken des Appkerns, Ausnahme mit Kommentar und Grund" if scharf else "")
               + ")", file=sys.stderr)
     return 1 if alle else 0
 
@@ -94,12 +99,41 @@ def marken_zeigen(wurzel: Path, dateien: list[Path]) -> int:
     return 1 if marken and stufe == "scharf" else 0
 
 
+def regeln_zeigen(wurzel: Path, dateien: list[Path]) -> int:
+    """Nur die harten Architekturregeln; Befunde halten auf."""
+    if regelwerk(wurzel) is None:
+        print("Hinweis: keine architektur/regeln.toml in dieser App", file=sys.stderr)
+        return 0
+    befunde = regeln_pruefen(dateien, wurzel)
+    for b in befunde:
+        print(b, file=sys.stderr)
+    print(f"{len(befunde)} Befunde der Architekturregeln" if befunde else "Architekturregeln eingehalten",
+          file=sys.stderr if befunde else sys.stdout)
+    return 1 if befunde else 0
+
+
+NACHRICHT = __import__("re").compile(r"^[A-Z]{2,6}-\d+(, [A-Z]{2,6}-\d+)*: \S")
+
+
+def nachricht_pruefen(datei: Path) -> int:
+    """Jede Commit-Nachricht beginnt mit der Ticket-Kennung (\"ATL-12: ...\"); Zusammenführungen ausgenommen."""
+    erste = next((z for z in datei.read_text(encoding="utf-8").splitlines() if z.strip() and not z.startswith("#")), "")
+    if erste.startswith(("Merge ", "Revert ")) or NACHRICHT.match(erste):
+        return 0
+    print(f"Abbruch: Commit-Nachricht beginnt nicht mit einer Ticket-Kennung (etwa \"ATL-12: ...\"): {erste[:80]}", file=sys.stderr)
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     teiler = argparse.ArgumentParser(prog="python -m appkern.werkzeuge")
     befehle = teiler.add_subparsers(dest="befehl", required=True)
     befehle.add_parser("vor-dem-commit")
     p = befehle.add_parser("pruefen")
     p.add_argument("pfade", nargs="*", type=Path)
+    rg = befehle.add_parser("regeln")
+    rg.add_argument("pfade", nargs="*", type=Path)
+    na = befehle.add_parser("nachricht")
+    na.add_argument("datei", type=Path)
     m = befehle.add_parser("marken")
     m.add_argument("pfade", nargs="*", type=Path)
     f = befehle.add_parser("fassung")
@@ -144,11 +178,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Abbruch: {f}", file=sys.stderr)
             return 1
         return 0
-    if a.befehl in ("pruefen", "marken"):
+    if a.befehl == "nachricht":
+        return nachricht_pruefen(a.datei)
+    if a.befehl in ("pruefen", "marken", "regeln"):
         if a.pfade:
             dateien = [q.resolve() for q in a.pfade for q in ([q] if q.is_file() else sorted(q.rglob("*")))]
         else:
             dateien = [wurzel / n for n in _git("ls-files", wurzel=wurzel).splitlines()]
+        if a.befehl == "regeln":
+            return regeln_zeigen(wurzel, dateien)
         return pruefen(wurzel, dateien) if a.befehl == "pruefen" else marken_zeigen(wurzel, dateien)
     # vor dem Commit
     vorgemerkt = _git("diff", "--cached", "--name-only", "--diff-filter=ACM", wurzel=wurzel).splitlines()

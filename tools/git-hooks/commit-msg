@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Jede Commit-Nachricht beginnt mit der Ticket-Kennung ("ATL-12: ..."); die Prüfung steht im Appkern (appkern.werkzeuge).
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+exec .venv/bin/python -m appkern.werkzeuge nachricht "$1"

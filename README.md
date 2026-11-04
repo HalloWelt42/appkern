@@ -656,6 +656,8 @@ Arbeitskopie zeigen statt auf GitHub.
 | `vor-dem-commit` | Fassung hochzählen (nur neue Kennung, wenn `version.json` schon vorgemerkt ist), vormerken, vorgemerkte Dateien prüfen; aufgerufen vom Hook `tools/git-hooks/pre-commit` |
 | `pruefen [PFAD ...]` | nur gerade Zeichen; Stil ohne `!important`, ohne einseitige Streifen (erlaubt nur 1px-Trennlinien in `var(--rand)`), ohne Regeln, die nur Klassen der Schale treffen (Svelte-Blöcke nur mit `:global`; entfällt für eine App mit eigener Schale, die den Stil des Appkerns nicht lädt); dazu die Marken der Gestaltung (unten) |
 | `marken [PFAD ...]` | nur die Marken der Gestaltung: jeder Befund, Zahl je Datei und Regel, die Strenge des Repos |
+| `regeln [PFAD ...]` | nur die harten Architekturregeln der App (`architektur/regeln.toml`), ohne Pfade über das ganze Repo |
+| `nachricht DATEI` | Commit-Nachricht prüfen: beginnt mit Ticket-Kennung (`ATL-12: ...`); aufgerufen vom Hook `commit-msg` |
 | `fassung [patch\|minor\|major\|id]` | `version.json` hochzählen |
 | `appkern` | Appkern in Oberfläche (package-lock) und Backend (requirements, Archiv des Commits) auf denselben neuesten Commit |
 | `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`); `--ziel DATEI` für einen Probestand in eigenem Ordner, `compose` darin nennt die Compose-Datei; `--ergaenzung DATEI` bringt die Angaben des Hauses (Rechner, Ordner, Adresse, Namen, Leitstelle) aus einer privaten Datei und füllt nur, was das Ziel nicht nennt; `<kennung>.local` steht immer in den Namen des Zertifikats (Vorgabe des Vorschaltdienstes ohne Servernamen). Vor dem Neustart sichert es nach der Regel der Sicherung (oben); nach einem gelungenen Ausrollen räumt es auf dem Pi auf: verwaiste Abbilder (`docker image prune -f`) und der Baucache bis auf `baucache_gb` (im Ziel, Vorgabe 20, `BAUCACHE_GB` in der Umgebung geht vor; `docker builder prune --max-used-space`), Ergebnis als Zeile "Aufgeräumt: ..."; nach einem Fehlschlag bleibt alles, das alte Abbild ist der Rückweg |
@@ -670,6 +672,17 @@ der Regel: `/* Ausnahme: 16 Pixel verhindern das Vergrößern am iPhone */`, im 
 streng, sagt `gestaltung.toml` im Wurzelordner: `marken = "scharf"` lässt den Commit scheitern, ohne Datei oder mit
 `"melden"` zählt der Haken die Befunde nur. Eine App wird erst sauber und dann scharf geschaltet; die Vorlage bringt
 `scharf` mit. Die Namen der Marken liest die Prüfung aus dem eingebundenen Paket (`frontend/node_modules/appkern-oberflaeche`).
+
+**Harte Architekturregeln** (Nutzer 04.11.2026, ATL-15: "harte Regeln, die nicht ohne Zustimmung umschifft werden
+dürfen, nur in seltenen Ausnahmefällen"): Eine App beschreibt ihre Regeln in `architektur/regeln.toml`, der Prüfer
+(`appkern/werkzeuge/regeln.py`) ist für alle Apps derselbe. Arten: `verboten` (Muster in Dateien), `schichten`
+(Einbindungen nur in erlaubter Richtung, TypeScript, Svelte und Python), `pflicht` (Dateien, die es geben muss), `zeilen`
+(höchstens so viele Zeilen je Datei). Befunde halten jeden Commit auf (`vor-dem-commit`) und das Ausrollen (Prüfung über
+das ganze Repo, so geht auch nichts in Betrieb, was an den Haken vorbei committet wurde). Ausnahmen stehen in
+`architektur/ausnahmen.toml` (Regel, Dateien, Grund, Ticket) und gelten nur, wenn der Nutzer sie am Ticket der Pinnwand
+mit einem eigenen Kommentar `Ausnahme freigegeben: <Regel>` freigegeben hat; Kommentare von Apps (auch vom Helfer)
+zählen nicht, ohne Verbindung zur Pinnwand gilt keine Ausnahme. Angaben dazu im Abschnitt `[freigabe]` der Regeldatei
+(Adresse der Pinnwand, Schlüsseldatei).
 
 `appkern.testen` hilft den Tests der Apps: Werte des eigenen Testzugangs aus `backend/.env.test`, `aufraeumen`
 (Dateien vor Ordnern, mit Wiederholung) und `aktionen_zurueckziehen`. Die Ansichtsprüfung liegt bei der Oberfläche
