@@ -3,10 +3,14 @@
   // passende Bedienelement: Schalter, Zahl mit Schritten, Auswahl mit lesbaren Namen (auch aus dem Angebot des Systems,
   // mit eigenem Wert, wo erlaubt), Text, Liste, Liste von Paaren (teile/PaarListe.svelte, ganze Breite), Geheimnis mit
   // Auge, Kopieren und Ändern. Geänderte Werte tragen einen Punkt, bis sie gespeichert sind (Entwurf in
-  // lib/einstellungen.svelte.ts). Mit `thema` sitzt ein Hilfepunkt am Namen.
+  // lib/einstellungen.svelte.ts). Mit `thema` sitzt ein Hilfepunkt am Namen. Felder mit `qr` haben einen Knopf zum
+  // Scannen eines QR-Codes; ein Scan füllt alle Felder, deren Schlüssel im Code stehen (KW-2, etwa Adresse und
+  // App-Schlüssel aus dem QR der Kellerwolke); vom Ausrollen fest gesetzte bleiben, wie sie sind.
   import { einstellungen, einstellungsAngebot, einstellungsGeheimnis, einstellungSetzen, einstellungsWert } from "../lib/einstellungen.svelte";
   import type { Feld, Option } from "../lib/typen";
   import { kopieren } from "../lib/zwischenablage";
+  import { qrWerte } from "../lib/qr";
+  import QrScanner from "./QrScanner.svelte";
   import Auswahl from "./Auswahl.svelte";
   import Hilfepunkt from "./Hilfepunkt.svelte";
   import PaarListe from "./PaarListe.svelte";
@@ -27,6 +31,17 @@
   let zweite = $state<Option[]>([]);
   let eigenerWert = $state(true);
   let stand = $state("");
+  let scannen = $state(false);
+
+  function qrGelesen(text: string): string | null {
+    const werte = qrWerte(text);
+    const ziele = werte ? einstellungen.felder.filter((f) => f.qr && f.qr in werte && f.herkunft !== "fest") : [];
+    if (!werte || !ziele.length) return "Dieser QR-Code passt nicht zu diesen Einstellungen";
+    for (const f of ziele) einstellungSetzen(f.name, werte[f.qr]);
+    scannen = false;
+    melden(`Aus dem QR übernommen: ${ziele.map((f) => f.titel).join(", ")}; noch speichern`);
+    return null;
+  }
   $effect(() => {
     if (!feld.angebot) return;
     void einstellungsAngebot(feld.name).then((a) => {
@@ -152,5 +167,13 @@
         {#if eigen}<button type="button" class="knopf klein ohne" title="Zurück zur Auswahl" onclick={() => (eigen = false)}><i class="fa-solid fa-list"></i>Auswahl</button>{/if}
       </span>
     {/if}
+    {#if feld.qr && feld.herkunft !== "fest"}
+      <button type="button" class="knopf symbol klein ohne" title="QR-Code scannen" aria-label="QR-Code für {feld.titel} scannen"
+              onclick={() => (scannen = true)}><i class="fa-solid fa-qrcode"></i></button>
+    {/if}
   </div>
 </div>
+
+{#if scannen}
+  <QrScanner hinweis="QR-Code in den Rahmen halten" gelesen={qrGelesen} abbrechen={() => (scannen = false)} />
+{/if}

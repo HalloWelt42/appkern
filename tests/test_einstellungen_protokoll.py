@@ -279,3 +279,23 @@ def test_paar_nur_fuer_listen():
     from appkern.einstellungen.dienst import _paar
     with pytest.raises(TypeError):
         _paar(Falsch.model_fields["x"].json_schema_extra, "text", "x")
+
+
+class QrEinstellungen(BaseModel):
+    adresse: str = Field("", title="Kellerwolke", json_schema_extra={"qr": "kellerwolke"})
+    schluessel: SecretStr = Field(SecretStr(""), title="Schlüssel", json_schema_extra={"qr": "schluessel"})
+    ohne: str = Field("", title="Ohne QR")
+
+
+async def test_felder_mit_qr_schluessel(db):
+    """KW-2: Felder nennen ihren Schlüssel im JSON eines QR-Codes; die Oberfläche füllt daraus alle passenden Felder."""
+    e = Einstellungen(db, QrEinstellungen, umgebung={})
+    await e.starten()
+    felder = {f.name: f for f in e.felder()}
+    assert (felder["adresse"].qr, felder["schluessel"].qr, felder["ohne"].qr) == ("kellerwolke", "schluessel", "")
+
+
+def test_grundeinstellungen_kellerwolke_per_qr():
+    from appkern.app.einstellungen import Grundeinstellungen
+    extra = {n: (f.json_schema_extra or {}).get("qr") for n, f in Grundeinstellungen.model_fields.items()}
+    assert extra["kellerwolke_adresse"] == "kellerwolke" and extra["kellerwolke_schluessel"] == "schluessel"

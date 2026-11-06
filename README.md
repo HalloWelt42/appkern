@@ -225,7 +225,10 @@ Geändert wird alles oder nichts (`aendern` prüft die Werte zusammen; `None` se
 unverändert). Geheimnisse (`SecretStr`) gehen nur verdeckt hinaus, bis auf die letzten vier Zeichen;
 `GET /api/v1/einstellungen/geheimnis/{name}` deckt eines auf (das Auge in der Oberfläche). Auswahlfelder zeigen ihre
 `beschriftungen` (nie den Schlüssel), Zahlen gehen in `schritt` und bleiben in den Grenzen aus `ge` und `le`, mit
-`einheit` hinter dem Wert. Was das System selbst kennt, ist kein Textfeld: `einstellungen.anbieten(name, anbieter)`
+`einheit` hinter dem Wert. Felder mit `qr` (in `json_schema_extra`, der Schlüssel des Feldes im JSON eines QR-Codes)
+bekommen einen Knopf zum Scannen; ein Scan füllt alle Felder, deren Schlüssel im Code stehen, fest gesetzte bleiben. So
+übernehmen Adresse und App-Schlüssel der Kellerwolke beide aus dem QR, den die Kellerwolke beim Ausstellen zeigt
+(`{"kellerwolke": ..., "schluessel": ...}`). Was das System selbst kennt, ist kein Textfeld: `einstellungen.anbieten(name, anbieter)`
 liefert live eine Auswahl (`Angebot` mit `Option`en aus Wert, Name und Hinweis) und was gerade gilt (`stand`), etwa
 "verbunden: Apps/Transkription" oder "gefunden: /opt/homebrew/bin/ffmpeg"; "Eigener Wert" bleibt möglich. Das Gerüst
 bietet Adressen und Zertifikatsstelle selbst an und hilft mit `geruest.leitstelle_angebot("hoeren")` (Dienste und

@@ -12,9 +12,11 @@ SICHERUNG = {"gruppe": "Sicherung"}
 
 
 class Grundeinstellungen(BaseModel):
-    kellerwolke_adresse: str = Field("", title="Kellerwolke", json_schema_extra=VERBINDUNGEN,
+    # "qr": die Kellerwolke zeigt nach dem Ausstellen eines App-Schlüssels einen QR-Code mit beiden Werten,
+    # {"kellerwolke": Adresse, "schluessel": App-Schlüssel} (Kellerwolke, frontend/src/lib/zugangqr.ts; KW-2)
+    kellerwolke_adresse: str = Field("", title="Kellerwolke", json_schema_extra={**VERBINDUNGEN, "qr": "kellerwolke"},
                                      description="Adresse der Kellerwolke; die Dateien der App liegen dort in ihrem eigenen Zweig unter Apps.")
-    kellerwolke_schluessel: SecretStr = Field(SecretStr(""), title="App-Schlüssel der Kellerwolke", json_schema_extra=VERBINDUNGEN,
+    kellerwolke_schluessel: SecretStr = Field(SecretStr(""), title="App-Schlüssel der Kellerwolke", json_schema_extra={**VERBINDUNGEN, "qr": "schluessel"},
                                               description="In der Kellerwolke unter Einstellungen, Zugänge ausgestellt. Dem Konto des "
                                                           "Schlüssels gehört die App.")
     leitstelle_adresse: str = Field("", title="Leitstelle", json_schema_extra=VERBINDUNGEN,

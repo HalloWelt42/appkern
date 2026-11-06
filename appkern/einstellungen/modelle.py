@@ -38,6 +38,9 @@ class Feld(BaseModel):
     vorgabe: Any = None
     herkunft: Literal["gespeichert", "umgebung", "vorgabe", "fest"]   # fest: vom Ausrollen gesetzt, nicht änderbar
     gruppe: str | None = None
+    # Teil eines QR-Codes (KW-2): Schlüssel dieses Feldes im JSON des Codes; ein Scan füllt alle Felder, deren Schlüssel
+    # im Code stehen (etwa Adresse und App-Schlüssel aus dem QR der Kellerwolke). Leer: kein Scan.
+    qr: str = ""
 
 
 class Option(BaseModel):

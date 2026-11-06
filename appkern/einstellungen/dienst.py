@@ -235,7 +235,7 @@ class Einstellungen(Generic[M]):
                 angebot=name in self._anbieter, paar=_paar(extra, art, name),
                 wert=verdeckt(wert) if art == "geheimnis" else _json(wert), gesetzt=bool(wert) if art == "geheimnis" else True,
                 vorgabe=None if art == "geheimnis" else _json(_klartext(getattr(vorgabe, name))), herkunft=herkunft,
-                gruppe=str(extra.get("gruppe", "")) or None))
+                gruppe=str(extra.get("gruppe", "")) or None, qr=str(extra.get("qr", ""))))
         return felder
 
     def geheimnis(self, name: str) -> str:

@@ -94,6 +94,7 @@ export interface Feld {
   groesste: number | null;
   einheit: string;
   angebot: boolean;
+  qr: string; // Schlüssel des Feldes im JSON eines QR-Codes; leer: kein Scan (KW-2)
   paar: Paar | null;
   wert: unknown;
   gesetzt: boolean;
