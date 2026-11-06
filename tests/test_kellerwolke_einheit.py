@@ -243,3 +243,33 @@ async def test_papierkorb_lesen_und_zurueckholen():
     assert (await kw.wiederherstellen(bild["id"])).name == "a (2).png"
     with pytest.raises(NichtGefunden):
         await kw.wiederherstellen(uuid4())
+
+
+async def test_alles_lesen_wurzel_volltext_text():
+    """KW-3: oberste Ebene, Volltextsuche und Text einer Datei; ohne Freigabe antwortet die Kellerwolke mit 403."""
+    from appkern.kellerwolke import KeinRecht
+    gesehen = []
+
+    def handler(r: httpx.Request) -> httpx.Response:
+        gesehen.append((r.method, r.url.path, dict(r.url.params), r.content))
+        if r.url.path.endswith("/wurzel/kinder"):
+            return httpx.Response(200, json=[knoten_json("Dokumente", "ordner", recht="lesen", pfad="Dokumente")])
+        if r.url.path.endswith("/volltext"):
+            if json.loads(r.content)["q"] == "verboten":
+                return httpx.Response(403, json={"detail": 'Nur mit der Freigabe "Alles lesen"'})
+            return httpx.Response(200, json=[knoten_json("Mietvertrag.pdf", recht="lesen", pfad="Dokumente/Mietvertrag.pdf", im_namen=True)])
+        if r.url.path.endswith("/text"):
+            return httpx.Response(200, json={"id": str(uuid4()), "name": "Mietvertrag.pdf", "lesbar": True, "text": "Frist",
+                                             "zeichen": 5, "gekuerzt": False})
+        return httpx.Response(404, json={"detail": "?"})
+
+    async with wolke(handler) as k:
+        assert [w.pfad for w in await k.wurzel()] == ["Dokumente"]
+        t = (await k.volltext("Mietvertrag", 5))[0]
+        assert (t.pfad, t.im_namen, t.recht) == ("Dokumente/Mietvertrag.pdf", True, "lesen")
+        text = await k.text(t.id, grenze=1000)
+        assert text.lesbar and text.text == "Frist"
+        with pytest.raises(KeinRecht):
+            await k.volltext("verboten")
+    assert ("POST", "/api/v1/ablage/volltext") == gesehen[1][:2] and json.loads(gesehen[1][3]) == {"q": "Mietvertrag", "anzahl": 5}
+    assert gesehen[2][2] == {"grenze": "1000"}

@@ -75,6 +75,25 @@ class Knoten(_Modell):
         return self.typ == "ordner"
 
 
+
+class Treffer(Knoten):
+    """Ein Treffer der Volltextsuche (Kellerwolke ab 0.95, "Alles lesen"): `im_namen` sagt, ob der Name traf, sonst der
+    Inhalt."""
+
+    im_namen: bool = False
+
+
+class Text(_Modell):
+    """Der Text einer Datei (Kellerwolke ab 0.95): Klartext, Code, PDF, docx; `lesbar` ist False, wenn die Art keinen Text
+    hat (Bild, Ton) oder die Datei zu groß ist; `gekuerzt`, wenn mehr als die erbetene Grenze da ist."""
+
+    id: UUID
+    name: str
+    lesbar: bool
+    text: str
+    zeichen: int
+    gekuerzt: bool
+
 class ImPapierkorb(Knoten):
     """Ein Eintrag im Papierkorb unter einem Ordner der App, mit den Begleitern, die mit ihm gelöscht wurden."""
 

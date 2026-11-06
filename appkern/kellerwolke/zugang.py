@@ -26,7 +26,8 @@ import httpx
 
 from .fehler import KellerwolkeFehler, NichtErreichbar, NichtGefunden, fehler_aus
 from .modelle import (
-    Aenderungen, Aktion, Anfrage, AppZugang, AnfrageNeu, Herkunft, Ich, ImPapierkorb, Knoten, Sperre, Version, WahlSeite,
+    Aenderungen, Aktion, Anfrage, AppZugang, AnfrageNeu, Herkunft, Ich, ImPapierkorb, Knoten, Sperre, Text, Treffer, Version,
+    WahlSeite,
 )
 
 # Was als Inhalt geschrieben werden kann.
@@ -327,6 +328,23 @@ class Kellerwolke:
         """Dateien des Kontos, deren Felder diese Werte enthalten, neueste zuerst."""
         antwort = await self._anfrage("POST", "/suche", json={"felder": felder, "anzahl": anzahl})
         return [Knoten.model_validate(k) for k in antwort.json()]
+
+    # --- Alles lesen (Kellerwolke ab 0.95, KW-3) --------------------------------------------------------------------
+    # Nur mit der Freigabe "Alles lesen" am App-Zugang (Kellerwolke, Einstellungen, Zugänge); sonst `KeinRecht`.
+
+    async def wurzel(self, ab: int = 0, anzahl: int = 200) -> list[Knoten]:
+        """Die oberste Ebene des Kontos."""
+        antwort = await self._anfrage("GET", "/wurzel/kinder", params={"ab": ab, "anzahl": anzahl})
+        return [Knoten.model_validate(k) for k in antwort.json()]
+
+    async def volltext(self, anfrage: str, anzahl: int = 30) -> list[Treffer]:
+        """Dateien und Ordner der ganzen Wolke, deren Name oder Inhalt passt (Suche wie in der Oberfläche)."""
+        antwort = await self._anfrage("POST", "/volltext", json={"q": anfrage, "anzahl": anzahl})
+        return [Treffer.model_validate(t) for t in antwort.json()]
+
+    async def text(self, knoten_id: UUID | str, grenze: int = 60_000) -> Text:
+        """Der Text einer lesbaren Datei, gekürzt auf `grenze` Zeichen."""
+        return Text.model_validate((await self._anfrage("GET", f"/knoten/{knoten_id}/text", params={"grenze": grenze})).json())
 
     # --- Begleitdateien (Kellerwolke ab 0.78) -----------------------------------------------------------------------
     # Ergebnisse liegen neben ihrer Quelle: `Runde.wav` mit Zusatz `.transkript.json` ergibt `Runde.transkript.json`.
