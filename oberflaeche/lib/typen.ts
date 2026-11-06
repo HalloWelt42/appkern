@@ -236,3 +236,12 @@ export interface VollansichtBild {
   breite?: number;
   hoehe?: number;
 }
+
+// --- Knopfleiste mit genau einer Wahl (teile/Stufenwahl.svelte) -----------------------------------------------------
+export interface Stufe<W> {
+  wert: W;
+  titel: string;             // Name der Wahl: Hinweis beim Überfahren, Vorleser, bei Anzeige "text" sichtbar
+  symbol?: string;           // Klasse eines Symbols, etwa "fa-flag"; ohne Symbol steht immer der Name
+  farbe?: string;            // Name einer Farbmarke, etwa "gefahr", "honig", "minze"; ohne gilt der Akzent
+  hinweis?: string;          // Satz zum Hinweis beim Überfahren: was die Wahl bewirkt
+}

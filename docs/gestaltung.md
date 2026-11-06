@@ -739,6 +739,18 @@ Warum: Werte stehen immer an derselben Stelle; Stufen für kleine Wertebereiche 
 <div class="einstellung"><div><div class="name">Schriftgröße</div><div class="erklaerung">Gilt auf diesem Gerät.</div></div><div class="wert"><span class="stufen"><button>Mittel</button><button class="an">Groß</button></span></div></div></div>
 ```
 
+#### Stufenwahl
+
+Klassen: `stufen stufenwahl`, `an`, `gross`
+
+Wann: Eine Wahl aus wenigen Werten, die sofort gilt (Status, Priorität), statt einer Auswahlliste; Svelte-Teil <Stufenwahl wert optionen beschriftung onwahl />. Jede Wahl mit Symbol und Farbe aus einer Marke, der Name beim Überfahren; anzeige="gewaehlt" zeigt den Namen der gewählten, "text" alle; gross für das Telefon.
+
+Warum: Alle Werte stehen auf einen Blick da und sind mit einem Klick gesetzt; Symbol und Farbe tragen die Bedeutung, das Wort bleibt im Hinweis und für Vorleser. Die Pfeiltasten wandern nur, gewählt wird mit Leertaste oder Enter.
+
+```html
+<div style="display:flex; flex-direction:column; gap:12px; align-items:flex-start"><span class="stufen stufenwahl" role="radiogroup" aria-label="Priorität"><button type="button" role="radio" aria-checked="false" title="Niedrig" aria-label="Niedrig" style="--stufe: var(--stahl)"><i class="fa-solid fa-angle-down"></i></button><button type="button" role="radio" aria-checked="false" title="Mittel" aria-label="Mittel" style="--stufe: var(--honig)"><i class="fa-solid fa-equals"></i></button><button type="button" role="radio" aria-checked="true" class="an" title="Hoch" aria-label="Hoch" style="--stufe: var(--warn)"><i class="fa-solid fa-angle-up"></i><span>Hoch</span></button><button type="button" role="radio" aria-checked="false" title="Dringend" aria-label="Dringend" style="--stufe: var(--gefahr)"><i class="fa-solid fa-angles-up"></i></button></span><span class="stufen stufenwahl" role="radiogroup" aria-label="Status"><button type="button" role="radio" aria-checked="false" title="Offen" aria-label="Offen" style="--stufe: var(--stahl)"><i class="fa-solid fa-inbox"></i></button><button type="button" role="radio" aria-checked="true" class="an" title="Dran" aria-label="Dran" style="--stufe: var(--honig)"><i class="fa-solid fa-person-digging"></i></button><button type="button" role="radio" aria-checked="false" title="Prüfung" aria-label="Prüfung" style="--stufe: var(--flieder)"><i class="fa-solid fa-magnifying-glass"></i></button><button type="button" role="radio" aria-checked="false" title="Erledigt" aria-label="Erledigt" style="--stufe: var(--minze)"><i class="fa-solid fa-circle-check"></i></button></span></div>
+```
+
 #### Tabelle
 
 Klassen: `tabelle`, `zahl`, `tabellen-raum`, `karten`

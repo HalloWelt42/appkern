@@ -466,6 +466,22 @@ select.eingabe { padding-right: var(--a5); }
 .stufen button { flex: none; height: 36px; min-width: 44px; padding: 0 var(--a3); border: 0; background: none; color: var(--text-2); font-weight: 600; font-size: var(--klein); cursor: pointer; }
 .stufen button + button { box-shadow: inset 1px 0 0 var(--rand); }
 .stufen button.an { background: var(--karte-3); color: var(--akzent); }
+/* Stufenwahl (teile/Stufenwahl.svelte): Stufen mit Symbol und Farbe je Wahl, der Name im Hinweis. Die Farbe kommt je Knopf
+   als --stufe aus einer Marke, ohne gilt der Akzent; nicht gewählte zeigen ihr Symbol gedämpft in ihrer Farbe, die gewählte
+   ist getönt und umrandet. Gross: Berührflächen ab 44 Pixeln, die Leiste in voller Breite (Telefon). */
+.stufen.stufenwahl button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 42px; color: var(--text-2); }
+.stufen.stufenwahl button i { font-size: 15px; color: color-mix(in srgb, var(--stufe, var(--text-2)) 70%, var(--text-3)); }
+.stufen.stufenwahl button:hover:not(:disabled) { background: var(--karte-2); }
+.stufen.stufenwahl button:hover:not(:disabled) i { color: var(--stufe, var(--text)); }
+.stufen.stufenwahl button.an { background: color-mix(in srgb, var(--stufe, var(--akzent)) var(--toenung), var(--karte)); color: var(--stufe, var(--akzent));
+                               box-shadow: inset 0 0 0 2px var(--stufe, var(--akzent)); }
+.stufen.stufenwahl button.an i { color: var(--stufe, var(--akzent)); }
+.stufen.stufenwahl button:focus-visible { outline: 2px solid var(--akzent-flaeche); outline-offset: -5px; }
+.stufen.stufenwahl button:disabled { cursor: default; }
+.stufen.stufenwahl button:disabled:not(.an) i { opacity: 0.45; }
+.stufen.stufenwahl.gross { display: flex; width: 100%; }
+.stufen.stufenwahl.gross button { flex: 1 1 0; height: 44px; min-width: 48px; }
+.stufen.stufenwahl.gross button i { font-size: 17px; }
 
 /* Mini-i-Knopf: Tiefenlink in die Hilfe.
    Ausnahme: das i im Kreis von 22 Pixeln ist ein Zeichen wie ein Symbol, kein Lesetext */

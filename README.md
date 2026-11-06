@@ -490,6 +490,11 @@ In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`
   Stile: `appkern-oberflaeche/hilfe.css` (in `stil.css` schon enthalten).
 - **Suchfeld**: `<Suchfeld bind:wert ... />` ist der Baustein `.suche` mit dem X am Ende, das leert wie getippt
   (Ereignis `input`); weitere Eigenschaften und `{@attach ...}` gehen an das Eingabefeld.
+- **Stufenwahl**: `<Stufenwahl wert optionen beschriftung onwahl />` ist die Knopfleiste `.stufen.stufenwahl` mit genau
+  einer Wahl statt einer kurzen Auswahlliste. Jede Wahl (`Stufe`: `wert`, `titel`, `symbol`, `farbe` als Name einer
+  Farbmarke, `hinweis`) zeigt Symbol und Farbe, der Name steht im Hinweis beim Überfahren; `anzeige="gewaehlt"` zeigt
+  den Namen der gewählten, `"text"` alle, `gross` gibt Berührflächen ab 44 Pixeln in voller Breite, `gesperrt` sperrt.
+  Pfeile, Pos1 und Ende wandern, Leertaste oder Enter wählt.
 - **Seitenleiste** des Leitstands: `seitenleisteStarten()` beim Start, `seitenleisteUmschalten()` am Knopf, Zustand in
   `seitenleiste.schmal`. Ohne Wahl schmal bis 1240 Pixel Breite, sonst nach der Wahl dieses Geräts (Merkmal
   `data-seitenleiste` an der Wurzel, auf das `leitstand.css` hört; Apps ohne den Baustein klappen nach der Breite).

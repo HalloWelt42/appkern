@@ -6,6 +6,7 @@ export { default as AppWeg } from "./teile/AppWeg.svelte";
 export { default as AuftragZeile } from "./teile/AuftragZeile.svelte";
 export { default as Schritte } from "./teile/Schritte.svelte";
 export { default as Auswahl } from "./teile/Auswahl.svelte";
+export { default as Stufenwahl } from "./teile/Stufenwahl.svelte";
 export { default as Leiste } from "./teile/Leiste.svelte";
 export { default as Spieler } from "./teile/Spieler.svelte";
 export { default as Rueckfrage } from "./teile/Rueckfrage.svelte";
