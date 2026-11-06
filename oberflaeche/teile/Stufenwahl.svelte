@@ -19,25 +19,25 @@
     onwahl: (w: T) => void;
   } = $props();
 
-  const knoepfe: HTMLButtonElement[] = [];
   const gewaehlt = $derived(optionen.findIndex((o) => o.wert === wert));
   const TASTEN: Record<string, (i: number, n: number) => number> = {
     ArrowRight: (i) => i + 1, ArrowDown: (i) => i + 1, ArrowLeft: (i, n) => i - 1 + n, ArrowUp: (i, n) => i - 1 + n,
     Home: () => 0, End: (_, n) => n - 1,
   };
 
-  function taste(e: KeyboardEvent, i: number): void {
+  /** Pfeile, Pos1 und Ende setzen den Fokus auf einen anderen Knopf der Leiste (seine Geschwister), ohne zu wählen */
+  function taste(e: KeyboardEvent & { currentTarget: HTMLButtonElement }, i: number): void {
     const ziel = TASTEN[e.key];
     if (!ziel) return;
     e.preventDefault();
-    knoepfe[ziel(i, optionen.length) % optionen.length]?.focus();
+    (e.currentTarget.parentElement?.children[ziel(i, optionen.length) % optionen.length] as HTMLElement | undefined)?.focus();
   }
 </script>
 
 <span class="stufen stufenwahl" class:gross role="radiogroup" aria-label={beschriftung} aria-disabled={gesperrt || undefined}>
   {#each optionen as o, i (o.wert)}
     {@const an = o.wert === wert}
-    <button type="button" role="radio" aria-checked={an} class:an disabled={gesperrt} bind:this={knoepfe[i]}
+    <button type="button" role="radio" aria-checked={an} class:an disabled={gesperrt}
             tabindex={i === Math.max(gewaehlt, 0) ? 0 : -1}
             title={o.hinweis ? `${o.titel}: ${o.hinweis}` : o.titel} aria-label={o.titel}
             style={o.farbe ? `--stufe: var(--${o.farbe})` : undefined}
