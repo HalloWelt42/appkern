@@ -5,11 +5,11 @@
   // Tastatur wie in einer Werkzeugleiste: Tab springt auf die gewählte, die Pfeile (sowie Pos1 und Ende) wandern, Leertaste
   // oder Enter wählt. Wandern wählt nicht, weil eine Wahl oft etwas tut (eine Karte verschieben). Der Wert kommt von
   // außen; onwahl meldet nur eine andere Wahl als die jetzige.
-  import type { Stufe } from "../lib/typen";
+  import type { Wahlstufe } from "../lib/typen";
 
   let { wert, optionen, beschriftung, anzeige = "symbol", gesperrt = false, gross = false, onwahl }: {
     wert: T;
-    optionen: Stufe<T>[];
+    optionen: Wahlstufe<T>[];
     /** wofür die Leiste steht, für Vorleser */
     beschriftung: string;
     anzeige?: "symbol" | "gewaehlt" | "text";

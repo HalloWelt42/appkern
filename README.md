@@ -491,7 +491,7 @@ In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`
 - **Suchfeld**: `<Suchfeld bind:wert ... />` ist der Baustein `.suche` mit dem X am Ende, das leert wie getippt
   (Ereignis `input`); weitere Eigenschaften und `{@attach ...}` gehen an das Eingabefeld.
 - **Stufenwahl**: `<Stufenwahl wert optionen beschriftung onwahl />` ist die Knopfleiste `.stufen.stufenwahl` mit genau
-  einer Wahl statt einer kurzen Auswahlliste. Jede Wahl (`Stufe`: `wert`, `titel`, `symbol`, `farbe` als Name einer
+  einer Wahl statt einer kurzen Auswahlliste. Jede Wahl (`Wahlstufe`: `wert`, `titel`, `symbol`, `farbe` als Name einer
   Farbmarke, `hinweis`) zeigt Symbol und Farbe, der Name steht im Hinweis beim Überfahren; `anzeige="gewaehlt"` zeigt
   den Namen der gewählten, `"text"` alle, `gross` gibt Berührflächen ab 44 Pixeln in voller Breite, `gesperrt` sperrt.
   Pfeile, Pos1 und Ende wandern, Leertaste oder Enter wählt.
