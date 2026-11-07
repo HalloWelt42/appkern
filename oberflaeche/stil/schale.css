@@ -45,6 +45,12 @@ button { font: inherit; color: inherit; }
 .nav-eintrag.aktiv i { color: var(--akzent); }
 .nav-eintrag .zahl { margin-left: auto; font-family: var(--schrift-zahl); font-size: var(--marke); padding: 1px 8px; border-radius: var(--r2); background: var(--flaeche-2); color: var(--text-2); }
 .nav-eintrag.aktiv .zahl { background: var(--flaeche); }
+/* dünner Balken am Fuß eines Eintrags, solange der Bereich etwas lädt oder rechnet (Bereich.fortschritt) */
+.nav-eintrag { position: relative; }
+.nav-balken { position: absolute; left: 10px; right: 10px; bottom: 3px; height: 3px; border-radius: 2px; background: var(--mulde); overflow: hidden; }
+.nav-balken > span { display: block; height: 100%; background: var(--info); transition: width .4s; }
+.mobil .t-balken { position: static; display: block; margin-top: 6px; }
+.mobil .t-zahl { font-family: var(--schrift-zahl); font-size: var(--marke); padding: 1px 8px; border-radius: var(--r2); background: var(--flaeche-2); color: var(--text-2); }
 .nav-fuss { margin-top: auto; border-top: 1px solid var(--rand); padding: 12px 6px 2px; display: flex; flex-direction: column; gap: 6px; }
 .konto { display: flex; align-items: center; gap: 10px; }
 .konto .bild { width: 32px; height: 32px; border-radius: var(--r2); flex: none; background: var(--akzent-weich); color: var(--akzent); display: grid; place-items: center; font-weight: 600; }

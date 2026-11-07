@@ -13,7 +13,11 @@
 
 <div class="t-liste">
   {#each weitere as b (b.schluessel)}
-    <button class="t-zeile" onclick={() => gehe(b.schluessel)}><i class="fa-solid {b.symbol}"></i><span class="t-text"><span class="t-name">{b.titel}</span></span><i class="fa-solid fa-chevron-right" style="font-size:15px; width:auto"></i></button>
+    {@const zahl = b.zahl?.() ?? 0}
+    {@const anteil = b.fortschritt?.() ?? null}
+    <button class="t-zeile" onclick={() => gehe(b.schluessel)}><i class="fa-solid {b.symbol}"></i><span class="t-text"><span class="t-name">{b.titel}</span>
+      {#if anteil !== null}<span class="nav-balken t-balken" aria-hidden="true"><span style:width="{Math.round(Math.min(1, Math.max(0, anteil)) * 100)}%"></span></span>{/if}</span>
+      {#if zahl}<span class="t-zahl">{zahl}</span>{/if}<i class="fa-solid fa-chevron-right" style="font-size:15px; width:auto"></i></button>
   {/each}
   <button class="t-zeile" onclick={() => gehe("protokoll")}><i class="fa-solid fa-clock-rotate-left"></i><span class="t-text"><span class="t-name">Protokoll</span></span><i class="fa-solid fa-chevron-right" style="font-size:15px; width:auto"></i></button>
   <button class="t-zeile" onclick={() => gehe("einstellungen")}><i class="fa-solid fa-sliders"></i><span class="t-text"><span class="t-name">Einstellungen</span></span><i class="fa-solid fa-chevron-right" style="font-size:15px; width:auto"></i></button>

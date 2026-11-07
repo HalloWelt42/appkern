@@ -24,8 +24,10 @@
   </div>
   {#each bereiche as b (b.schluessel)}
     {@const zahl = b.zahl?.() ?? 0}
+    {@const anteil = b.fortschritt?.() ?? null}
     <button class="nav-eintrag" class:aktiv={seite === b.schluessel} title={b.hinweis ? `${b.titel}: ${b.hinweis}` : b.titel} onclick={() => gehe(b.schluessel)}>
       <i class="fa-solid {b.symbol}"></i><span class="nav-text">{b.titel}</span>{#if zahl}<span class="zahl">{zahl}</span>{/if}
+      {#if anteil !== null}<span class="nav-balken" aria-hidden="true"><span style:width="{Math.round(Math.min(1, Math.max(0, anteil)) * 100)}%"></span></span>{/if}
     </button>
   {/each}
   {#if bereiche.length}<div class="nav-gruppe">App</div>{/if}

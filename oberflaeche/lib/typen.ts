@@ -148,6 +148,7 @@ export interface Bereich {
   reiter?: boolean;
   geraete?: "beide" | "rechner" | "telefon";   // wo der Bereich erscheint (Vorgabe: beide)
   zahl?: () => number;                          // kleine Zahl in der Navigation (etwa offene Vorgänge); 0 zeigt nichts
+  fortschritt?: () => number | null;            // dünner Balken am Fuß des Eintrags (0 bis 1), solange etwas läuft; null zeigt nichts
   hinweis?: string;                             // wofür der Bereich da ist, ein kurzer Satz beim Überfahren in der Seitenleiste
 }
 
