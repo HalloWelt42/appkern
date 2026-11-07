@@ -401,3 +401,53 @@ async def test_bildablage_abholen_und_quittieren():
     assert await l.abgelegtes_bild("k1") == b"\x89PNG"
     await l.abgeholt("k1")
     assert gesehen == [("GET", "/v1/bildablage?anzahl=5"), ("GET", "/v1/bildablage/k1"), ("DELETE", "/v1/bildablage/k1")]
+
+
+async def test_einordnung_masse_und_wichtig_aus_dem_kontext():
+    """LS-23, LS-24 (Leitstelle docs/ARBEITSLOGIK.md): innerhalb von als_masse und als_wichtig trägt jede Anfrage den
+    Kopf, auch Einbettungen und Dienste; wichtig schließt Masse aus; außerhalb nichts."""
+    from appkern.leitstelle import als_masse, als_wichtig
+    gesehen: list[dict[str, str]] = []
+
+    def handler(r: httpx.Request) -> httpx.Response:
+        gesehen.append({k: v for k, v in r.headers.items() if k.startswith("x-leitstelle-") and k in ("x-leitstelle-art", "x-leitstelle-wichtig")})
+        if r.url.path.endswith("/embeddings"):
+            return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.1]}], "model": "bge"})
+        return httpx.Response(200, json={"ok": True})
+
+    async with leitstelle(handler) as ls:
+        await ls.einbetten(["a"], modell="bge")
+        with als_masse():
+            await ls.einbetten(["a"], modell="bge")
+            await ls.dienst("klangwerk-sprechen").json("POST", "/v1/audio/speech", json={"input": "x"})
+            with als_wichtig():
+                await ls.einbetten(["a"], modell="bge")
+        await ls.einbetten(["a"], modell="bge")
+    assert gesehen == [{}, {"x-leitstelle-art": "masse"}, {"x-leitstelle-art": "masse"}, {"x-leitstelle-wichtig": "ja"}, {}]
+
+
+async def test_einschaetzung_vor_dem_senden():
+    gesendet: list[dict] = []
+
+    def handler(r: httpx.Request) -> httpx.Response:
+        assert r.url.path == "/v1/einschaetzung" and r.headers["authorization"] == "Bearer ls_geheim"
+        gesendet.append(json.loads(r.content))
+        return httpx.Response(200, json={"sofort": False, "wartezeit_s": 42.0, "rechner": "MacBook 32 GB", "vor_dir": 2,
+                                         "grund": "MacBook 32 GB ist für einen wichtigen Auftrag von Atelier freigehalten",
+                                         "wichtige": [{"anwendung": "Atelier", "faehigkeit": "bild_erzeugen", "rechner": "MacBook 32 GB",
+                                                       "zustand": "eingereiht", "seit_s": 5.0}], "abgelehnt": None})
+
+    from appkern.leitstelle import als_wichtig
+    async with leitstelle(handler) as ls:
+        with als_wichtig():
+            e = await ls.einschaetzung("musik", alternativen=["musik-klein"])
+    assert gesendet == [{"model": "musik", "alternativen": ["musik-klein"], "art": "einzel", "wichtig": True}]
+    assert not e.sofort and e.wichtige[0].anwendung == "Atelier"
+    assert e.satz == "Wartet etwa 42 s auf MacBook 32 GB: MacBook 32 GB ist für einen wichtigen Auftrag von Atelier freigehalten; 2 vorher dran"
+
+
+async def test_ohne_modell_ist_kein_modell():
+    """Leitstelle seit 0.37.0 (LS-19): ohne Modell 400 modell_fehlt; für die App dieselbe Art wie ein unbekanntes Modell."""
+    async with leitstelle(lambda r: fehler(400, "modell_fehlt", "Die Anwendung muss ihr Modell nennen")) as ls:
+        with pytest.raises(KeinModell):
+            await ls.chat(["Hallo"])

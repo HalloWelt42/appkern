@@ -53,6 +53,10 @@ class Wolke:
             return httpx.Response(200, json={"data": [
                 {"id": "gross", "x-leitstelle": {"name": "Groß", "faehigkeiten": ["text"], "geladen": True, "knoten": "studio"}},
                 {"id": "klangwerk-hoeren", "x-leitstelle": {"name": "Whisper Large V3", "aufgabe": "Spracherkennung", "faehigkeiten": ["hoeren"]}}]})
+        if request.url.host == "ls.test" and pfad == "/v1/einschaetzung":
+            wunsch = json.loads(request.content)
+            return httpx.Response(200, json={"sofort": False, "wartezeit_s": 30.0, "rechner": "studio", "vor_dir": 1,
+                                             "grund": f"belegt ({wunsch['model']}, wichtig={wunsch['wichtig']})", "wichtige": []})
         return httpx.Response(404, json={"detail": "nicht da"})
 
     @staticmethod
@@ -235,9 +239,8 @@ async def test_angebote_fuer_verbindungen_und_leitstelle(umgebung):
     # eine gespeicherte Auswahl ("klangwerk-hoeren") gilt also unverändert
     assert [(o.wert, o.titel, o.aufgabe) for o in angebot.optionen] == [("klangwerk-hoeren", "Whisper Large V3", "Spracherkennung")]
     assert angebot.stand == ""
-    text = await geruest.leitstelle_angebot("text", leer="Kette der App")()
-    assert [(o.wert, o.titel, o.hinweis) for o in text.optionen] == [("", "Kette der App", "die Leitstelle wählt"),
-                                                                     ("gross", "Groß", "geladen auf studio")]
+    text = await geruest.leitstelle_angebot("text")()
+    assert [(o.wert, o.titel, o.hinweis) for o in text.optionen] == [("gross", "Groß", "geladen auf studio")], "kein leerer Wert"
     assert (await geruest.leitstelle_angebot("musik")()).stand == "Die Leitstelle bietet dieser App dafür nichts an"
 
 
@@ -406,3 +409,22 @@ async def test_weitere_verbindungen_und_farbe(umgebung):
     assert [v["name"] for v in liste] == ["Kellerwolke", "Leitstelle", "Fundus", "Befehlsdienst"]
     assert liste[2]["ok"] and liste[2]["meldung"] == "21 Werkzeuge"
     assert not liste[3]["ok"] and "RuntimeError" in liste[3]["meldung"]
+
+
+
+async def test_einschaetzung_fuer_den_knopf_wichtig(umgebung):
+    """LS-23: die Oberfläche fragt über das Backend (der Schlüssel bleibt dort), was die Leitstelle mit einem wichtigen
+    Auftrag täte; die Antwort trägt die Einstellung "Wichtig bestätigen" der App."""
+    geruest, app, c = umgebung
+    await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
+    h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
+    assert (await c.post("/api/v1/leitstelle/einschaetzung", headers=h, json={"modell": "gross"})).status_code == 409
+    await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"leitstelle_adresse": "http://ls.test", "leitstelle_schluessel": "ls_x"}})
+    r = await c.post("/api/v1/leitstelle/einschaetzung", headers=h, json={"modell": "gross"})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["bestaetigen"] is True and d["einschaetzung"]["grund"] == "belegt (gross, wichtig=True)"
+    assert d["satz"] == "Wartet etwa 30 s auf studio: belegt (gross, wichtig=True); 1 vorher dran"
+    await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"leitstelle_wichtig_bestaetigen": False}})
+    assert (await c.post("/api/v1/leitstelle/einschaetzung", headers=h, json={"modell": "gross"})).json()["bestaetigen"] is False
+    assert (await c.post("/api/v1/leitstelle/einschaetzung", json={"modell": "gross"})).status_code == 401

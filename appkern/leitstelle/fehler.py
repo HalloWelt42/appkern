@@ -44,7 +44,8 @@ class NichtErlaubt(LeitstellenFehler):
 
 
 class KeinModell(LeitstellenFehler):
-    """Modell oder Dienst unbekannt, oder kein Modell genannt und keine Kette eingerichtet (404)."""
+    """Modell oder Dienst unbekannt (404 `kein_modell`) oder kein Modell genannt (400 `modell_fehlt`): die App nennt ihr
+    Modell immer, die Leitstelle wählt keins. Für den Nutzer heißt beides: in den Einstellungen ein Modell wählen."""
 
     status = 404
 
@@ -99,7 +100,7 @@ class Ungueltig(LeitstellenFehler):
 _NACH_GRUND: dict[str, type[LeitstellenFehler]] = {
     "unbekannter_schluessel": SchluesselUngueltig,
     "faehigkeit_nicht_erlaubt": NichtErlaubt, "zone_nicht_erlaubt": NichtErlaubt, "herkunft_nicht_erlaubt": NichtErlaubt,
-    "kein_modell": KeinModell, "unbekannt": KeinModell,
+    "kein_modell": KeinModell, "unbekannt": KeinModell, "modell_fehlt": KeinModell,
     "gesperrt": Gesperrt, "kontingent": Gesperrt,
     "halt": Halt, "wartung": Halt,
     "kein_dienst": DienstWeg, "dienst_nicht_erreichbar": DienstWeg, "modell_passt_nicht": DienstWeg,

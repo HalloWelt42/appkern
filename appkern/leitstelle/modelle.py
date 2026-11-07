@@ -332,3 +332,38 @@ class Einbettungen(_Modell):
     modell: str | None = None
     lage: str | None = None          # Kopf X-Leitstelle-Lage; Stapelarbeit hält sich danach (ANBINDUNG Abschnitt 4)
     verbrauch: Verbrauch | None = None
+
+
+class WichtigerAuftrag(_Modell):
+    """Ein offener, vom Nutzer als wichtig markierter Auftrag irgendeiner App (Auskunft der Leitstelle, ohne Inhalt)."""
+
+    anwendung: str
+    faehigkeit: str
+    rechner: str | None = None
+    zustand: str = ""
+    seit_s: float = 0.0
+
+
+class Einschaetzung(_Modell):
+    """Was die Leitstelle mit einem Auftrag jetzt täte (`POST /v1/einschaetzung`, nichts wird eingereiht): sofort rechnen
+    oder warten, wie lange etwa und warum. Die App entscheidet damit selbst, ob sie aufschiebt (ARBEITSLOGIK Abschnitt 5)."""
+
+    sofort: bool
+    wartezeit_s: float | None = None
+    rechner: str | None = None
+    grund: str = ""
+    vor_dir: int = 0
+    wichtige: list[WichtigerAuftrag] = Field(default_factory=list)
+    abgelehnt: str | None = None
+
+    @property
+    def satz(self) -> str:
+        """Ein Satz für die Leiste der App, etwa vor dem Bestätigen eines wichtigen Auftrags."""
+        if self.abgelehnt:
+            return f"Die Leitstelle würde ablehnen: {self.grund}"
+        wo = f" auf {self.rechner}" if self.rechner else ""
+        if self.sofort:
+            return f"Startet sofort{wo}" + (f", etwa {self.wartezeit_s:.0f} s Ladezeit" if self.wartezeit_s else "")
+        etwa = f" etwa {self.wartezeit_s:.0f} s" if self.wartezeit_s else ""
+        vor = f"; {self.vor_dir} vorher dran" if self.vor_dir else ""
+        return f"Wartet{etwa}{wo}: {self.grund}{vor}"

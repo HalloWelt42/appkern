@@ -6,15 +6,16 @@ from .fehler import (
 )
 from .modelle import (
     AbgelegtesBild, Aufgabenbeispiel, Aufgabenvorlage, Bild, Bildablage, BildGroessen, Bilder, Bildereignis, BildSchritte, Bildsteckbrief, ChatAntwort, DienstEintrag, Einbettungen, Ende, Ereignis,
-    Messwerte, Modell, Nachricht, Prioritaet, Rechnet, Steckbrief, Stueck, Verbrauch, Wartet, Werkzeugaufruf,
+    Einschaetzung, Messwerte, Modell, Nachricht, Prioritaet, Rechnet, Steckbrief, Stueck, Verbrauch, Wartet, Werkzeugaufruf, WichtigerAuftrag,
 )
 from .hoeren import Gehoert, GehoertesSegment, GehoertesWort, hoeren
+from .einordnung import als_masse, als_wichtig
 from .geduld import WARTEN_BEI, geduld, geduld_setzen, geduldig
 from .text import antwortform, gerade, json_lesen, saeubern
 from .zugang import Dienst, Leitstelle
 
 __all__ = [
-    "AbgelegtesBild", "Abgebrochen", "Aufgabenbeispiel", "Aufgabenvorlage", "antwortform", "Bild", "Bildablage", "BildGroessen", "Bilder", "Bildereignis", "BildSchritte", "Bildsteckbrief", "ChatAntwort",
+    "AbgelegtesBild", "Abgebrochen", "als_masse", "als_wichtig", "Einschaetzung", "WichtigerAuftrag", "Aufgabenbeispiel", "Aufgabenvorlage", "antwortform", "Bild", "Bildablage", "BildGroessen", "Bilder", "Bildereignis", "BildSchritte", "Bildsteckbrief", "ChatAntwort",
     "DienstEintrag", "Rechnet", "Dienst", "DienstFehler", "DienstWeg", "Einbettungen", "Ende", "Ereignis", "Gehoert",
     "GehoertesSegment", "GehoertesWort", "Gesperrt", "WARTEN_BEI", "geduld", "geduld_setzen", "geduldig", "gerade", "hoeren", "json_lesen", "saeubern",
     "Halt", "KeinModell", "Leitstelle", "LeitstellenFehler", "Messwerte", "Modell", "Nachricht", "NichtErlaubt", "NichtErreichbar",

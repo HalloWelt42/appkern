@@ -10,6 +10,7 @@ export { default as Stufenwahl } from "./teile/Stufenwahl.svelte";
 export { default as Leiste } from "./teile/Leiste.svelte";
 export { default as Spieler } from "./teile/Spieler.svelte";
 export { default as Rueckfrage } from "./teile/Rueckfrage.svelte";
+export { default as WichtigKnopf } from "./teile/WichtigKnopf.svelte";
 export { default as AnfrageBand } from "./teile/AnfrageBand.svelte";
 export { default as Dateiwahl } from "./teile/Dateiwahl.svelte";
 export { default as Rekorder } from "./teile/Rekorder.svelte";

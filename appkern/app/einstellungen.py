@@ -32,6 +32,10 @@ class Grundeinstellungen(BaseModel):
                                        description="So lange wartet ein Auftrag, wenn Leitstelle oder Dienst gerade nicht können "
                                                    "(Neustart, Dienst startet, nicht erreichbar); danach gilt der Fehler. Schläft "
                                                    "der Rechner mit dem Dienst, wartet er ohne Grenze, bis er wach ist.")
+    leitstelle_wichtig_bestaetigen: bool = Field(True, title="Wichtig bestätigen", json_schema_extra=VERBINDUNGEN,
+                                                 description="Markiert man einen Auftrag als wichtig, geht er bei der Leitstelle "
+                                                             "allem vor. An: vorher zeigt die App, wie lange er etwa wartet und "
+                                                             "wen er verdrängt, und fragt nach. Aus: der Knopf gilt sofort.")
     ca_datei: str = Field("", title="Zertifikatsstelle", json_schema_extra=VERBINDUNGEN,
                           description="Pfad zur Datei einer eigenen Zertifikatsstelle (rootCA.pem) für Kellerwolke und "
                                       "Leitstelle über HTTPS. Leer: die üblichen Stellen und die Hausstelle dieses "

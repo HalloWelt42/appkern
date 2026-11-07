@@ -48,7 +48,7 @@ from appkern.datenbank import LESER, Datenbank
 from appkern.einstellungen import Angebot, Einstellungen, Option
 from appkern.einstellungen.api import einstellungs_router
 from appkern.kellerwolke import Kellerwolke, KellerwolkeFehler, NichtErreichbar, NichtGefunden, SchluesselUngueltig
-from appkern.leitstelle import Leitstelle, LeitstellenFehler, geduld_setzen
+from appkern.leitstelle import Einschaetzung, Leitstelle, LeitstellenFehler, geduld_setzen
 from appkern.leitstelle.zugang import ARBEIT
 from appkern.protokoll import Protokoll
 from appkern.protokoll.api import protokoll_router
@@ -120,6 +120,21 @@ class Einrichtung(BaseModel):
     kellerwolke_adresse: str = Field(min_length=1)
     kellerwolke_schluessel: str = Field(min_length=1)
     einrichtungscode: str = Field("", max_length=64)   # nötig, wenn die Anfrage nicht vom Rechner der App kommt
+
+
+class EinschaetzungsWunsch(BaseModel):
+    """Die Oberfläche fragt vor einem wichtigen Auftrag (Knopf "Wichtig"), was die Leitstelle täte (Leitstelle
+    docs/ARBEITSLOGIK.md Abschnitt 4 und 5); der Schlüssel bleibt im Backend."""
+    modell: str = Field(min_length=1, max_length=200)
+    alternativen: list[str] = Field(default_factory=list, max_length=8)
+    faehigkeit: str | None = Field(default=None, max_length=40)
+    wichtig: bool = True
+
+
+class EinschaetzungSicht(BaseModel):
+    einschaetzung: Einschaetzung
+    satz: str
+    bestaetigen: bool                 # Einstellung "Wichtig bestätigen" dieser App
 
 
 class AdresseEingabe(BaseModel):
@@ -253,13 +268,13 @@ class Geruest(Generic[E]):
         self.einstellungen.anbieten("leitstelle_adresse", leitstelle)
         self.einstellungen.anbieten("ca_datei", zertifikate)
 
-    def leitstelle_angebot(self, faehigkeit: str, *, leer: str | None = None):
+    def leitstelle_angebot(self, faehigkeit: str):
         """Anbieter für ein Feld, das einen Dienst oder ein Modell der Leitstelle nennt: die Auswahl sind die Modelle und
-        Dienste mit dieser Fähigkeit, die die App nutzen darf. `leer` bietet zusätzlich den leeren Wert mit diesem
-        Namen an (etwa "Kette der App")."""
+        Dienste mit dieser Fähigkeit, die die App nutzen darf. Einen leeren Wert gibt es nicht: die App nennt ihr Modell
+        immer, die Leitstelle wählt keins (Leitstelle docs/ARBEITSLOGIK.md)."""
 
         async def anbieter() -> Angebot:
-            optionen = [Option(wert="", titel=leer, hinweis="die Leitstelle wählt")] if leer else []
+            optionen: list[Option] = []
             if self.leitstelle is None:
                 return Angebot(optionen=optionen, stand="Leitstelle noch nicht eingerichtet (Reiter Verbindungen)")
             try:
@@ -579,6 +594,14 @@ class Geruest(Generic[E]):
         @router.get("/verbindungen", response_model=list[Verbindung], dependencies=[self.pflicht])
         async def verbindungen() -> list[Verbindung]:
             return await self.verbindungen()
+
+        @router.post("/leitstelle/einschaetzung", response_model=EinschaetzungSicht, dependencies=[self.mensch])
+        async def einschaetzung(w: EinschaetzungsWunsch) -> EinschaetzungSicht:
+            """Einschätzung der Leitstelle für einen Auftrag, ohne ihn einzureihen (für den Knopf "Wichtig")."""
+            if self.leitstelle is None:
+                raise HTTPException(status_code=409, detail="Leitstelle noch nicht eingerichtet")
+            e = await self.leitstelle.einschaetzung(w.modell, alternativen=w.alternativen, faehigkeit=w.faehigkeit, wichtig=w.wichtig)
+            return EinschaetzungSicht(einschaetzung=e, satz=e.satz, bestaetigen=self.einstellungen.stand.leitstelle_wichtig_bestaetigen)
 
         @router.get("/ich", response_model=Konto)
         async def ich(konto: Konto = self.pflicht) -> Konto:

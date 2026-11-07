@@ -2,7 +2,8 @@
 
 Sprachmodelle im OpenAI-Format (`/v1/chat/completions` mit und ohne Strom, `/v1/embeddings`, `/v1/models`) und
 Dienste mit eigener Schnittstelle (Sprechen, Hören, Bild) unter `/v1/dienste/<name>/...`. Jeder Auftrag trägt einen
-Titel ("Transkription: Folge 12") und auf Wunsch eine Priorität; die Leitstelle wählt Dienst, Modell und Rechner.
+Titel ("Transkription: Folge 12") und auf Wunsch eine Priorität. Das Modell nennt immer die App; die Leitstelle wählt nur
+Rechner und Zeitpunkt (Leitstelle docs/ARBEITSLOGIK.md). Masse und wichtig kommen aus dem Kontext (einordnung.py).
 
 Regeln aus der Anbindung, hier an einer Stelle umgesetzt:
 - keine Lese-Zeitgrenze für Arbeit (nur 10 s für den Verbindungsaufbau); ein wartender Auftrag meldet sich im Strom
@@ -31,10 +32,11 @@ import httpx
 
 from .fehler import LeitstellenFehler, NichtErreichbar, fehler_aus
 from .modelle import (
-    Bild, Bildablage, Bilder, Bildereignis, ChatAntwort, DienstEintrag, Einbettungen, Ende, Ereignis, Modell, Nachricht, Prioritaet, Rechnet,
+    Bild, Bildablage, Bilder, Bildereignis, ChatAntwort, DienstEintrag, Einbettungen, Einschaetzung, Ende, Ereignis, Modell, Nachricht, Prioritaet, Rechnet,
     Stueck, Verbrauch, Wartet, Werkzeugaufruf,
 )
 from .arbeit import KOPF as ARBEIT_KOPF, LAUFENDE_ARBEIT
+from . import einordnung
 from .bindung import GEBUNDEN, KOPF as INSTANZ_KOPF, Bindung
 
 # Arbeit hat keine Lese-Zeitgrenze; eine Abfrage (Modellliste) schon.
@@ -135,7 +137,8 @@ class Leitstelle:
         await self.schliessen()
 
     def koepfe(self, titel: str = "", prioritaet: Prioritaet | None = None) -> dict[str, str]:
-        """Schlüssel, Titel (prozentkodiert, Köpfe tragen nur ASCII) und Priorität eines Auftrags."""
+        """Schlüssel, Titel (prozentkodiert, Köpfe tragen nur ASCII) und Priorität eines Auftrags; dazu die laufende Arbeit
+        und die Einordnung aus dem Kontext (Masse, wichtig: einordnung.py)."""
         kopf = dict(self._schluessel_kopf)
         kopf["X-Leitstelle-Titel"] = quote(f"{self.app}: {titel}" if titel else self.app, safe="")
         if prioritaet:
@@ -144,6 +147,7 @@ class Leitstelle:
             kopf[ARBEIT_KOPF] = arbeit
         if self.extern:
             kopf["X-Leitstelle-Extern"] = quote(",".join(self.extern), safe=",")
+        kopf.update(einordnung.koepfe())
         return kopf
 
     async def _senden(self, methode: str, pfad: str, *, kopf: dict[str, str], timeout: httpx.Timeout = ARBEIT,
@@ -155,6 +159,18 @@ class Leitstelle:
         if antwort.status_code >= 400:
             raise _fehler(antwort)
         return antwort
+
+    async def einschaetzung(self, modell: str, *, alternativen: Sequence[str] = (), faehigkeit: str | None = None,
+                            masse: bool | None = None, wichtig: bool | None = None) -> Einschaetzung:
+        """Was die Leitstelle mit diesem Auftrag jetzt täte, ohne ihn einzureihen (ARBEITSLOGIK Abschnitt 5). Masse und
+        wichtig ohne Angabe aus dem Kontext (`als_masse`, `als_wichtig`)."""
+        koerper: dict[str, Any] = {"model": modell, "alternativen": list(alternativen),
+                                   "art": "masse" if (einordnung.MASSE.get() if masse is None else masse) else "einzel",
+                                   "wichtig": einordnung.WICHTIG.get() if wichtig is None else wichtig}
+        if faehigkeit:
+            koerper["faehigkeit"] = faehigkeit
+        antwort = await self._senden("POST", "/v1/einschaetzung", kopf=dict(self._schluessel_kopf), json=koerper)
+        return Einschaetzung.model_validate(antwort.json())
 
     # --- Sprachmodelle ---------------------------------------------------------------------------------------------
 
@@ -188,7 +204,7 @@ class Leitstelle:
 
     async def chat(self, nachrichten: Sequence[Nachricht | str], *, modell: str | None = None, titel: str = "",
                    prioritaet: Prioritaet | None = None, **optionen: Any) -> ChatAntwort:
-        """Eine Antwort am Stück. Ohne `modell` gilt die Kette der App; `optionen` gehen unverändert mit
+        """Eine Antwort am Stück. `modell` nennt die App immer (ohne lehnt die Leitstelle mit KeinModell ab); `optionen` gehen unverändert mit
         (temperature, max_tokens, response_format ...)."""
         antwort = await self._senden("POST", "/v1/chat/completions", kopf=self.koepfe(titel, prioritaet),
                                      json=self._chat_koerper(nachrichten, modell, optionen, False))
