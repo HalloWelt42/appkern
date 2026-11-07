@@ -245,6 +245,15 @@ const MESSEN = `(() => {
       const nachher = kopf.getBoundingClientRect();
       if (Math.abs(nachher.top - vorher) > 2 || nachher.bottom <= 0)
         kopfweg.push(weg(kopf) + " (Kopf rollt mit: von " + Math.round(vorher) + " nach " + Math.round(nachher.top) + " px; Baustein Seitenkopf des Appkerns nehmen)");
+      // Lücke über dem stehenden Kopf (WIKI-63): gerollt muss ein klebender Kopf bündig an der Oberkante seines Rollfelds
+      // stehen; ein Innenabstand oben am Rollfeld (padding-top statt --rollfeld-oben) lässt Inhalt darüber durchscheinen
+      const feld = rollend.find((e) => e !== document.scrollingElement && e.contains(kopf) && e.scrollTop > 0);
+      if (feld && stil(kopf).position === "sticky") {
+        const luecke = nachher.top - feld.getBoundingClientRect().top - (parseFloat(stil(feld).borderTopWidth) || 0);
+        if (luecke > 1.5)
+          kopfweg.push(weg(kopf) + " (klebt " + Math.round(luecke) + " px unter der Oberkante von " + weg(feld) +
+                       "; gerollter Inhalt scheint durch; Abstand oben nur über --rollfeld-oben)");
+      }
       rollend.forEach((e, i) => { e.scrollTop = stand[i]; });
     }
     // Suchfelder und Filter (input type=search, role=search, data-filter) oben in einem Rollfeld gehören in den Kopf: sie
