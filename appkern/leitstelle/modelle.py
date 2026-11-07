@@ -247,6 +247,16 @@ class BildSchritte(_Modell):
     groesste: int | None = None
 
 
+class Aufgabenbeispiel(_Modell):
+    """Was ein Bildmodell an einem festen Motiv macht (Portfolio des Bildwerks, ATL-45 des Ateliers): Vorher und Nachher
+    als kleine Bilder (data-URL), dazu die Dauer im Dienst beim Rechnen; zum Vergleichen der Modelle bei der Wahl."""
+
+    motiv: str = ""
+    vorher: str
+    nachher: str
+    dauer_s: float | None = None
+
+
 class Aufgabenvorlage(_Modell):
     """Wie ein Bildmodell eine Aufgabe (`anweisen`, `entfernen`, `fuellen`, `erweitern`) als Anweisung bekommt (Steckbrief
     des Bildwerks, Leitstelle 0.34.3): `anweisung` mit dem Platzhalter `{wunsch}` für die Worte des Nutzers, `ohne_wunsch`
@@ -258,6 +268,7 @@ class Aufgabenvorlage(_Modell):
     ohne_wunsch: str | None = None
     sprache: str
     signalfarbe: tuple[int, int, int] | None = None
+    beispiel: Aufgabenbeispiel | None = None               # sobald die Leitstelle es durchreicht (LS-25)
 
     def anweisung_aus(self, wunsch: str) -> str:
         """Die Anweisung an das Modell mit dem (schon übersetzten) Wunsch; ValueError, wenn die Aufgabe einen Wunsch
