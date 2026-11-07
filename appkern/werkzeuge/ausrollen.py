@@ -33,6 +33,7 @@ import os
 import re
 import shlex
 import shutil
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -271,9 +272,7 @@ def zertifikat(z: Ziel) -> None:
         return
     if not shutil.which("mkcert"):
         raise Abbruch("mkcert fehlt auf diesem Mac")
-    hausstelle = Path(_lauf(["mkcert", "-CAROOT"])) / "rootCA.pem"
-    if not hausstelle.is_file():
-        raise Abbruch(f"Die Hausstelle fehlt: {hausstelle}")
+    hausstelle = _hausstelle()
     with tempfile.TemporaryDirectory() as arbeit:
         a = Path(arbeit)
         _lauf(["mkcert", "-cert-file", f"{z.kennung}.pem", "-key-file", f"{z.kennung}-schluessel.pem", *z.namen], ort=a)
@@ -449,11 +448,29 @@ def _in_umgebung(z: Ziel, schluessel: str) -> bool:
     return _ssh(z, f"cd {shlex.quote(z.wurzel)} 2>/dev/null && grep -c '^{schluessel}=' .env || true") not in ("", "0")
 
 
+def _hausstelle() -> Path:
+    """Das Stammzertifikat der Hausstelle (mkcert) auf diesem Mac: damit sind alle Zertifikate im Haus ausgestellt."""
+    if not shutil.which("mkcert"):
+        raise Abbruch("mkcert fehlt auf diesem Mac")
+    hausstelle = Path(_lauf(["mkcert", "-CAROOT"])) / "rootCA.pem"
+    if not hausstelle.is_file():
+        raise Abbruch(f"Die Hausstelle fehlt: {hausstelle}")
+    return hausstelle
+
+
+def _hausclient(adresse: str) -> httpx.Client:
+    """Ein Client für einen Dienst im Haus: über HTTPS prüft er gegen die Hausstelle (die Dienste tragen ihre
+    Zertifikate, HELF-167), nie ohne Prüfung."""
+    if adresse.startswith("https://"):
+        return httpx.Client(base_url=adresse, timeout=30, verify=ssl.create_default_context(cafile=str(_hausstelle())))
+    return httpx.Client(base_url=adresse, timeout=30)
+
+
 def _leitstelle_zugang(z: Ziel, erneuern: bool, client: httpx.Client | None) -> None:
     assert z.zugaenge is not None
     schon = _in_umgebung(z, _fest(z, "LEITSTELLE_SCHLUESSEL"))
     eigen = client is None
-    c = client or httpx.Client(base_url=z.leitstelle or "", timeout=30)
+    c = client or _hausclient(z.leitstelle or "")
     try:
         def json_von(antwort: httpx.Response) -> dict:
             if antwort.status_code >= 400:
