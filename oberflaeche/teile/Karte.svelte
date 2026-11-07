@@ -23,6 +23,8 @@
   // in einer klickbaren Karte (Verweis oder Knopf) nur Inline-Inhalt, sonst Blöcke wie Formulare und Listen
   const klickbar = $derived(!!href || !!onwahl);
   const oben = $derived(href ? "a" : onwahl ? "button" : "div");
+  // ein Bild, das nicht lädt (etwa eine fehlende Vorschau), weicht dem Platzhalter statt seinen Alternativtext zu zeigen
+  let fehlt = $state<string | null>(null);
   const innen = $derived(klickbar ? "span" : "div");
   function klick(e: MouseEvent) {
     if (!onwahl) return;
@@ -39,7 +41,7 @@
     {#if mitFlaeche}
       <svelte:element this={innen} class="kb-flaeche" style:aspect-ratio={verhaeltnis}>
         {#if flaeche}{@render flaeche()}
-        {:else if bild}<img src={bild} alt={bildAlt} loading="lazy" />
+        {:else if bild && fehlt !== bild}<img src={bild} alt={bildAlt} loading="lazy" onerror={() => (fehlt = bild ?? null)} />
         {:else}<i class="fa-solid {symbol} kb-platzhalter" aria-hidden="true"></i>{/if}
         {@render marken?.()}
       </svelte:element>
