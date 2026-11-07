@@ -7,6 +7,7 @@ import base64
 import json
 
 import httpx
+import pytest
 from pydantic import BaseModel
 
 from appkern.leitstelle import Bilder, Leitstelle, Nachricht, Rechnet, Wartet
@@ -234,6 +235,30 @@ async def test_bild_steckbrief_mit_vorlagen_und_lizenzhinweis():
     assert moss.bild.groessen is None and moss.bild.schritte is None and moss.bild.anzahl_max is None
     bild = klein.bild
     assert bild is not None and bild.kann_bearbeiten and bild.vorlagen_max == 4 and bild.lizenz_hinweis.startswith("Nur nicht")
+
+
+async def test_bild_steckbrief_mit_aufgabenvorlagen():
+    """Die Aufgabenvorlagen des Modells (Leitstelle 0.34.3) kommen an; die App setzt die Anweisung aus Vorlage und Wunsch
+    zusammen. Ohne Vorlagen bleibt das Feld leer."""
+    vorlagen = {"entfernen": {"anweisung": "Fill the magenta area.", "ohne_wunsch": None, "sprache": "en", "signalfarbe": [255, 0, 255]},
+                "fuellen": {"anweisung": "Replace it with: {wunsch}.", "ohne_wunsch": "Replace it naturally.", "sprache": "en", "signalfarbe": [255, 0, 255]},
+                "anweisen": {"anweisung": "{wunsch}", "ohne_wunsch": None, "sprache": "en", "signalfarbe": None}}
+
+    def handler(request: httpx.Request):
+        return httpx.Response(200, json={"object": "list", "data": [
+            {"kennung": "bildwerk-qwen-image-edit", "zustand": "aus", "faehigkeiten": ["bild_bearbeiten"],
+             "bild": {"modell": "qwen-image-edit", "kann_bearbeiten": True, "aufgaben": vorlagen}},
+            {"kennung": "bildwerk-moss-image", "zustand": "aus", "faehigkeiten": ["bild_erzeugen"], "bild": {"modell": "moss-image"}}]})
+
+    async with leitstelle(handler) as ls:
+        qwen, moss = await ls.dienste()
+    a = qwen.bild.aufgaben
+    assert a["entfernen"].signalfarbe == (255, 0, 255) and a["anweisen"].signalfarbe is None and moss.bild.aufgaben == {}
+    assert a["entfernen"].anweisung_aus("") == "Fill the magenta area." and a["entfernen"].anweisung_aus("egal") == "Fill the magenta area."
+    assert a["fuellen"].anweisung_aus(" a wooden bench ") == "Replace it with: a wooden bench." and a["fuellen"].anweisung_aus("") == "Replace it naturally."
+    assert a["anweisen"].anweisung_aus("make the sky red") == "make the sky red" and a["fuellen"].nimmt_wunsch and not a["entfernen"].nimmt_wunsch
+    with pytest.raises(ValueError):
+        a["anweisen"].anweisung_aus("  ")
 
 
 async def test_bilder_mit_vorlage_als_formular():

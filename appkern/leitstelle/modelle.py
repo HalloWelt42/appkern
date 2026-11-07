@@ -247,6 +247,38 @@ class BildSchritte(_Modell):
     groesste: int | None = None
 
 
+class Aufgabenvorlage(_Modell):
+    """Wie ein Bildmodell eine Aufgabe (`anweisen`, `entfernen`, `fuellen`, `erweitern`) als Anweisung bekommt (Steckbrief
+    des Bildwerks, Leitstelle 0.34.3): `anweisung` mit dem Platzhalter `{wunsch}` für die Worte des Nutzers, `ohne_wunsch`
+    für einen leeren Wunsch (fehlt sie, braucht die Aufgabe einen), `sprache`, in die der Wunsch übersetzt wird, und die
+    `signalfarbe` (RGB), in der die betroffene Fläche deckend in der Vorlage steht. Zusammensetzen tut die App
+    (`anweisung_aus`)."""
+
+    anweisung: str
+    ohne_wunsch: str | None = None
+    sprache: str
+    signalfarbe: tuple[int, int, int] | None = None
+
+    def anweisung_aus(self, wunsch: str) -> str:
+        """Die Anweisung an das Modell mit dem (schon übersetzten) Wunsch; ValueError, wenn die Aufgabe einen Wunsch
+        braucht und keiner da ist."""
+        wunsch = wunsch.strip()
+        if not wunsch:
+            if self.ohne_wunsch:
+                return self.ohne_wunsch
+            if WUNSCH in self.anweisung:
+                raise ValueError("Diese Aufgabe braucht einen Wunsch")
+            return self.anweisung
+        return self.anweisung.replace(WUNSCH, wunsch)
+
+    @property
+    def nimmt_wunsch(self) -> bool:
+        return WUNSCH in self.anweisung
+
+
+WUNSCH = "{wunsch}"
+
+
 class Bildsteckbrief(_Modell):
     """Was ein Bilddienst annimmt (PROTOKOLL 4.8 der Leitstelle), sobald er einmal lief. Was der Dienst nicht nennt, kommt
     als null: Größen (dann gelten die Vorgabegrenzen der Leitstelle), Schritte (gehen ungeprüft an den Dienst), Anzahl,
@@ -263,6 +295,7 @@ class Bildsteckbrief(_Modell):
     lizenz: str | None = None
     lizenz_hinweis: str | None = None                      # was die Lizenz für die Nutzung der Bilder heißt; die Leitstelle schickt null, wenn keiner da ist
     parameter_mrd: float | None = None
+    aufgaben: dict[str, Aufgabenvorlage] = Field(default_factory=dict)   # je Aufgabe die Anweisungsvorlage des Modells (Leitstelle 0.34.3)
 
 
 class DienstEintrag(_Modell):

@@ -102,6 +102,10 @@ alternativen=)` liefert `Wartet`, `Rechnet` (seit wie vielen Sekunden der Dienst
 `alternativen` sind weitere Bildmodelle in der Reihenfolge der App, gewählt wird nur aus ihnen. `ls.bilder_bearbeiten(beschreibung, vorlage, ...)` schickt ein Bild als Vorlage
 mit (`/v1/images/edits`), nur für Modelle, deren Bild-Steckbrief `kann_bearbeiten` meldet. `ls.dienste()` nennt die
 Dienste mit Zustand (aus, startet, bereit ...), Zweck und bei Bilddiensten den Bild-Steckbrief (Größen, Schritte, Anzahl).
+Modelle, die bearbeiten, nennen dort `aufgaben`: je Aufgabe (`anweisen`, `entfernen`, `fuellen`, `erweitern`) eine
+`Aufgabenvorlage` mit der Anweisung, ihrer Sprache und der Signalfarbe der markierten Fläche. Die App nennt nur Aufgabe und
+Wunsch: `vorlage.anweisung_aus(wunsch)` setzt die Anweisung an das Modell zusammen (den Wunsch vorher in `vorlage.sprache`
+übersetzen), so stehen keine Anweisungstexte im Code der App.
 
 **Text des Modells** (`appkern.leitstelle.text`): `antwortform(name, schema)` als `response_format` verlangt eine feste
 Antwortform, `json_lesen(text)` liest sie nachsichtig (Codezaun, Text davor und danach), `gerade(text)` und
