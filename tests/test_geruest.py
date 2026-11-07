@@ -153,6 +153,20 @@ async def test_oberflaeche_ausliefern(umgebung):
     assert "root:" not in (await c.get("/%2e%2e/%2e%2e/etc/passwd")).text
 
 
+async def test_oberflaeche_sendet_bildtypen_unabhaengig_vom_system(umgebung):
+    """WebP und Co. kommen mit ihrem Typ, auch wo das System sie nicht kennt (schlanke Abbilder ohne /etc/mime.types)."""
+    import mimetypes
+
+    geruest, _, c = umgebung
+    (geruest.oberflaeche / "hilfe").mkdir()
+    for name in ("bild.webp", "bild.avif", "app.webmanifest"):
+        (geruest.oberflaeche / "hilfe" / name).write_bytes(b"x")
+    assert (await c.get("/hilfe/bild.webp")).headers["content-type"] == "image/webp"
+    assert (await c.get("/hilfe/bild.avif")).headers["content-type"] == "image/avif"
+    assert (await c.get("/hilfe/app.webmanifest")).headers["content-type"].startswith("application/manifest+json")
+    assert mimetypes.guess_type("x.webp")[0] == "image/webp"
+
+
 async def test_hausstelle_wird_gefunden_und_geladen(tmp_path: Path, monkeypatch):
     import certifi
 

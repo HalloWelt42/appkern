@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import mimetypes
 import os
 import re
 import ssl
@@ -70,6 +71,11 @@ JA = {"1", "ja", "an", "true", "yes", "on"}
 # Endet der letzte Teil eines Wegs wie ein Dateiname (Punkt, dann Buchstabe, dann Buchstaben oder Ziffern), ist es eine
 # Datei und nie eine Seite; Zahlen wie /transkripte/<kennung>/12.5 bleiben Seiten.
 DATEIENDUNG = re.compile(r"\.[A-Za-z][A-Za-z0-9]*$")
+# Dateitypen der Oberfläche, die nicht jedes System kennt (schlanke Python-Abbilder ohne /etc/mime.types lieferten etwa WebP
+# als application/octet-stream aus, Atelier ATL-41): fest, damit FileResponse überall denselben Typ sendet
+for _endung, _typ in {".webp": "image/webp", ".avif": "image/avif", ".webmanifest": "application/manifest+json",
+                      ".woff2": "font/woff2", ".svg": "image/svg+xml", ".mjs": "text/javascript"}.items():
+    mimetypes.add_type(_typ, _endung)
 
 
 def schnittstellen_doku(kennung: str) -> bool:
