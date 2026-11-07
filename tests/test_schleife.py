@@ -243,7 +243,7 @@ async def test_bild_steckbrief_mit_aufgabenvorlagen():
     vorlagen = {"entfernen": {"anweisung": "Fill the magenta area.", "ohne_wunsch": None, "sprache": "en", "signalfarbe": [255, 0, 255]},
                 "fuellen": {"anweisung": "Replace it with: {wunsch}.", "ohne_wunsch": "Replace it naturally.", "sprache": "en", "signalfarbe": [255, 0, 255]},
                 "anweisen": {"anweisung": "{wunsch}", "ohne_wunsch": None, "sprache": "en", "signalfarbe": None,
-                             "beispiel": {"motiv": "Gasse", "vorher": "data:image/webp;base64,AAA", "nachher": "data:image/webp;base64,BBB", "dauer_s": 7.5}}}
+                             "beispiel": {"motiv": "Gasse", "ausgang": "data:image/webp;base64,OOO", "vorher": "data:image/webp;base64,AAA", "nachher": "data:image/webp;base64,BBB", "dauer_s": 7.5}}}
 
     def handler(request: httpx.Request):
         return httpx.Response(200, json={"object": "list", "data": [
@@ -261,7 +261,7 @@ async def test_bild_steckbrief_mit_aufgabenvorlagen():
     with pytest.raises(ValueError):
         a["anweisen"].anweisung_aus("  ")
     # ATL-45: ein Beispiel aus dem Portfolio des Bildwerks kommt mit, ohne Beispiel bleibt es leer
-    assert a["anweisen"].beispiel.motiv == "Gasse" and a["anweisen"].beispiel.dauer_s == 7.5 and a["entfernen"].beispiel is None
+    assert a["anweisen"].beispiel.motiv == "Gasse" and a["anweisen"].beispiel.dauer_s == 7.5 and a["anweisen"].beispiel.ausgang.endswith("OOO") and a["entfernen"].beispiel is None
 
 
 async def test_bilder_mit_vorlage_als_formular():

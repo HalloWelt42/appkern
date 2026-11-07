@@ -252,6 +252,7 @@ class Aufgabenbeispiel(_Modell):
     als kleine Bilder (data-URL), dazu die Dauer im Dienst beim Rechnen; zum Vergleichen der Modelle bei der Wahl."""
 
     motiv: str = ""
+    ausgang: str | None = None                             # das Bild vor der Markierung, wo es sich von `vorher` unterscheidet
     vorher: str
     nachher: str
     dauer_s: float | None = None
