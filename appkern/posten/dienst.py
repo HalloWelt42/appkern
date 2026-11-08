@@ -138,6 +138,15 @@ def anmeldeseite(pfad: str, app: str, ziel: str, meldung: str = "", kennung: str
 </main></body></html>"""
 
 
+def _kopf_text(wert: str) -> str:
+    """Köpfe liest der Server als Latin-1, der Vorschaltdienst schickt den Namen der App aber als UTF-8 (etwa das ü in
+    BücherFreunde); so wird aus den Bytes wieder der Name. Reiner Latin-1-Text bleibt, wie er ist."""
+    try:
+        return wert.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return wert
+
+
 def erstellen(e: Einstellungen | None = None, kellerwolke: Kellerwolke | None = None) -> FastAPI:
     e = e or Einstellungen()
     kw = kellerwolke or Kellerwolke(e.kellerwolke, e.ca, e.app, merken_s=e.merken_s)
@@ -154,7 +163,7 @@ def erstellen(e: Einstellungen | None = None, kellerwolke: Kellerwolke | None = 
     app = FastAPI(title=f"Posten {e.kennung}", version=__version__, docs_url=None, redoc_url=None, openapi_url=None, lifespan=lebenslauf)
 
     def name_der_app(request: Request) -> str:
-        return request.headers.get(e.kopf("App")) or e.app
+        return _kopf_text(request.headers.get(e.kopf("App")) or "") or e.app
 
     @app.get(f"{pfad}/pruefen")
     async def pruefen(request: Request) -> Response:

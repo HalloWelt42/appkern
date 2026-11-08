@@ -165,3 +165,10 @@ def test_eigene_kennung_ergibt_keks_pfad_und_koepfe():
     seite = c.get("/_zusage/anmelden")
     assert "<h1>Zusage</h1>" in seite.text and 'action="/_zusage/anmelden"' in seite.text and "/_zusage/statisch/barlow" in seite.text
     assert c.get("/_zusage/statisch/barlow-latin-400-normal.woff2").status_code == 200
+
+
+def test_name_der_app_mit_umlaut_aus_dem_kopf(aufbau):
+    """Der Vorschaltdienst schickt den Namen als UTF-8; die Seite zeigt ihn richtig (NAME-10)."""
+    c, _, _ = aufbau()
+    seite = c.get("/_vorbau/anmelden?ziel=/x", headers={"x-vorbau-app": "BücherFreunde".encode("utf-8")})
+    assert "BücherFreunde" in seite.text and "BÃ" not in seite.text
