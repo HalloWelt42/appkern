@@ -9,7 +9,8 @@ import httpx
 import pytest
 from fastapi import Depends, FastAPI
 
-from appkern.anmeldung import Abgelehnt, Anmeldung, KellerwolkeWeg, NichtErlaubt, ZuVieleVersuche
+from appkern.anmeldung import (FESTER_NUTZER, Abgelehnt, Anmeldung, KellerwolkeWeg, NichtErlaubt, OhneAnmeldung,
+                               ZuVieleVersuche)
 from appkern.anmeldung.api import COOKIE, angemeldet, anmeldungs_router, inhalt_cookie
 
 KONTEN = {"chef": "1", "gast": "2"}
@@ -361,3 +362,77 @@ async def test_cookie_auch_fuer_seiten_und_umleitung_zur_anmeldung():
         assert (await c.get("/vorschau/artikel/", headers={"accept": "text/html"})).json() == {"konto": "chef"}
         await c.post("/api/v1/anmeldung/abmelden", headers={"X-Kellerwolke-Sitzung": token})
         assert [k for k in c.cookies.jar if k.name == COOKIE] == []
+
+
+# ----- ohne Anmeldung (WIKI-11) ----------------------------------------------------------------------------------------
+
+async def test_ohne_anmeldung_ist_jeder_mensch_der_feste_nutzer():
+    """Ohne Anmeldung ist jeder Mensch der feste Nutzer, auch mit einem alten Token; andere Apps werden weiter an ihrem
+    App-Schlüssel erkannt (bei der Kellerwolke geprüft) und handeln für ihn. Die Betriebsart wird bei jeder Prüfung neu
+    gefragt: zurück auf Anmeldung gilt sofort, und nichts aus dem offenen Betrieb bleibt gültig."""
+    s = Schein()
+    offen = [False]
+    a = anmeldung(s, ohne_anmeldung=lambda: offen[0])
+    token, _ = await a.anmelden("chef", "geheim")
+    assert await a.pruefen("") is None
+    offen[0] = True
+    assert await a.pruefen("") == FESTER_NUTZER and await a.pruefen("irgendwas") == FESTER_NUTZER
+    assert await a.pruefen(token) == FESTER_NUTZER                   # ein altes Token zählt nicht mehr für sein Konto
+    konto = await a.pruefen("kw_app_vertonung")
+    assert konto.id == FESTER_NUTZER.id and konto.app == "Vertonung" and not konto.mensch
+    assert await a.pruefen("kw_app_fremd") is None and await a.pruefen("kw_app_unbekannt") is None
+    auftrag = await a.im_auftrag("eine-sitzung", "Vertonung")
+    assert auftrag.id == FESTER_NUTZER.id and auftrag.im_auftrag == "Vertonung"
+    with pytest.raises(OhneAnmeldung):
+        await a.anmelden("chef", "geheim")
+    with pytest.raises(OhneAnmeldung):
+        await a.koppeln("CHEF0001", "Telefon", "webapp")
+    offen[0] = False
+    assert await a.pruefen("") is None and (await a.pruefen(token)).name == "chef"
+
+
+async def test_ohne_anmeldung_und_ohne_kellerwolke_gilt_kein_app_schluessel():
+    a = Anmeldung("", lambda: set(), ohne_anmeldung=lambda: True)
+    assert await a.pruefen("") == FESTER_NUTZER
+    assert await a.pruefen("kw_app_vertonung") is None
+
+
+async def test_ausfall_der_kellerwolke_oeffnet_nie():
+    """Mit Anmeldung bleibt ein Ausfall der Kellerwolke ein Ausfall: kein Wechsel in den offenen Betrieb."""
+    s = Schein()
+    a = anmeldung(s, ohne_anmeldung=lambda: False)
+    s.weg = True
+    assert await a.pruefen("") is None
+    with pytest.raises(KellerwolkeWeg):
+        await a.pruefen("nie-bestaetigt")
+
+
+async def test_schnittstelle_ohne_anmeldung():
+    s = Schein()
+    a = anmeldung(s, ohne_anmeldung=lambda: True)
+    keks = inhalt_cookie("probe")
+    app = FastAPI()
+    app.include_router(anmeldungs_router(a, cookie=keks))
+
+    @app.get("/api/v1/einstellungen")
+    async def einstellungen(konto=Depends(angemeldet(a, nur_menschen=True))):
+        return {"konto": konto.id}
+
+    @app.get("/api/v1/inhalt/bild")
+    async def bild(konto=Depends(angemeldet(a, cookie=keks))):
+        return {"konto": konto.id}
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        stand = (await c.get("/api/v1/anmeldung")).json()
+        assert stand["angemeldet"] and stand["konto"]["id"] == FESTER_NUTZER.id
+        assert (await c.get("/api/v1/einstellungen")).json() == {"konto": "nutzer"}
+        assert (await c.get("/api/v1/inhalt/bild")).json() == {"konto": "nutzer"}     # ohne Cookie
+        r = await c.post("/api/v1/anmeldung/zugang")
+        assert r.status_code == 204 and keks not in r.cookies
+        assert (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).status_code == 409
+        assert (await c.post("/api/v1/anmeldung/koppeln", json={"code": "CHEF0001", "name": "T", "art": "webapp"})).status_code == 409
+        assert (await c.post("/api/v1/anmeldung/abmelden")).status_code == 204
+        h = {"Authorization": "Bearer kw_app_vertonung"}
+        assert (await c.get("/api/v1/einstellungen", headers=h)).status_code == 403          # andere Apps bleiben Apps
+        assert (await c.get("/api/v1/einstellungen", headers={"Authorization": "Bearer kw_app_fremd"})).status_code == 401
+        assert s.abmeldungen == []

@@ -11,6 +11,9 @@ als der dieses Menschen (`Anmeldung.im_auftrag`); sonst als der der App.
 
 Weist die App eine Anmeldung ab (401), sagt der Kopf `WWW-Authenticate: Kellerwolke-Sitzung` es; nur dann meldet sich
 die Oberfläche ab. Ein 401, den eine App von einem anderen Dienst weiterreicht, beendet so nie die eigene Anmeldung.
+
+Ohne Anmeldung (`Anmeldung.ohne_anmeldung`) sagt `GET` den festen Nutzer an, Anmelden und Koppeln antworten 409, Abmelden
+und der Lesezugang tun nichts (Inhaltsadressen brauchen dann kein Cookie).
 """
 
 from __future__ import annotations
@@ -157,6 +160,9 @@ def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung"
 
     @router.post("/abmelden", status_code=204)
     async def abmelden(request: Request, response: Response) -> Response:
+        if anmeldung.ohne_anmeldung():
+            response.status_code = 204                 # ohne Anmeldung gibt es nichts zu beenden
+            return response
         token = request.headers.get(KOPF, "")
         try:
             konto = await anmeldung.pruefen(token)
@@ -172,6 +178,9 @@ def anmeldungs_router(anmeldung: Anmeldung, *, prefix: str = "/api/v1/anmeldung"
 
     @router.post("/zugang", status_code=204)
     async def zugang(request: Request, response: Response, konto: Konto = Depends(mensch)) -> Response:
+        if anmeldung.ohne_anmeldung():
+            response.status_code = 204                 # Inhaltsadressen gelten ohne Anmeldung auch ohne Cookie
+            return response
         for pfad in inhalt_pfade:
             response.set_cookie(cookie, request.headers[KOPF], max_age=_ZUGANG_DAUER, path=pfad, httponly=True,
                                 samesite="strict", secure=_https(request))

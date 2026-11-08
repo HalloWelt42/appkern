@@ -11,6 +11,9 @@ export interface AppInfo {
   fassung: string;
   appkern: string;
   einrichtung_noetig: boolean;
+  // Betriebsart (WIKI-11): mit dem Konto der Kellerwolke oder ohne Anmeldung (jeder ist der feste Nutzer, kein Abmelden)
+  anmeldung?: "kellerwolke" | "ohne";
+  ablage?: "kellerwolke" | "ordner";   // wo die App ihre Dateien ablegt: Kellerwolke oder Datenordner der App
   besitzer: string | null;
   kellerwolke: string;
   oberflaeche: string | null;

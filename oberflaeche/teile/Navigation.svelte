@@ -6,7 +6,7 @@
   import { anzeige, anzeigeSetzen } from "../lib/anzeige.svelte";
   import { auftraege } from "../lib/auftraege.svelte";
   import { gehe } from "../lib/navigation.svelte";
-  import { abmelden, sitzung } from "../lib/sitzung.svelte";
+  import { abmelden, ohneAnmeldung, sitzung } from "../lib/sitzung.svelte";
   import type { Bereich } from "../lib/typen";
 
   let { bereiche, seite, zusatz }: { bereiche: Bereich[]; seite: string; zusatz?: Snippet } = $props();
@@ -54,10 +54,14 @@
     </div>
     <div class="konto">
       <span class="bild">{konto.name.slice(0, 1).toUpperCase()}</span>
-      <span class="konto-text"><div class="wer">{konto.name}</div><div class="wie">{konto.geraet ? "gekoppeltes Gerät" : "angemeldet mit Passwort"}</div></span>
-      <button class="rund" title={konto.geraet ? "Gerät trennen (zum Wiederkommen neu koppeln)" : "Abmelden"} onclick={abmelden}>
-        <i class="fa-solid {konto.geraet ? 'fa-link-slash' : 'fa-right-from-bracket'}"></i>
-      </button>
+      {#if ohneAnmeldung()}
+        <span class="konto-text" title="Ohne Anmeldung: wer die App erreicht, ist dieser Nutzer (Einstellungen, Zugang)"><div class="wer">{konto.name}</div><div class="wie">ohne Anmeldung</div></span>
+      {:else}
+        <span class="konto-text"><div class="wer">{konto.name}</div><div class="wie">{konto.geraet ? "gekoppeltes Gerät" : "angemeldet mit Passwort"}</div></span>
+        <button class="rund" title={konto.geraet ? "Gerät trennen (zum Wiederkommen neu koppeln)" : "Abmelden"} onclick={abmelden}>
+          <i class="fa-solid {konto.geraet ? 'fa-link-slash' : 'fa-right-from-bracket'}"></i>
+        </button>
+      {/if}
     </div>
     <div class="fassung">{app.name} {app.fassung} · Appkern {app.appkern}</div>
   </div>

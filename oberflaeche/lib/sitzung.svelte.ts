@@ -2,7 +2,8 @@
 // nicht, zeigt die Schale das mit "Erneut versuchen"; sobald sie wieder antwortet, geht der Start von selbst weiter.
 // Die Anmeldung erscheint an der Adresse, die geöffnet wurde (etwa ein Verweis aus einer anderen App mit Seite und
 // Suchbegriff); nach dem Anmelden zeigt die App genau diese Stelle. Meldet sich ein anderer Tab derselben App an, ist
-// dieser ohne weiteres Zutun auch angemeldet.
+// dieser ohne weiteres Zutun auch angemeldet. Läuft die App ohne Anmeldung (Betriebsart, WIKI-11), meldet sie den festen
+// Nutzer als angemeldet; verlangt sie später eine Anmeldung (umgestellt), holt die Schale ihre Angaben neu.
 import { ApiFehler, beiTokenWechsel, einrichten, hole, json, setzeToken } from "./api.svelte";
 import { beiRueckkehr } from "./erreichbar.svelte";
 import { fassungVergleichen } from "./fassung.svelte";
@@ -15,9 +16,14 @@ export const sitzung = $state<{ geladen: boolean; app: AppInfo | null; angemelde
   konto: null,
 });
 
+// Ohne Anmeldung ist jeder Mensch der feste Nutzer: keine Anmeldeseite, kein Abmelden.
+export const ohneAnmeldung = (): boolean => sitzung.app?.anmeldung === "ohne";
+
 function vorbei(): void {
+  const warOhne = ohneAnmeldung();
   sitzung.angemeldet = false;
   sitzung.konto = null;
+  if (warOhne) void starten();          // die App verlangt jetzt eine Anmeldung: Angaben neu, dann die Anmeldeseite
 }
 
 // Wo Menschen die App öffnen, so wie der Browser es sieht; der Server trägt es einmal ein (Öffnen aus der Kellerwolke).

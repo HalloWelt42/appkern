@@ -26,6 +26,12 @@ Andere Apps (App zu App, Entscheidung des Nutzers, 17.10.2026) melden sich mit i
 (`kw_app_...`). Die App fragt die Kellerwolke, wem der Schlüssel gehört (`/api/v1/ablage/ich`), und lässt dieselben
 Konten zu wie in der Oberfläche; das Konto trägt dann den Namen der rufenden App. Abmelden beendet einen App-Schlüssel
 nie (er gehört der anderen App).
+
+Ohne Anmeldung (Betriebsart einer App, ausdrücklich gewählt, WIKI-11; nur für das eigene Netz): jeder Mensch ist der
+feste Nutzer `FESTER_NUTZER`, es gibt weder Anmelden noch Koppeln. App-Schlüssel anderer Apps prüft die App weiter bei
+der Kellerwolke (ohne eingerichtete Kellerwolke gilt keiner); eine so erkannte App handelt dann für den festen Nutzer.
+Ob die App ohne Anmeldung läuft, fragt die Anmeldung bei jeder Prüfung neu (`ohne_anmeldung`); sie schließt das nie aus
+dem Zustand der Kellerwolke.
 """
 
 from __future__ import annotations
@@ -65,6 +71,10 @@ class Konto(BaseModel):
         return self.app is None
 
 
+#: Wer ohne Anmeldung jeder Mensch ist: ein Nutzer für alle Geräte, seine Daten hängen an dieser Kennung (WIKI-11)
+FESTER_NUTZER = Konto(id="nutzer", name="Nutzer")
+
+
 class AnmeldungsFehler(Exception):
     status = 400
 
@@ -94,6 +104,12 @@ class KellerwolkeWeg(AnmeldungsFehler):
     status = 503
 
 
+class OhneAnmeldung(AnmeldungsFehler):
+    """Die App läuft ohne Anmeldung: Anmelden und Koppeln gibt es dort nicht."""
+
+    status = 409
+
+
 @dataclass
 class _Gemerkt:
     """Eine geprüfte Anmeldung: gilt bis `frisch_bis` ohne Rückfrage; `bestaetigt` ist die letzte Bestätigung durch
@@ -117,15 +133,18 @@ class Anmeldung:
     def __init__(self, adresse: str, erlaubt: Callable[[], set[str]] | None = None, *,
                  client: httpx.AsyncClient | None = None, merken_s: float = 60.0, ausfall_s: float = AUSFALL_S,
                  app_name: Callable[[], Awaitable[str | None]] | None = None,
+                 ohne_anmeldung: Callable[[], bool] | None = None,
                  uhr: Callable[[], float] = time.monotonic) -> None:
         """`erlaubt()` liefert die Namen der Konten, die die App nutzen dürfen (klein geschrieben verglichen);
         None heißt: jedes aktive Konto der Kellerwolke. `app_name()` ist der Name der App in der Kellerwolke (der ihres
         Zugangs); Anmeldungen gelten dann nur für sie, und ohne bekannten Namen gibt es keine Anmeldung. `merken_s`:
         so lange gilt eine Prüfung ohne Rückfrage; `ausfall_s`: so lange nach der letzten Bestätigung gilt eine
-        Anmeldung weiter, wenn die Kellerwolke nicht erreichbar ist (0: gar nicht)."""
+        Anmeldung weiter, wenn die Kellerwolke nicht erreichbar ist (0: gar nicht). `ohne_anmeldung()`: ob die App gerade
+        ohne Anmeldung läuft (die Betriebsart aus ihren Einstellungen); ohne Angabe nie."""
         self.adresse = adresse.rstrip("/")
         self.erlaubt = erlaubt
         self._app_name = app_name
+        self._ohne_anmeldung = ohne_anmeldung
         self.merken_s = merken_s
         self.ausfall_s = ausfall_s
         self._uhr = uhr
@@ -159,6 +178,14 @@ class Anmeldung:
         for aufgabe in self._nachfragen.values():
             aufgabe.cancel()
         self._nachfragen.clear()
+
+    def ohne_anmeldung(self) -> bool:
+        """Ob die App gerade ohne Anmeldung läuft (jeder Mensch ist `FESTER_NUTZER`)."""
+        return self._ohne_anmeldung is not None and self._ohne_anmeldung()
+
+    def _anmeldung_gibt_es(self) -> None:
+        if self.ohne_anmeldung():
+            raise OhneAnmeldung("Diese App läuft ohne Anmeldung; anmelden muss sich hier niemand")
 
     def _schluessel(self, token: str) -> str:
         return hmac.new(self._geheim, token.encode("utf-8"), hashlib.sha256).hexdigest()
@@ -209,6 +236,7 @@ class Anmeldung:
             logger.info("Kellerwolke wieder erreichbar: Anmeldungen werden wieder bei ihr geprüft")
 
     async def anmelden(self, kennung: str, passwort: str) -> tuple[str, Konto]:
+        self._anmeldung_gibt_es()
         antwort = await self._senden("POST", "/api/v1/auth/login",
                                      json={"kennung": kennung, "passwort": passwort, **await self._fuer_app()})
         if antwort.status_code == 401:
@@ -220,6 +248,7 @@ class Anmeldung:
         return token, await self._nur_erlaubt(token, Konto(**{**daten["benutzer"], "id": str(daten["benutzer"]["id"])}))
 
     async def koppeln(self, code: str, name: str, art: Literal["webapp", "browser"]) -> tuple[str, Konto]:
+        self._anmeldung_gibt_es()
         antwort = await self._senden("POST", "/api/v1/geraete/koppeln",
                                      json={"code": code, "name": name, "art": art, **await self._fuer_app()})
         if antwort.status_code == 429:
@@ -239,7 +268,19 @@ class Anmeldung:
 
     async def pruefen(self, token: str) -> Konto | None:
         """Das Konto zum Token, oder None (unbekannt, abgelaufen, getrennt, nicht erlaubt). Ist die Kellerwolke nicht
-        erreichbar, gilt eine früher bestätigte Anmeldung bis `ausfall_s` weiter; sonst `KellerwolkeWeg`."""
+        erreichbar, gilt eine früher bestätigte Anmeldung bis `ausfall_s` weiter; sonst `KellerwolkeWeg`. Ohne Anmeldung
+        ist jeder Mensch der feste Nutzer, eine andere App wird an ihrem App-Schlüssel erkannt und handelt für ihn."""
+        if not self.ohne_anmeldung():
+            return await self._bestaetigt(token)
+        if not token.startswith(APP_PRAEFIX):
+            return FESTER_NUTZER
+        if not self.adresse:
+            return None                                # ohne Kellerwolke gibt es keine gültigen App-Schlüssel
+        rufer = await self._bestaetigt(token)
+        return FESTER_NUTZER.model_copy(update={"app": rufer.app}) if rufer is not None else None
+
+    async def _bestaetigt(self, token: str) -> Konto | None:
+        """Das Konto zum Token laut Kellerwolke (mit Merker und Ausfall wie bei `pruefen`)."""
         if not token:
             return None
         schluessel = self._schluessel(token)
@@ -341,9 +382,12 @@ class Anmeldung:
     async def im_auftrag(self, token: str, app: str) -> Konto | None:
         """Die Sitzung eines Menschen, die die App `app` (mit ihrem App-Schlüssel angemeldet) auf seinen Klick
         mitschickt: gilt, wenn die Kellerwolke sie für genau diese App bestätigt und das Konto die App hier nutzen
-        darf. Gemerkt wie jede Prüfung; beendet wird sie hier nie."""
+        darf. Gemerkt wie jede Prüfung; beendet wird sie hier nie. Ohne Anmeldung handelt die App für den festen Nutzer,
+        denn jeder Mensch ist er."""
         if not token or not app or token.startswith(APP_PRAEFIX):
             return None
+        if self.ohne_anmeldung():
+            return FESTER_NUTZER.model_copy(update={"im_auftrag": app})
         schluessel = self._schluessel(f"{app.lower()}\n{token}")
         gemerkt = self._gemerkt.get(schluessel)
         if gemerkt and gemerkt.frisch_bis > self._uhr():

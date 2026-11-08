@@ -210,9 +210,9 @@ function warten(u: Unterwegs, signal: AbortSignal | undefined): Promise<Antwort>
 export async function hole<T>(pfad: string, init: AnfrageOptionen = {}): Promise<T> {
   const lesend = (init.method ?? "GET").toUpperCase() === "GET" && !init.body;
   const antwort = lesend ? await gemeinsam(pfad, init) : await senden(pfad, init, init.signal ?? new AbortController().signal);
-  if (antwort.abgewiesen && token()) {
-    setzeToken("");
-    beiSitzungsende?.();
+  if (antwort.abgewiesen) {
+    if (token()) setzeToken("");
+    beiSitzungsende?.();                               // auch ohne Token: eine App ohne Anmeldung verlangt jetzt eine
   }
   if (!antwort.ok) throw fehlerAus(antwort);
   if (antwort.status === 204 || !antwort.text) return undefined as T;

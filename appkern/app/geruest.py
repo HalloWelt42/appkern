@@ -7,8 +7,10 @@
     app.include_router(eigener_router)          # mit Depends(geruest.pflicht), Oberflächen-Eigenes mit geruest.mensch
 
 Was das Gerüst übernimmt: Datenbank, Einstellungen (Grundeinstellungen plus die der App), Protokoll, Aufträge,
-Anmeldung mit dem Kellerwolke-Konto (Besitzer ist das Konto des App-Schlüssels), Zugänge zu Kellerwolke und Leitstelle
-(nach jeder Änderung der Einstellungen neu aufgebaut), App-Verzeichnis, Prüfung der Verbindungen, regelmäßige
+Anmeldung mit dem Kellerwolke-Konto (Besitzer ist das Konto des App-Schlüssels) oder, ausdrücklich gewählt, ohne
+Anmeldung mit einem festen Nutzer (Betriebsart `anmeldung`, WIKI-11), Zugänge zu Kellerwolke und Leitstelle
+(nach jeder Änderung der Einstellungen neu aufgebaut), die Ablage der Dateien (`ablage`: Kellerwolke oder Datenordner),
+App-Verzeichnis, Prüfung der Verbindungen, regelmäßige
 Sicherung der Datenbank (`appkern.app.sicherung`), erste Einrichtung (solange keine Kellerwolke eingetragen ist: vom
 Rechner selbst, von anderswo mit dem Einrichtungscode aus einer Datei am Rechner, Lehre 34), tägliches Aufräumen,
 Auslieferung der gebauten Oberfläche.
@@ -39,6 +41,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 import appkern
+from appkern.ablage import Ablage, AblageArt, KellerwolkeAblage, OrdnerAblage
 from appkern.anfragen import Abholer, Angebot as AppAngebot
 from appkern.anfragen.api import anfragen_router
 from appkern.anmeldung import Anmeldung, Konto
@@ -48,7 +51,7 @@ from appkern.auftraege.api import auftrags_router
 from appkern.datenbank import LESER, Datenbank
 from appkern.einstellungen import Angebot, Einstellungen, Option
 from appkern.einstellungen.api import einstellungs_router
-from appkern.kellerwolke import Kellerwolke, KellerwolkeFehler, NichtErreichbar, NichtGefunden, SchluesselUngueltig
+from appkern.kellerwolke import Ich, Kellerwolke, KellerwolkeFehler, NichtErreichbar, NichtGefunden, SchluesselUngueltig
 from appkern.leitstelle import Einschaetzung, Leitstelle, LeitstellenFehler, geduld_setzen
 from appkern.leitstelle.zugang import ARBEIT
 from appkern.protokoll import Protokoll
@@ -58,7 +61,7 @@ from appkern.verzeichnis import Verzeichnis
 
 from .begleiter import Begleiter
 from .einrichtungscode import Einrichtungscode, Gesperrt
-from .einstellungen import Grundeinstellungen
+from .einstellungen import MIT_KELLERWOLKE, OHNE_ANMELDUNG, Anmeldeart, Grundeinstellungen
 from .sicherung import RegelmaessigeSicherung, ablage_der_app, regel_aus
 
 logger = logging.getLogger("appkern.app")
@@ -103,6 +106,8 @@ class AppInfo(BaseModel):
     fassung: str
     appkern: str
     einrichtung_noetig: bool
+    anmeldung: Anmeldeart = MIT_KELLERWOLKE   # Betriebsart: mit dem Konto der Kellerwolke oder ohne Anmeldung
+    ablage: AblageArt = "kellerwolke"          # wo die App ihre Dateien ablegt (Kellerwolke oder Datenordner)
     besitzer: str | None = None
     kellerwolke: str = ""       # Adresse, gegen die angemeldet und gekoppelt wird (nie der Schlüssel)
     oberflaeche: str | None = None  # Fassung der gebauten Oberfläche, die der Server gerade ausliefert
@@ -185,8 +190,9 @@ class Geruest(Generic[E]):
         self.app_name: str | None = None          # Name des Zugangs in der Kellerwolke (Anmeldungen gelten nur hier)
         self.kellerwolke: Kellerwolke | None = None
         self.leitstelle: Leitstelle | None = None
+        self._ablage: Ablage = OrdnerAblage(self.daten / "ablage")
         self._clients: list[httpx.AsyncClient] = []
-        self.anmeldung = Anmeldung("", self._erlaubt, app_name=self._eigener_name)
+        self.anmeldung = Anmeldung("", self._erlaubt, app_name=self._eigener_name, ohne_anmeldung=self.ohne_anmeldung)
         self._grundangebote()
         self.pflicht = Depends(angemeldet(self.anmeldung))                          # Menschen und andere Apps
         self.mensch = Depends(angemeldet(self.anmeldung, nur_menschen=True))        # nur Menschen
@@ -328,6 +334,17 @@ class Geruest(Generic[E]):
 
     # --- Zugänge ----------------------------------------------------------------------------------------------
 
+    def ohne_anmeldung(self) -> bool:
+        """Ob die App ohne Anmeldung läuft (jeder Mensch ist der feste Nutzer). Allein die Betriebsart in den
+        Einstellungen entscheidet, nie der Zustand der Kellerwolke; vor dem Start gibt es keine Antwort (Fehler)."""
+        return self.einstellungen.stand.anmeldung == OHNE_ANMELDUNG
+
+    @property
+    def ablage(self) -> Ablage:
+        """Wo die App ihre Dateien ablegt: im eigenen Zweig der Kellerwolke, wenn eine eingerichtet ist, sonst im Ordner
+        `ablage` des Datenordners (`appkern.ablage`). Wechselt mit den Einstellungen; Dateien ziehen dabei nicht um."""
+        return self._ablage
+
     def _erlaubt(self) -> set[str]:
         if not self.besitzer:
             return set()
@@ -359,6 +376,8 @@ class Geruest(Generic[E]):
         kw_schluessel = stand.kellerwolke_schluessel.get_secret_value()
         self.kellerwolke = Kellerwolke(stand.kellerwolke_adresse, kw_schluessel, client=kurz) \
             if stand.kellerwolke_adresse and kw_schluessel else None
+        self._ablage = KellerwolkeAblage(self.kellerwolke, f"Apps/{self.name}") if self.kellerwolke is not None \
+            else OrdnerAblage(self.daten / "ablage")
         ls_schluessel = stand.leitstelle_schluessel.get_secret_value()
         self.leitstelle = Leitstelle(stand.leitstelle_adresse, ls_schluessel, self.name, client=lang, extern=stand.leitstelle_extern) \
             if stand.leitstelle_adresse and ls_schluessel else None
@@ -390,8 +409,59 @@ class Geruest(Generic[E]):
 
     @property
     def einrichtung_noetig(self) -> bool:
+        """Mit Anmeldung, solange keine Kellerwolke eingetragen ist; ohne Anmeldung nie (sie ist dann wahlweise)."""
+        if self.ohne_anmeldung():
+            return False
         stand = self.einstellungen.stand
         return not (stand.kellerwolke_adresse and stand.kellerwolke_schluessel.get_secret_value())
+
+    async def _kellerwolke_probe(self, adresse: str, schluessel: str) -> tuple[Ich | None, str]:
+        """Fragt eine Kellerwolke mit einem App-Schlüssel, wem er gehört (für Einrichtung und Umstellen auf Anmeldung);
+        ohne Erfolg mit dem Grund für Menschen."""
+        try:
+            pruefung = self.tls_pruefung()
+        except (OSError, ssl.SSLError) as f:
+            return None, f"Zertifikatsstelle nicht lesbar: {f}"
+        async with httpx.AsyncClient(timeout=httpx.Timeout(15.0), verify=pruefung, transport=self._transport) as client:
+            try:
+                return await Kellerwolke(adresse, schluessel, client=client, geduld_s=0).ich(), ""
+            except NichtErreichbar as f:
+                return None, f"Die Kellerwolke unter {adresse} ist von diesem Rechner aus nicht erreichbar ({f.meldung})."
+            except SchluesselUngueltig:
+                return None, ("Die Kellerwolke kennt diesen App-Schlüssel nicht, oder er ist gesperrt. In der Kellerwolke "
+                              "unter Einstellungen, Zugänge prüfen oder neu ausstellen.")
+            except KellerwolkeFehler as f:
+                return None, f"Die Kellerwolke antwortet unerwartet: {f.meldung}"
+
+    async def _anmeldung_regel(self, alt: E, neu: E) -> str | None:
+        """Umstellen auf Anmeldung nur mit einer Kellerwolke, die den App-Schlüssel kennt: sonst könnte sich danach
+        niemand mehr anmelden."""
+        if neu.anmeldung != MIT_KELLERWOLKE or alt.anmeldung == MIT_KELLERWOLKE:
+            return None
+        schluessel = neu.kellerwolke_schluessel.get_secret_value()
+        if not (neu.kellerwolke_adresse and schluessel):
+            return ("Mit Anmeldung braucht eine eingerichtete Kellerwolke: erst Adresse und App-Schlüssel unter "
+                    "Verbindungen eintragen, dann umstellen.")
+        ich, grund = await self._kellerwolke_probe(neu.kellerwolke_adresse, schluessel)
+        return None if ich is not None else f"Nicht umgestellt: {grund}"
+
+    async def _anmeldung_festhalten(self) -> None:
+        """Bestandsschutz (WIKI-11): sieht die App ohne Anmeldung vor und hat niemand die Betriebsart gewählt (weder in der
+        Oberfläche noch in der Umgebung), hält der erste Start sie fest. Mit Anmeldung, wenn schon eine Kellerwolke
+        eingetragen ist: eine App, die bisher anmeldete, öffnet sich nie durch eine neue Vorgabe. Sonst ohne Anmeldung,
+        damit eine später zugeschaltete Kellerwolke die Betriebsart nicht von selbst ändert."""
+        e = self.einstellungen
+        if e.herkunft("anmeldung") != "vorgabe" or e.stand.anmeldung != OHNE_ANMELDUNG:
+            return
+        stand = e.stand
+        art = MIT_KELLERWOLKE if stand.kellerwolke_adresse and stand.kellerwolke_schluessel.get_secret_value() \
+            else OHNE_ANMELDUNG
+        await e.aendern({"anmeldung": art})
+        text = ("mit Anmeldung über die Kellerwolke (sie war schon eingerichtet)" if art == MIT_KELLERWOLKE
+                else "ohne Anmeldung (Vorgabe der App), nur im eigenen Netz betreiben")
+        await self.protokoll.eintragen("app.anmeldung", f"Betriebsart festgehalten: {text}", stufe="warnung"
+                                       if art == OHNE_ANMELDUNG else "info", bezug_art="einstellungen")
+        logger.warning("Betriebsart festgehalten: %s", text)
 
     def verbindung_anmelden(self, name: str, pruefung: Callable[[], Awaitable[Verbindung]]) -> None:
         """Eine weitere Verbindung der App (etwa zu einer anderen App oder einem Dienst am Mac); sie steht dann mit
@@ -443,6 +513,8 @@ class Geruest(Generic[E]):
         await self.db.oeffnen()
         await self.einstellungen.starten()
         await self.protokoll.starten()
+        await self._anmeldung_festhalten()
+        self.einstellungen.regel(self._anmeldung_regel)       # erst nach dem Festhalten: das gilt ohne Rückfrage
         geduld_setzen(self.einstellungen.stand.leitstelle_geduld_min * 60)
         self.anmeldung.ausfall_s = self.einstellungen.stand.anmeldung_ausfall_h * 3600
         await self._zugaenge_bauen()
@@ -501,6 +573,8 @@ class Geruest(Generic[E]):
             geduld_setzen(stand.leitstelle_geduld_min * 60)
         if "anmeldung_ausfall_h" in geaendert:
             self.anmeldung.ausfall_s = stand.anmeldung_ausfall_h * 3600
+        if "anmeldung" in geaendert:
+            await self._einrichtungscode_bereitstellen()
 
     async def _taeglich(self) -> None:
         while True:
@@ -516,7 +590,8 @@ class Geruest(Generic[E]):
     def info(self) -> AppInfo:
         return AppInfo(name=self.name, kennung=self.kennung, rolle=self.rolle, symbol=self.symbol, symbolbild=self.symbolbild,
                        farbe=self.farbe, fassung=self.fassung,
-                       appkern=appkern.__version__, einrichtung_noetig=self.einrichtung_noetig, besitzer=self.besitzer,
+                       appkern=appkern.__version__, einrichtung_noetig=self.einrichtung_noetig,
+                       anmeldung=self.einstellungen.stand.anmeldung, ablage=self.ablage.art, besitzer=self.besitzer,
                        kellerwolke=self.einstellungen.stand.kellerwolke_adresse.rstrip("/"),
                        oberflaeche=self.oberflaeche_fassung(),
                        einrichtungscode=self.einrichtungscode.ort if self.einrichtung_noetig and self.einrichtungscode.aktiv else None)
@@ -568,24 +643,9 @@ class Geruest(Generic[E]):
                 raise HTTPException(status_code=409, detail="Die App ist schon eingerichtet; Änderungen unter Einstellungen")
             if (request.client.host if request.client else "") not in LOKAL:
                 self._einrichtungscode_pruefen(eingabe.einrichtungscode)
-            try:
-                pruefung = self.tls_pruefung()
-            except (OSError, ssl.SSLError) as f:
-                raise HTTPException(status_code=422, detail=f"Zertifikatsstelle nicht lesbar: {f}")
-            async with httpx.AsyncClient(timeout=httpx.Timeout(15.0), verify=pruefung,
-                                         transport=self._transport) as client:
-                probe = Kellerwolke(eingabe.kellerwolke_adresse, eingabe.kellerwolke_schluessel, client=client, geduld_s=0)
-                try:
-                    ich = await probe.ich()
-                except NichtErreichbar as f:
-                    raise HTTPException(status_code=422, detail=f"Die Kellerwolke unter {eingabe.kellerwolke_adresse} ist von "
-                                                                f"diesem Rechner aus nicht erreichbar ({f.meldung}).")
-                except SchluesselUngueltig:
-                    raise HTTPException(status_code=422, detail="Die Kellerwolke kennt diesen App-Schlüssel nicht, oder er "
-                                                                "ist gesperrt. In der Kellerwolke unter Einstellungen, Zugänge "
-                                                                "prüfen oder neu ausstellen.")
-                except KellerwolkeFehler as f:
-                    raise HTTPException(status_code=422, detail=f"Die Kellerwolke antwortet unerwartet: {f.meldung}")
+            ich, grund = await self._kellerwolke_probe(eingabe.kellerwolke_adresse, eingabe.kellerwolke_schluessel)
+            if ich is None:
+                raise HTTPException(status_code=422, detail=grund)
             await self.einstellungen.aendern({"kellerwolke_adresse": eingabe.kellerwolke_adresse.rstrip("/"),
                                               "kellerwolke_schluessel": eingabe.kellerwolke_schluessel})
             self.einrichtungscode.entfernen()

@@ -6,6 +6,9 @@ Ein Wert kommt aus der Datenbank (was in der Oberfläche gesetzt wurde), sonst a
 sonst aus der Vorgabe des Modells. Fest ist ein Wert aus `<PRAEFIX>FEST_<FELD>` (etwa Zugänge, die das Ausrollen setzt,
 HELF-77): er geht vor dem Gespeicherten, lässt sich nicht ändern und wird in der Oberfläche nur angezeigt.
 
+Regeln über mehrere Felder (`regel`, etwa: eine Betriebsart setzt eine eingerichtete Verbindung voraus) gelten vor dem
+Speichern; ein Stand, der eine verletzt, wird nicht gespeichert (`Unzulaessig` mit dem Grund).
+
 Geheimnisse gehen in `felder()` nur verdeckt hinaus (bis auf die letzten vier Zeichen); `geheimnis()` deckt eines auf
 (für das Auge in der Oberfläche). In Protokoll und Ausgaben erscheinen sie nie.
 """
@@ -46,6 +49,17 @@ class UnbekanntesFeld(KeyError):
 
 class FestesFeld(Exception):
     """Eine Einstellung ist fest (aus `<PRAEFIX>FEST_<FELD>`, etwa vom Ausrollen) und lässt sich hier nicht ändern."""
+
+
+class Unzulaessig(Exception):
+    """Der neue Stand verletzt eine Regel der App (`Einstellungen.regel`); die Meldung ist für Menschen."""
+
+    def __init__(self, meldung: str) -> None:
+        super().__init__(meldung)
+        self.meldung = meldung
+
+
+Herkunft = Literal["fest", "gespeichert", "umgebung", "vorgabe"]
 
 
 def verdeckt(wert: str) -> str:
@@ -131,6 +145,7 @@ class Einstellungen(Generic[M]):
         self._gespeichert: dict[str, Any] = {}
         self._stand: M | None = None
         self._beobachter: list[Callable[[M, set[str]], Awaitable[None] | None]] = []
+        self._regeln: list[Callable[[M, M], str | None | Awaitable[str | None]]] = []
         self._anbieter: dict[str, Callable[[], Awaitable[Angebot]]] = {}
 
     async def starten(self) -> M:
@@ -169,6 +184,19 @@ class Einstellungen(Generic[M]):
             raise UnbekanntesFeld(name)
         return await anbieter()
 
+    def herkunft(self, name: str) -> Herkunft:
+        """Woher der gültige Wert eines Felds kommt: fest (Ausrollen), gespeichert (Oberfläche), Umgebung oder Vorgabe."""
+        if name not in self.modell.model_fields:
+            raise UnbekanntesFeld(name)
+        return ("fest" if name in self._fest() else "gespeichert" if name in self._gespeichert
+                else "umgebung" if name in self._aus_umgebung() else "vorgabe")
+
+    def regel(self, pruefung: Callable[[M, M], str | None | Awaitable[str | None]]) -> None:
+        """Eine Regel vor dem Speichern: `pruefung(alter_stand, neuer_stand)` nennt den Grund, warum der neue Stand nicht
+        geht, sonst None (auch als Koroutine, etwa wenn sie eine Verbindung probiert). Gilt für jede Änderung
+        (`aendern`), nie für Werte aus Umgebung oder Vorgabe beim Start."""
+        self._regeln.append(pruefung)
+
     def bei_aenderung(self, beobachter: Callable[[M, set[str]], Awaitable[None] | None]) -> None:
         """`beobachter(neuer_stand, geaenderte_felder)` nach jeder Änderung, etwa um einen Zugang neu aufzubauen."""
         self._beobachter.append(beobachter)
@@ -193,6 +221,12 @@ class Einstellungen(Generic[M]):
             else:
                 neu_gespeichert[name] = wert
         neu = self._bauen(neu_gespeichert)               # wirft ValidationError, bevor etwas gespeichert ist
+        for pruefung in self._regeln:
+            grund = pruefung(alt, neu)
+            if isinstance(grund, Awaitable):
+                grund = await grund
+            if grund:
+                raise Unzulaessig(grund)
         geaendert = {n for n in self.modell.model_fields if _klartext(getattr(neu, n)) != _klartext(getattr(alt, n))}
         gespeichert = {n: _json(_klartext(getattr(neu, n))) for n in neu_gespeichert}
         jetzt = datetime.now(timezone.utc).isoformat()
@@ -219,13 +253,11 @@ class Einstellungen(Generic[M]):
     def felder(self) -> list[Feld]:
         """Beschreibung für die Oberfläche; Geheimnisse verdeckt."""
         vorgabe = self.modell()
-        aus_umgebung, fest = self._aus_umgebung(), self._fest()
         felder = []
         for name, info in self.modell.model_fields.items():
             art, optionen = _art(info.annotation)
             wert = _klartext(getattr(self.stand, name))
-            herkunft = ("fest" if name in fest else "gespeichert" if name in self._gespeichert
-                        else "umgebung" if name in aus_umgebung else "vorgabe")
+            herkunft = self.herkunft(name)
             extra = info.json_schema_extra if isinstance(info.json_schema_extra, dict) else {}
             kleinste, groesste = _grenzen(info)
             felder.append(Feld(
@@ -277,4 +309,5 @@ def _json(wert: Any) -> Any:
     return wert
 
 
-__all__ = ["Einstellungen", "UnbekanntesFeld", "ValidationError", "aus_umgebung", "nur_lesen", "verdeckt"]
+__all__ = ["Einstellungen", "FestesFeld", "Herkunft", "UnbekanntesFeld", "Unzulaessig", "ValidationError", "aus_umgebung",
+           "nur_lesen", "verdeckt"]

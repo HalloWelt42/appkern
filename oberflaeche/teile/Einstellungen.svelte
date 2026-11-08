@@ -12,7 +12,7 @@
   import { hole, json, seitenFehler, seitenSignal } from "../lib/api.svelte";
   import { beiRueckkehr } from "../lib/erreichbar.svelte";
   import { gehe, navigation } from "../lib/navigation.svelte";
-  import { sitzung } from "../lib/sitzung.svelte";
+  import { sitzung, starten as sitzungStarten } from "../lib/sitzung.svelte";
   import type { Angebot, EinstellungsReiter, Feld } from "../lib/typen";
   import { kopieren, markieren } from "../lib/zwischenablage";
   import Auswahl from "./Auswahl.svelte";
@@ -153,9 +153,11 @@
     fehler = "";
     laeuft = true;
     try {
+      const betriebsart = "anmeldung" in aenderungen;
       felder = await hole<Feld[]>("/einstellungen", { method: "PATCH", ...json({ werte: aenderungen }) });
       aenderungen = {};
       aufgedeckt = {};
+      if (betriebsart) void sitzungStarten();      // Anmeldung an oder aus: die Schale richtet sich neu aus
     } catch (f) {
       fehler = seitenFehler(f);
     } finally {

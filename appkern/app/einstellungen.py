@@ -1,6 +1,14 @@
-"""Einstellungen, die jede App hat. Die App erbt davon und ergänzt ihre eigenen Felder."""
+"""Einstellungen, die jede App hat. Die App erbt davon und ergänzt ihre eigenen Felder.
+
+Die Betriebsart `anmeldung` (WIKI-11): mit dem Konto der Kellerwolke (Vorgabe jeder App) oder ohne Anmeldung, dann ist
+jeder Mensch ein fester Nutzer (nur für das eigene Netz). Eine App, die frisch ohne Anmeldung starten soll, setzt ihre
+Vorgabe mit `anmeldung_feld("ohne")`; ausdrücklich gewählt wird sie in den Einstellungen oder in der Umgebung
+(`<KENNUNG>_ANMELDUNG`, fest mit `<KENNUNG>_FEST_ANMELDUNG`), nie von selbst aus dem Zustand der Kellerwolke.
+"""
 
 from __future__ import annotations
+
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, SecretStr
 
@@ -9,6 +17,22 @@ from appkern.sicherung import VORGABE
 VERBINDUNGEN = {"gruppe": "Verbindungen"}
 ZUGANG = {"gruppe": "Zugang"}
 SICHERUNG = {"gruppe": "Sicherung"}
+
+Anmeldeart = Literal["kellerwolke", "ohne"]
+MIT_KELLERWOLKE: Anmeldeart = "kellerwolke"
+OHNE_ANMELDUNG: Anmeldeart = "ohne"
+
+
+def anmeldung_feld(vorgabe: Anmeldeart = MIT_KELLERWOLKE) -> Any:
+    """Das Feld der Betriebsart mit der Vorgabe der App; eine App, die ohne Anmeldung beginnen soll, überschreibt das
+    Feld damit (`anmeldung: Anmeldeart = anmeldung_feld("ohne")`)."""
+    return Field(vorgabe, title="Anmeldung", json_schema_extra={**ZUGANG, "beschriftungen": {
+        MIT_KELLERWOLKE: "Mit dem Konto der Kellerwolke", OHNE_ANMELDUNG: "Ohne Anmeldung, nur im eigenen Netz"}},
+        description="Mit dem Konto der Kellerwolke meldet sich jeder an, und Merkzettel, Notizen und was die App sonst "
+                    "je Person hält, gehören dem eigenen Konto. Ohne Anmeldung ist jeder, der die App erreicht, derselbe "
+                    "Nutzer, auf allen Geräten gemeinsam: nur im eigenen Netz betreiben, nie offen ins Internet stellen. "
+                    "Mit Anmeldung braucht eine eingerichtete Kellerwolke (Reiter Verbindungen). Beim Umstellen bleiben "
+                    "die Daten bei ihrem bisherigen Konto.")
 
 
 class Grundeinstellungen(BaseModel):
@@ -44,6 +68,7 @@ class Grundeinstellungen(BaseModel):
                          description="Unter dieser Adresse öffnet man die App im Browser; dorthin führt die Kellerwolke, "
                                      "wenn man eine Datei aus ihrem Dateimenü in dieser App öffnet. Wird beim ersten "
                                      "Öffnen nach der Anmeldung eingetragen.")
+    anmeldung: Anmeldeart = anmeldung_feld()
     weitere_konten: list[str] = Field(default_factory=list, title="Weitere Konten", json_schema_extra=ZUGANG,
                                       description="Wer außer dem Konto des App-Schlüssels diese App nutzen darf "
                                                   "(Namen von Konten der Kellerwolke).")

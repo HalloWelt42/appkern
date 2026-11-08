@@ -470,3 +470,115 @@ async def test_einschaetzung_fuer_den_knopf_wichtig(umgebung):
     await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"leitstelle_wichtig_bestaetigen": False}})
     assert (await c.post("/api/v1/leitstelle/einschaetzung", headers=h, json={"modell": "gross"})).json()["bestaetigen"] is False
     assert (await c.post("/api/v1/leitstelle/einschaetzung", json={"modell": "gross"})).status_code == 401
+
+
+# ----- Betriebsart ohne Anmeldung (WIKI-11) ----------------------------------------------------------------------------
+
+from appkern.app.einstellungen import Anmeldeart, anmeldung_feld  # noqa: E402
+
+
+class OffenEinstellungen(ProbeEinstellungen):
+    """Eine App, die frisch ohne Anmeldung beginnt (wie Nachschlag aus dem öffentlichen Repo)."""
+    anmeldung: Anmeldeart = anmeldung_feld("ohne")
+
+
+def geruest_fuer(tmp_path: Path, einstellungen, wolke: Wolke) -> Geruest:
+    return Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
+                   einstellungen=einstellungen, transport=httpx.MockTransport(wolke))
+
+
+async def test_ohne_anmeldung_frisch_und_umstellen(tmp_path: Path):
+    wolke = Wolke()
+    geruest = geruest_fuer(tmp_path, OffenEinstellungen, wolke)
+    app = geruest.fastapi()
+    await geruest.starten()
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=("192.168.1.57", 5)), base_url="http://t") as c:
+            info = (await c.get("/api/v1/app")).json()
+            assert info["anmeldung"] == "ohne" and not info["einrichtung_noetig"] and info["ablage"] == "ordner"
+            assert geruest.einstellungen.herkunft("anmeldung") == "gespeichert"        # beim ersten Start festgehalten
+            assert not (tmp_path / "daten" / "einrichtungscode").exists()
+            assert (await c.get("/api/v1/ich")).json()["id"] == "nutzer"
+            assert (await c.get("/api/v1/einstellungen")).status_code == 200
+            assert (await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test",
+                                                              "kellerwolke_schluessel": "kw_app_gut"})).status_code == 409
+            await geruest.ablage.schreiben("Notizen/a.md", b"a", inhaltstyp="text/markdown")
+            assert (tmp_path / "daten" / "ablage" / "Notizen" / "a.md").read_bytes() == b"a"
+
+            # auf Anmeldung nur mit einer Kellerwolke, die den Schlüssel kennt
+            r = await c.patch("/api/v1/einstellungen", json={"werte": {"anmeldung": "kellerwolke"}})
+            assert r.status_code == 422 and "Kellerwolke" in r.json()["detail"]
+            r = await c.patch("/api/v1/einstellungen", json={"werte": {
+                "anmeldung": "kellerwolke", "kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_falsch"}})
+            assert r.status_code == 422 and "kennt diesen App-Schlüssel nicht" in r.json()["detail"]
+            assert geruest.ohne_anmeldung() and geruest.kellerwolke is None              # nichts gespeichert
+            # die Kellerwolke zuschalten ändert die Betriebsart nicht, nur die Ablage
+            r = await c.patch("/api/v1/einstellungen", json={"werte": {
+                "kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"}})
+            assert r.status_code == 200 and geruest.ohne_anmeldung() and geruest.ablage.art == "kellerwolke"
+            assert (await c.get("/api/v1/ich")).json()["id"] == "nutzer"
+            r = await c.patch("/api/v1/einstellungen", json={"werte": {"anmeldung": "kellerwolke"}})
+            assert r.status_code == 200
+            info = (await c.get("/api/v1/app")).json()
+            assert info["anmeldung"] == "kellerwolke" and not info["einrichtung_noetig"] and info["besitzer"] == "chef"
+            assert (await c.get("/api/v1/ich")).status_code == 401
+            assert (await c.get("/api/v1/einstellungen")).status_code == 401
+            h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
+            assert (await c.get("/api/v1/ich", headers=h)).json()["name"] == "chef"
+            # und zurück: ausdrücklich, von einem angemeldeten Menschen
+            assert (await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"anmeldung": "ohne"}})).status_code == 200
+            assert (await c.get("/api/v1/ich")).json()["id"] == "nutzer"
+            ereignisse = [e["ereignis"] for e in (await c.get("/api/v1/protokoll")).json()["eintraege"]]
+            assert "app.anmeldung" in ereignisse and "einstellung.geaendert" in ereignisse
+    finally:
+        await geruest.stoppen()
+
+
+async def test_bestandsschutz_eine_eingerichtete_app_bleibt_mit_anmeldung(tmp_path: Path):
+    """Bisher mit Anmeldung eingerichtet, dann eine Fassung mit der Vorgabe ohne Anmeldung: sie bleibt mit Anmeldung."""
+    wolke = Wolke()
+    alt = geruest_fuer(tmp_path, ProbeEinstellungen, wolke)
+    app = alt.fastapi()
+    await alt.starten()
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+        assert (await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test",
+                                                          "kellerwolke_schluessel": "kw_app_gut"})).status_code == 200
+    assert alt.einstellungen.herkunft("anmeldung") == "vorgabe"                 # mit Anmeldung als Vorgabe: nichts festzuhalten
+    await alt.stoppen()
+
+    neu = geruest_fuer(tmp_path, OffenEinstellungen, wolke)
+    app = neu.fastapi()
+    wolke.kellerwolke_weg = True                                               # auch wenn sie beim Start nicht antwortet
+    await neu.starten()
+    try:
+        assert not neu.ohne_anmeldung() and neu.einstellungen.herkunft("anmeldung") == "gespeichert"
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            assert (await c.get("/api/v1/app")).json()["anmeldung"] == "kellerwolke"
+            assert (await c.get("/api/v1/ich")).status_code == 401              # ausgefallen heißt nie offen
+            assert (await c.get("/api/v1/ich", headers={"X-Kellerwolke-Sitzung": "nie-bestaetigt"})).status_code == 503
+    finally:
+        await neu.stoppen()
+
+
+async def test_betriebsart_aus_der_umgebung(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("PROBE_ANMELDUNG", "ohne")
+    geruest = geruest_fuer(tmp_path / "a", ProbeEinstellungen, Wolke())
+    await geruest.starten()
+    try:
+        assert geruest.ohne_anmeldung() and geruest.einstellungen.herkunft("anmeldung") == "umgebung"
+    finally:
+        await geruest.stoppen()
+
+    monkeypatch.delenv("PROBE_ANMELDUNG")
+    monkeypatch.setenv("PROBE_FEST_ANMELDUNG", "kellerwolke")                   # etwa der Betrieb des Hauses
+    geruest = geruest_fuer(tmp_path / "b", OffenEinstellungen, Wolke())
+    app = geruest.fastapi()
+    await geruest.starten()
+    try:
+        assert not geruest.ohne_anmeldung() and geruest.einrichtung_noetig
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
+            h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
+            assert (await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"anmeldung": "ohne"}})).status_code == 409
+    finally:
+        await geruest.stoppen()

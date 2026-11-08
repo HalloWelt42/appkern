@@ -69,7 +69,7 @@ export { anpassen as bildwahlAnpassen, dauerText, endformat, endformatAusVerhael
 // Bausteine für eine App mit eigener Schale (eigene Gestaltung statt der gemeinsamen): Start der Sitzung, Anmeldung,
 // Koppeln, erste Einrichtung, Abmelden, Verfolgen von Aufträgen, Fassung, Weg und Verbindungen. Die Logik bleibt hier,
 // die App zeichnet nur; Fundus nutzt das für die Gestaltung der Leitstelle.
-export { abmelden, anmelden, einrichtenMit, koppeln, starten as sitzungStarten } from "./lib/sitzung.svelte";
+export { abmelden, anmelden, einrichtenMit, koppeln, ohneAnmeldung, starten as sitzungStarten } from "./lib/sitzung.svelte";
 export { abbrechen as auftragAbbrechen, verfolgen as auftraegeVerfolgen, wiederholen as auftragWiederholen } from "./lib/auftraege.svelte";
 export { fassungVerfolgen } from "./lib/fassung.svelte";
 export { navigationStarten } from "./lib/navigation.svelte";
