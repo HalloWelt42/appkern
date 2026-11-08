@@ -67,6 +67,7 @@ export interface Auftrag {
   von: string;                    // wer oder was ihn angestoßen hat (Konto, App, Zeitplan); leer: unbekannt
   zurueckgestellt: string;        // wartend, aber von der App zurückgehalten, mit Grund
   herkunft?: Herkunft | null;     // woher er kommt, als Verweis in der App; leer: keiner
+  uebernommen_von?: string | null; // beendet ohne Erfolg, ein anderer offener arbeitet am selben Gegenstand (WIKI-73)
   erstellt_am: string;
   begonnen_am: string | null;
   beendet_am: string | null;

@@ -12,7 +12,7 @@ import pytest
 from fastapi import FastAPI
 from pydantic import BaseModel, ValidationError
 
-from appkern.auftraege import (Art, AuftragAbgebrochen, AuftragFehler, Auftraege, FalscherZustand, Herkunft, Kontext, Phase,
+from appkern.auftraege import (Art, AuftragAbgebrochen, AuftragFehler, Auftraege, FalscherZustand, Herkunft, Kontext, NichtGefunden, Phase,
                                UnbekannteArt)
 from appkern.auftraege.api import auftrags_router
 from appkern.datenbank import Datenbank
@@ -407,3 +407,47 @@ async def test_anfragen_im_auftrag_tragen_seine_kennung(db):
         await ls.schliessen()
     assert gesehen["kopf"]["X-Leitstelle-Arbeit"] == auftrag.id == gesehen["nebenher"]["X-Leitstelle-Arbeit"]
     assert "X-Leitstelle-Arbeit" not in ls.koepfe("außerhalb")
+
+
+async def test_gegenstand_kein_doppel_uebernommen_und_abgeraeumt(db):
+    """Eine Art mit Gegenstand (etwa die Datei, die geladen wird; WIKI-73): kein zweiter offener Auftrag daran,
+    Wiederholen liefert den offenen, ein beendeter nennt ihn als uebernommen_von, ein fertiger räumt die alten ab."""
+    tor, verhalten = asyncio.Event(), {"fehler": True}
+
+    async def laden(k: Kontext):
+        if verhalten["fehler"]:
+            raise AuftragFehler("Keine Quelle")
+        await tor.wait()
+        return {"datei": k.eingabe["datei"]}
+
+    dienst = Auftraege(db, [Art("laden", "Laden", laden, gegenstand=lambda e: e["datei"])])
+    await dienst.starten()
+    try:
+        alt = await dienst.einreihen("laden", {"datei": "a.zim"})
+        await bis(dienst, alt.id, "fehler")
+        verhalten["fehler"] = False
+        neu = await dienst.einreihen("laden", {"datei": "a.zim"})
+        assert neu.id != alt.id
+        await bis(dienst, neu.id, "laeuft")
+        assert (await dienst.holen(alt.id)).uebernommen_von == neu.id
+        assert (await dienst.wiederholen(alt.id)).id == neu.id                 # kein zweiter: der offene
+        assert (await dienst.einreihen("laden", {"datei": "a.zim"})).id == neu.id
+        anderer = await dienst.einreihen("laden", {"datei": "b.zim"})          # anderer Gegenstand: eigener Auftrag
+        assert anderer.id != neu.id and (await dienst.liste(art="laden")).gesamt == 3
+        tor.set()
+        await bis(dienst, neu.id, "fertig")
+        with pytest.raises(NichtGefunden):                                    # erledigt: aus der Liste
+            await dienst.holen(alt.id)
+        await bis(dienst, anderer.id, "fertig")
+    finally:
+        await dienst.stoppen()
+
+    # ältere Aufträge ohne Gegenstand bekommen ihn beim Start nachgetragen
+    await db.ausfuehren("INSERT INTO auftrag (id, art, titel, zustand, eingabe, erstellt_am, beendet_am, fehler) "
+                        "VALUES ('x', 'laden', 'Laden', 'fehler', '{\"datei\": \"c.zim\"}', '2026-01-01', '2026-01-01', 'alt')")
+    dienst = Auftraege(db, [Art("laden", "Laden", laden, gegenstand=lambda e: e["datei"])])
+    await dienst.starten()
+    try:
+        assert (await db.zeile("SELECT gegenstand FROM auftrag WHERE id='x'"))["gegenstand"] == "c.zim"
+    finally:
+        await dienst.stoppen()

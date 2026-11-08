@@ -1,6 +1,7 @@
 <script lang="ts">
   // Ein Auftrag in der Liste: Titel, Zeit, Schritte, Fortschritt, Fehler, Abbrechen oder Wiederholen, und woher er
-  // kommt (Verweis dorthin, etwa zum Artikel).
+  // kommt (Verweis dorthin, etwa zum Artikel). Hat ein anderer offener Auftrag die Arbeit übernommen (gleicher
+  // Gegenstand, WIKI-73), steht statt Wiederholen der Sprung dorthin: Wiederholen hieße sonst doppelt arbeiten.
   import { abbrechen, auftraege, wiederholen } from "../lib/auftraege.svelte";
   import { seit, wann } from "../lib/format";
   import { leisteOeffnen } from "../lib/leiste.svelte";
@@ -68,6 +69,10 @@
               disabled={a.abbruch_gewuenscht} onclick={(e) => tun(e, () => abbrechen(a.id))}>
         <i class="fa-solid {a.zustand === 'laeuft' ? 'fa-stop' : 'fa-xmark'}"></i>
       </button>
+    {:else if a.uebernommen_von}
+      <button class="knopf still" title="Ein anderer Auftrag arbeitet schon daran; Wiederholen ist nicht nötig"
+              onclick={(e) => { e.stopPropagation(); auftraege.gewaehlt = a.uebernommen_von ?? null; leisteOeffnen(); }}>
+        <i class="fa-solid fa-arrow-right"></i> Übernommen</button>
     {:else if a.zustand !== "fertig"}
       <button class="knopf" title={a.fortsetzbar ? "Setzt am Zwischenstand an" : "Beginnt von vorn"}
               onclick={(e) => tun(e, () => wiederholen(a.id))}><i class="fa-solid fa-rotate-right"></i> Wiederholen</button>

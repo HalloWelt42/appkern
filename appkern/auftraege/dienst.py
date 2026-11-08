@@ -64,6 +64,11 @@ SCHEMA = [
     """,
     # wer oder was einen Auftrag angestoßen hat (Konto, App, Zeitplan), in Worten; leer bei älteren
     "ALTER TABLE auftrag ADD COLUMN von TEXT NOT NULL DEFAULT ''",
+    # woran ein Auftrag arbeitet (Regel der Art aus der Eingabe, etwa die Datei); leer: die Art nennt keinen (WIKI-73)
+    """
+    ALTER TABLE auftrag ADD COLUMN gegenstand TEXT NOT NULL DEFAULT '';
+    CREATE INDEX auftrag_gegenstand_idx ON auftrag (art, gegenstand);
+    """,
 ]
 Zurueckstellen = Callable[[Auftrag], str]
 
@@ -117,6 +122,11 @@ class Art:
     herkunft: Callable[[dict[str, Any]], Herkunft | None] | None = None
     """Woher ein Auftrag dieser Art kommt, aus seiner Eingabe (etwa der Artikel, der übersetzt wird); gilt auch für
     Aufträge, die schon erledigt sind."""
+    gegenstand: Callable[[dict[str, Any]], str] | None = None
+    """Woran ein Auftrag dieser Art arbeitet, als Schlüssel aus der Eingabe (etwa die Datei, die er lädt). Mit ihm gibt
+    es nie zwei offene Aufträge am selben Gegenstand: Einreihen und Wiederholen liefern dann den offenen. Ein fertiger
+    nimmt die älteren, die damit erledigt sind (Fehler, abgebrochen, unterbrochen), aus der Liste; solange ein anderer
+    offen ist, nennt ein beendeter ihn als `uebernommen_von` (WIKI-73)."""
 
 
 @dataclass
@@ -189,6 +199,7 @@ class Auftraege:
     async def starten(self) -> None:
         """Im Lebenszyklus der App: Schema, Aufräumen nach einem Neustart, dann die Schleife."""
         await self.db.einrichten("auftraege", SCHEMA)
+        await self._gegenstaende_nachtragen()
         for zeile in await self.db.zeilen("SELECT id, art FROM auftrag WHERE zustand='laeuft'"):
             art = self.arten.get(zeile["art"])
             if art and art.nach_neustart == "fortsetzen":
@@ -224,10 +235,14 @@ class Auftraege:
         if a is None:
             raise UnbekannteArt(f"Unbekannte Art: {art}")
         daten = self._eingabe_json(a, eingabe)
+        gegenstand = self._gegenstand(a, daten)
+        if offen := await self._offener_am(art, gegenstand):
+            return offen                                   # schon in Arbeit: kein zweiter am selben Gegenstand
         auftrag_id = str(uuid.uuid4())
         await self.db.ausfuehren(
-            "INSERT INTO auftrag (id, art, titel, zustand, eingabe, stapel, erstellt_am, von) VALUES (?,?,?,?,?,?,?,?)",
-            (auftrag_id, art, titel or a.titel, "wartet", json.dumps(daten, ensure_ascii=False), stapel, _jetzt(), von))
+            "INSERT INTO auftrag (id, art, titel, zustand, eingabe, stapel, erstellt_am, von, gegenstand) VALUES (?,?,?,?,?,?,?,?,?)",
+            (auftrag_id, art, titel or a.titel, "wartet", json.dumps(daten, ensure_ascii=False), stapel, _jetzt(), von,
+             gegenstand))
         auftrag = await self.holen(auftrag_id)
         self._melden(auftrag)
         self._wecker.set()
@@ -256,7 +271,7 @@ class Auftraege:
         zeile = await self.db.zeile("SELECT * FROM auftrag WHERE id=?", (auftrag_id,))
         if zeile is None:
             raise NichtGefunden(f"Auftrag {auftrag_id} nicht gefunden")
-        return self._als_auftrag(zeile)
+        return self._als_auftrag(zeile, offen=await self._offene_gegenstaende())
 
     async def liste(self, *, zustand: Sequence[Zustand] = (), art: str | None = None, stapel: str | None = None,
                     suche: str | None = None, grenze: int = 50, versatz: int = 0) -> Seite:
@@ -278,7 +293,8 @@ class Auftraege:
         gesamt = (await self.db.zeile(f"SELECT count(*) AS n FROM auftrag {wo}", werte))["n"]
         zeilen = await self.db.zeilen(f"SELECT * FROM auftrag {wo} ORDER BY erstellt_am DESC, id LIMIT ? OFFSET ?",
                                       [*werte, max(1, min(grenze, 500)), max(0, versatz)])
-        return Seite(eintraege=[self._als_auftrag(z) for z in zeilen], gesamt=gesamt)
+        offen = await self._offene_gegenstaende()
+        return Seite(eintraege=[self._als_auftrag(z, offen=offen) for z in zeilen], gesamt=gesamt)
 
     async def abbrechen(self, auftrag_id: str) -> Auftrag:
         """Wartend: sofort abgebrochen. Laufend: die Arbeit hört am nächsten Haltepunkt auf."""
@@ -317,11 +333,14 @@ class Auftraege:
         eingabe = alt["eingabe"]
         if aenderungen:
             eingabe = json.dumps(self._eingabe_json(art, {**json.loads(eingabe or "{}"), **aenderungen}), ensure_ascii=False)
+        gegenstand = self._gegenstand(art, json.loads(eingabe or "{}"))
+        if offen := await self._offener_am(alt["art"], gegenstand):
+            return offen                                   # ein anderer hat ihn schon übernommen
         await self.db.ausfuehren(
-            "INSERT INTO auftrag (id, art, titel, zustand, eingabe, zwischenstand, stapel, wiederholung_von, erstellt_am, von) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO auftrag (id, art, titel, zustand, eingabe, zwischenstand, stapel, wiederholung_von, erstellt_am, von, "
+            "gegenstand) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (neu_id, alt["art"], alt["titel"], "wartet", eingabe, zwischen, alt["stapel"], auftrag_id, _jetzt(),
-             alt["von"] if von is None else von))
+             alt["von"] if von is None else von, gegenstand))
         auftrag = await self.holen(neu_id)
         self._melden(auftrag)
         self._wecker.set()
@@ -385,10 +404,63 @@ class Auftraege:
             logger.exception("Herkunft eines Auftrags (%s)", art.name)
             return None
 
-    def _als_auftrag(self, z: dict[str, Any], *, mit_grund: bool = True) -> Auftrag:
+    # ----- Gegenstand (WIKI-73) ----------------------------------------------------------------------------------------
+
+    @staticmethod
+    def _gegenstand(art: Art | None, eingabe: dict[str, Any]) -> str:
+        if art is None or art.gegenstand is None:
+            return ""
+        try:
+            return str(art.gegenstand(eingabe) or "")
+        except Exception:  # noqa: BLE001 - eine Regel der App darf keinen Auftrag aufhalten
+            logger.exception("Gegenstand eines Auftrags (%s)", art.name)
+            return ""
+
+    async def _offener_am(self, art: str, gegenstand: str) -> Auftrag | None:
+        """Der offene Auftrag dieser Art am Gegenstand, wenn es einen gibt (laufend vor wartend)."""
+        if not gegenstand:
+            return None
+        z = await self.db.zeile("SELECT id FROM auftrag WHERE art=? AND gegenstand=? AND zustand IN ('wartet','laeuft') "
+                                "ORDER BY zustand='laeuft' DESC, erstellt_am LIMIT 1", (art, gegenstand))
+        return await self.holen(z["id"]) if z else None
+
+    async def _offene_gegenstaende(self) -> dict[tuple[str, str], str]:
+        """(Art, Gegenstand) -> ein offener Auftrag daran; für `uebernommen_von` in einer Abfrage je Liste."""
+        return {(z["art"], z["gegenstand"]): z["id"] for z in await self.db.zeilen(
+            "SELECT art, gegenstand, id FROM auftrag WHERE gegenstand != '' AND zustand IN ('wartet','laeuft')")}
+
+    async def _gegenstaende_nachtragen(self) -> None:
+        """Aufträge aus der Zeit, bevor ihre Art einen Gegenstand nannte, bekommen ihn beim Start."""
+        for name, art in self.arten.items():
+            if art.gegenstand is None:
+                continue
+            for z in await self.db.zeilen("SELECT id, eingabe FROM auftrag WHERE art=? AND gegenstand=''", (name,)):
+                if g := self._gegenstand(art, json.loads(z["eingabe"])):
+                    await self.db.ausfuehren("UPDATE auftrag SET gegenstand=? WHERE id=?", (g, z["id"]))
+
+    async def _erledigte_abraeumen(self, auftrag: Auftrag, gegenstand: str) -> None:
+        """Ein fertiger Auftrag nimmt die beendeten ohne Erfolg am selben Gegenstand aus der Liste; das Protokoll
+        vermerkt es, damit nichts still verschwindet."""
+        if not gegenstand:
+            return
+        alte = await self.db.zeilen("SELECT id, titel, zustand FROM auftrag WHERE art=? AND gegenstand=? AND id != ? "
+                                    "AND zustand IN ('fehler','abgebrochen','unterbrochen')", (auftrag.art, gegenstand, auftrag.id))
+        if not alte:
+            return
+        await self.db.ausfuehren(f"DELETE FROM auftrag WHERE id IN ({','.join('?' * len(alte))})", [z["id"] for z in alte])
+        if self.protokoll is not None:
+            await self.protokoll.eintragen(
+                "auftrag.abgeraeumt", f"{len(alte)} ältere Aufträge am selben Gegenstand ({gegenstand}) sind damit erledigt "
+                f"und aus der Liste: " + ", ".join(f"{z['titel']} ({z['zustand']})" for z in alte),
+                stufe="info", bezug_art="auftrag", bezug_id=auftrag.id, bezug_name=auftrag.titel, daten={"art": auftrag.art})
+
+    def _als_auftrag(self, z: dict[str, Any], *, mit_grund: bool = True,
+                     offen: dict[tuple[str, str], str] | None = None) -> Auftrag:
         art = self.arten.get(z["art"])
         zurueck = self._grund(z) if mit_grund and z["zustand"] == "wartet" else ""
         eingabe = json.loads(z["eingabe"])
+        gegenstand = z.get("gegenstand") or ""
+        uebernommen = (offen or {}).get((z["art"], gegenstand)) if gegenstand and z["zustand"] not in OFFEN else None
         return Auftrag(
             id=z["id"], art=z["art"], titel=z["titel"], zustand=z["zustand"], eingabe=eingabe,
             ergebnis=json.loads(z["ergebnis"]) if z["ergebnis"] else None, fehler=z["fehler"],
@@ -396,7 +468,7 @@ class Auftraege:
             phasen=list(art.phasen) if art else [], abbruch_gewuenscht=bool(z["abbruch"]),
             fortsetzbar=bool(art and art.fortsetzbar), stapel=z["stapel"], wiederholung_von=z["wiederholung_von"],
             erstellt_am=z["erstellt_am"], begonnen_am=z["begonnen_am"], beendet_am=z["beendet_am"], von=z.get("von") or "",
-            zurueckgestellt=zurueck, herkunft=self._herkunft(art, eingabe))
+            zurueckgestellt=zurueck, herkunft=self._herkunft(art, eingabe), uebernommen_von=uebernommen)
 
     async def _fortschritt(self, auftrag_id: str, anteil: float | None, schritt: str, phase: str | None) -> None:
         anteil = None if anteil is None else min(1.0, max(0.0, anteil))
@@ -487,6 +559,9 @@ class Auftraege:
         auftrag = await self.holen(auftrag_id)
         self._melden(auftrag)
         await self._eintragen(auftrag)
+        if fertig:
+            z = await self.db.zeile("SELECT gegenstand FROM auftrag WHERE id=?", (auftrag_id,))
+            await self._erledigte_abraeumen(auftrag, z["gegenstand"] if z else "")
 
     async def _eintragen(self, auftrag: Auftrag) -> None:
         if self.protokoll is None:

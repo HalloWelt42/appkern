@@ -54,6 +54,7 @@ class Auftrag(BaseModel):
     von: str = ""                         # wer oder was ihn angestoßen hat (Konto, App, Zeitplan); leer: unbekannt
     zurueckgestellt: str = ""             # wartend, aber von der App zurückgehalten, mit Grund; leer: darf beginnen
     herkunft: Herkunft | None = None      # Verweis dorthin, woher er kommt (Regel der Art aus der Eingabe); leer: keiner
+    uebernommen_von: str | None = None    # beendet ohne Erfolg, und ein anderer offener arbeitet am selben Gegenstand (WIKI-73)
     erstellt_am: datetime
     begonnen_am: datetime | None = None
     beendet_am: datetime | None = None
