@@ -355,7 +355,9 @@ a.knopf.primaer { color: var(--auf-akzent); }
 .nav-oben { display: flex; align-items: center; gap: 4px; }
 .nav-oben .nav-gruppe { flex: 1; min-width: 0; }
 .nav-oben .rund { width: 28px; height: 28px; }
-.nav-zusatz { flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 4px -8px 0; box-shadow: 0 -1px 0 var(--rand); }
+/* Zusatz der App (etwa die Geräte in NamensGeber): rollt in seinem Bereich, statt über Ansicht und Konto zu laufen */
+.nav-zusatz { flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 4px -8px 0; box-shadow: 0 -1px 0 var(--rand);
+              overflow-y: auto; overscroll-behavior: contain; }
 .nav-ansicht { display: flex; flex-direction: column; gap: 6px; padding: 2px 2px 4px; }
 .nav-ansicht .nav-gruppe { padding: 0 4px 2px; }
 .nav-ansicht .segment { display: flex; }
