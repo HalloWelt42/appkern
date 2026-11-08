@@ -32,7 +32,8 @@
       {#if anteil !== null}<span class="nav-balken" aria-hidden="true"><span style:width="{Math.round(Math.min(1, Math.max(0, anteil)) * 100)}%"></span></span>{/if}
     </button>
   {/each}
-  {#if bereiche.length}<div class="nav-gruppe">App</div>{/if}
+  <!-- die Überschrift App steht schon, wenn die letzten Bereiche der App selbst zur Gruppe App gehören -->
+  {#if bereiche.length && bereiche[bereiche.length - 1].gruppe !== "App"}<div class="nav-gruppe">App</div>{/if}
   <button class="nav-eintrag" class:aktiv={seite === "auftraege"} title="Aufträge: was die App im Hintergrund erledigt, mit Fortschritt, Abbrechen und Wiederholen" onclick={() => gehe("auftraege")}>
     <i class="fa-solid fa-list-check"></i><span class="nav-text">Aufträge</span>{#if offen}<span class="zahl">{offen}</span>{/if}
   </button>
