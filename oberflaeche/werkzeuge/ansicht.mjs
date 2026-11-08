@@ -80,10 +80,13 @@ let app = { kennung: "entwurf" };
 let token = "";
 if (mitAnmeldung) {
   app = await (await fetch(`${basis}/api/v1/app`)).json();
-  const anmeldung = await fetch(`${basis}/api/v1/anmeldung`, { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ kennung: env.KELLERWOLKE_KENNUNG, passwort: env.KELLERWOLKE_PASSWORT }) });
-  if (!anmeldung.ok) { console.error(`Anmeldung mit dem Testzugang scheitert (${anmeldung.status}); backend/.env.test prüfen`); process.exit(2); }
-  token = (await anmeldung.json()).token;
+  // eine App ohne Anmeldung (Betriebsart, WIKI-11) zeigt jedem alles: dann gibt es nichts anzumelden
+  if (app.anmeldung !== "ohne") {
+    const anmeldung = await fetch(`${basis}/api/v1/anmeldung`, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kennung: env.KELLERWOLKE_KENNUNG, passwort: env.KELLERWOLKE_PASSWORT }) });
+    if (!anmeldung.ok) { console.error(`Anmeldung mit dem Testzugang scheitert (${anmeldung.status}); backend/.env.test prüfen`); process.exit(2); }
+    token = (await anmeldung.json()).token;
+  }
 }
 
 // eigener Chrome an der Leitung (browser.mjs, HELF-76); er endet mit dem Lauf, auch beim Abbruch
