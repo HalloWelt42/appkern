@@ -22,10 +22,13 @@
   // `einstellungen`: eigene Reiter der App in den Einstellungen (neben den erzeugten Gruppen).
   // `ansicht`: das Thema, bis der Mensch in diesem Browser wählt. `kopf`, `kopfMitte`, `navigation`, `fuss`: eigene
   // Teile der App in Kopf (rechts und Mitte, etwa eine Suche), Seitenleiste (unter den Bereichen) und Fußleiste am Rechner.
-  let { bereiche = [], fassung, ruhig, oeffnen, einstellungen = [], ansicht = {}, kopf, kopfMitte, navigation: navZusatz, fuss }: {
+  // `auftraegeReiter`: Aufträge als eigener Reiter unten am Telefon (Vorgabe); sonst stehen sie unter Mehr, die Zahl
+  // laufender Aufträge oben rechts bleibt (für Apps, deren Reiter wichtigeres tragen, WIKI-74).
+  let { bereiche = [], fassung, ruhig, oeffnen, einstellungen = [], ansicht = {}, kopf, kopfMitte, navigation: navZusatz, fuss,
+        auftraegeReiter = true }: {
     bereiche?: Bereich[]; fassung: string; ruhig?: () => boolean; oeffnen?: (a: Anfrage) => Promise<string> | string;
     einstellungen?: EinstellungsReiter[]; ansicht?: AnzeigeVorgabe; kopf?: Snippet; kopfMitte?: Snippet; navigation?: Snippet;
-    fuss?: Snippet } = $props();
+    fuss?: Snippet; auftraegeReiter?: boolean } = $props();
 
   anzeigeStarten(untrack(() => ansicht));     // nur die Vorgabe beim Start; danach gilt die Wahl im Browser
   // Flächenfarbe des Symbols aus der App-Angabe (Kopf, Anmeldung)
@@ -66,7 +69,7 @@
 {:else if !sitzung.angemeldet}
   <Anmeldung />
 {:else if geraet.mobil}
-  <MobilSchale bereiche={bereiche.filter((b) => b.geraete !== "rechner")} {oeffnen} {einstellungen} />
+  <MobilSchale bereiche={bereiche.filter((b) => b.geraete !== "rechner")} {oeffnen} {einstellungen} {auftraegeReiter} />
 {:else}
   <Rechner bereiche={bereiche.filter((b) => b.geraete !== "telefon")} {oeffnen} {einstellungen} {kopf} {kopfMitte} navigation={navZusatz} {fuss} />
 {/if}

@@ -17,8 +17,9 @@
   import MobilAuftraege from "./MobilAuftraege.svelte";
   import MobilMehr from "./MobilMehr.svelte";
 
-  let { bereiche, oeffnen, einstellungen = [] }: { bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string;
-                                                 einstellungen?: EinstellungsReiter[] } = $props();
+  let { bereiche, oeffnen, einstellungen = [], auftraegeReiter = true }: {
+    bereiche: Bereich[]; oeffnen?: (a: Anfrage) => Promise<string> | string; einstellungen?: EinstellungsReiter[];
+    auftraegeReiter?: boolean } = $props();
 
   onMount(() => {
     const a = verfolgen();
@@ -33,7 +34,8 @@
   const weitere = $derived(bereiche.filter((b) => !reiter.includes(b)));
   const seite = $derived(navigation.seite || reiter[0]?.schluessel || "auftraege");
   const bereich = $derived(bereiche.find((b) => b.schluessel === seite));
-  const unterMehr = $derived(seite === "protokoll" || seite === "einstellungen" || weitere.some((b) => b.schluessel === seite));
+  const unterMehr = $derived(seite === "protokoll" || seite === "einstellungen" || (seite === "auftraege" && !auftraegeReiter)
+                             || weitere.some((b) => b.schluessel === seite));
   const titel = $derived(bereich?.titel ?? ({ auftraege: "Aufträge", protokoll: "Protokoll", einstellungen: "Einstellungen", mehr: "Mehr" } as Record<string, string>)[seite] ?? "");
   const fehlend = $derived(verbindungen.liste.filter(gestoert));   // vermisste zeigt nur das Minisymbol im Kopf
   const offen = $derived(auftraege.laufen + auftraege.warten);
@@ -71,16 +73,16 @@
     {:else if seite === "einstellungen"}
       <Einstellungen reiter={einstellungen} />
     {:else if seite === "mehr"}
-      <MobilMehr {weitere} />
+      <MobilMehr {weitere} auftraege={!auftraegeReiter} />
     {:else}
       <MobilAuftraege />
     {/if}
   </div>
   <nav class="t-reiter" data-rahmen="fuss" use:fest={"unten"}>
     {#each reiter as b (b.schluessel)}
-      <button class:aktiv={seite === b.schluessel} onclick={() => gehe(b.schluessel)}><i class="fa-solid {b.symbol}"></i><span class="t-reiter-name">{b.titel}</span></button>
+      <button class:aktiv={seite === b.schluessel} onclick={() => gehe(b.schluessel)}><i class="fa-solid {b.symbol}"></i><span class="t-reiter-name">{b.kurz ?? b.titel}</span></button>
     {/each}
-    <button class:aktiv={seite === "auftraege"} onclick={() => gehe("auftraege")}><i class="fa-solid fa-list-check"></i><span class="t-reiter-name">Aufträge</span></button>
+    {#if auftraegeReiter}<button class:aktiv={seite === "auftraege"} onclick={() => gehe("auftraege")}><i class="fa-solid fa-list-check"></i><span class="t-reiter-name">Aufträge</span></button>{/if}
     <button class:aktiv={seite === "mehr" || unterMehr} onclick={() => gehe("mehr")}><i class="fa-solid fa-ellipsis"></i><span class="t-reiter-name">Mehr</span></button>
   </nav>
 </div>

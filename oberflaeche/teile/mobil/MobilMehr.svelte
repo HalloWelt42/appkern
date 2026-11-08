@@ -1,12 +1,15 @@
 <script lang="ts">
-  // Mehr am Telefon: weitere Bereiche, Protokoll, Einstellungen, Verbindungen, Anzeige, Konto.
+  // Mehr am Telefon: weitere Bereiche, Aufträge (wenn sie keinen eigenen Reiter haben), Protokoll, Einstellungen,
+  // Verbindungen, Anzeige, Konto.
   import { anzeige, anzeigeSetzen, THEMEN } from "../../lib/anzeige.svelte";
+  import { auftraege as stand } from "../../lib/auftraege.svelte";
   import { gehe } from "../../lib/navigation.svelte";
   import { abmelden, sitzung } from "../../lib/sitzung.svelte";
   import type { Bereich } from "../../lib/typen";
   import { verbindungen } from "../../lib/verbindungen.svelte";
 
-  let { weitere }: { weitere: Bereich[] } = $props();
+  let { weitere, auftraege = false }: { weitere: Bereich[]; auftraege?: boolean } = $props();
+  const offen = $derived(stand.laufen + stand.warten);
   const konto = $derived(sitzung.konto!);
   const app = $derived(sitzung.app!);
 </script>
@@ -19,6 +22,10 @@
       {#if anteil !== null}<span class="nav-balken t-balken" aria-hidden="true"><span style:width="{Math.round(Math.min(1, Math.max(0, anteil)) * 100)}%"></span></span>{/if}</span>
       {#if zahl}<span class="t-zahl">{zahl}</span>{/if}<i class="fa-solid fa-chevron-right" style="font-size:15px; width:auto"></i></button>
   {/each}
+  {#if auftraege}
+    <button class="t-zeile" onclick={() => gehe("auftraege")}><i class="fa-solid fa-list-check"></i><span class="t-text"><span class="t-name">Aufträge</span></span>
+      {#if offen}<span class="t-zahl">{offen}</span>{/if}<i class="fa-solid fa-chevron-right" style="font-size:15px; width:auto"></i></button>
+  {/if}
   <button class="t-zeile" onclick={() => gehe("protokoll")}><i class="fa-solid fa-clock-rotate-left"></i><span class="t-text"><span class="t-name">Protokoll</span></span><i class="fa-solid fa-chevron-right" style="font-size:15px; width:auto"></i></button>
   <button class="t-zeile" onclick={() => gehe("einstellungen")}><i class="fa-solid fa-sliders"></i><span class="t-text"><span class="t-name">Einstellungen</span></span><i class="fa-solid fa-chevron-right" style="font-size:15px; width:auto"></i></button>
 </div>

@@ -147,6 +147,7 @@ export interface Bereich {
   symbol: string;
   seite: Component;
   reiter?: boolean;
+  kurz?: string;                                // Name im Reiter unten am Telefon, wo der Titel zu lang ist; sonst der Titel
   geraete?: "beide" | "rechner" | "telefon";   // wo der Bereich erscheint (Vorgabe: beide)
   zahl?: () => number;                          // kleine Zahl in der Navigation (etwa offene Vorgänge); 0 zeigt nichts
   fortschritt?: () => number | null;            // dünner Balken am Fuß des Eintrags (0 bis 1), solange etwas läuft; null zeigt nichts
