@@ -7,13 +7,15 @@
   import { pruefen, verbindung } from "../lib/erreichbar.svelte";
   import { sitzung } from "../lib/sitzung.svelte";
   import AppSymbol from "./AppSymbol.svelte";
-  import { verbindungen } from "../lib/verbindungen.svelte";
+  import { gestoert as istGestoert, verbindungen, vermisst } from "../lib/verbindungen.svelte";
   import Vermisst from "./Vermisst.svelte";
   import { fest } from "../lib/stelle.svelte";
 
   let { rechts, mitte }: { rechts?: Snippet; mitte?: Snippet } = $props();
   const app = $derived(sitzung.app!);
-  const gestoert = $derived(verbindungen.liste.filter((v) => !v.ok));
+  // die Pille nennt nur gestörte; vermisste (nie eingetragen) zeigt das Minisymbol daneben (WIKI-68)
+  const gestoert = $derived(verbindungen.liste.filter(istGestoert));
+  const eingerichtet = $derived(verbindungen.liste.filter((v) => !vermisst(v)));
   const alle = $derived(verbindungen.liste.map((v) => `${v.name}: ${v.ok ? "verbunden" : v.meldung}`).join("\n"));
 </script>
 
@@ -34,8 +36,8 @@
     {:else if verbindungen.geprueft}
       {#if gestoert.length}
         <span class="pille warn" title={alle}><span class="punkt"></span>{gestoert.length === 1 ? `${gestoert[0].name} gestört`
-          : `${gestoert.length} von ${verbindungen.liste.length} gestört`}</span>
-      {:else}
+          : `${gestoert.length} von ${eingerichtet.length} gestört`}</span>
+      {:else if eingerichtet.length === verbindungen.liste.length}
         <span class="pille" title={alle}><span class="punkt"></span>alles verbunden</span>
       {/if}
     {/if}
