@@ -368,3 +368,37 @@ class Einschaetzung(_Modell):
         etwa = f" etwa {self.wartezeit_s:.0f} s" if self.wartezeit_s else ""
         vor = f"; {self.vor_dir} vorher dran" if self.vor_dir else ""
         return f"Wartet{etwa}{wo}: {self.grund}{vor}"
+
+
+Fragart = Literal["auswahl", "ja_nein", "stufe", "mehrfach"]
+
+
+class Frage(_Modell):
+    """Eine Frage zum Einordnen (`POST /v1/einordnen`, PROTOKOLL 6.7 der Leitstelle): `auswahl` genau eine Möglichkeit,
+    `ja_nein` ohne Möglichkeiten, `stufe` eine geordnete Skala (höchstens 10, die erste ist die niedrigste), `mehrfach`
+    jede Möglichkeit für sich (Schlagworte). `moeglichkeiten`: Schlüssel (a-z, 0-9, _, -) -> Beschreibung."""
+
+    frage: str
+    art: Fragart = "auswahl"
+    moeglichkeiten: dict[str, str] = Field(default_factory=dict)
+
+
+class Einordnungsantwort(_Modell):
+    """Antwort auf eine Frage: `wahl` ist der Schlüssel (bei ja_nein "ja" oder "nein", bei mehrfach die Liste ab 50 %),
+    `wahrscheinlichkeiten` je Möglichkeit. Die Werte sind die Sicht des Modells, nicht geeicht: zum Entscheiden und
+    Sortieren, nicht als Maß, wie sicher es wirklich stimmt."""
+
+    wahl: str | list[str]
+    wahrscheinlichkeiten: dict[str, float] = Field(default_factory=dict)
+    mittel: float | None = None          # bei Stufen: erwartete Stufe (0 = erste)
+    runden: int = 1                      # über 10 Möglichkeiten wählt die Leitstelle in Runden
+
+
+class Einordnung(_Modell):
+    """Ergebnis von `Leitstelle.einordnen()`: je Frage die Antwort, dazu Modell, Aufrufe des Modells und Dauer."""
+
+    antworten: dict[str, Einordnungsantwort]
+    modell: str = ""
+    anfragen: int = 0
+    dauer_ms: int = 0
+    auftrag: str | None = None           # Kennung des letzten Auftrags in der Leitstelle

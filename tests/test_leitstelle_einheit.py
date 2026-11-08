@@ -451,3 +451,28 @@ async def test_ohne_modell_ist_kein_modell():
     async with leitstelle(lambda r: fehler(400, "modell_fehlt", "Die Anwendung muss ihr Modell nennen")) as ls:
         with pytest.raises(KeinModell):
             await ls.chat(["Hallo"])
+
+
+async def test_einordnen_schickt_fragen_und_liest_die_antwort():
+    """PROTOKOLL 6.7 der Leitstelle: Text, Fragen und Modell im Körper, Masse als Kopf aus dem Kontext."""
+    gesehen: list[tuple[dict, str | None]] = []
+
+    def handler(r: httpx.Request) -> httpx.Response:
+        assert r.url.path == "/v1/einordnen" and r.headers["authorization"] == "Bearer ls_geheim"
+        gesehen.append((json.loads(r.content), r.headers.get("x-leitstelle-art")))
+        return httpx.Response(200, headers={"X-Leitstelle-Auftrag": "a-1"}, json={
+            "antworten": {"bereich": {"wahl": "garten", "wahrscheinlichkeiten": {"garten": 0.8, "finanzen": 0.2}, "mittel": None, "runden": 1},
+                          "dringend": {"wahl": "nein", "wahrscheinlichkeiten": {"ja": 0.1, "nein": 0.9}}},
+            "modell": "Qwen3 Next 80B", "anfragen": 2, "dauer_ms": 410})
+
+    from appkern.leitstelle import Frage, als_masse
+    async with leitstelle(handler) as ls:
+        with als_masse():
+            e = await ls.einordnen("Rechnung vom Gärtner", {
+                "bereich": Frage(frage="Welcher Bereich?", moeglichkeiten={"garten": "Garten", "finanzen": "Finanzen"}),
+                "dringend": Frage(frage="Dringend?", art="ja_nein")}, modell="gross", anweisung="Haushaltsbelege")
+    koerper, art = gesehen[0]
+    assert art == "masse" and koerper["model"] == "gross" and koerper["anweisung"] == "Haushaltsbelege"
+    assert koerper["fragen"]["dringend"] == {"frage": "Dringend?", "art": "ja_nein", "moeglichkeiten": {}}
+    assert e.antworten["bereich"].wahl == "garten" and e.antworten["dringend"].wahrscheinlichkeiten["nein"] == 0.9
+    assert e.anfragen == 2 and e.auftrag == "a-1" and e.modell == "Qwen3 Next 80B"

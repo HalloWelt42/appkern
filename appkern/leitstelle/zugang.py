@@ -23,7 +23,7 @@ import contextlib
 import json
 import os
 import re
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -32,8 +32,8 @@ import httpx
 
 from .fehler import LeitstellenFehler, NichtErreichbar, fehler_aus
 from .modelle import (
-    Bild, Bildablage, Bilder, Bildereignis, ChatAntwort, DienstEintrag, Einbettungen, Einschaetzung, Ende, Ereignis, Modell, Nachricht, Prioritaet, Rechnet,
-    Stueck, Verbrauch, Wartet, Werkzeugaufruf,
+    Bild, Bildablage, Bilder, Bildereignis, ChatAntwort, DienstEintrag, Einbettungen, Einordnung, Einschaetzung, Ende, Ereignis, Modell, Nachricht, Prioritaet, Rechnet,
+    Frage, Stueck, Verbrauch, Wartet, Werkzeugaufruf,
 )
 from .arbeit import KOPF as ARBEIT_KOPF, LAUFENDE_ARBEIT
 from . import einordnung
@@ -171,6 +171,17 @@ class Leitstelle:
             koerper["faehigkeit"] = faehigkeit
         antwort = await self._senden("POST", "/v1/einschaetzung", kopf=dict(self._schluessel_kopf), json=koerper)
         return Einschaetzung.model_validate(antwort.json())
+
+    async def einordnen(self, text: str, fragen: Mapping[str, Frage], *, modell: str, alternativen: Sequence[str] = (),
+                        anweisung: str | None = None, titel: str = "", prioritaet: Prioritaet | None = None) -> Einordnung:
+        """Feste Möglichkeiten nach ihrer Wahrscheinlichkeit wählen statt eine JSON-Antwort schreiben zu lassen (PROTOKOLL 6.7
+        der Leitstelle): schneller und nie ungültig. Masse und wichtig aus dem Kontext wie bei jedem Auftrag (`als_masse`)."""
+        koerper: dict[str, Any] = {"model": modell, "alternativen": list(alternativen), "text": text,
+                                   "fragen": {k: f.model_dump() for k, f in fragen.items()}}
+        if anweisung:
+            koerper["anweisung"] = anweisung
+        antwort = await self._senden("POST", "/v1/einordnen", kopf=self.koepfe(titel, prioritaet), json=koerper)
+        return Einordnung.model_validate({**antwort.json(), "auftrag": antwort.headers.get("x-leitstelle-auftrag")})
 
     # --- Sprachmodelle ---------------------------------------------------------------------------------------------
 
