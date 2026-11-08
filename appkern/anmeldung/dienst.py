@@ -302,6 +302,9 @@ class Anmeldung:
         self._nachfragen[schluessel] = asyncio.create_task(fragen(), name="anmeldung-nachfragen")
 
     async def _app_pruefen(self, schluessel: str) -> Konto | None:
+        # Wer hier darf, hängt am eigenen Zugang (Besitzer); fehlt er noch (Start ohne Kellerwolke), fragt das die App
+        # jetzt neu ab, wie bei Sitzungen. Sonst wiese sie andere Apps für immer ab (HELF-199).
+        await self._eigener_name()
         antwort = await self._senden("GET", "/api/v1/ablage/ich", headers={"Authorization": f"Bearer {schluessel}"})
         if antwort.status_code in (401, 403):
             return None

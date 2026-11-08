@@ -18,6 +18,10 @@ class ProbeEinstellungen(Grundeinstellungen):
     sprache: str = Field("de", title="Sprache")
 
 
+#: App-Schlüssel der nachgestellten Kellerwolke: Zugang (App) und Konto; kw_app_gut ist der dieser App
+APP_SCHLUESSEL = {"kw_app_gut": ("Probe", "chef"), "kw_app_andere": ("Andere", "chef")}
+
+
 class Wolke:
     """Kellerwolke (Ablage und Anmeldung) und Leitstelle in einem Schein."""
 
@@ -31,9 +35,10 @@ class Wolke:
             raise httpx.ConnectError("All connection attempts failed")
         if request.url.host == "kw.test":
             if pfad == "/api/v1/ablage/ich":
-                if request.headers.get("authorization") != "Bearer kw_app_gut":
+                zugang = APP_SCHLUESSEL.get(request.headers.get("authorization", "").removeprefix("Bearer "))
+                if zugang is None:
                     return httpx.Response(401, json={"detail": "App-Schlüssel fehlt, ist unbekannt oder gesperrt"})
-                return httpx.Response(200, json={"app": "Probe", "konto": "chef", "rechte": []})
+                return httpx.Response(200, json={"app": zugang[0], "konto": zugang[1], "rechte": []})
             if pfad == "/api/v1/auth/login":
                 e = json.loads(request.content)
                 if e["passwort"] != "geheim":
@@ -344,6 +349,40 @@ async def test_anmeldung_traegt_durch_einen_ausfall_der_kellerwolke(umgebung):
     assert kw["ok"]
     await geruest.einstellungen.aendern({"anmeldung_ausfall_h": 2})
     assert geruest.anmeldung.ausfall_s == 2 * 3600
+
+
+async def test_start_ohne_kellerwolke_sperrt_andere_apps_nicht_dauerhaft_aus(tmp_path: Path):
+    """Startet die App, während die Kellerwolke noch nicht erreichbar ist (etwa nach einem Neustart des Rechners),
+    kennt sie ihren Besitzer nicht. Ist die Kellerwolke wieder da, fragt die erste Anfrage einer anderen App mit ihrem
+    App-Schlüssel den eigenen Zugang neu ab, statt sie für immer mit 401 abzuweisen (HELF-199: die Vertonung wies so
+    das Vorlesen der Pinnwand ab, bis ein Mensch die Vertonung öffnete)."""
+    wolke = Wolke()
+
+    def bauen() -> Geruest:
+        return Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
+                       einstellungen=ProbeEinstellungen, transport=httpx.MockTransport(wolke))
+
+    erste = bauen()
+    await erste.starten()
+    await erste.einstellungen.aendern({"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
+    assert erste.besitzer == "chef"
+    await erste.stoppen()
+
+    wolke.kellerwolke_weg = True
+    geruest = bauen()
+    app = geruest.fastapi()
+    await geruest.starten()
+    try:
+        assert geruest.besitzer is None
+        andere = {"Authorization": "Bearer kw_app_andere"}
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            assert (await c.get("/api/v1/verbindungen", headers=andere)).status_code == 503    # ehrlich: Kellerwolke weg
+            wolke.kellerwolke_weg = False
+            assert (await c.get("/api/v1/verbindungen", headers=andere)).status_code == 200
+            assert geruest.besitzer == "chef"
+            assert (await c.get("/api/v1/verbindungen", headers={"Authorization": "Bearer kw_app_fremd"})).status_code == 401
+    finally:
+        await geruest.stoppen()
 
 
 async def test_schnittstellendoku_nur_in_der_entwicklung(tmp_path: Path, monkeypatch):
