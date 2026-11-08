@@ -39,6 +39,25 @@
   const titel = $derived(bereich?.titel ?? ({ auftraege: "Aufträge", protokoll: "Protokoll", einstellungen: "Einstellungen", mehr: "Mehr" } as Record<string, string>)[seite] ?? "");
   const fehlend = $derived(verbindungen.liste.filter(gestoert));   // vermisste zeigt nur das Minisymbol im Kopf
   const offen = $derived(auftraege.laufen + auftraege.warten);
+
+  // Mehr ist ein Menü (WIKI-76): der erste Tipp öffnet es und merkt sich, woher man kam; der zweite schließt es und
+  // führt dorthin zurück (ein Schritt zurück im Verlauf, damit "Zurück" danach nicht wieder im Menü landet). Ohne
+  // Herkunft (etwa nach dem Neuladen auf /mehr) geht es zum ersten Reiter.
+  let vorMehr = false;
+  function mehrTippen() {
+    if (seite !== "mehr") {
+      vorMehr = true;
+      gehe("mehr");
+    } else if (vorMehr) {
+      vorMehr = false;
+      history.back();
+    } else {
+      gehe(reiter[0]?.schluessel ?? "auftraege");
+    }
+  }
+  $effect(() => {
+    if (seite !== "mehr") vorMehr = false;           // anders verlassen (Eintrag gewählt, Zurück): nichts mehr zu schließen
+  });
 </script>
 
 <div class="mobil" data-rahmen="app">
@@ -83,6 +102,7 @@
       <button class:aktiv={seite === b.schluessel} onclick={() => gehe(b.schluessel)}><i class="fa-solid {b.symbol}"></i><span class="t-reiter-name">{b.kurz ?? b.titel}</span></button>
     {/each}
     {#if auftraegeReiter}<button class:aktiv={seite === "auftraege"} onclick={() => gehe("auftraege")}><i class="fa-solid fa-list-check"></i><span class="t-reiter-name">Aufträge</span></button>{/if}
-    <button class:aktiv={seite === "mehr" || unterMehr} onclick={() => gehe("mehr")}><i class="fa-solid fa-ellipsis"></i><span class="t-reiter-name">Mehr</span></button>
+    <button class:aktiv={seite === "mehr" || unterMehr} aria-expanded={seite === "mehr"} title={seite === "mehr" ? "Menü schließen" : "Mehr"}
+            onclick={mehrTippen}><i class="fa-solid {seite === 'mehr' ? 'fa-xmark' : 'fa-ellipsis'}"></i><span class="t-reiter-name">Mehr</span></button>
   </nav>
 </div>
