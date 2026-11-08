@@ -1,6 +1,7 @@
 """Anmeldeposten (hier mit der Kennung des Vorbaus am Mac) gegen eine nachgestellte Kellerwolke: Seitenaufrufe ohne Anmeldung landen auf der Anmeldeseite,
 Schnittstellen bekommen 401; eine Anmeldung gilt nur für den Vorbau und nur für erlaubte Konten; Fehlversuche bremsen;
-fällt die Kellerwolke aus, trägt eine bestätigte Sitzung weiter, eine unbestätigte nicht."""
+fällt die Kellerwolke aus, trägt eine bestätigte Sitzung weiter, eine unbestätigte nicht. Programme kommen mit dem
+App-Schlüssel der Kellerwolke durch, nach denselben Regeln (HELF-169)."""
 
 from __future__ import annotations
 
@@ -16,11 +17,17 @@ KEKS = "vorbau_sitzung"
 KONTEN = {"alpha": ("richtig", "admin", 1), "kind": ("auch", "mitglied", 2)}
 
 
+#: App-Schlüssel -> (Konto, App)
+SCHLUESSEL = {"kw_app_fundus": ("alpha", "Fundus"), "kw_app_spiel": ("kind", "Spiel")}
+
+
 class ScheinKellerwolke:
     def __init__(self) -> None:
         self.sitzungen: dict[str, tuple[str, str]] = {}      # token -> (konto, app)
         self.aus = False
         self.abgemeldet: list[str] = []
+        self.mit_rolle = True                                 # Kellerwolke ab 0.95.1 nennt die Rolle bei ablage/ich
+        self.gefragt: list[str] = []
 
     def __call__(self, r: httpx.Request) -> httpx.Response:
         if self.aus:
@@ -34,6 +41,14 @@ class ScheinKellerwolke:
             token = f"t{len(self.sitzungen) + 1}"
             self.sitzungen[token] = (d["kennung"], d.get("fuer_app") or "")
             return httpx.Response(200, json={"token": token, "benutzer": {"id": konto[2], "name": d["kennung"], "rolle": konto[1]}})
+        if r.url.path == "/api/v1/ablage/ich":
+            schluessel = r.headers.get("authorization", "").removeprefix("Bearer ")
+            self.gefragt.append(schluessel)
+            if schluessel not in SCHLUESSEL:
+                return httpx.Response(401, json={"detail": "Ungültiger App-Schlüssel"})
+            name, app = SCHLUESSEL[schluessel]
+            ich = {"app": app, "konto": name, "konto_id": str(KONTEN[name][2]), "rechte": []}
+            return httpx.Response(200, json={**ich, "rolle": KONTEN[name][1]} if self.mit_rolle else ich)
         token = r.headers.get("x-kellerwolke-sitzung", "")
         if r.url.path == "/api/v1/auth/status":
             if token not in self.sitzungen:
@@ -172,3 +187,63 @@ def test_name_der_app_mit_umlaut_aus_dem_kopf(aufbau):
     c, _, _ = aufbau()
     seite = c.get("/_vorbau/anmelden?ziel=/x", headers={"x-vorbau-app": "BücherFreunde".encode("utf-8")})
     assert "BücherFreunde" in seite.text and "BÃ" not in seite.text
+
+
+def app(schluessel: str, **mehr) -> dict:
+    """Ein Programm ruft: ohne Keks, mit dem App-Schlüssel; auch wenn es Seiten haben will."""
+    return {**SEITE, "authorization": f"Bearer {schluessel}", **mehr}
+
+
+def test_programm_mit_app_schluessel_kommt_durch(aufbau):
+    c, schein, _ = aufbau()
+    r = c.get("/_vorbau/pruefen", headers=app("kw_app_fundus"))
+    assert r.status_code == 200 and r.headers["x-vorbau-konto"] == "alpha"
+    assert c.get("/_vorbau/pruefen", headers=app("kw_app_fundus")).status_code == 200
+    assert schein.gefragt == ["kw_app_fundus"], "bestätigt gilt eine Weile ohne Nachfrage"
+
+
+def test_app_schluessel_nach_denselben_regeln_und_nie_zur_anmeldeseite(aufbau):
+    c, _, _ = aufbau()
+    for schluessel in ("kw_app_falsch", "kw_app_spiel"):            # unbekannt; Konto ohne Rolle admin
+        r = c.get("/_vorbau/pruefen", headers=app(schluessel))
+        assert r.status_code == 401 and "App-Schlüssel" in r.json()["detail"], schluessel
+    c2, _, _ = aufbau(erlaubt="kind")
+    assert c2.get("/_vorbau/pruefen", headers=app("kw_app_spiel")).status_code == 200
+    assert c2.get("/_vorbau/pruefen", headers=app("kw_app_fundus")).status_code == 401, "mit Liste gilt nur die Liste"
+
+
+def test_anderer_kopf_authorization_bleibt_sache_der_app(aufbau):
+    """Ein fremdes Token (kein App-Schlüssel der Kellerwolke) fragt die Kellerwolke nie; ohne Keks geht es wie bisher
+    zur Anmeldung."""
+    c, schein, _ = aufbau()
+    r = c.get("/_vorbau/pruefen", headers=app("eigenes-token-der-app"))
+    assert r.status_code == 302 and schein.gefragt == []
+    r = c.get("/_vorbau/pruefen", headers={**SEITE, "authorization": "Basic a3c6eA=="})
+    assert r.status_code == 302 and schein.gefragt == []
+
+
+def test_keks_geht_vor_app_schluessel(aufbau):
+    c, schein, _ = aufbau()
+    c.cookies.set(KEKS, anmelden(c).cookies[KEKS])
+    assert c.get("/_vorbau/pruefen", headers=app("kw_app_falsch")).status_code == 200 and schein.gefragt == []
+
+
+def test_app_schluessel_im_ausfall(aufbau):
+    c, schein, uhr = aufbau()
+    assert c.get("/_vorbau/pruefen", headers=app("kw_app_fundus")).status_code == 200
+    schein.aus = True
+    uhr[0] += 3600
+    assert c.get("/_vorbau/pruefen", headers=app("kw_app_fundus")).status_code == 200, "bestätigt trägt durch den Ausfall"
+    assert c.get("/_vorbau/pruefen", headers=app("kw_app_spiel")).status_code == 503
+    uhr[0] += 25 * 3600
+    assert c.get("/_vorbau/pruefen", headers=app("kw_app_fundus")).status_code == 503
+
+
+def test_kellerwolke_ohne_rolle_laesst_nur_die_liste_durch(aufbau):
+    """Vor Kellerwolke 0.95.1 fehlt die Rolle: ohne Liste kommt kein Programm durch (lieber zu als offen)."""
+    c, schein, _ = aufbau()
+    schein.mit_rolle = False
+    assert c.get("/_vorbau/pruefen", headers=app("kw_app_fundus")).status_code == 401
+    c2, schein2, _ = aufbau(erlaubt="alpha")
+    schein2.mit_rolle = False
+    assert c2.get("/_vorbau/pruefen", headers=app("kw_app_fundus")).status_code == 200

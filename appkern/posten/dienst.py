@@ -4,8 +4,12 @@ die App (forward_auth). Gilt die Sitzung im Keks `<kennung>_sitzung`, antwortet 
 Ströme) mit 401. Anmeldeseite und Abmelden liegen unter `/_<kennung>/` auf demselben Port wie die App, damit der Keks für
 den Rechner gilt; den Namen der App auf der Anmeldeseite reicht Caddy im Kopf `X-<Kennung>-App` herein.
 
-Genutzt vom Vorbau am Mac (Kennung vorbau, alle Mac-Apps hinter einer Anmeldung) und von Zusage auf dem Pi (eigener
-Posten im Compose der App). Der Posten selbst lauscht nie im Netz, nur Caddy davor.
+Programme haben keinen Keks: sie kommen mit dem App-Schlüssel der Kellerwolke ihrer App durch (Kopf
+`Authorization: Bearer kw_app_...`, wie überall im Verbund; HELF-169). Es gelten dieselben Konten wie für Menschen
+(`erlaubt`), Caddy reicht den Kopf an die App weiter. Ein Programm wird nie auf die Anmeldeseite geschickt.
+
+Genutzt vom Vorbau am Mac und auf dem Pi (Kennung vorbau, alle Apps eines Rechners hinter einer Anmeldung) und von
+Zusage auf dem Pi (eigener Posten im Compose der App). Der Posten selbst lauscht nie im Netz, nur Caddy davor.
 """
 
 from __future__ import annotations
@@ -23,7 +27,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .. import __version__
-from .kellerwolke import Kellerwolke, KellerwolkeWeg, Konto
+from .kellerwolke import APP_PRAEFIX, Kellerwolke, KellerwolkeWeg, Konto
 
 STATISCH = Path(__file__).with_name("statisch")
 
@@ -85,6 +89,13 @@ class Bremse:
 def _darf(e: Einstellungen, konto: Konto) -> bool:
     namen = {n.strip().lower() for n in e.erlaubt.split(",") if n.strip()}
     return konto.name.lower() in namen if namen else konto.rolle == "admin"
+
+
+def _app_schluessel(request: Request) -> str:
+    """Der App-Schlüssel der Kellerwolke aus dem Kopf Authorization, sonst leer (ein anderer Kopf bleibt Sache der App)."""
+    art, _, wert = request.headers.get("authorization", "").partition(" ")
+    wert = wert.strip()
+    return wert if art.lower() == "bearer" and wert.startswith(APP_PRAEFIX) else ""
 
 
 def _ziel(roh: str | None, pfad: str) -> str:
@@ -167,12 +178,17 @@ def erstellen(e: Einstellungen | None = None, kellerwolke: Kellerwolke | None = 
 
     @app.get(f"{pfad}/pruefen")
     async def pruefen(request: Request) -> Response:
+        app_schluessel = _app_schluessel(request)
         try:
             konto = await kw.pruefen(request.cookies.get(keks, ""))
+            if (konto is None or not _darf(e, konto)) and app_schluessel:
+                konto = await kw.app_pruefen(app_schluessel)
         except KellerwolkeWeg:
             return JSONResponse({"detail": "Die Kellerwolke ist nicht erreichbar; anmelden geht gerade nicht."}, status_code=503)
         if konto is not None and _darf(e, konto):
             return Response(status_code=200, headers={e.kopf("Konto"): quote(konto.name)})
+        if app_schluessel:
+            return JSONResponse({"detail": "Dieser App-Schlüssel gilt hier nicht"}, status_code=401)
         seite = request.headers.get("x-forwarded-method", "GET") == "GET" and "text/html" in request.headers.get("accept", "")
         if seite:
             ziel = _ziel(request.headers.get("x-forwarded-uri"), pfad)
