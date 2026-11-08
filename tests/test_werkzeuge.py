@@ -175,6 +175,21 @@ def test_ergaenzung_fuellt_nur_was_fehlt(tmp_path):
         laden(tmp_path)            # ohne Ergänzung fehlen die Angaben des Hauses
 
 
+def test_ergaenzung_fuellt_auch_abschnitte(tmp_path):
+    """Die App nennt in [zugaenge] ihre Fähigkeiten, das Haus ergänzt das Konto der Kellerwolke (WIKI-11); was die App
+    nennt, bleibt."""
+    from appkern.werkzeuge.ausrollen import laden
+
+    (tmp_path / "deploy").mkdir()
+    (tmp_path / "deploy" / "ausrollen.toml").write_text(
+        'kennung = "probe"\nrepo = "x"\n[zugaenge]\nname = "Probe"\nleitstelle = ["text"]\n')
+    (tmp_path / "haus.toml").write_text('rechner = "pi@pi"\nwurzel = "/srv/probe"\nadresse = "https://pi:1"\nnamen = ["pi"]\n'
+                                        'leitstelle = "http://pi:8530"\n[zugaenge]\nkellerwolke = "konto"\nname = "Anders"\n')
+    z = laden(tmp_path, ergaenzung=tmp_path / "haus.toml")
+    assert z.zugaenge is not None
+    assert (z.zugaenge.name, z.zugaenge.leitstelle, z.zugaenge.kellerwolke) == ("Probe", ["text"], "konto")
+
+
 def test_eigene_schale_ohne_pruefung_auf_klassen_der_schale(tmp_path):
     """Eine App, die nur Bausteine des Appkerns nutzt und den Stil nicht lädt, hat eine eigene Schale: dann gibt es
     keine Klassen der Schale, die ihre Regeln mit ändern könnten."""

@@ -142,15 +142,24 @@ ZIEL_DATEI = Path("deploy") / "ausrollen.toml"
 
 def laden(wurzel: Path, datei: Path = ZIEL_DATEI, ergaenzung: Path | None = None,
           umgebung: Mapping[str, str] = os.environ) -> Ziel:
-    """Die Angaben des Ziels; eine Ergänzung (TOML) füllt nur Felder, die die Angaben nicht selbst nennen.
+    """Die Angaben des Ziels; eine Ergänzung (TOML) füllt nur Felder, die die Angaben nicht selbst nennen, auch in
+    Abschnitten (etwa das Konto der Kellerwolke in [zugaenge], wenn die App dort nur ihre Fähigkeiten nennt).
     `BAUCACHE_GB` in der Umgebung geht vor (derselbe Name wie im Ausrollen der Leitstelle)."""
     roh = tomllib.loads((wurzel / datei).read_text(encoding="utf-8"))
     if ergaenzung is not None:
-        for schluessel, wert in tomllib.loads(Path(ergaenzung).read_text(encoding="utf-8")).items():
-            roh.setdefault(schluessel, wert)
+        _ergaenzen(roh, tomllib.loads(Path(ergaenzung).read_text(encoding="utf-8")))
     if umgebung.get("BAUCACHE_GB"):
         roh["baucache_gb"] = umgebung["BAUCACHE_GB"]
     return Ziel.model_validate(roh)
+
+
+def _ergaenzen(ziel: dict, ergaenzung: Mapping) -> None:
+    """Füllt in `ziel`, was fehlt; Abschnitte, die beide haben, Feld für Feld."""
+    for schluessel, wert in ergaenzung.items():
+        if isinstance(ziel.get(schluessel), dict) and isinstance(wert, Mapping):
+            _ergaenzen(ziel[schluessel], wert)
+        else:
+            ziel.setdefault(schluessel, wert)
 
 
 def _lauf(befehl: list[str], *, ort: Path | None = None) -> str:

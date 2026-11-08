@@ -226,7 +226,10 @@ app.include_router(einstellungs_router(einstellungen, abhaengigkeiten=[Depends(a
 ```
 
 Geändert wird alles oder nichts (`aendern` prüft die Werte zusammen; `None` setzt zurück, ein leeres Geheimnis bleibt
-unverändert). Geheimnisse (`SecretStr`) gehen nur verdeckt hinaus, bis auf die letzten vier Zeichen;
+unverändert). Regeln über mehrere Felder gelten vor dem Speichern: `einstellungen.regel(pruefung)`, wobei
+`pruefung(alt, neu)` (auch als Koroutine) den Grund nennt, warum der neue Stand nicht geht; dann `Unzulaessig` (422 in der
+Schnittstelle) und nichts ist gespeichert. Woher ein Wert gerade kommt, sagt `herkunft(name)` (fest, gespeichert,
+Umgebung, Vorgabe). Geheimnisse (`SecretStr`) gehen nur verdeckt hinaus, bis auf die letzten vier Zeichen;
 `GET /api/v1/einstellungen/geheimnis/{name}` deckt eines auf (das Auge in der Oberfläche). Auswahlfelder zeigen ihre
 `beschriftungen` (nie den Schlüssel), Zahlen gehen in `schritt` und bleiben in den Grenzen aus `ge` und `le`, mit
 `einheit` hinter dem Wert. Felder mit `qr` (in `json_schema_extra`, der Schlüssel des Feldes im JSON eines QR-Codes)
@@ -360,7 +363,8 @@ wartet die Anfrage.
 
 ## Anmeldung
 
-Die Apps haben keine eigenen Konten: man meldet sich mit dem Kellerwolke-Konto an, mit Passwort oder als gekoppeltes
+Die Apps haben keine eigenen Konten: man meldet sich mit dem Kellerwolke-Konto an (oder, ausdrücklich gewählt, gar nicht:
+Abschnitt Ohne Anmeldung), mit Passwort oder als gekoppeltes
 Gerät (Code aus der Kellerwolke, Einstellungen, Geräte). Die App reicht beides an die Kellerwolke weiter und prüft
 jede Anfrage mit deren Token (kurz gemerkt). Nutzen darf die App das Konto, dem ihr App-Schlüssel gehört, dazu weitere
 aus den Einstellungen; ein anderes Konto wird abgewiesen und seine eben entstandene Sitzung sofort beendet.
@@ -402,6 +406,48 @@ fragt die Kellerwolke, wem der Schlüssel gehört, und lässt dieselben Konten z
 dann die rufende App. Was nur in die Oberfläche gehört (Einstellungen mit Geheimnissen, das Inhalts-Cookie), schützt
 `angemeldet(anmeldung, nur_menschen=True)`; das Gerüst bietet dafür `geruest.mensch` neben `geruest.pflicht`.
 
+### Ohne Anmeldung
+
+Eine Betriebsart für Apps, die allein laufen sollen, etwa im eigenen Netz ohne Kellerwolke (WIKI-11): jeder Mensch, der
+die App erreicht, ist derselbe feste Nutzer (`FESTER_NUTZER`, Kennung `nutzer`); was die App je Konto hält, gehört dann
+ihm, auf allen Geräten gemeinsam. Die Schale zeigt weder Anmeldung noch Einrichtung noch Abmelden, die Einstellungen
+sind offen. Nur für das eigene Netz: wer die App erreicht, darf alles.
+
+| Was | Wie |
+|---|---|
+| Wahl | Einstellung `anmeldung` (Gruppe Zugang): `"kellerwolke"` (Vorgabe jeder App) oder `"ohne"`; in der Umgebung `<KENNUNG>_ANMELDUNG`, fest und in der Oberfläche nicht änderbar `<KENNUNG>_FEST_ANMELDUNG` (etwa für einen Betrieb, der immer anmelden muss) |
+| Vorgabe der App | eine App, die frisch ohne Anmeldung beginnen soll, überschreibt das Feld: `anmeldung: Anmeldeart = anmeldung_feld("ohne")` (`appkern.app.einstellungen`) |
+| Nie von selbst | die Betriebsart folgt nie dem Zustand der Kellerwolke: fällt sie aus, bleibt eine App mit Anmeldung zu (bestätigte Anmeldungen gelten aus dem Merker, sonst 401 oder 503) |
+| Bestandsschutz | sieht die App ohne Anmeldung vor und hat niemand gewählt, hält der erste Start die Betriebsart fest: mit Anmeldung, wenn schon eine Kellerwolke eingetragen ist (eine bisher geschützte App öffnet sich nie durch eine neue Vorgabe), sonst ohne (eine später zugeschaltete Kellerwolke ändert sie dann nicht); Eintrag `app.anmeldung` im Protokoll |
+| Umstellen | in den Einstellungen; auf Anmeldung nur mit einer Kellerwolke, die den App-Schlüssel kennt (sonst 422 mit Grund, nichts gespeichert); die Schale richtet sich danach neu aus. Die Daten bleiben bei ihrem bisherigen Konto |
+| Andere Apps | App-Schlüssel prüft die App weiter bei der Kellerwolke (ohne eingetragene Kellerwolke gilt keiner); eine erkannte App handelt für den festen Nutzer, `nur_menschen` hält sie wie sonst ab |
+| Schnittstelle | `GET /api/v1/anmeldung` meldet den festen Nutzer, Anmelden und Koppeln antworten 409, Abmelden und Lesezugang tun nichts; Inhaltsadressen brauchen kein Cookie; `/api/v1/app` nennt `anmeldung` |
+| Oberfläche | `ohneAnmeldung()` sagt es; Seitenleiste und Telefonmenü zeigen den Nutzer ohne Abmelden; weist die App später ab (umgestellt), holt die Schale ihre Angaben neu und zeigt die Anmeldung |
+
+## Ablage
+
+Wo eine App Dateien ablegt, die sie nur schreibt und wieder liest (`appkern.ablage`, WIKI-11): `geruest.ablage` ist der
+eigene Zweig der Kellerwolke, wenn eine eingetragen ist, sonst der Ordner `ablage` im Datenordner der App. So laufen
+solche Funktionen auch ohne Kellerwolke. Die App fragt `geruest.ablage` bei jeder Arbeit neu (sie wechselt mit den
+Einstellungen; Dateien ziehen dabei nicht um); `/api/v1/app` nennt die Art (`ablage`: `kellerwolke` oder `ordner`).
+
+```python
+ablage = geruest.ablage
+e = await ablage.schreiben("Notizen/Buch/Artikel.md", text.encode(), inhaltstyp="text/markdown")
+inhalt = await ablage.lesen_ganz(e.kennung)          # oder stückweise: async for teil in ablage.lesen(e.kennung)
+for x in await ablage.liste("Notizen/Buch"): ...      # Ordner vor Dateien, nach Namen
+await ablage.loeschen(e.kennung)                      # Kellerwolke: Papierkorb; Ordner: endgültig
+ort = await ablage.ort("Notizen")                     # für Menschen: "Apps/Transkription/Notizen" oder "ablage/Notizen"
+```
+
+| Teil | Inhalt |
+|---|---|
+| Pfade | relativ zur Wurzel der App, Teile mit `/`; nie aus ihr heraus (kein leerer Teil, kein `.` oder `..`) |
+| Schreiben | `schreiben(pfad, daten, inhaltstyp=, nur_neu=)`: fehlende Ordner entstehen mit, eine vorhandene Datei bekommt einen neuen Stand; im Ordner erst unter einem Zwischennamen, dann fertig |
+| Lesen und Löschen | über die `kennung` eines Eintrags (Kellerwolke: Knoten, Ordner: Pfad), die eine App sich merken kann; `finden(pfad)`, `weg(pfad)` |
+| Fehler | `AblageFehler` mit Meldung für Menschen, eine fehlende Datei beim Lesen `NichtDa` |
+| Bewusst nicht | Versionen, Begleiter, Herkunft, Anfragen, Beobachten: das kann nur die Kellerwolke (`geruest.kellerwolke`) |
+
 ## Gerüst einer App
 
 `appkern.app.Geruest` verdrahtet alle Bausteine einmal; eine App schreibt danach nur noch ihr Fachliches.
@@ -424,17 +470,18 @@ geruest.oberflaeche_ausliefern(app)                         # zuletzt
 
 | Teil | Inhalt |
 |---|---|
-| Einstellungen | `Grundeinstellungen` (Kellerwolke, Leitstelle, Zertifikatsstelle, weitere Konten, Anmeldung bei Ausfall, Sicherung) plus die der App; Zugänge werden nach jeder Änderung neu aufgebaut; `geruest.tls_pruefung()` gibt dieselbe Prüfung der Zertifikate für eigene Verbindungen im Heimnetz |
-| Erste Einrichtung | `POST /api/v1/einrichtung` mit Kellerwolke und App-Schlüssel, nur solange nichts eingetragen ist. Vom Rechner der App geht sie ohne weiteres; von anderswo (anderes Gerät, hinter einem Vorschaltdienst, in Docker) mit dem einmaligen Einrichtungscode aus einer Datei am Rechner (Modus 0600, je Start neu, `<KENNUNG>_EINRICHTUNGSCODE_DATEI`, Vorgabe `<daten>/einrichtungscode`; wie man sie am Rechner findet: `<KENNUNG>_EINRICHTUNGSCODE_ORT`). App-Angaben (`einrichtungscode`), Protokoll und die Einrichtung der Schale nennen nur den Ort, nie den Code; fünf falsche Codes sperren zehn Minuten, nach der Einrichtung ist die Datei weg (Lehre 34) |
-| Anmeldung | Besitzer ist das Konto des App-Schlüssels; Anmelden, Koppeln, Abweisungen und Abmelden stehen im Protokoll |
+| Einstellungen | `Grundeinstellungen` (Kellerwolke, Leitstelle, Zertifikatsstelle, Betriebsart der Anmeldung, weitere Konten, Anmeldung bei Ausfall, Sicherung) plus die der App; Zugänge werden nach jeder Änderung neu aufgebaut; `geruest.tls_pruefung()` gibt dieselbe Prüfung der Zertifikate für eigene Verbindungen im Heimnetz |
+| Erste Einrichtung | Nur mit Anmeldung (ohne Anmeldung ist die Kellerwolke wahlweise, eingetragen unter Einstellungen). `POST /api/v1/einrichtung` mit Kellerwolke und App-Schlüssel, nur solange nichts eingetragen ist. Vom Rechner der App geht sie ohne weiteres; von anderswo (anderes Gerät, hinter einem Vorschaltdienst, in Docker) mit dem einmaligen Einrichtungscode aus einer Datei am Rechner (Modus 0600, je Start neu, `<KENNUNG>_EINRICHTUNGSCODE_DATEI`, Vorgabe `<daten>/einrichtungscode`; wie man sie am Rechner findet: `<KENNUNG>_EINRICHTUNGSCODE_ORT`). App-Angaben (`einrichtungscode`), Protokoll und die Einrichtung der Schale nennen nur den Ort, nie den Code; fünf falsche Codes sperren zehn Minuten, nach der Einrichtung ist die Datei weg (Lehre 34) |
+| Anmeldung | Besitzer ist das Konto des App-Schlüssels; Anmelden, Koppeln, Abweisungen und Abmelden stehen im Protokoll; oder ohne Anmeldung (oben) |
+| Ablage | `geruest.ablage`: Kellerwolke oder Datenordner (oben) |
 | Schnittstellen | `/api/v1/app`, `/api/v1/ich`, `/api/v1/verbindungen` (Kellerwolke und Leitstelle nebeneinander geprüft, jede höchstens 10 s), Anmeldung, Aufträge, Einstellungen, Protokoll |
 | Schnittstellendoku | `/docs`, `/redoc` und `/openapi.json` nur in der Entwicklung mit `<KENNUNG>_SCHNITTSTELLEN_DOKU=1`; sonst zeigt die App ihren Aufbau niemandem ohne Anmeldung. `app.openapi()` liefert das Schema im Code immer |
 | Betrieb | Datenbank `daten/<kennung>.sqlite` (Lesen neben dem Schreiben, `leseverbindungen`, Vorgabe 4), tägliches Aufräumen, Auslieferung der gebauten Oberfläche |
 | Begleiter | Hintergrundarbeit der App (`Begleiter` mit `starten`, `verbunden` nach jedem Aufbau der Zugänge, `stoppen`), angemeldet mit `geruest.begleiter_anmelden` vor dem Start; läuft vor den Aufträgen an und nach ihnen aus |
 | Sicherung | `geruest.sicherung`, ein Begleiter, den jede App mitbringt: Regel und Ablage unten unter Sicherung; Ordner `sicherungen` neben dem Datenordner (im Container `/app/sicherungen`, eingebunden wie in der Vorlage), anders mit `sicherungen=` |
 
-Im Gerüst stehen `geruest.kellerwolke`, `geruest.leitstelle`, `geruest.auftraege`, `geruest.protokoll`,
-`geruest.einstellungen.stand` und `geruest.verzeichnis` bereit.
+Im Gerüst stehen `geruest.kellerwolke`, `geruest.leitstelle`, `geruest.ablage`, `geruest.auftraege`, `geruest.protokoll`,
+`geruest.einstellungen.stand`, `geruest.ohne_anmeldung()` und `geruest.verzeichnis` bereit.
 
 ## Sicherung
 
@@ -675,7 +722,7 @@ Arbeitskopie zeigen statt auf GitHub.
 | `nachricht DATEI` | Commit-Nachricht prüfen: beginnt mit Ticket-Kennung (`ATL-12: ...`); aufgerufen vom Hook `commit-msg` |
 | `fassung [patch\|minor\|major\|id]` | `version.json` hochzählen |
 | `appkern` | Appkern in Oberfläche (package-lock) und Backend (requirements, Archiv des Commits) auf denselben neuesten Commit |
-| `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`); `--ziel DATEI` für einen Probestand in eigenem Ordner, `compose` darin nennt die Compose-Datei; `--ergaenzung DATEI` bringt die Angaben des Hauses (Rechner, Ordner, Adresse, Namen, Leitstelle) aus einer privaten Datei und füllt nur, was das Ziel nicht nennt; `<kennung>.local` steht immer in den Namen des Zertifikats (Vorgabe des Vorschaltdienstes ohne Servernamen). Vor dem Neustart sichert es nach der Regel der Sicherung (oben); nach einem gelungenen Ausrollen räumt es auf dem Pi auf: verwaiste Abbilder (`docker image prune -f`) und der Baucache bis auf `baucache_gb` (im Ziel, Vorgabe 20, `BAUCACHE_GB` in der Umgebung geht vor; `docker builder prune --max-used-space`), Ergebnis als Zeile "Aufgeräumt: ..."; nach einem Fehlschlag bleibt alles, das alte Abbild ist der Rückweg |
+| `ausrollen` | auf den Pi nach `deploy/ausrollen.toml`, mit allen Prüfungen (Ablauf in `appkern/werkzeuge/ausrollen.py`); `--ziel DATEI` für einen Probestand in eigenem Ordner, `compose` darin nennt die Compose-Datei; `--ergaenzung DATEI` bringt die Angaben des Hauses (Rechner, Ordner, Adresse, Namen, Leitstelle, etwa das Konto der Kellerwolke in `[zugaenge]`) aus einer privaten Datei und füllt nur, was das Ziel nicht nennt, auch in Abschnitten; `<kennung>.local` steht immer in den Namen des Zertifikats (Vorgabe des Vorschaltdienstes ohne Servernamen). Vor dem Neustart sichert es nach der Regel der Sicherung (oben); nach einem gelungenen Ausrollen räumt es auf dem Pi auf: verwaiste Abbilder (`docker image prune -f`) und der Baucache bis auf `baucache_gb` (im Ziel, Vorgabe 20, `BAUCACHE_GB` in der Umgebung geht vor; `docker builder prune --max-used-space`), Ergebnis als Zeile "Aufgeräumt: ..."; nach einem Fehlschlag bleibt alles, das alte Abbild ist der Rückweg |
 
 **Nur Marken** (Nutzer 24.10.2026: "Nur Marken, Ausnahme begründet"): im Stil einer App (CSS, Svelte, HTML außerhalb
 von Entwürfen unter `mockups` und `docs`) stehen keine festen Farben, Schriften und Schriftgrößen, nur Marken des
