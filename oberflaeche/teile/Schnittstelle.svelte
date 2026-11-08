@@ -121,7 +121,7 @@
 <div class="si" class:si-telefon={geraet.mobil} class:si-mit-weg={!!gewaehlt}>
   <aside class="si-liste">
     <div class="si-kopf">
-      <label class="suchfeld"><i class="fa-solid fa-filter"></i><input type="search" bind:value={filter} placeholder="Weg suchen" aria-label="Weg suchen" /></label>
+      <label class="si-filter"><i class="fa-solid fa-filter"></i><input type="search" bind:value={filter} placeholder="Weg suchen" aria-label="Weg suchen" /></label>
       {#if wege.length}<span class="si-abdeckung" class:voll={beschrieben === wege.length}>
         <i class="fa-solid {beschrieben === wege.length ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i>{beschrieben} von {wege.length} Wegen beschrieben</span>{/if}
     </div>
@@ -207,6 +207,11 @@
   .si-liste { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--rand); }
   .si-kopf { display: flex; flex-direction: column; gap: var(--a2); padding: var(--a3); }
   .si-rollen { overflow-y: auto; min-height: 0; flex: 1; }
+  /* eigenes Filterfeld: der Baustein gilt in jeder App, darum keine Klasse, die erst eine App gestaltet */
+  .si-filter { display: flex; align-items: center; gap: var(--a2); padding: 0 var(--a3); height: var(--knopf-hoehe); border-radius: var(--r2);
+               background: var(--flaeche); border: 1px solid var(--rand); color: var(--text-3); }
+  .si-filter:focus-within { border-color: var(--akzent); }
+  .si-filter input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font: inherit; outline: none; }
   .si-abdeckung { font-size: var(--klein); color: var(--warn); display: inline-flex; gap: 6px; align-items: center; }
   .si-abdeckung.voll { color: var(--gut); }
   .si-bereich { padding: var(--a3) var(--a3) 4px; font-size: var(--marke); text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 600; }
