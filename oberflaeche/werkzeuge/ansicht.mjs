@@ -122,6 +122,8 @@ const werte = async (ausdruck) => {
 const MESSEN = `(() => {
   const stile = new Map();
   const stil = (e) => { let s = stile.get(e); if (!s) { s = getComputedStyle(e); stile.set(e, s); } return s; };
+  /** Oberkante des Inhalts eines Rollfelds (ohne Rahmen): dort klebt ein stehender Kopf */
+  const oberkante = (e) => e.getBoundingClientRect().top + (parseFloat(stil(e).borderTopWidth) || 0);
   const blassMerk = new Map();
   const blass = (e) => { if (!e) return false; if (blassMerk.has(e)) return blassMerk.get(e);
     const b = parseFloat(stil(e).opacity) < 1 || blass(e.parentElement); blassMerk.set(e, b); return b; };
@@ -243,13 +245,16 @@ const MESSEN = `(() => {
       const stand = rollend.map((e) => e.scrollTop);
       for (const e of rollend) e.scrollTop = e.scrollHeight;
       const nachher = kopf.getBoundingClientRect();
-      if (Math.abs(nachher.top - vorher) > 2 || nachher.bottom <= 0)
+      const feld = rollend.find((e) => e !== document.scrollingElement && e.contains(kopf) && e.scrollTop > 0);
+      // Ein klebender Kopf unter etwas, das wegrollen darf (Überschrift über dem Suchfeld, WIKI-70), wandert, bis er an
+      // der Oberkante seines Rollfelds klebt: das ist Stehenbleiben. Sonst darf er nicht wandern.
+      const klebt = feld && stil(kopf).position === "sticky" && Math.abs(nachher.top - oberkante(feld)) <= 1.5;
+      if ((Math.abs(nachher.top - vorher) > 2 && !klebt) || nachher.bottom <= 0)
         kopfweg.push(weg(kopf) + " (Kopf rollt mit: von " + Math.round(vorher) + " nach " + Math.round(nachher.top) + " px; Baustein Seitenkopf des Appkerns nehmen)");
       // Lücke über dem stehenden Kopf (WIKI-63): gerollt muss ein klebender Kopf bündig an der Oberkante seines Rollfelds
       // stehen; ein Innenabstand oben am Rollfeld (padding-top statt --rollfeld-oben) lässt Inhalt darüber durchscheinen
-      const feld = rollend.find((e) => e !== document.scrollingElement && e.contains(kopf) && e.scrollTop > 0);
       if (feld && stil(kopf).position === "sticky") {
-        const luecke = nachher.top - feld.getBoundingClientRect().top - (parseFloat(stil(feld).borderTopWidth) || 0);
+        const luecke = nachher.top - oberkante(feld);
         if (luecke > 1.5)
           kopfweg.push(weg(kopf) + " (klebt " + Math.round(luecke) + " px unter der Oberkante von " + weg(feld) +
                        "; gerollter Inhalt scheint durch; Abstand oben nur über --rollfeld-oben)");
@@ -266,7 +271,9 @@ const MESSEN = `(() => {
       if (!teil) continue;
       const vor = teil.getBoundingClientRect().top, alt = e.scrollTop;
       e.scrollTop = e.scrollHeight;
-      if (Math.abs(teil.getBoundingClientRect().top - vor) > 2)
+      const imKopf = teil.closest("[data-seitenkopf]");      // im klebenden Seitenkopf: wandert höchstens bis zur Oberkante mit
+      const klebt = imKopf && stil(imKopf).position === "sticky" && Math.abs(imKopf.getBoundingClientRect().top - oberkante(e)) <= 1.5;
+      if (Math.abs(teil.getBoundingClientRect().top - vor) > 2 && !klebt)
         kopfweg.push(weg(teil) + " (Bedienteil rollt mit dem Inhalt in " + weg(e) + "; in den Baustein Seitenkopf)");
       e.scrollTop = alt;
     }
