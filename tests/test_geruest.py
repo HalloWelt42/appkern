@@ -108,6 +108,9 @@ async def test_einrichtung_anmeldung_verbindungen_protokoll(umgebung):
     assert (await c.post("/api/v1/anmeldung", json={"kennung": "gast", "passwort": "geheim"})).status_code == 403
     h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
     assert (await c.get("/api/v1/ich", headers=h)).json()["name"] == "chef"
+    # das Schema für die Seite Schnittstelle nur angemeldet (WIKI-78)
+    assert (await c.get("/api/v1/schnittstelle")).status_code == 401
+    assert "/api/v1/app" in (await c.get("/api/v1/schnittstelle", headers=h)).json()["paths"]
     # die Oberfläche meldet ihre Adresse; eingetragen wird die erste, Unsinn gar nicht
     assert (await c.post("/api/v1/adresse", json={"adresse": "https://app.test:8631"})).status_code == 401
     assert (await c.post("/api/v1/adresse", headers=h, json={"adresse": "javascript:alert(1)"})).status_code == 422

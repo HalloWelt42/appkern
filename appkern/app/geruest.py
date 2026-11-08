@@ -15,7 +15,8 @@ Auslieferung der gebauten Oberfläche.
 
 Die Schnittstellendoku zum Ausprobieren (/docs, /redoc, /openapi.json) gibt es nur in der Entwicklung, mit
 `<KENNUNG>_SCHNITTSTELLEN_DOKU=1` in der Umgebung; sonst zeigt die App ihren Aufbau niemandem ohne Anmeldung.
-`app.openapi()` liefert das Schema im Code immer (etwa für eine Ausfuhr).
+`app.openapi()` liefert das Schema im Code immer (etwa für eine Ausfuhr); angemeldete Menschen lesen es über
+/api/v1/schnittstelle (Seite Schnittstelle der Oberfläche).
 """
 
 from __future__ import annotations
@@ -642,6 +643,12 @@ class Geruest(Generic[E]):
                        einstellungs_router(self.einstellungen, abhaengigkeiten=[self.mensch]),
                        protokoll_router(self.protokoll, abhaengigkeiten=[self.pflicht])):
             app.include_router(router)
+
+        @app.get("/api/v1/schnittstelle", dependencies=[self.mensch], include_in_schema=False)
+        async def schnittstelle() -> dict:
+            """Das OpenAPI-Schema der App für die Seite Schnittstelle (WIKI-78): nur angemeldeten Menschen, denn ohne
+            Anmeldung zeigt die App ihren Aufbau niemandem (anders als /openapi.json in der Entwicklung)."""
+            return app.openapi()
         return app
 
     def oberflaeche_ausliefern(self, app: FastAPI, seiten: Iterable[str] = ()) -> None:
