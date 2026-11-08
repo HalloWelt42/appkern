@@ -152,6 +152,8 @@ export interface Bereich {
   zahl?: () => number;                          // kleine Zahl in der Navigation (etwa offene Vorgänge); 0 zeigt nichts
   fortschritt?: () => number | null;            // dünner Balken am Fuß des Eintrags (0 bis 1), solange etwas läuft; null zeigt nichts
   hinweis?: string;                             // wofür der Bereich da ist, ein kurzer Satz beim Überfahren in der Seitenleiste
+  gruppe?: string;                              // Überschrift in der Seitenleiste am Rechner: wechselt sie von einem Bereich zum
+                                                // nächsten, steht sie darüber (etwa Lesen, Meins); ohne: der Name der App
 }
 
 // Ein eigener Reiter der App in den Einstellungen, neben den aus der Beschreibung erzeugten Gruppen: für Einstellungen,

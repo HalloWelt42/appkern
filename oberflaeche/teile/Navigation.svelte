@@ -1,6 +1,7 @@
 <script lang="ts">
-  // Navigation: Bereiche der App, dann Aufträge, Protokoll, Einstellungen; darunter was die App dort zeigt (`zusatz`,
-  // etwa ihre Chats), unten Ansicht (Thema), Konto und Fassung. Einklappbar auf Symbole (gemerkt je Browser).
+  // Navigation: Bereiche der App (mit Überschrift, wo ihre `gruppe` wechselt), dann Aufträge, Protokoll, Einstellungen;
+  // darunter was die App dort zeigt (`zusatz`, etwa ihre Chats), unten Ansicht (Thema), Konto und Fassung. Einklappbar
+  // auf Symbole (gemerkt je Browser).
   import type { Snippet } from "svelte";
   import { anzeige, anzeigeSetzen } from "../lib/anzeige.svelte";
   import { auftraege } from "../lib/auftraege.svelte";
@@ -17,13 +18,14 @@
 
 <nav class="nav">
   <div class="nav-oben">
-    <div class="nav-gruppe">{bereiche.length ? app.name : "App"}</div>
+    <div class="nav-gruppe">{bereiche.length ? (bereiche[0].gruppe ?? app.name) : "App"}</div>
     <button class="rund" title={anzeige.eingeklappt ? "Seitenleiste ausklappen" : "Seitenleiste einklappen: mehr Platz für den Inhalt"}
             onclick={() => anzeigeSetzen({ eingeklappt: !anzeige.eingeklappt })}>
       <i class="fa-solid {anzeige.eingeklappt ? 'fa-angles-right' : 'fa-angles-left'}"></i></button>
   </div>
-  {#each bereiche as b (b.schluessel)}
+  {#each bereiche as b, i (b.schluessel)}
     {@const zahl = b.zahl?.() ?? 0}
+    {#if i > 0 && (b.gruppe ?? "") !== (bereiche[i - 1].gruppe ?? "")}<div class="nav-gruppe">{b.gruppe ?? app.name}</div>{/if}
     {@const anteil = b.fortschritt?.() ?? null}
     <button class="nav-eintrag" class:aktiv={seite === b.schluessel} title={b.hinweis ? `${b.titel}: ${b.hinweis}` : b.titel} onclick={() => gehe(b.schluessel)}>
       <i class="fa-solid {b.symbol}"></i><span class="nav-text">{b.titel}</span>{#if zahl}<span class="zahl">{zahl}</span>{/if}

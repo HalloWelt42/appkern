@@ -481,6 +481,9 @@ Telefon mit Reitern. Barlow und die Symbole kommen über npm.
 <Schale {bereiche} />
 ```
 
+Viele Bereiche lassen sich in der Seitenleiste gliedern: `gruppe` am Bereich ist die Überschrift, die erscheint, wo sie
+von einem Bereich zum nächsten wechselt (etwa `"Lesen"`, `"Meins"`); ohne steht der Name der App darüber.
+
 In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`; im Einstieg
 `import "appkern-oberflaeche/stil.css"`.
 
