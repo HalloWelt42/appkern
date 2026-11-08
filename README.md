@@ -120,7 +120,11 @@ eigene Arten: `SchluesselUngueltig`, `NichtErlaubt`, `KeinModell`, `Gesperrt` un
 laufen gegen eine nachgestellte Fassade, nie gegen die echte Leitstelle.
 
 Weitere Verbindungen einer App (andere Apps, Dienste am Mac) meldet sie mit `geruest.verbindung_anmelden(name, pruefung)` an;
-sie stehen neben Kellerwolke und Leitstelle in `/api/v1/verbindungen` und in der Fußleiste der Schale.
+sie stehen neben Kellerwolke und Leitstelle in `/api/v1/verbindungen` und in der Fußleiste der Schale. Kommt die App ohne
+eine aus, ist sie wahlweise (`wahlweise=True`, ebenso `geruest.verbund.anmelden(..., wahlweise=True)`, für die Leitstelle
+`Geruest(..., leitstelle_wahlweise=True)`; die Kellerwolke ist es ohne Anmeldung von selbst): solange sie nicht
+eingerichtet ist, zeigt die Schale sie weder in der Fußleiste noch als vermisst, eingerichtet zählt sie wie jede andere
+(WIKI-11, nur zeigen, was geht).
 
 **Andere Apps des Verbunds** (`geruest.verbund`, `appkern.verbund`): Aufrufe mit dem App-Schlüssel der Kellerwolke,
 mit `sitzung=` im Auftrag der Person (die andere App prüft deren Rechte wie in ihrer Oberfläche). `anfrage(methode,

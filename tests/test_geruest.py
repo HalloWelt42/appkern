@@ -11,7 +11,7 @@ import httpx
 import pytest
 from pydantic import Field
 
-from appkern.app import Geruest, Grundeinstellungen
+from appkern.app import Geruest, Grundeinstellungen, Verbindung
 
 
 class ProbeEinstellungen(Grundeinstellungen):
@@ -580,5 +580,30 @@ async def test_betriebsart_aus_der_umgebung(tmp_path: Path, monkeypatch):
             await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})
             h = {"X-Kellerwolke-Sitzung": (await c.post("/api/v1/anmeldung", json={"kennung": "chef", "passwort": "geheim"})).json()["token"]}
             assert (await c.patch("/api/v1/einstellungen", headers=h, json={"werte": {"anmeldung": "ohne"}})).status_code == 409
+    finally:
+        await geruest.stoppen()
+
+
+async def test_wahlweise_verbindungen(tmp_path: Path):
+    """Wahlweise Verbindungen (WIKI-11): ohne Anmeldung die Kellerwolke, die Leitstelle, wenn die App ohne sie auskommt,
+    und angemeldete weitere; mit Anmeldung bleibt die Kellerwolke Pflicht."""
+    geruest = Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
+                      einstellungen=OffenEinstellungen, transport=httpx.MockTransport(Wolke()), leitstelle_wahlweise=True)
+
+    async def bildholer() -> Verbindung:
+        return Verbindung(name="Bildholer", ok=False, meldung="nicht eingerichtet")
+
+    async def pflicht() -> Verbindung:
+        return Verbindung(name="Pflicht", ok=True, meldung="da")
+
+    geruest.verbindung_anmelden("Bildholer", bildholer, wahlweise=True)
+    geruest.verbindung_anmelden("Pflicht", pflicht)
+    await geruest.starten()
+    try:
+        assert {v.name: v.wahlweise for v in await geruest.verbindungen()} == {
+            "Kellerwolke": True, "Leitstelle": True, "Bildholer": True, "Pflicht": False}
+        await geruest.einstellungen.aendern({"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut",
+                                             "anmeldung": "kellerwolke"})
+        assert not next(v for v in await geruest.verbindungen() if v.name == "Kellerwolke").wahlweise
     finally:
         await geruest.stoppen()

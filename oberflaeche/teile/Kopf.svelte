@@ -37,7 +37,7 @@
       {#if gestoert.length}
         <span class="pille warn" title={alle}><span class="punkt"></span>{gestoert.length === 1 ? `${gestoert[0].name} gestört`
           : `${gestoert.length} von ${eingerichtet.length} gestört`}</span>
-      {:else if eingerichtet.length === verbindungen.liste.length}
+      {:else if verbindungen.liste.length && eingerichtet.length === verbindungen.liste.length}
         <span class="pille" title={alle}><span class="punkt"></span>alles verbunden</span>
       {/if}
     {/if}

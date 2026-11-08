@@ -189,9 +189,10 @@ class Verbund:
         return pruefen
 
     def anmelden(self, name: str, adresse: Callable[[], str], pfad: str = "/api/v1/app",
-                 meldung: Callable[[Any], str] | None = None) -> None:
-        """Das Ziel zu den Verbindungen der App stellen (`/api/v1/verbindungen`, Fußleiste)."""
-        self.g.verbindung_anmelden(name, self.pruefung(name, adresse, pfad, meldung))
+                 meldung: Callable[[Any], str] | None = None, *, wahlweise: bool = False) -> None:
+        """Das Ziel zu den Verbindungen der App stellen (`/api/v1/verbindungen`, Fußleiste); `wahlweise` wie bei
+        `Geruest.verbindung_anmelden`."""
+        self.g.verbindung_anmelden(name, self.pruefung(name, adresse, pfad, meldung), wahlweise=wahlweise)
 
     def angebot(self, name: str, kennung: str, adresse: Callable[[], str]) -> Callable[[], Awaitable[Angebot]]:
         """Anbieter für das Feld der Adresse eines Ziels: die eingetragene und die Apps des Verzeichnisses, deren

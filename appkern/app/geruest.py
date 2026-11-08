@@ -115,11 +115,16 @@ class AppInfo(BaseModel):
     einrichtungscode: str | None = None  # solange die Einrichtung nötig ist: wo der Code steht (nie der Code)
 
 
+NICHT_EINGERICHTET = "nicht eingerichtet"
+
+
 class Verbindung(BaseModel):
     name: str
     ok: bool
     adresse: str = ""
     meldung: str = ""
+    # wahlweise (WIKI-11): die App kommt ohne sie aus; nicht eingerichtet fehlt sie nicht, die Oberfläche zeigt sie nicht
+    wahlweise: bool = False
 
 
 class Einrichtung(BaseModel):
@@ -161,7 +166,7 @@ class Geruest(Generic[E]):
                  oberflaeche: Path | None = None,
                  gleichzeitig: int = 1, angebote: Sequence[AppAngebot] = (), leseverbindungen: int = LESER,
                  push: bool = False, sicherungen: Path | None = None, seiten: Sequence[str] = (),
-                 transport: httpx.AsyncBaseTransport | None = None) -> None:
+                 leitstelle_wahlweise: bool = False, transport: httpx.AsyncBaseTransport | None = None) -> None:
         """`angebote`: was die App mit Dateien der Kellerwolke kann (Aktionen im Dateimenü, Dateiwahl in der App).
         `leseverbindungen`: so viele Lesungen der Datenbank laufen nebeneinander (neben dem Schreiben).
         `push`: Mitteilungen aufs Gerät (appkern/push, braucht das Extra `push`); dann steht `self.push` bereit.
@@ -171,11 +176,15 @@ class Geruest(Generic[E]):
         Anmeldung und Einrichtung zeigen es statt des Zeichens `symbol` im Kasten der App-Farbe.
         `seiten`: Pfade, unter denen die App gebaute Seiten hinter der Anmeldung ausliefert (etwa "/vorschau"); dort gilt
         das Inhalts-Cookie mit, geschützt mit `self.seite_lesen` (ohne Anmeldung zur Anmeldung der App).
+        `leitstelle_wahlweise`: die App kommt ohne Leitstelle aus (sie blendet aus, was KI braucht); nicht eingerichtet
+        zeigt die Oberfläche sie dann nicht als fehlend. Die Kellerwolke ist wahlweise, solange die App ohne Anmeldung
+        läuft.
         `transport` nur für Tests: alle Verbindungen nach außen gehen dann über ihn."""
         self.name, self.kennung, self.rolle, self.symbol, self.fassung = name, kennung, rolle, symbol, fassung
         self.symbolbild = symbolbild
         self.farbe = farbe
-        self._weitere_verbindungen: list[tuple[str, Callable[[], Awaitable[Verbindung]]]] = []
+        self._weitere_verbindungen: list[tuple[str, Callable[[], Awaitable[Verbindung]], bool]] = []
+        self.leitstelle_wahlweise = leitstelle_wahlweise
         self.daten = Path(daten)
         self.oberflaeche = oberflaeche
         self._transport = transport
@@ -463,19 +472,22 @@ class Geruest(Generic[E]):
                                        if art == OHNE_ANMELDUNG else "info", bezug_art="einstellungen")
         logger.warning("Betriebsart festgehalten: %s", text)
 
-    def verbindung_anmelden(self, name: str, pruefung: Callable[[], Awaitable[Verbindung]]) -> None:
+    def verbindung_anmelden(self, name: str, pruefung: Callable[[], Awaitable[Verbindung]], *, wahlweise: bool = False) -> None:
         """Eine weitere Verbindung der App (etwa zu einer anderen App oder einem Dienst am Mac); sie steht dann mit
-        Kellerwolke und Leitstelle in `/api/v1/verbindungen` und in der Fußleiste der Schale."""
-        self._weitere_verbindungen.append((name, pruefung))
+        Kellerwolke und Leitstelle in `/api/v1/verbindungen` und in der Fußleiste der Schale. `wahlweise`: die App kommt
+        ohne sie aus; solange sie nicht eingerichtet ist (Meldung `NICHT_EINGERICHTET`), zeigt die Oberfläche sie nicht."""
+        self._weitere_verbindungen.append((name, pruefung, wahlweise))
 
     async def verbindungen(self) -> list[Verbindung]:
         """Kellerwolke, Leitstelle und die weiteren Verbindungen nebeneinander geprüft, jede höchstens `PRUEFEN_S`:
         auch wenn alle hängen, antwortet die App rasch."""
         stand = self.einstellungen.stand
-        return list(await asyncio.gather(
+        geprueft = await asyncio.gather(
             _begrenzt("Kellerwolke", stand.kellerwolke_adresse, self._kellerwolke_pruefen()),
             _begrenzt("Leitstelle", stand.leitstelle_adresse, self._leitstelle_pruefen()),
-            *(_begrenzt(name, "", self._weitere_pruefen(name, pruefung)) for name, pruefung in self._weitere_verbindungen)))
+            *(_begrenzt(name, "", self._weitere_pruefen(name, pruefung)) for name, pruefung, _ in self._weitere_verbindungen))
+        wahlweise = [self.ohne_anmeldung(), self.leitstelle_wahlweise, *(w for _, _, w in self._weitere_verbindungen)]
+        return [v.model_copy(update={"wahlweise": w}) for v, w in zip(geprueft, wahlweise, strict=True)]
 
     @staticmethod
     async def _weitere_pruefen(name: str, pruefung: Callable[[], Awaitable[Verbindung]]) -> Verbindung:
@@ -488,7 +500,7 @@ class Geruest(Generic[E]):
     async def _kellerwolke_pruefen(self) -> Verbindung:
         stand = self.einstellungen.stand
         if self.kellerwolke is None:
-            return Verbindung(name="Kellerwolke", ok=False, meldung="nicht eingerichtet")
+            return Verbindung(name="Kellerwolke", ok=False, meldung=NICHT_EINGERICHTET)
         try:
             ich = await self.kellerwolke.mit_geduld(0).ich()     # die Anzeige meldet sofort, sie wartet nicht
         except KellerwolkeFehler as f:
@@ -499,7 +511,7 @@ class Geruest(Generic[E]):
     async def _leitstelle_pruefen(self) -> Verbindung:
         stand = self.einstellungen.stand
         if self.leitstelle is None:
-            return Verbindung(name="Leitstelle", ok=False, meldung="nicht eingerichtet")
+            return Verbindung(name="Leitstelle", ok=False, meldung=NICHT_EINGERICHTET)
         try:
             modelle = await self.leitstelle.modelle()
         except LeitstellenFehler as f:

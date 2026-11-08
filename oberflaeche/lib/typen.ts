@@ -35,6 +35,7 @@ export interface Verbindung {
   ok: boolean;
   adresse: string;
   meldung: string;
+  wahlweise?: boolean;    // die App kommt ohne sie aus (WIKI-11); nicht eingerichtet zeigt die Schale sie nicht
 }
 
 export type Zustand = "wartet" | "laeuft" | "fertig" | "fehler" | "abgebrochen" | "unterbrochen";

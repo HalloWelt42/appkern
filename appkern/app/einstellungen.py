@@ -48,7 +48,7 @@ class Grundeinstellungen(BaseModel):
     leitstelle_schluessel: SecretStr = Field(SecretStr(""), title="Schlüssel der Leitstelle", json_schema_extra=VERBINDUNGEN,
                                              description="In der Leitstelle unter Anwendungen erzeugt.")
     leitstelle_extern: list[str] = Field(default_factory=list, title="Ausweichen nach extern", json_schema_extra=VERBINDUNGEN,
-                                         description="Externe Modelle (etwa bei Hetzner), auf die die Leitstelle ausweichen darf, "
+                                         description="Externe Modelle (etwa auf einem gemieteten Rechner), auf die die Leitstelle ausweichen darf, "
                                                      "wenn die eigenen Rechner lange belegt sind; dabei verlassen Texte das Heimnetz. "
                                                      "Nur wählen, wo die Qualität reicht. Leer: alles bleibt im Heimnetz.")
     leitstelle_geduld_min: int = Field(30, ge=1, le=1440, title="Geduld bei Ausfall",
