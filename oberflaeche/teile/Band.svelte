@@ -1,5 +1,6 @@
 <script lang="ts">
-  // Band unter dem Kopf, solange eine Verbindung fehlt; sagt, was das bedeutet.
+  // Band unter dem Kopf, solange eine Verbindung fehlt; sagt, was das bedeutet. Vermisste (nie eingetragen) stehen
+  // nicht hier, sondern als Minisymbol im Kopf (Vermisst.svelte, WIKI-68); kommt doch eine, führt der Knopf hin.
   import type { Verbindung } from "../lib/typen";
   import { gehe } from "../lib/navigation.svelte";
   import { pruefen, verbindungen as stand } from "../lib/verbindungen.svelte";

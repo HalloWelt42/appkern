@@ -235,6 +235,8 @@ a.herkunft i { font-size: var(--marke); }
 .mobil .t-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mobil .t-meta { display: block; font-size: var(--klein); color: var(--text-3); margin-top: 2px; }
 .mobil .t-zeile.gefahr, .mobil .t-zeile.gefahr > i { color: var(--gefahr); }
+.vermisst { display: inline-flex; align-items: center; gap: 3px; flex: none; padding: 2px 4px; border: 0; background: transparent; color: var(--warn); font: inherit; font-size: var(--marke); cursor: pointer; }
+.vermisst span { font-family: var(--schrift-zahl); }
 .mobil .t-band { margin: 0 var(--rahmen-rand) 10px; padding: 10px 14px; border-radius: var(--r2); background: var(--warn-weich); color: var(--warn); font-size: var(--klein); display: flex; gap: 10px; }
 .mobil .segment { display: flex; }
 .mobil .segment button { flex: 1; }

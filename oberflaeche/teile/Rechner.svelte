@@ -9,7 +9,7 @@
   import { fassung, ruhig } from "../lib/fassung.svelte";
   import { navigation } from "../lib/navigation.svelte";
   import type { Anfrage, Bereich, EinstellungsReiter } from "../lib/typen";
-  import { verbindungen, verbindungenVerfolgen } from "../lib/verbindungen.svelte";
+  import { gestoert, verbindungen, verbindungenVerfolgen } from "../lib/verbindungen.svelte";
   import Auftraege from "./Auftraege.svelte";
   import Band from "./Band.svelte";
   import Einstellungen from "./Einstellungen.svelte";
@@ -37,7 +37,7 @@
 
   const seite = $derived(navigation.seite || bereiche[0]?.schluessel || "auftraege");
   const bereich = $derived(bereiche.find((b) => b.schluessel === seite));
-  const fehlend = $derived(verbindungen.liste.filter((v) => !v.ok));
+  const fehlend = $derived(verbindungen.liste.filter(gestoert));   // vermisste zeigt nur das Minisymbol im Kopf (WIKI-68)
 </script>
 
 <div class="fenster-voll">

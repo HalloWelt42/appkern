@@ -37,3 +37,8 @@ export function verbindungenVerfolgen(): () => void {
     if (laufend === dieser) laufend = null;
   };
 }
+
+/** Verbindungen, die die App vermisst (nie eingetragen): ein Minisymbol im Kopf genügt, es führt zu den Einstellungen
+ *  (WIKI-68). Nur eine gestörte (eingerichtet, antwortet nicht) bekommt das Band mit seiner Folge. */
+export const vermisst = (v: Verbindung): boolean => !v.ok && v.meldung === "nicht eingerichtet";
+export const gestoert = (v: Verbindung): boolean => !v.ok && v.meldung !== "nicht eingerichtet";

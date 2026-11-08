@@ -10,7 +10,8 @@
   import { fassung } from "../../lib/fassung.svelte";
   import { gehe, navigation } from "../../lib/navigation.svelte";
   import type { Anfrage, Bereich, EinstellungsReiter } from "../../lib/typen";
-  import { verbindungen, verbindungenVerfolgen } from "../../lib/verbindungen.svelte";
+  import { gestoert, verbindungen, verbindungenVerfolgen } from "../../lib/verbindungen.svelte";
+  import Vermisst from "../Vermisst.svelte";
   import Einstellungen from "../Einstellungen.svelte";
   import Protokoll from "../Protokoll.svelte";
   import MobilAuftraege from "./MobilAuftraege.svelte";
@@ -34,7 +35,7 @@
   const bereich = $derived(bereiche.find((b) => b.schluessel === seite));
   const unterMehr = $derived(seite === "protokoll" || seite === "einstellungen" || weitere.some((b) => b.schluessel === seite));
   const titel = $derived(bereich?.titel ?? ({ auftraege: "Aufträge", protokoll: "Protokoll", einstellungen: "Einstellungen", mehr: "Mehr" } as Record<string, string>)[seite] ?? "");
-  const fehlend = $derived(verbindungen.liste.filter((v) => !v.ok));
+  const fehlend = $derived(verbindungen.liste.filter(gestoert));   // vermisste zeigt nur das Minisymbol im Kopf
   const offen = $derived(auftraege.laufen + auftraege.warten);
 </script>
 
@@ -46,6 +47,7 @@
     <h1>{navigation.titel || titel}</h1>
     {#if navigation.kennzeichen}<span class="pille"><i class="fa-solid {navigation.kennzeichen.symbol}"></i>{navigation.kennzeichen.text}</span>{/if}
     {#if navigation.aktionen}<span class="t-aktionen">{@render navigation.aktionen()}</span>{/if}
+    <Vermisst />
     {#if offen && seite !== "auftraege"}<button class="pille aktiv" style="border:0" onclick={() => gehe("auftraege")}><i class="fa-solid fa-gears"></i>{offen}</button>{/if}
   </div>
   {#if !verbindung.ok}
@@ -57,9 +59,7 @@
   {/if}
   {#if verbindung.ok && fehlend.length}
     <div class="t-band"><i class="fa-solid fa-triangle-exclamation" style="margin-top:3px"></i>
-      <span>{#each fehlend as v, i (v.name)}{i ? " " : ""}{v.meldung === "nicht eingerichtet"
-        ? `${v.name} nicht eingerichtet; unter Mehr, Einstellungen eintragen.`
-        : `${v.name} nicht erreichbar; nichts geht verloren.`}{/each}</span></div>
+      <span>{#each fehlend as v, i (v.name)}{i ? " " : ""}{`${v.name} nicht erreichbar; nichts geht verloren.`}{/each}</span></div>
   {/if}
   <div class="t-inhalt" data-rahmen="inhalt">
     {#if bereich}

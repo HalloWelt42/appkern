@@ -8,6 +8,7 @@
   import { sitzung } from "../lib/sitzung.svelte";
   import AppSymbol from "./AppSymbol.svelte";
   import { verbindungen } from "../lib/verbindungen.svelte";
+  import Vermisst from "./Vermisst.svelte";
   import { fest } from "../lib/stelle.svelte";
 
   let { rechts, mitte }: { rechts?: Snippet; mitte?: Snippet } = $props();
@@ -38,6 +39,7 @@
         <span class="pille" title={alle}><span class="punkt"></span>alles verbunden</span>
       {/if}
     {/if}
+    <Vermisst />
     {@render rechts?.()}
   </div>
 </header>
