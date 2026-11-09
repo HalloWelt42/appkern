@@ -37,7 +37,9 @@ button { font: inherit; color: inherit; }
 /* ----- Gerüst ----- */
 .geruest { display: grid; grid-template-columns: var(--nav-breite) minmax(0, 1fr); min-height: 0; }
 .geruest.mit-leiste { grid-template-columns: var(--nav-breite) minmax(0, 1fr) 380px; }
-.nav { background: var(--leiste); box-shadow: 1px 0 0 var(--rand); padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; min-height: 0; }
+/* rollt selbst, wenn das Fenster niedriger ist als die Leiste: jeder Eintrag bleibt erreichbar (WIKI-84) */
+.nav { background: var(--leiste); box-shadow: 1px 0 0 var(--rand); padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; min-height: 0;
+       overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .nav-gruppe { font-size: var(--marke); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 12px 10px 5px; }
 .nav-eintrag { display: flex; align-items: center; gap: 10px; height: var(--zeile); padding: 0 10px; border-radius: var(--r2); flex: none; color: var(--text); cursor: pointer; }
 .nav-eintrag i { width: 20px; text-align: center; color: var(--text-3); }
@@ -356,8 +358,8 @@ a.knopf.primaer { color: var(--auf-akzent); }
 .nav-oben .nav-gruppe { flex: 1; min-width: 0; }
 .nav-oben .rund { width: 28px; height: 28px; }
 /* Zusatz der App (etwa die Geräte in NamensGeber): rollt in seinem Bereich, statt über Ansicht und Konto zu laufen */
-.nav-zusatz { flex: 1; min-height: 0; display: flex; flex-direction: column; margin: 4px -8px 0; box-shadow: 0 -1px 0 var(--rand);
-              overflow-y: auto; overscroll-behavior: contain; }
+.nav-zusatz { flex: 1; min-height: min(30vh, 200px); display: flex; flex-direction: column; margin: 4px -8px 0; box-shadow: 0 -1px 0 var(--rand);
+              overflow-y: auto; overscroll-behavior: contain; }   /* rollt die ganze Leiste, behält er eine nutzbare Höhe */
 .nav-ansicht { display: flex; flex-direction: column; gap: 6px; padding: 2px 2px 4px; }
 .nav-ansicht .nav-gruppe { padding: 0 4px 2px; }
 .nav-ansicht .segment { display: flex; }

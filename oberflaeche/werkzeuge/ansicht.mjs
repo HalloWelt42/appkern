@@ -1,6 +1,7 @@
 // Ansichtsprüfung (Lehren 12 und 13 der Transkription): jede Seite der App in allen Breiten, hell und dunkel, in einem
 // unsichtbaren Chrome (browser.mjs, endet sicher mit dem Lauf). Misst seitliches Rollen, Überlauf über den rechten
 // Rand, Kontrast von Text und die Verschiebung fester Teile beim Zustandswechsel; legt von jeder Ansicht ein Bild ab.
+// Bedienelemente, die unter dem Rand eines Bereichs verschwinden, der abschneidet statt zu rollen (WIKI-84).
 // Am Telefon (375, 390 und 430 Pixel, mit sicheren Rändern und Fingerbedienung wie am iPhone) misst sie zusätzlich den
 // Rahmen nach stil/rahmen.css (HELF-13): Seite fest, App schirmhoch, Kopf ganz oben mit Inhalt erst unter dem sicheren
 // Rand und in seiner Höhe, Fußleiste ganz unten, nicht verdeckt und nicht zu hoch, Eingaben ab 16 px, keine eigene Regel
@@ -191,6 +192,20 @@ const MESSEN = `(() => {
       geschnitten.push(weg(e) + " (" + e.scrollWidth + " statt " + e.clientWidth + (weitest ? "; am weitesten: " + weg(weitest) + " '" + (weitest.textContent || "").trim().slice(0, 30) + "'" : "") + ")");
     }
   }
+  // Unerreichbar (WIKI-84): ein Bereich, der senkrecht abschneidet und nicht rollt (overflow hidden oder clip), mit
+  // Bedienelementen unter seinem Rand, etwa die Seitenleiste in einem niedrigen Fenster. Abgeschnittener Text allein zählt
+  // nicht (gekürzte Zeilen sind gewollt), nur Knöpfe, Verweise und Eingaben, die man nicht mehr erreicht.
+  const unerreichbar = [];
+  const BEDIENBAR = "a[href], button, input, select, textarea, [role=button], [tabindex]:not([tabindex='-1'])";
+  for (const e of document.querySelectorAll("body *")) {
+    const s = stil(e);
+    if (s.display === "none" || !["hidden", "clip"].includes(s.overflowY) || e.scrollHeight <= e.clientHeight + 1 || !e.clientHeight) continue;
+    const rand = e.getBoundingClientRect().top + e.clientHeight;
+    const weg_ = [...e.querySelectorAll(BEDIENBAR)].filter((k) => { const r = k.getBoundingClientRect(); const ks = stil(k);
+      return r.height && r.width && ks.visibility !== "hidden" && r.top >= rand - 1; });
+    if (weg_.length) unerreichbar.push(weg(e) + " (" + weg_.length + " Bedienelemente unter dem Rand, etwa '" +
+      (weg_[0].textContent || weg_[0].getAttribute("aria-label") || weg_[0].getAttribute("title") || "").trim().slice(0, 30) + "')");
+  }
   // Flucht: Karten einer Reihe (data-karte, Geschwister, Oberkanten höchstens 3 Pixel auseinander) mit ihrer Fußzeile
   // (data-fuss) auf einer Linie; sonst steht etwa ein Lesestand unter einem zweizeiligen Titel tiefer als daneben. Eine
   // leere, nicht gezeigte Fußzeile zählt nicht: Karten ohne Fuß haben nichts, was fluchten müsste
@@ -307,6 +322,7 @@ const MESSEN = `(() => {
     e.scrollTop = alt;
   }
   return { seitlich: document.documentElement.scrollWidth > breite + 1, ueber: [...new Set(ueber)].slice(0, 5), kontrast: [...new Set(kontrast)].slice(0, 5),
+           unerreichbar: [...new Set(unerreichbar)].slice(0, 5),
            geschnitten: [...new Set(geschnitten)].slice(0, 5), flucht: [...new Set(flucht)].slice(0, 5),
            ungekennzeichnet: [...new Set(ungekennzeichnet)].slice(0, 5), kopfweg, kopfluecke: [...new Set(kopfluecke)].slice(0, 5) };
 })()`;
@@ -561,6 +577,7 @@ for (const thema of themen) {
       const m = await werte(MESSEN);
       if (m.seitlich) befunde.push(`${name}: rollt seitlich`);
       for (const u of m.ueber) befunde.push(`${name}: läuft rechts über: ${u}`);
+      for (const u of m.unerreichbar ?? []) befunde.push(`${name}: nicht erreichbar, schneidet ab statt zu rollen: ${u}`);
       for (const k of m.kontrast) befunde.push(`${name}: Kontrast unter ${KONTRAST_MIN}: ${k}`);
       for (const g of m.geschnitten) befunde.push(`${name}: breiter als sein Rahmen: ${g}`);
       for (const f of m.flucht) befunde.push(`${name}: Karten einer Reihe, Fußzeilen nicht auf einer Linie: ${f}`);
@@ -593,6 +610,7 @@ for (const thema of themen) {
         const mw = await werte(MESSEN);
         if (mw.seitlich) befunde.push(`${name}-wechsel${i + 1}: rollt seitlich`);
         for (const u of mw.ueber) befunde.push(`${name}-wechsel${i + 1}: läuft rechts über: ${u}`);
+        for (const u of mw.unerreichbar ?? []) befunde.push(`${name}-wechsel${i + 1}: nicht erreichbar, schneidet ab statt zu rollen: ${u}`);
         for (const k of mw.kontrast) befunde.push(`${name}-wechsel${i + 1}: Kontrast unter ${KONTRAST_MIN}: ${k}`);
         for (const g of mw.geschnitten) befunde.push(`${name}-wechsel${i + 1}: breiter als sein Rahmen: ${g}`);
         for (const f of mw.flucht) befunde.push(`${name}-wechsel${i + 1}: Karten einer Reihe, Fußzeilen nicht auf einer Linie: ${f}`);
