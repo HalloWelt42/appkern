@@ -230,6 +230,38 @@ async def test_begleiter_leben_mit_dem_geruest(tmp_path: Path):
                       "a.verbunden:True", "b.verbunden:True", "b.stoppen", "a.stoppen"]
 
 
+async def test_langsamer_start_sagt_welcher_schritt(tmp_path: Path, monkeypatch, caplog):
+    """Erst nach dem Start nimmt der Server Anfragen an: dauert er lange, nennen Log und Protokoll die Schritte."""
+    from appkern.app import Begleiter
+    from appkern.app import geruest as modul
+
+    class Langsam(Begleiter):
+        async def starten(self):
+            await asyncio.sleep(0.05)
+
+    monkeypatch.setattr(modul, "START_MELDEN_S", 0.03)
+    geruest = Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
+                      einstellungen=ProbeEinstellungen, transport=httpx.MockTransport(Wolke()))
+    geruest.begleiter_anmelden(Langsam())
+    await geruest.starten()
+    eintrag = (await geruest.db.zeilen("SELECT text, daten FROM protokoll WHERE ereignis = 'app.start_langsam'"))[0]
+    await geruest.stoppen()
+    assert eintrag["text"].startswith("Der Start brauchte") and "am längsten: Langsam.starten" in eintrag["text"]
+    schritte = [n for n, _ in json.loads(eintrag["daten"])["schritte"]]
+    assert schritte[:5] == ["Datenbank", "Einstellungen", "Protokoll", "Anmeldung", "Zugänge"]
+    assert {"Langsam.starten", "Langsam.verbunden", "Aufträge"} <= set(schritte)
+    assert any("Der Start brauchte" in r.getMessage() for r in caplog.records)
+
+
+async def test_schneller_start_meldet_nichts(tmp_path: Path):
+    geruest = Geruest(name="Probe", kennung="probe", rolle="probiert", fassung="0.1.0", daten=tmp_path / "daten",
+                      einstellungen=ProbeEinstellungen, transport=httpx.MockTransport(Wolke()))
+    await geruest.starten()
+    zeilen = await geruest.db.zeilen("SELECT 1 FROM protokoll WHERE ereignis = 'app.start_langsam'")
+    await geruest.stoppen()
+    assert not zeilen
+
+
 async def test_angebote_fuer_verbindungen_und_leitstelle(umgebung):
     geruest, app, c = umgebung
     await c.post("/api/v1/einrichtung", json={"kellerwolke_adresse": "http://kw.test", "kellerwolke_schluessel": "kw_app_gut"})

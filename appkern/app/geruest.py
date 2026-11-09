@@ -29,6 +29,7 @@ import mimetypes
 import os
 import re
 import ssl
+import time
 from collections.abc import Awaitable, Callable, Iterable, Sequence
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -71,6 +72,9 @@ E = TypeVar("E", bound=Grundeinstellungen)
 LOKAL = {"127.0.0.1", "::1", "localhost"}
 TAG_S = 24 * 3600
 PRUEFEN_S = 10.0     # so lange darf die Prüfung einer Verbindung dauern (beide laufen nebeneinander)
+#: so lange darf der Start dauern, bevor er meldet, welcher Schritt wie lange brauchte (Protokoll und Log): erst nach dem
+#: Start nimmt der Server Anfragen an, ein langsamer Schritt hält die ganze App auf (und das Ausrollen wartet begrenzt)
+START_MELDEN_S = 10.0
 JA = {"1", "ja", "an", "true", "yes", "on"}
 # Endet der letzte Teil eines Wegs wie ein Dateiname (Punkt, dann Buchstabe, dann Buchstaben oder Ziffern), ist es eine
 # Datei und nie eine Seite; Zahlen wie /transkripte/<kennung>/12.5 bleiben Seiten.
@@ -158,6 +162,33 @@ async def _begrenzt(name: str, adresse: str, pruefung: Awaitable[Verbindung]) ->
         return await asyncio.wait_for(pruefung, PRUEFEN_S)
     except TimeoutError:
         return Verbindung(name=name, ok=False, adresse=adresse, meldung=f"antwortet nicht binnen {PRUEFEN_S:.0f} s")
+
+
+class Startzeiten:
+    """Dauer jedes Schritts beim Start (Sekunden), in der Reihenfolge des Starts."""
+
+    def __init__(self) -> None:
+        self._schritte: list[tuple[str, float]] = []
+
+    def dazu(self, name: str, sekunden: float) -> None:
+        self._schritte.append((name, sekunden))
+
+    async def messen(self, name: str, arbeit: Awaitable[object]) -> None:
+        beginn = time.monotonic()
+        try:
+            await arbeit
+        finally:
+            self.dazu(name, time.monotonic() - beginn)
+
+    @property
+    def gesamt(self) -> float:
+        return sum(s for _, s in self._schritte)
+
+    def laengste(self, anzahl: int = 5) -> str:
+        return ", ".join(f"{n} {s:.1f} s" for n, s in sorted(self._schritte, key=lambda x: -x[1])[:anzahl])
+
+    def alle(self) -> list[list[str | float]]:
+        return [[n, round(s, 2)] for n, s in self._schritte]
 
 
 class Geruest(Generic[E]):
@@ -334,12 +365,17 @@ class Geruest(Generic[E]):
             raise RuntimeError("Begleiter vor dem Start anmelden")
         self._begleiter.extend(begleiter)
 
-    async def _begleiter_rufen(self, schritt: str, begleiter: list[Begleiter] | None = None) -> None:
+    async def _begleiter_rufen(self, schritt: str, begleiter: list[Begleiter] | None = None,
+                               zeiten: Startzeiten | None = None) -> None:
+        """`zeiten`: misst jeden Begleiter (beim Start)."""
         for b in begleiter if begleiter is not None else self._begleiter:
+            beginn = time.monotonic()
             try:
                 await getattr(b, schritt)()
             except Exception:  # noqa: BLE001 - ein Begleiter darf die App nie anhalten
                 logger.exception("Begleiter %s: %s", type(b).__name__, schritt)
+            if zeiten is not None:
+                zeiten.dazu(f"{type(b).__name__}.{schritt}", time.monotonic() - beginn)
 
     # --- Zugänge ----------------------------------------------------------------------------------------------
 
@@ -522,14 +558,15 @@ class Geruest(Generic[E]):
     # --- Lebenszyklus -----------------------------------------------------------------------------------------
 
     async def starten(self) -> None:
-        await self.db.oeffnen()
-        await self.einstellungen.starten()
-        await self.protokoll.starten()
-        await self._anmeldung_festhalten()
+        zeiten = Startzeiten()
+        await zeiten.messen("Datenbank", self.db.oeffnen())
+        await zeiten.messen("Einstellungen", self.einstellungen.starten())
+        await zeiten.messen("Protokoll", self.protokoll.starten())
+        await zeiten.messen("Anmeldung", self._anmeldung_festhalten())
         self.einstellungen.regel(self._anmeldung_regel)       # erst nach dem Festhalten: das gilt ohne Rückfrage
         geduld_setzen(self.einstellungen.stand.leitstelle_geduld_min * 60)
         self.anmeldung.ausfall_s = self.einstellungen.stand.anmeldung_ausfall_h * 3600
-        await self._zugaenge_bauen()
+        await zeiten.messen("Zugänge", self._zugaenge_bauen())
         self.einstellungen.bei_aenderung(self._nach_aenderung)
         self._laeuft = True
         await self._einrichtungscode_bereitstellen()
@@ -538,10 +575,20 @@ class Geruest(Generic[E]):
             await self.protokoll.eintragen("app.oberflaeche_veraltet", f"Die Oberfläche ist für {gebaut} gebaut, die App ist "
                                            f"{self.fassung}: die Oberfläche neu bauen (einrichten.sh oder Ausrollen)", stufe="warnung")
             logger.warning("Oberfläche für %s gebaut, App ist %s", gebaut, self.fassung)
-        await self._begleiter_rufen("starten")
-        await self._begleiter_rufen("verbunden")
-        await self.auftraege.starten()
+        await self._begleiter_rufen("starten", zeiten=zeiten)
+        await self._begleiter_rufen("verbunden", zeiten=zeiten)
+        await zeiten.messen("Aufträge", self.auftraege.starten())
         self._pflege = asyncio.create_task(self._taeglich(), name="pflege")
+        await self._start_melden(zeiten)
+
+    async def _start_melden(self, zeiten: Startzeiten) -> None:
+        """Dauerte der Start lange, sagen Protokoll und Log, welche Schritte wie lange brauchten (die längsten zuerst)."""
+        if zeiten.gesamt < START_MELDEN_S:
+            return
+        text = f"Der Start brauchte {zeiten.gesamt:.0f} s; am längsten: {zeiten.laengste()}"
+        logger.warning(text)
+        await self.protokoll.eintragen("app.start_langsam", text, stufe="warnung",
+                                       daten={"gesamt_s": round(zeiten.gesamt, 1), "schritte": zeiten.alle()})
 
     async def _einrichtungscode_bereitstellen(self) -> None:
         """Solange die Einrichtung nötig ist, ein neuer Code je Start (Ort ins Protokoll, nie der Code); sonst keiner."""
