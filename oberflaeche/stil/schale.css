@@ -39,7 +39,7 @@ button { font: inherit; color: inherit; }
 .geruest.mit-leiste { grid-template-columns: var(--nav-breite) minmax(0, 1fr) 380px; }
 /* rollt selbst, wenn das Fenster niedriger ist als die Leiste: jeder Eintrag bleibt erreichbar (WIKI-84) */
 .nav { background: var(--leiste); box-shadow: 1px 0 0 var(--rand); padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; min-height: 0;
-       overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+       overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }   /* seitlich nie (eingeklappt) */
 .nav-gruppe { font-size: var(--marke); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 12px 10px 5px; }
 .nav-eintrag { display: flex; align-items: center; gap: 10px; height: var(--zeile); padding: 0 10px; border-radius: var(--r2); flex: none; color: var(--text); cursor: pointer; }
 .nav-eintrag i { width: 20px; text-align: center; color: var(--text-3); }
@@ -353,7 +353,6 @@ a.knopf.primaer { color: var(--auf-akzent); }
 .fenster-voll { grid-template-rows: auto auto minmax(0, 1fr) auto; }
 .kopf .kopf-rechts { flex: none; }
 .zahl, .zahl-schrift { font-family: var(--schrift-zahl); }
-.nav { overflow: hidden; }
 .nav-oben { display: flex; align-items: center; gap: 4px; }
 .nav-oben .nav-gruppe { flex: 1; min-width: 0; }
 .nav-oben .rund { width: 28px; height: 28px; }
