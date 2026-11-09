@@ -64,6 +64,7 @@ from .begleiter import Begleiter
 from .einrichtungscode import Einrichtungscode, Gesperrt
 from .einstellungen import MIT_KELLERWOLKE, OHNE_ANMELDUNG, Anmeldeart, Grundeinstellungen
 from .sicherung import RegelmaessigeSicherung, ablage_der_app, regel_aus
+from .speicher import Speicherwache
 
 logger = logging.getLogger("appkern.app")
 
@@ -254,7 +255,8 @@ class Geruest(Generic[E]):
                                lambda: self.einstellungen.stand.adresse or None)
         self.sicherung = RegelmaessigeSicherung(ablage_der_app(self.daten, kennung, sicherungen),
                                                 lambda: regel_aus(self.einstellungen.stand))
-        self._begleiter: list[Begleiter] = ([self.abholer] if angebote else []) + [self.sicherung]
+        self.speicherwache = Speicherwache(self.protokoll)
+        self._begleiter: list[Begleiter] = ([self.abholer] if angebote else []) + [self.sicherung, self.speicherwache]
         self._oberflaeche_gemerkt: tuple[float, str | None] | None = None
         self._laeuft = False
         self.push = None
