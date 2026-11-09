@@ -52,7 +52,8 @@ async def test_wache_meldet_je_stufe_einmal(tmp_path: Path, caplog):
     await protokoll.starten()
     werte = iter([GB // 2, GB + 100 * MB, GB + 200 * MB, GB + 600 * MB, GB])
     wache = Speicherwache(protokoll, messen=lambda: Speicherbild(arbeitsspeicher=next(werte), ausgelagert=0, heap_belegt=MB,
-                                                                     heap_frei=GB, eigene_seiten=0))
+                                                                     heap_frei=100 * MB, eigene_seiten=0),
+                          zurueckgeben=lambda: False)
     caplog.set_level(logging.WARNING)
     for _ in range(5):
         await wache.blick()
@@ -60,8 +61,47 @@ async def test_wache_meldet_je_stufe_einmal(tmp_path: Path, caplog):
     await db.schliessen()
     # unter 1 GB still; 1,1 GB meldet, 1,2 GB nicht (gleiche Stufe), 1,6 GB über 1,5 GB wieder, das Sinken nie
     assert [json.loads(z["daten"])["gesamt_mb"] for z in zeilen] == [1124, 1624]
-    assert zeilen[0]["text"].startswith("Speicher gewachsen auf 1,1 GB") and "frei gehalten 1,0 GB" in zeilen[0]["text"]
+    assert zeilen[0]["text"].startswith("Speicher gewachsen auf 1,1 GB") and "frei gehalten 0,1 GB" in zeilen[0]["text"]
     assert sum("Speicher gewachsen" in r.getMessage() for r in caplog.records) == 2
+
+
+async def test_wache_gibt_frei_gehaltenes_zurueck(tmp_path: Path):
+    """Wie im Fundus: nach einer Spitze hält der Heap viel frei. Die Wache gibt es zurück, misst danach und zählt die
+    Stufen von dort; erneut erst, wenn der Prozess seither wieder um so viel gewachsen ist (der Speicherverwalter zählt
+    Zurückgegebenes weiter als frei)."""
+    db = await Datenbank(tmp_path / "probe.sqlite").oeffnen()
+    protokoll = Protokoll(db)
+    await protokoll.starten()
+    bilder = iter([
+        Speicherbild(arbeitsspeicher=5 * GB + 700 * MB, ausgelagert=0, heap_belegt=200 * MB, heap_frei=5 * GB + 500 * MB),
+        Speicherbild(arbeitsspeicher=400 * MB, ausgelagert=0, heap_belegt=200 * MB, heap_frei=5 * GB + 500 * MB),   # danach
+        Speicherbild(arbeitsspeicher=500 * MB, ausgelagert=0, heap_belegt=300 * MB, heap_frei=5 * GB + 400 * MB),   # kaum gewachsen
+        Speicherbild(arbeitsspeicher=900 * MB, ausgelagert=0, heap_belegt=300 * MB, heap_frei=5 * GB + 500 * MB),   # 500 MB mehr
+        Speicherbild(arbeitsspeicher=450 * MB, ausgelagert=0, heap_belegt=300 * MB, heap_frei=5 * GB + 500 * MB),   # danach
+    ])
+    rueckgaben = []
+    wache = Speicherwache(protokoll, messen=lambda: next(bilder), zurueckgeben=lambda: rueckgaben.append(1) or True)
+    assert (await wache.blick()).arbeitsspeicher == 400 * MB
+    assert (await wache.blick()).arbeitsspeicher == 500 * MB
+    assert (await wache.blick()).arbeitsspeicher == 450 * MB
+    zeilen = await db.zeilen("SELECT ereignis, text, daten FROM protokoll ORDER BY zeit")
+    await db.schliessen()
+    assert len(rueckgaben) == 2
+    assert [z["ereignis"] for z in zeilen] == ["app.speicher", "app.speicher_zurueck", "app.speicher_zurueck"]
+    assert zeilen[1]["text"].startswith("Speicher zurückgegeben: 5,3 GB weniger, jetzt 0,4 GB")
+    assert [json.loads(z["daten"])["zurueck_mb"] for z in zeilen[1:]] == [5420, 450]
+    assert wache._naechste == GB                              # nach dem Zurückgeben zählen die Stufen wieder ab 1 GB
+
+
+async def test_wache_ohne_rueckgabe_bleibt_beim_bild(tmp_path: Path):
+    db = await Datenbank(tmp_path / "probe.sqlite").oeffnen()
+    protokoll = Protokoll(db)
+    await protokoll.starten()
+    bild = Speicherbild(arbeitsspeicher=800 * MB, ausgelagert=0, heap_belegt=100 * MB, heap_frei=600 * MB)
+    wache = Speicherwache(protokoll, messen=lambda: bild, zurueckgeben=lambda: False)
+    assert await wache.blick() is bild
+    assert not await db.zeilen("SELECT 1 FROM protokoll")
+    await db.schliessen()
 
 
 async def test_wache_ohne_messung_bleibt_still(tmp_path: Path):
