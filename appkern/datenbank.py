@@ -178,8 +178,17 @@ class Datenbank:
         return await self._lesen(arbeit)
 
     async def zeilen(self, sql: str, werte: Sequence[Any] = ()) -> list[dict[str, Any]]:
-        """Alle Zeilen einer Abfrage, nur lesend."""
-        return await self._lesen(lambda v: [dict(z) for z in v.execute(sql, werte).fetchall()])
+        """Alle Zeilen einer Abfrage, nur lesend. Zeile für Zeile umgewandelt: rohe Zeilen und fertige Wörterbücher liegen
+        nie alle zugleich im Speicher (HELF-209: bei Millionen Zeilen verdoppelte das die Spitze)."""
+
+        def arbeit(v: sqlite3.Connection) -> list[dict[str, Any]]:
+            zeiger = v.execute(sql, werte)
+            try:
+                return [dict(z) for z in zeiger]
+            finally:
+                zeiger.close()
+
+        return await self._lesen(arbeit)
 
     async def transaktion(self, arbeit: Callable[[sqlite3.Connection], T]) -> T:
         """`arbeit` läuft im Faden in einer Transaktion (alles oder nichts) und bekommt die rohe Verbindung."""
