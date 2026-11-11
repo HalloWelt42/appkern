@@ -23,6 +23,8 @@
             onclick={() => anzeigeSetzen({ eingeklappt: !anzeige.eingeklappt })}>
       <i class="fa-solid {anzeige.eingeklappt ? 'fa-angles-right' : 'fa-angles-left'}"></i></button>
   </div>
+  <!-- nur die Menüpunkte rollen bei Platzmangel; Kopf, Zusatz und Fuß (Ansicht, Konto) bleiben stehen (WIKI-91) -->
+  <div class="nav-liste">
   {#each bereiche as b, i (b.schluessel)}
     {@const zahl = b.zahl?.() ?? 0}
     {#if i > 0 && (b.gruppe ?? "") !== (bereiche[i - 1].gruppe ?? "")}<div class="nav-gruppe">{b.gruppe ?? app.name}</div>{/if}
@@ -43,6 +45,7 @@
   <button class="nav-eintrag" class:aktiv={seite === "einstellungen"} title="Einstellungen: Verbindungen, Zugang, Sicherung und Verhalten der App" onclick={() => gehe("einstellungen")}>
     <i class="fa-solid fa-sliders"></i><span class="nav-text">Einstellungen</span>
   </button>
+  </div>
   {#if zusatz}<div class="nav-zusatz">{@render zusatz()}</div>{/if}
   <div class="nav-fuss">
     <div class="nav-ansicht">
