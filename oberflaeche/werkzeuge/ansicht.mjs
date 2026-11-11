@@ -109,6 +109,12 @@ browser.beiEreignis((m) => {
   if (m.method === "Log.entryAdded" && m.params.entry.level === "error") {
     befunde.push(`${ansicht}: ${m.params.entry.source}: ${m.params.entry.text.slice(0, 120)} ${m.params.entry.url ?? ""}`.trim());
   }
+  // Hinweise der Entwicklerwerkzeuge (Reiter Issues): etwa Eingabefelder ohne id und name, falsche Beschriftungen (WIKI-97)
+  if (m.method === "Audits.issueAdded") {
+    const i = m.params.issue;
+    const art = i.details?.genericIssueDetails?.errorType ?? Object.keys(i.details ?? {})[0] ?? "";
+    befunde.push(`${ansicht}: Hinweis der Entwicklerwerkzeuge: ${i.code}${art ? ` (${art})` : ""}`);
+  }
   if (m.method === "Page.javascriptDialogOpening") {
     befunde.push(`${ansicht}: Browser-Dialog (${m.params.type}): ${m.params.message.slice(0, 80)}`);
     rufe("Page.handleJavaScriptDialog", { accept: true }).catch(() => { /* Dialog schon zu */ });
@@ -550,6 +556,7 @@ for (const seite of einstellung.seiten.filter((s) => s.abfrage)) {
 }
 await rufe("Runtime.enable");
 await rufe("Log.enable");
+await rufe("Audits.enable");
 // Apps mit eigenem Schlüssel für das Thema (statt appkern_anzeige): "thema": {"schluessel": "...", "hell": "...", "dunkel": "..."}
 const eigenesThema = einstellung.thema;
 for (const thema of themen) {

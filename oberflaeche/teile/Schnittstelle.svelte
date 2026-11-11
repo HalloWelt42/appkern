@@ -99,8 +99,64 @@
     const s = q.toString();
     return p + (s ? `?${s}` : "");
   }
+  // --- Werte zum Ausprobieren (WIKI-97): nie ohne Pflichtwert abschicken (sonst ginge {name} wörtlich hinaus und der
+  // Weg antwortete 404); Pfadwerte aus dem Listenweg davor anbieten (/auftraege für /auftraege/{auftrag_id}), der
+  // erste gleich eingetragen, damit sich jeder Weg sofort ausprobieren lässt ---
+  type Vorschlag = { wert: string; text: string };
+  let vorschlaege = $state<Record<string, Vorschlag[] | null>>({});      // null: der Listenweg antwortete nicht
+
+  /** GET-Weg, der die Werte eines Pfadwerts auflistet: derselbe Pfad bis vor `/{name}`, ohne eigene Pflichtwerte. */
+  function listenweg(w: Weg, name: string): Weg | undefined {
+    const stelle = w.pfad.indexOf(`/{${name}}`);
+    if (stelle < 0) return undefined;
+    const basis = w.pfad.slice(0, stelle);
+    return wege.find((x) => x.methode === "GET" && x.pfad === basis && !(x.op.parameters ?? []).some((p) => p.required));
+  }
+  /** Werte aus der Antwort eines Listenwegs: die Liste selbst oder ihre erste Liste darin; je Eintrag das Feld des
+   *  Namens (auftrag_id), sonst id, kennung, schluessel, nr; als Text dazu Titel oder Name, wenn es einen gibt. */
+  function werteAus(antwort: unknown, name: string): Vorschlag[] {
+    const liste = (Array.isArray(antwort) ? antwort
+      : Object.values((antwort ?? {}) as Record<string, unknown>).find(Array.isArray) ?? []) as unknown[];
+    const kurz = name.replace(/_(id|kennung|nr)$/, "");
+    const kandidaten = [name, "id", "kennung", "schluessel", "nr", kurz];
+    const aus: Vorschlag[] = [];
+    for (const e of liste) {
+      if (typeof e === "string" || typeof e === "number") aus.push({ wert: String(e), text: String(e) });
+      else if (e && typeof e === "object") {
+        const o = e as Record<string, unknown>;
+        const feld = kandidaten.find((k) => typeof o[k] === "string" || typeof o[k] === "number");
+        if (!feld) continue;
+        const titel = ["titel", "name", "art", "zustand"].map((k) => o[k]).find((v) => typeof v === "string" && v);
+        aus.push({ wert: String(o[feld]), text: titel ? `${o[feld]} · ${titel}` : String(o[feld]) });
+      }
+      if (aus.length >= 50) break;
+    }
+    return aus;
+  }
+  $effect(() => {
+    const w = gewaehlt;
+    vorschlaege = {};
+    if (!w || w.methode !== "GET") return;
+    for (const p of (w.op.parameters ?? []).filter((x) => x.in === "path")) {
+      const l = listenweg(w, p.name);
+      if (!l) continue;
+      hole(l.pfad.replace(/^\/api\/v1/, ""))
+        .then((a) => {
+          const v = werteAus(a, p.name);
+          vorschlaege = { ...vorschlaege, [p.name]: v };
+          if (v.length && !werte[p.name]) werte[p.name] = v[0].wert;
+        })
+        .catch(() => { vorschlaege = { ...vorschlaege, [p.name]: null }; });
+    }
+  });
+  /** Pflichtwerte (und jeder Pfadwert), die noch fehlen: solange einer fehlt, wird nichts abgeschickt. */
+  const fehlend = (w: Weg) => (w.op.parameters ?? []).filter((p) => (p.required || p.in === "path") && !(werte[p.name] ?? "").trim())
+    .map((p) => p.name);
+  const quelleText = (w: Weg, name: string) => listenweg(w, name)?.pfad.replace(/^\/api\/v1/, "") ?? "";
+
   const curl = (w: Weg) => `curl -s ${w.methode !== "GET" ? `-X ${w.methode} ` : ""}"${location.origin}${adresse(w)}" \\\n  -H "Authorization: Bearer $APP_SCHLUESSEL"`;
   async function probieren(w: Weg) {
+    if (fehlend(w).length) return;
     laeuft = true;
     try {
       antwort = JSON.stringify(await hole(adresse(w).replace(/^\/api\/v1/, "")), null, 2);
@@ -121,7 +177,7 @@
 <div class="si" class:si-telefon={geraet.mobil} class:si-mit-weg={!!gewaehlt}>
   <aside class="si-liste">
     <div class="si-kopf">
-      <label class="si-filter"><i class="fa-solid fa-filter"></i><input type="search" bind:value={filter} placeholder="Weg suchen" aria-label="Weg suchen" /></label>
+      <label class="si-filter"><i class="fa-solid fa-filter"></i><input type="search" name="si-filter" bind:value={filter} placeholder="Weg suchen" aria-label="Weg suchen" /></label>
       {#if wege.length}<span class="si-abdeckung" class:voll={beschrieben === wege.length}>
         <i class="fa-solid {beschrieben === wege.length ? 'fa-circle-check' : 'fa-circle-exclamation'}"></i>{beschrieben} von {wege.length} Wegen beschrieben</span>{/if}
     </div>
@@ -157,7 +213,15 @@
                 <tr><td><code>{p.name}</code>{#if p.required}<span class="si-pflicht">Pflicht</span>{/if}</td><td>{p.in === "path" ? "Pfad" : p.in === "query" ? "Abfrage" : p.in}</td>
                   <td class="si-typ">{typ(p.schema)}</td>
                   <td>{p.description ?? p.schema?.description ?? ""}{#if p.schema?.default !== undefined} <span class="si-leise">Vorgabe {JSON.stringify(p.schema.default)}</span>{/if}</td>
-                  {#if w.methode === "GET"}<td><input class="si-wert" bind:value={werte[p.name]} aria-label="Wert für {p.name}" /></td>{/if}</tr>
+                  {#if w.methode === "GET"}<td>
+                    <input class="si-wert" name="si-wert-{p.name}" bind:value={werte[p.name]} aria-label="Wert für {p.name}" list={vorschlaege[p.name]?.length ? `si-werte-${p.name}` : undefined}
+                           placeholder={p.required || p.in === "path" ? "Pflicht" : ""} />
+                    {#if vorschlaege[p.name]?.length}
+                      <datalist id="si-werte-{p.name}">{#each vorschlaege[p.name] ?? [] as v (v.wert)}<option value={v.wert}>{v.text}</option>{/each}</datalist>
+                      <div class="si-leise si-herkunft">{vorschlaege[p.name]?.length} Werte aus GET {quelleText(w, p.name)}</div>
+                    {:else if vorschlaege[p.name] && !vorschlaege[p.name]?.length}
+                      <div class="si-leise si-herkunft">GET {quelleText(w, p.name)} nennt gerade keine</div>
+                    {/if}</td>{/if}</tr>
               {/each}
             </tbody>
           </table></div>
@@ -181,8 +245,9 @@
           <button class="knopf still" onclick={() => aufrufKopieren(w)}><i class="fa-{kopiert ? 'solid fa-check' : 'regular fa-copy'}"></i>Kopieren</button></div>
           <pre>{curl(w)}</pre></div>
         {#if w.methode === "GET"}
-          <div class="si-zeile"><button class="knopf" disabled={laeuft} onclick={() => probieren(w)}><i class="fa-solid fa-play"></i>Ausprobieren</button>
-            <span class="si-leise">mit deinem Zugang; nur Lesen</span></div>
+          {@const fehlt = fehlend(w)}
+          <div class="si-zeile"><button class="knopf" disabled={laeuft || fehlt.length > 0} onclick={() => probieren(w)}><i class="fa-solid fa-play"></i>Ausprobieren</button>
+            <span class="si-leise">{fehlt.length ? `erst ${fehlt.join(", ")} eintragen (Parameter oben)` : "mit deinem Zugang; nur Lesen"}</span></div>
           {#if antwort}<div class="si-kasten"><pre>{antwort}</pre></div>{/if}
         {/if}
       </div>
@@ -238,6 +303,7 @@
   .si-tabelle th { color: var(--text-3); font-weight: 600; }
   .si-typ { font-family: var(--schrift-code, monospace); color: var(--text-3); font-size: var(--klein); margin-left: var(--a2); }
   .si-pflicht { margin-left: 6px; font-size: var(--marke); color: var(--warn); }
+  .si-herkunft { font-size: var(--marke); margin-top: 2px; }
   .si-wert { width: 100%; min-width: 8em; font: inherit; padding: 4px 6px; border: 1px solid var(--rand); border-radius: var(--r1); background: var(--hg); color: var(--text); }
   .si-felder { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px var(--a3); margin: 0; font-size: var(--klein); }
   .si-felder dt { display: flex; align-items: baseline; flex-wrap: wrap; }
