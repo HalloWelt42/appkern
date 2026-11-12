@@ -149,17 +149,17 @@
           </div>
           {#if eingabe === "masse"}
             <div class="ez-masse">
-              <label>Breite<input type="number" inputmode="numeric" min="1" bind:value={breite} onchange={eigenesFormat} /></label>
+              <label>Breite<input name="breite" type="number" inputmode="numeric" min="1" bind:value={breite} onchange={eigenesFormat} /></label>
               <span class="ez-mal">×</span>
-              <label>Höhe<input type="number" inputmode="numeric" min="1" bind:value={hoehe} onchange={eigenesFormat} /></label>
+              <label>Höhe<input name="hoehe" type="number" inputmode="numeric" min="1" bind:value={hoehe} onchange={eigenesFormat} /></label>
               <span class="ez-leise">Pixel, auch kleiner als das Modell rechnet (etwa 16 × 16)</span>
             </div>
           {:else}
             <div class="ez-masse">
-              <label>Seitenverhältnis<input type="text" bind:value={verhaeltnis} placeholder="etwa 21:9, 3:2, 4:5" onchange={eigenesFormat} /></label>
+              <label>Seitenverhältnis<input name="verhaeltnis" type="text" bind:value={verhaeltnis} placeholder="etwa 21:9, 3:2, 4:5" onchange={eigenesFormat} /></label>
               {#if flaeche}
                 <label class="ez-groesse">Größe <span class="ez-wert-klein">{megapixel.toLocaleString("de-DE", { maximumFractionDigits: 2 })} Megapixel</span>
-                  <input type="range" min={flaeche.kleinste} max={flaeche.groesste} step="0.01" bind:value={megapixel} oninput={eigenesFormat} /></label>
+                  <input name="megapixel" type="range" min={flaeche.kleinste} max={flaeche.groesste} step="0.01" bind:value={megapixel} oninput={eigenesFormat} /></label>
               {/if}
             </div>
           {/if}
@@ -176,7 +176,7 @@
       {#if bereich}
         <span class="ez-name">Iterationstiefe<small>{bereich.kleinste} bis {bereich.groesste} Schritte, Vorgabe {bereich.vorgabe}</small></span>
         <div class="ez-regler">
-          <input type="range" min={bereich.kleinste} max={bereich.groesste} value={wahl.schritte ?? bereich.vorgabe} aria-label="Iterationstiefe"
+          <input name="iterationstiefe" type="range" min={bereich.kleinste} max={bereich.groesste} value={wahl.schritte ?? bereich.vorgabe} aria-label="Iterationstiefe"
                  oninput={(e) => (wahl = { ...wahl, schritte: Number(e.currentTarget.value) })} />
           <span class="ez-wert">{wahl.schritte ?? bereich.vorgabe}</span>
         </div>

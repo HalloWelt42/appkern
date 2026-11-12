@@ -52,7 +52,7 @@
         <button class:aktiv={auftraege.filter === f} onclick={() => filtern(f)}>{titel}{zahl(f) ? ` ${zahl(f)}` : ""}</button>
       {/each}
     </span>
-    <span class="suche"><i class="fa-solid fa-magnifying-glass"></i><input class="eingabe-roh" placeholder="Titel suchen"
+    <span class="suche"><i class="fa-solid fa-magnifying-glass"></i><input name="input" class="eingabe-roh" placeholder="Titel suchen"
           value={auftraege.suche} oninput={(e) => suchen(e.currentTarget.value)} /></span>
   </div>
   <div class="rollfeld">

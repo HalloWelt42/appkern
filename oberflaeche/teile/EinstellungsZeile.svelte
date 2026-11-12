@@ -133,12 +133,12 @@
         {/each}
       </span>
     {:else if feld.art === "liste"}
-      <input class="eingabe einstellung-text" value={(Array.isArray(v) ? v : []).join(", ")} aria-label={feld.titel} placeholder="mehrere mit Komma"
+      <input name="input" class="eingabe einstellung-text" value={(Array.isArray(v) ? v : []).join(", ")} aria-label={feld.titel} placeholder="mehrere mit Komma"
              onchange={(e) => einstellungSetzen(feld.name, e.currentTarget.value.split(",").map((x) => x.trim()).filter(Boolean))} />
     {:else if feld.art === "geheimnis"}
       {#if geheimAendern}
         <span class="einstellung-reihe">
-          <input class="eingabe einstellung-text" bind:value={neuGeheim} placeholder="Neuer Wert" aria-label="Neuer Wert für {feld.titel}" autocomplete="off" />
+          <input name="neu-geheim" class="eingabe einstellung-text" bind:value={neuGeheim} placeholder="Neuer Wert" aria-label="Neuer Wert für {feld.titel}" autocomplete="off" />
           <button type="button" class="knopf klein ohne" onclick={() => { geheimAendern = false; neuGeheim = ""; }}>Abbrechen</button>
           <button type="button" class="knopf klein" disabled={!neuGeheim.trim()}
                   onclick={() => { einstellungSetzen(feld.name, neuGeheim.trim()); geheimAendern = false; neuGeheim = ""; }}><i class="fa-solid fa-check"></i>Übernehmen</button>
@@ -162,7 +162,7 @@
       {/if}
     {:else}
       <span class="einstellung-reihe">
-        <input class="eingabe einstellung-text" value={String(v ?? "")} aria-label={feld.titel}
+        <input name="input" class="eingabe einstellung-text" value={String(v ?? "")} aria-label={feld.titel}
                onchange={(e) => einstellungSetzen(feld.name, e.currentTarget.value.trim())} />
         {#if eigen}<button type="button" class="knopf klein ohne" title="Zurück zur Auswahl" onclick={() => (eigen = false)}><i class="fa-solid fa-list"></i>Auswahl</button>{/if}
       </span>

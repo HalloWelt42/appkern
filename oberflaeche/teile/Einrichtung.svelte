@@ -35,8 +35,8 @@
       <span>Die App hält ihre Dateien in der Kellerwolke, und wer sich anmelden darf, entscheidet ihr App-Schlüssel:
         Anmelden kann das Konto, dem er gehört. Den Schlüssel stellst du in der Kellerwolke unter Einstellungen, Zugänge aus.</span>
     </div>
-    <label>Adresse der Kellerwolke<span class="eingabe"><input bind:value={adresse} placeholder="https://192.168.1.20:39280" /></span></label>
-    <label>App-Schlüssel<span class="eingabe"><input bind:value={schluessel} placeholder="kw_app_..." autocomplete="off" spellcheck="false" /></span></label>
+    <label>Adresse der Kellerwolke<span class="eingabe"><input name="adresse" bind:value={adresse} placeholder="https://192.168.1.20:39280" /></span></label>
+    <label>App-Schlüssel<span class="eingabe"><input name="schluessel" bind:value={schluessel} placeholder="kw_app_..." autocomplete="off" spellcheck="false" /></span></label>
     {#if app.einrichtungscode}
       <div class="hinweis-kw">
         <i class="fa-solid fa-key"></i>
@@ -44,7 +44,7 @@
           braucht die Einrichtung den einmaligen Einrichtungscode; er steht am Rechner der App in
           <b style="overflow-wrap:anywhere">{app.einrichtungscode}</b>.</span>
       </div>
-      <label>Einrichtungscode (nur von anderswo)<span class="eingabe"><input bind:value={code} placeholder="ABCD-EFGH-JKLM-NPQR"
+      <label>Einrichtungscode (nur von anderswo)<span class="eingabe"><input name="code" bind:value={code} placeholder="ABCD-EFGH-JKLM-NPQR"
              autocomplete="off" autocapitalize="characters" spellcheck="false" /></span></label>
     {/if}
     {#if fehler}<div class="fehlertext">{fehler}</div>{/if}

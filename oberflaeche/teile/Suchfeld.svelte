@@ -19,7 +19,7 @@
 
 <label class="suche {klasse}">
   <i class="fa-solid {symbol}"></i>
-  <input bind:this={feld} bind:value={wert} {...eingabe} />
+  <input name="suche" bind:this={feld} bind:value={wert} {...eingabe} />
   {#if wert}
     <button type="button" class="leeren" title="Eingabe leeren" aria-label="Eingabe leeren" onclick={leeren}><i class="fa-solid fa-xmark"></i></button>
   {/if}

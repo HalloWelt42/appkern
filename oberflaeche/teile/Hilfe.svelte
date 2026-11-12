@@ -127,11 +127,11 @@
     {#if !hilfe.minimiert}
       <div class="hilfe-leiste">
         <div class="hilfe-wahl">
-          <select class="eingabe" aria-label="Thema" value={thema?.kennung} onchange={(e) => hilfe.themaWaehlen(e.currentTarget.value)}>
+          <select name="thema" class="eingabe" aria-label="Thema" value={thema?.kennung} onchange={(e) => hilfe.themaWaehlen(e.currentTarget.value)}>
             {#each hilfe.themen as t (t.kennung)}<option value={t.kennung}>{t.bereich}: {t.titel}</option>{/each}
           </select>
           {#if thema?.abschnitte.length}
-            <select class="eingabe" aria-label="Abschnitt" value={hilfe.anker ?? ""} onchange={(e) => hilfe.abschnittWaehlen(e.currentTarget.value)}>
+            <select name="abschnitt" class="eingabe" aria-label="Abschnitt" value={hilfe.anker ?? ""} onchange={(e) => hilfe.abschnittWaehlen(e.currentTarget.value)}>
               <option value="">Zum Anfang</option>
               {#each thema.abschnitte as a (a.anker)}<option value={a.anker}>{a.titel}</option>{/each}
             </select>
@@ -144,7 +144,7 @@
           </div>
           <label class="suche">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <input placeholder={hilfe.bereich === "alle" ? "In allen Themen suchen" : "In diesem Thema suchen"} value={hilfe.suche}
+            <input name="in-der-hilfe-suchen" placeholder={hilfe.bereich === "alle" ? "In allen Themen suchen" : "In diesem Thema suchen"} value={hilfe.suche}
                    oninput={(e) => hilfe.sucheSetzen(e.currentTarget.value)} onkeydown={sucheTaste} aria-label="In der Hilfe suchen" />
             {#if hilfe.suche.trim()}
               <span class="hilfe-zaehler">{hilfe.treffer.length ? hilfe.nr + 1 : 0} von {hilfe.treffer.length}</span>

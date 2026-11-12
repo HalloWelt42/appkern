@@ -71,10 +71,10 @@
     <span class="segment">{#each ZEITRAEUME as [z, t] (z)}<button class:aktiv={zeitraum === z} onclick={() => ((zeitraum = z), neu())}>{t}</button>{/each}</span>
     {#if zeitraum === "tag"}
       <span class="suche" style="min-width:150px"><i class="fa-solid fa-calendar-day"></i>
-        <input class="eingabe-roh" placeholder="TT.MM.JJJJ" bind:value={tagText} oninput={() => neu(true)} /></span>
+        <input name="tag-text" class="eingabe-roh" placeholder="TT.MM.JJJJ" bind:value={tagText} oninput={() => neu(true)} /></span>
     {/if}
     <span class="suche"><i class="fa-solid fa-magnifying-glass"></i>
-      <input class="eingabe-roh" placeholder="Name oder Text" bind:value={suche} oninput={() => neu(true)} /></span>
+      <input name="suche" class="eingabe-roh" placeholder="Name oder Text" bind:value={suche} oninput={() => neu(true)} /></span>
   </div>
   <div class="rollfeld">
     {#if fehler}<div class="fehlertext">{fehler}</div>{/if}

@@ -108,7 +108,7 @@
       <div class="rek-blase" role="dialog" aria-label="Erklärung">
         {#if offen === "name"}
           <b>Name</b>Unter diesem Namen landet die Aufnahme in {ort}.
-          <label class="eingabe klein-eingabe" style="margin-top:10px"><input bind:value={name} aria-label="Name der Aufnahme" /></label>
+          <label class="eingabe klein-eingabe" style="margin-top:10px"><input name="name" bind:value={name} aria-label="Name der Aufnahme" /></label>
         {:else if offen === "mikro"}
           <b>Mikrofon</b>Wechselt sofort, auch mitten in der Aufnahme.
           {#if aufnahme.fehler}<p class="fehlertext" style="margin:8px 0 0">{aufnahme.fehler}</p>{/if}

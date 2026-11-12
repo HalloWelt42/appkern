@@ -39,8 +39,8 @@
         <span>Anmelden mit deinem Konto der Kellerwolke unter <b>{app.kellerwolke}</b>.{#if app.besitzer}{" "}Diese App gehört
           dem Konto <b>{app.besitzer}</b>.{/if}</span>
       </div>
-      <label>Name oder Kürzel<span class="eingabe"><input bind:value={kennung} autocomplete="username" /></span></label>
-      <label>Passwort<span class="eingabe"><input type="password" bind:value={passwort} autocomplete="current-password" /></span></label>
+      <label>Name oder Kürzel<span class="eingabe"><input name="kennung" bind:value={kennung} autocomplete="username" /></span></label>
+      <label>Passwort<span class="eingabe"><input name="passwort" type="password" bind:value={passwort} autocomplete="current-password" /></span></label>
       {#if fehler}<div class="fehlerzeile">{fehler}</div>{/if}
       <button class="knopf primaer breit" type="submit" disabled={laeuft || !kennung || !passwort}>{laeuft ? "Anmelden ..." : "Anmelden"}</button>
       <div class="oder">oder</div>
@@ -70,11 +70,11 @@
             <span class="k" class:aktiv={fokus && i === Math.min(code.length, CODE_LAENGE - 1)}>{code[i] ?? ""}</span>
           {/each}
         </span>
-        <input aria-label="Kopplungscode" value={code} autocomplete="one-time-code" autocapitalize="characters" spellcheck="false"
+        <input name="kopplungscode" aria-label="Kopplungscode" value={code} autocomplete="one-time-code" autocapitalize="characters" spellcheck="false"
                oninput={(e) => { code = codeNormal(e.currentTarget.value); e.currentTarget.value = code; }}
                onfocus={() => (fokus = true)} onblur={() => (fokus = false)} />
       </label>
-      <label>Name des Geräts<span class="eingabe"><input bind:value={name} maxlength="60" /></span></label>
+      <label>Name des Geräts<span class="eingabe"><input name="name" bind:value={name} maxlength="60" /></span></label>
       <button class="knopf primaer breit" type="submit" disabled={laeuft || code.length !== CODE_LAENGE || !name.trim()}>
         <i class="fa-solid fa-link"></i> {laeuft ? "Koppeln ..." : "Koppeln"}
       </button>

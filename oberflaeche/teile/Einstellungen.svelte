@@ -247,7 +247,7 @@
                 <Auswahl wert={eigen[f.name] ? EIGEN : String(wert(f) ?? "")} optionen={angebotOptionen(f)} onwahl={(w) => angebotWaehlen(f, w)} />
                 {#if eigen[f.name]}
                   <span class="eingabe" class:geaendert={f.name in aenderungen}>
-                    <input value={String(wert(f) ?? "")} spellcheck="false" placeholder="eigener Wert" oninput={(e) => setzen(f, e.currentTarget.value)} />
+                    <input name="input" value={String(wert(f) ?? "")} spellcheck="false" placeholder="eigener Wert" oninput={(e) => setzen(f, e.currentTarget.value)} />
                   </span>
                 {/if}
                 {#if angebote[f.name]?.stand}
@@ -267,7 +267,7 @@
               <span class="zahl-feld">
                 <span class="zaehler">
                   <button onclick={() => zahlSetzen(f, Number(wert(f) ?? 0) - (f.schritt ?? 1))} aria-label="weniger">-</button>
-                  <input inputmode="decimal" value={zahlZeigen(f)} onchange={(e) => zahlSetzen(f, Number(e.currentTarget.value.replace(",", ".")))} />
+                  <input name="input" inputmode="decimal" value={zahlZeigen(f)} onchange={(e) => zahlSetzen(f, Number(e.currentTarget.value.replace(",", ".")))} />
                   <button onclick={() => zahlSetzen(f, Number(wert(f) ?? 0) + (f.schritt ?? 1))} aria-label="mehr">+</button>
                 </span>
                 {#if f.einheit}<span class="einheit">{f.einheit}</span>{/if}
@@ -278,13 +278,13 @@
                   <span class="chip">{eintrag}<button aria-label="{eintrag} entfernen"
                         onclick={() => setzen(f, (wert(f) as string[]).filter((x) => x !== eintrag))}><i class="fa-solid fa-xmark"></i></button></span>
                 {/each}
-                <span class="chip"><i class="fa-solid fa-plus"></i><input placeholder="hinzufügen" bind:value={neuerEintrag[f.name]}
+                <span class="chip"><i class="fa-solid fa-plus"></i><input name="name" placeholder="hinzufügen" bind:value={neuerEintrag[f.name]}
                       onkeydown={(e) => e.key === "Enter" && hinzufuegen(f)} onblur={() => hinzufuegen(f)} /></span>
               </span>
             {:else if f.art === "geheimnis"}
               <span class="eingabe" class:geaendert={f.name in aenderungen}>
                 {#if f.name in aenderungen}
-                  <input type="text" autocomplete="off" spellcheck="false" placeholder="neuer Wert" value={String(aenderungen[f.name] ?? "")}
+                  <input name="input-text" type="text" autocomplete="off" spellcheck="false" placeholder="neuer Wert" value={String(aenderungen[f.name] ?? "")}
                          oninput={(e) => (aenderungen[f.name] = e.currentTarget.value)} />
                 {:else}
                   <span class="wert" class:markierbar={f.name in aufgedeckt} bind:this={wertFelder[f.name]}>{f.name in aufgedeckt ? aufgedeckt[f.name] : f.gesetzt ? f.wert : "nicht gesetzt"}</span>
@@ -301,7 +301,7 @@
               </span>
             {:else}
               <span class="eingabe" class:geaendert={f.name in aenderungen}>
-                <input value={f.art === "wert" ? JSON.stringify(wert(f)) : String(wert(f) ?? "")} spellcheck="false"
+                <input name="input" value={f.art === "wert" ? JSON.stringify(wert(f)) : String(wert(f) ?? "")} spellcheck="false"
                        oninput={(e) => { const v = e.currentTarget.value; if (f.art !== "wert") setzen(f, v); else { try { setzen(f, JSON.parse(v)); } catch { /* erst bei gültigem JSON */ } } }} />
               </span>
             {/if}
