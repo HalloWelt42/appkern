@@ -337,6 +337,34 @@ class Geruest(Generic[E]):
 
         return anbieter
 
+    def leitstelle_rechner_angebot(self, gewaehlt: Callable[[], str | Sequence[str]]):
+        """Anbieter für das Feld "Rechner" eines Dienstes (LS-28): "Leitstelle entscheidet" (leer) und die Rechner, auf
+        denen das gewählte Modell oder der gewählte Dienst gerade liegt (bei mehreren, etwa Sprech- und Klondienst, die
+        Rechner aller), live aus der Leitstelle. Wert ist die Kennung des Rechners (bleibt, auch wenn er umbenannt wird);
+        ein Wunsch, die Leitstelle weicht aus."""
+
+        async def anbieter() -> Angebot:
+            optionen = [Option(wert="", titel="Leitstelle entscheidet")]
+            if self.leitstelle is None:
+                return Angebot(optionen=optionen, stand="Leitstelle noch nicht eingerichtet (Reiter Verbindungen)")
+            try:
+                modelle = await self.leitstelle.modelle()
+            except LeitstellenFehler as f:
+                return Angebot(optionen=optionen, stand=f"Leitstelle antwortet nicht: {f.meldung}")
+            roh = gewaehlt()
+            wahl = {w.strip() for w in ([roh] if isinstance(roh, str) else roh) if w.strip()}
+            orte: dict[str, tuple[str, bool]] = {}
+            for m in modelle:
+                if m.id in wahl and m.knoten and not m.extern:
+                    name, geladen = orte.get(m.knoten, (m.knoten_name or m.knoten, False))
+                    orte[m.knoten] = (name, geladen or m.geladen)
+            optionen += [Option(wert=k, titel=name, hinweis="geladen" if geladen else "")
+                         for k, (name, geladen) in sorted(orte.items(), key=lambda t: t[1][0])]
+            stand = "" if orte else "Das gewählte Modell liegt gerade auf keinem Rechner; die Leitstelle entscheidet"
+            return Angebot(optionen=optionen, stand=stand)
+
+        return anbieter
+
     async def kellerwolke_apps(self) -> tuple[list[Option], str]:
         """Die Apps aus den Zugängen der Kellerwolke (desselben Kontos) als Auswahl, Wert ist der Name des Zugangs;
         dazu ein Satz zum Stand (leer, wenn alles da ist)."""

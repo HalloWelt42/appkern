@@ -426,6 +426,30 @@ async def test_einordnung_masse_und_wichtig_aus_dem_kontext():
     assert gesehen == [{}, {"x-leitstelle-art": "masse"}, {"x-leitstelle-art": "masse"}, {"x-leitstelle-wichtig": "ja"}, {}]
 
 
+async def test_vorgabe_eines_dienstes():
+    """LS-28: eine Leitstelle mit Vorgabe schickt mit jeder Anfrage Rechnerwunsch (prozentkodiert, in Reihenfolge) und
+    Vorrang, auch an Dienste, gelesen beim Senden (eine geänderte Einstellung gilt sofort); eine Priorität beim Aufruf
+    geht vor; das Original bleibt ohne."""
+    gesehen: list[dict[str, str]] = []
+
+    def handler(r: httpx.Request) -> httpx.Response:
+        gesehen.append({k: v for k, v in r.headers.items() if k in ("x-leitstelle-rechner", "x-leitstelle-prioritaet")})
+        if r.url.path.endswith("/embeddings"):
+            return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.1]}], "model": "bge"})
+        return httpx.Response(200, json={"ok": True})
+
+    vorgabe = {"rechner": ["MacBook 32 GB", "mac-128"], "vorrang": "hoch"}
+    async with leitstelle(handler) as ls:
+        vorlesen = ls.mit_vorgabe(lambda: (vorgabe["rechner"], vorgabe["vorrang"]))
+        await vorlesen.dienst("klangwerk-sprechen").json("POST", "/v1/audio/speech", json={"input": "x"})
+        await vorlesen.einbetten(["a"], modell="bge", prioritaet="hintergrund")
+        vorgabe.update(rechner=[], vorrang=None)
+        await vorlesen.einbetten(["a"], modell="bge")
+        await ls.einbetten(["a"], modell="bge")
+    assert gesehen == [{"x-leitstelle-rechner": "MacBook%2032%20GB,mac-128", "x-leitstelle-prioritaet": "hoch"},
+                       {"x-leitstelle-rechner": "MacBook%2032%20GB,mac-128", "x-leitstelle-prioritaet": "hintergrund"}, {}, {}]
+
+
 async def test_einschaetzung_vor_dem_senden():
     gesendet: list[dict] = []
 

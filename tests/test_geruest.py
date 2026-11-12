@@ -282,6 +282,11 @@ async def test_angebote_fuer_verbindungen_und_leitstelle(umgebung):
     text = await geruest.leitstelle_angebot("text")()
     assert [(o.wert, o.titel, o.hinweis) for o in text.optionen] == [("gross", "Groß", "geladen auf studio")], "kein leerer Wert"
     assert (await geruest.leitstelle_angebot("musik")()).stand == "Die Leitstelle bietet dieser App dafür nichts an"
+    # LS-28: Rechner eines gewählten Modells: "Leitstelle entscheidet" und die Rechner, auf denen es liegt (Kennung als Wert)
+    rechner = await geruest.leitstelle_rechner_angebot(lambda: "gross")()
+    assert [(o.wert, o.titel, o.hinweis) for o in rechner.optionen] == [("", "Leitstelle entscheidet", ""), ("studio", "studio", "geladen")]
+    weg = await geruest.leitstelle_rechner_angebot(lambda: "gibt-es-nicht")()
+    assert [o.wert for o in weg.optionen] == [""] and "keinem Rechner" in weg.stand
 
 
 async def test_oberflaeche_meldet_ihre_gebaute_fassung(umgebung):

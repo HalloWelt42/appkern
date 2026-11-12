@@ -20,10 +20,11 @@ from __future__ import annotations
 import asyncio
 import base64
 import contextlib
+import copy
 import json
 import os
 import re
-from collections.abc import AsyncIterator, Mapping, Sequence
+from collections.abc import AsyncIterator, Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -122,6 +123,7 @@ class Leitstelle:
         self._schluessel_kopf = {"Authorization": f"Bearer {schluessel}"}
         self._client = client or httpx.AsyncClient(timeout=ARBEIT)
         self._eigener_client = client is None
+        self._vorgabe: Callable[[], tuple[Sequence[str], Prioritaet | None]] | None = None
 
     def __repr__(self) -> str:
         return f"Leitstelle({self.adresse!r}, app={self.app!r})"
@@ -137,18 +139,35 @@ class Leitstelle:
         await self.schliessen()
 
     def koepfe(self, titel: str = "", prioritaet: Prioritaet | None = None) -> dict[str, str]:
-        """Schlüssel, Titel (prozentkodiert, Köpfe tragen nur ASCII) und Priorität eines Auftrags; dazu die laufende Arbeit
-        und die Einordnung aus dem Kontext (Masse, wichtig: einordnung.py)."""
+        """Schlüssel, Titel (prozentkodiert, Köpfe tragen nur ASCII) und Priorität eines Auftrags; dazu die laufende Arbeit,
+        die Vorgabe des Dienstes (`mit_vorgabe`: Rechnerwunsch und Vorrang) und die Einordnung aus dem Kontext (Masse,
+        wichtig: einordnung.py). Eine Priorität beim Aufruf geht der Vorgabe des Dienstes vor."""
         kopf = dict(self._schluessel_kopf)
         kopf["X-Leitstelle-Titel"] = quote(f"{self.app}: {titel}" if titel else self.app, safe="")
-        if prioritaet:
-            kopf["X-Leitstelle-Prioritaet"] = prioritaet
         if (arbeit := LAUFENDE_ARBEIT.get()) is not None:
             kopf[ARBEIT_KOPF] = arbeit
         if self.extern:
             kopf["X-Leitstelle-Extern"] = quote(",".join(self.extern), safe=",")
+        if self._vorgabe is not None:
+            rechner, vorrang = self._vorgabe()
+            if rechner := [r for r in rechner if r.strip()]:
+                kopf["X-Leitstelle-Rechner"] = quote(",".join(rechner), safe=",")
+            if vorrang:
+                kopf["X-Leitstelle-Prioritaet"] = vorrang
         kopf.update(einordnung.koepfe())
+        if prioritaet:
+            kopf["X-Leitstelle-Prioritaet"] = prioritaet
         return kopf
+
+    def mit_vorgabe(self, vorgabe: Callable[[], tuple[Sequence[str], Prioritaet | None]]) -> Leitstelle:
+        """Dieselbe Leitstelle für einen Dienst der App (LS-28): jede Anfrage trägt seine Vorgabe, gelesen beim Senden
+        (bevorzugte Rechner, Kennung oder Name in ihrer Reihenfolge, leer: die Leitstelle entscheidet; Vorrang, leer: die
+        Vorgabe der App). Eine Priorität beim Aufruf geht vor, so bleibt Hintergrundarbeit Hintergrund. Teilt Verbindung
+        und Schlüssel; schließen tut nur das Original."""
+        neu = copy.copy(self)
+        neu._vorgabe = vorgabe
+        neu._eigener_client = False
+        return neu
 
     async def _senden(self, methode: str, pfad: str, *, kopf: dict[str, str], timeout: httpx.Timeout = ARBEIT,
                       **art: Any) -> httpx.Response:
