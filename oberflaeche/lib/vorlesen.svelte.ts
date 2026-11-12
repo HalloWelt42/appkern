@@ -141,11 +141,11 @@ class Vorleser {
           const zeile = rest.slice(0, i).trim();
           rest = rest.slice(i + 1);
           if (!zeile) continue;
-          const z = JSON.parse(zeile) as { art: string; nr?: number; text?: string; ton?: string; meldung?: string };
+          const z = JSON.parse(zeile) as { art: string; nr?: number; text?: string; ton?: string; meldung?: string; zeichen?: number };
           if (z.art === "satz" && z.ton) {
             const puffer = await ctx.decodeAudioData(tonAus(z.ton));
             if (lauf !== this.#lauf) return;
-            vorlauf.angekommen(puffer.duration);
+            vorlauf.angekommen(puffer.duration, (z.text ?? "").length);
             // abgerissen: alles Eingeplante ist verklungen, bevor dieser Satz kam; dann erst wieder mit Vorlauf
             if (spielt && offen === 0 && ctx.currentTime > zeitpunkt) {
               vorlauf.abgerissen();
@@ -154,6 +154,8 @@ class Vorleser {
             }
             bereit.push({ puffer, satz: { nr: z.nr ?? 0, text: z.text ?? "" } });
             weiter();
+          } else if (z.art === "plan" && typeof z.zeichen === "number") {
+            vorlauf.plan(z.zeichen);         // Länge des ganzen Texts: der Vorlauf rechnet den Rest in Ton um (WIKI-104)
           } else if (z.art === "fehler") {
             this.fehler = z.meldung || "Vorlesen brach ab";
             fertig = true;
