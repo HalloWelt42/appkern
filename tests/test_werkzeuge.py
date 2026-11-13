@@ -669,7 +669,7 @@ def test_ausrollen_meldet_den_bau(tmp_path, monkeypatch, capsys):
 
     from appkern.werkzeuge import ausrollen as a
 
-    z = a.Ziel.model_validate({"kennung": "probe", "rechner": "pi@192.168.178.49", "wurzel": "/srv/probe",
+    z = a.Ziel.model_validate({"kennung": "probe", "rechner": "pi@192.0.2.10", "wurzel": "/srv/probe",
                                "adresse": "https://pi:1", "repo": "x", "namen": ["pi"]})
     (tmp_path / "version.json").write_text('{"version": "1.2.3"}')
     melder = tmp_path / "melder.toml"
@@ -686,7 +686,7 @@ def test_ausrollen_meldet_den_bau(tmp_path, monkeypatch, capsys):
 
     a.bau_melden(z, tmp_path, melder, httpx.Client(base_url="http://regal", transport=httpx.MockTransport(regal)))
     assert gesehen == [("srm_x", {"app": "probe", "fassung": "1.2.3", "commit": "abc1234def", "art": "image",
-                                  "name": "probe:1.2.3", "kennung": "sha256:0123", "rechner": "192.168.178.49"})]
+                                  "name": "probe:1.2.3", "kennung": "sha256:0123", "rechner": "192.0.2.10"})]
 
     def kaputt(befehl, ort=None):
         raise a.Abbruch("kein git")
