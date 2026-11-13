@@ -640,6 +640,35 @@ def pruefen(z: Ziel, wurzel: Path) -> None:
     print(f"HTTP/2 über den Vorschaltdienst, Symbole {z.symbole}, Manifest in Ordnung")
 
 
+#: Zugang zum Softwareregal für die Meldung gebauter Stände (GSP-7): adresse und schluessel (Meldeschlüssel, darf nur melden)
+MELDER = Path(os.environ.get("SOFTWAREREGAL_MELDER", Path.home() / ".config" / "softwareregal" / "melder.toml"))
+
+
+def bau_melden(z: Ziel, wurzel: Path, melder: Path = MELDER, client: httpx.Client | None = None) -> None:
+    """Meldet den ausgerollten Stand ans Softwareregal: App, Fassung, Commit, Image und Rechner. Ohne melder.toml
+    geschieht nichts; ein Fehler ist nur eine Warnung (ausgerollt ist ja schon)."""
+    if not melder.is_file():
+        return
+    _schritt("Bau melden")
+    try:
+        zugang = tomllib.loads(melder.read_text(encoding="utf-8"))
+        fassung = json.loads((wurzel / "version.json").read_text())["version"]
+        commit = _lauf(["git", "rev-parse", "HEAD"], ort=wurzel).strip()
+        c = shlex.quote(z.compose)
+        image = _ssh(z, f"cd {shlex.quote(z.wurzel)} && docker inspect --format '{{{{.Image}}}}' "
+                        f"$(docker compose -f {c} ps -q {shlex.quote(z.kennung)})").strip()
+        meldung = {"app": z.kennung, "fassung": fassung, "commit": commit, "art": "image", "name": f"{z.kennung}:{fassung}",
+                   "kennung": image, "rechner": z.rechner.split("@")[-1]}
+        with (client or _hausclient(zugang["adresse"].rstrip("/"))) as http:
+            r = http.post("/api/v1/bauten", json=meldung, headers={"X-Softwareregal-Melder": zugang["schluessel"]})
+        if r.status_code != 201:
+            print(f"Warnung: das Softwareregal nimmt den Bau nicht an ({r.status_code}: {r.text[:200]})")
+        else:
+            print(f"Bau {fassung} ({commit[:8]}) im Softwareregal verbucht")
+    except (Abbruch, OSError, KeyError, ValueError, httpx.HTTPError) as f:
+        print(f"Warnung: Bau nicht gemeldet: {f}")
+
+
 def aufraeumen(z: Ziel) -> None:
     """Nach einem gelungenen Ausrollen auf dem Pi: verwaiste Abbilder entfernen (ohne Namen, etwa der vorige Stand jeder
     App, die dort baut; Abbilder in Benutzung nie) und den Baucache auf `baucache_gb` kürzen. Jedes Ausrollen baut auf
@@ -684,6 +713,7 @@ def ausrollen(wurzel: Path, sofort: bool = False, datei: Path = ZIEL_DATEI, ausl
         starten(z)
         pruefen(z, wurzel)
         fortsetzen(z, wurzel)
+        bau_melden(z, wurzel)
     except Abbruch as f:
         print(f"\nAbbruch: {f}", file=sys.stderr)
         return 1

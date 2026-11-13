@@ -660,3 +660,37 @@ def test_zugaenge_nur_wenn_die_app_ihre_env_laedt(monkeypatch):
     with pytest.raises(a.Abbruch, match="env_file"):
         a.zugaenge_besorgen(_ziel_mit_zugaengen(zugaenge={"name": "Nachschlag", "kellerwolke": "admin"}))
     assert gerufen == []
+
+
+def test_ausrollen_meldet_den_bau(tmp_path, monkeypatch, capsys):
+    """GSP-7: mit melder.toml meldet das Ausrollen App, Fassung, Commit und Image ans Softwareregal; ohne Datei geschieht
+    nichts, und ein Fehler beim Melden bricht das Ausrollen nie ab (ausgerollt ist ja schon)."""
+    import httpx
+
+    from appkern.werkzeuge import ausrollen as a
+
+    z = a.Ziel.model_validate({"kennung": "probe", "rechner": "pi@192.168.178.49", "wurzel": "/srv/probe",
+                               "adresse": "https://pi:1", "repo": "x", "namen": ["pi"]})
+    (tmp_path / "version.json").write_text('{"version": "1.2.3"}')
+    melder = tmp_path / "melder.toml"
+    a.bau_melden(z, tmp_path, melder)                                         # ohne Datei: nichts
+    assert capsys.readouterr().out == ""
+    melder.write_text('adresse = "http://regal"\nschluessel = "srm_x"\n')
+    monkeypatch.setattr(a, "_lauf", lambda befehl, ort=None: "abc1234def\n")
+    monkeypatch.setattr(a, "_ssh", lambda z, skript: "sha256:0123\n")
+    gesehen = []
+
+    def regal(anfrage: httpx.Request) -> httpx.Response:
+        gesehen.append((anfrage.headers["x-softwareregal-melder"], json.loads(anfrage.content)))
+        return httpx.Response(201, json={})
+
+    a.bau_melden(z, tmp_path, melder, httpx.Client(base_url="http://regal", transport=httpx.MockTransport(regal)))
+    assert gesehen == [("srm_x", {"app": "probe", "fassung": "1.2.3", "commit": "abc1234def", "art": "image",
+                                  "name": "probe:1.2.3", "kennung": "sha256:0123", "rechner": "192.168.178.49"})]
+
+    def kaputt(befehl, ort=None):
+        raise a.Abbruch("kein git")
+
+    monkeypatch.setattr(a, "_lauf", kaputt)
+    a.bau_melden(z, tmp_path, melder)
+    assert "Warnung: Bau nicht gemeldet: kein git" in capsys.readouterr().out
