@@ -273,11 +273,15 @@ const MESSEN = `(() => {
       // Ein klebender Kopf unter etwas, das wegrollen darf (Überschrift über dem Suchfeld, WIKI-70), wandert, bis er an
       // der Oberkante seines Rollfelds klebt: das ist Stehenbleiben. Sonst darf er nicht wandern.
       const klebt = feld && stil(kopf).position === "sticky" && Math.abs(nachher.top - oberkante(feld)) <= 1.5;
-      if ((Math.abs(nachher.top - vorher) > 2 && !klebt) || nachher.bottom <= 0)
+      // Ein klebender Kopf unter etwas, das wegrollen darf, kommt auf einer kurzen Seite gar nicht bis zur Oberkante:
+      // das Rollfeld rollt weniger weit, als er wandern müsste. Dann steht er sichtbar an seinem Platz, kein Befund (GSP-16)
+      const unerreichbar = feld && stil(kopf).position === "sticky" && nachher.bottom > 0
+        && feld.scrollTop - stand[rollend.indexOf(feld)] < vorher - oberkante(feld) - 1.5;
+      if (!unerreichbar && ((Math.abs(nachher.top - vorher) > 2 && !klebt) || nachher.bottom <= 0))
         kopfweg.push(weg(kopf) + " (Kopf rollt mit: von " + Math.round(vorher) + " nach " + Math.round(nachher.top) + " px; Baustein Seitenkopf des Appkerns nehmen)");
       // Lücke über dem stehenden Kopf (WIKI-63): gerollt muss ein klebender Kopf bündig an der Oberkante seines Rollfelds
       // stehen; ein Innenabstand oben am Rollfeld (padding-top statt --rollfeld-oben) lässt Inhalt darüber durchscheinen
-      if (feld && stil(kopf).position === "sticky") {
+      if (feld && stil(kopf).position === "sticky" && !unerreichbar) {
         const luecke = nachher.top - oberkante(feld);
         if (luecke > 1.5)
           kopfweg.push(weg(kopf) + " (klebt " + Math.round(luecke) + " px unter der Oberkante von " + weg(feld) +
@@ -318,10 +322,15 @@ const MESSEN = `(() => {
     if (ziel < start + 40) continue;
     e.scrollTop = ziel;
     const r = th.getBoundingClientRect();
-    if (r.top - oben > 1.5 && r.top - oben < 60)
-      kopfluecke.push(weg(th) + " (klebt " + Math.round(r.top - oben) + " px unter der Oberkante von " + weg(e) + "; gerollter Inhalt scheint durch)");
-    if (r.top - oben < -1.5)
-      kopfluecke.push(weg(th) + " (klebt " + Math.round(oben - r.top) + " px über der Oberkante von " + weg(e) + "; oben abgeschnitten)");
+    // klebt im selben Rollfeld ein Seitenkopf (data-seitenkopf) an der Oberkante, gehört der Tabellenkopf bündig darunter
+    // (GSP-16: Reiterzeile der Produktseite, Tabellenkopf um ihre Höhe tiefer)
+    const sk = e.querySelector("[data-seitenkopf]");
+    const skr = sk && stil(sk).position === "sticky" ? sk.getBoundingClientRect() : null;
+    const rand = skr && Math.abs(skr.top - oben) <= 1.5 ? skr.bottom : oben;
+    if (r.top - rand > 1.5 && r.top - rand < 60)
+      kopfluecke.push(weg(th) + " (klebt " + Math.round(r.top - rand) + " px unter der Oberkante von " + weg(e) + "; gerollter Inhalt scheint durch)");
+    if (r.top - rand < -1.5)
+      kopfluecke.push(weg(th) + " (klebt " + Math.round(rand - r.top) + " px über der Oberkante von " + weg(e) + "; oben abgeschnitten)");
     const oberst = document.elementFromPoint(r.left + Math.min(20, r.width / 2), r.top + r.height / 2);
     if (oberst && !th.closest("thead").contains(oberst))
       kopfluecke.push(weg(th) + " (wird beim Rollen überdeckt von " + weg(oberst) + ")");
