@@ -9,6 +9,8 @@
 .auswahl-liste { position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; min-width: 100%; max-height: 340px; overflow-y: auto;
                  background: var(--flaeche); border-radius: var(--r2); box-shadow: var(--schatten), 0 10px 30px color-mix(in srgb, var(--schattenfarbe) 20%, transparent);
                  display: flex; flex-direction: column; padding: 4px; }
+/* zu wenig Platz darunter: nach oben aufklappen (Auswahl.svelte entscheidet beim Öffnen) */
+.auswahl-liste.oben { top: auto; bottom: calc(100% + 4px); }
 .auswahl-liste button { border: 0; background: transparent; font: inherit; font-size: var(--klein); text-align: left; padding: 9px 12px;
                         border-radius: var(--r1); cursor: pointer; color: var(--text); white-space: nowrap; }
 .auswahl-liste button:hover, .auswahl-liste button.aktiv { background: var(--akzent-weich); color: var(--akzent); }
