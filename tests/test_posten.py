@@ -93,6 +93,10 @@ def test_ohne_anmeldung_seite_zur_anmeldung_schnittstelle_401(aufbau):
     assert r.status_code == 401, "nur ein Seitenaufruf wird umgeleitet"
     seite = c.get("/_vorbau/anmelden?ziel=/x", headers={"x-vorbau-app": "Zusage"})
     assert seite.status_code == 200 and "<h1>Zusage</h1>" in seite.text and 'type="password"' in seite.text
+    # ZUS-23: eine Web-App auf dem iPhone beginnt hier; ohne diese Zeilen kein Symbol und Browserleisten
+    assert '<link rel="manifest" href="/site.webmanifest">' in seite.text
+    assert 'rel="apple-touch-icon"' in seite.text and 'name="apple-mobile-web-app-capable" content="yes"' in seite.text
+    assert 'name="mobile-web-app-capable" content="yes"' in seite.text and 'name="apple-mobile-web-app-title" content="Zusage"' in seite.text
 
 
 def test_anmeldung_setzt_sicheren_keks_und_gilt(aufbau):

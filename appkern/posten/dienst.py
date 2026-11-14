@@ -49,6 +49,8 @@ class Einstellungen(BaseSettings):
     merken_s: float = Field(default=60.0, ge=0, description="so lange gilt eine Bestätigung der Kellerwolke ohne Nachfrage")
     gueltig_tage: int = Field(default=30, ge=1, le=365, description="Lebensdauer des Kekses im Browser")
     fehlversuche: int = Field(default=10, ge=1, description="falsche Anmeldungen je Absender in 10 Minuten, danach Pause")
+    manifest: str = Field(default="/site.webmanifest", description="Manifest der App für den Startbildschirm; leer: keins")
+    symbol: str = Field(default="/apple-touch-icon.png", description="Symbol der App für den Startbildschirm des iPhones; leer: keins")
 
     @property
     def keks(self) -> str:
@@ -110,10 +112,29 @@ def _absender(request: Request) -> str:
     return (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "")).split(",")[0].strip()
 
 
-def anmeldeseite(pfad: str, app: str, ziel: str, meldung: str = "", kennung: str = "") -> str:
+def startbildschirm(app: str, manifest: str, symbol: str) -> str:
+    """Kopfzeilen für den Startbildschirm (ZUS-23): eine Web-App auf dem iPhone hat eigene Kekse und beginnt darum auf der
+    Anmeldeseite; ohne Manifest, Symbol und Vollbild-Angabe bekäme sie dort kein Symbol und liefe mit Browserleisten.
+    Manifest und Symbol liefert die App selbst, ohne Anmeldung (Appkern-Regel: /site.webmanifest, /apple-touch-icon.png)."""
+    zeilen = [
+        '<meta name="mobile-web-app-capable" content="yes">',
+        '<meta name="apple-mobile-web-app-capable" content="yes">',
+        f'<meta name="apple-mobile-web-app-title" content="{html.escape(app)}">',
+        '<meta name="theme-color" content="#e4eaf2" media="(prefers-color-scheme: light)">',
+        '<meta name="theme-color" content="#16202c" media="(prefers-color-scheme: dark)">',
+    ]
+    if manifest:
+        zeilen.append(f'<link rel="manifest" href="{html.escape(manifest)}">')
+    if symbol:
+        zeilen.append(f'<link rel="apple-touch-icon" sizes="180x180" href="{html.escape(symbol)}">')
+    return "".join(zeilen)
+
+
+def anmeldeseite(pfad: str, app: str, ziel: str, meldung: str = "", kennung: str = "", *, manifest: str = "", symbol: str = "") -> str:
     m = f'<p class="meldung" role="alert">{html.escape(meldung)}</p>' if meldung else ""
     return f"""<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+{startbildschirm(app, manifest, symbol)}
 <title>Anmelden: {html.escape(app)}</title>
 <style>
   @font-face {{ font-family: "Barlow"; font-weight: 400; src: url("{pfad}/statisch/barlow-latin-400-normal.woff2") format("woff2"); }}
@@ -197,14 +218,17 @@ def erstellen(e: Einstellungen | None = None, kellerwolke: Kellerwolke | None = 
 
     @app.get(f"{pfad}/anmelden")
     async def seite(request: Request, ziel: str = "/") -> HTMLResponse:
-        return HTMLResponse(anmeldeseite(pfad, name_der_app(request), _ziel(ziel, pfad)), headers={"Cache-Control": "no-store"})
+        return HTMLResponse(
+            anmeldeseite(pfad, name_der_app(request), _ziel(ziel, pfad), manifest=e.manifest, symbol=e.symbol), headers={"Cache-Control": "no-store"}
+        )
 
     @app.post(f"{pfad}/anmelden")
     async def anmelden(request: Request, kennung: str = Form(""), passwort: str = Form(""), ziel: str = Form("/")) -> Response:
         app_name, ziel, wer = name_der_app(request), _ziel(ziel, pfad), _absender(request)
 
         def zurueck(meldung: str, status: int) -> HTMLResponse:
-            return HTMLResponse(anmeldeseite(pfad, app_name, ziel, meldung, kennung), status_code=status, headers={"Cache-Control": "no-store"})
+            seite = anmeldeseite(pfad, app_name, ziel, meldung, kennung, manifest=e.manifest, symbol=e.symbol)
+            return HTMLResponse(seite, status_code=status, headers={"Cache-Control": "no-store"})
 
         if (warten := bremse.gesperrt_s(wer)) > 0:
             return zurueck(f"Zu viele falsche Anmeldungen. Bitte in {int(warten // 60) + 1} Minuten noch einmal.", 429)
