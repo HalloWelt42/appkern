@@ -2,7 +2,7 @@
 
 > Erzeugt aus `oberflaeche/stil/marken.css` und `oberflaeche/gestaltung/katalog.json` im Appkern (`python -m appkern.werkzeuge gestaltung`, bei jedem Commit des Appkerns). Dort ändern, nicht hier.
 
-Marken des Appkerns: die eine Wahrheit für Farben, Schriften, Schriftgrößen, Abstände, Ecken und Schatten aller eigenen Apps (Grunddesign, Nutzer 24.10.2026: "Appkern, alle ziehen um"; "Nur Marken, Ausnahme begründet"). Der Stil einer App nutzt nur diese Marken; eine neue Farbe kommt zuerst hierher (python -m appkern.werkzeuge pruefen meldet feste Werte). Jede Marke trägt ihren Zweck als Kommentar; daraus entstehen die Seite Gestaltung in jeder App und die Seite im Handbuch (python -m appkern.werkzeuge gestaltung). Themen: hell ist die Vorgabe, dunkel über data-theme="dunkel" am Wurzelelement (html) oder an einem Teil der Seite. Schriftstufen: dicht ist die Vorgabe (Schale des Appkerns, Nutzer 20.10.2026: eine feste, dichte Schrift); klein, mittel und gross über data-schrift für Apps mit eigener Schale und Schriftstufen (Leitstelle, Fundus; Groß ist dort die Vorgabe). Wie die Themen gilt eine Stufe auch für einen Teil der Seite.
+Marken des Appkerns: die eine Wahrheit für Farben, Schriften, Schriftgrößen, Abstände, Ecken und Schatten aller eigenen Apps (Grunddesign, Nutzer 24.10.2026: "Appkern, alle ziehen um"; "Nur Marken, Ausnahme begründet"). Der Stil einer App nutzt nur diese Marken; eine neue Farbe kommt zuerst hierher (python -m appkern.werkzeuge pruefen meldet feste Werte). Jede Marke trägt ihren Zweck als Kommentar; daraus entstehen die Seite Gestaltung in jeder App und die Seite im Handbuch (python -m appkern.werkzeuge gestaltung). Themen: hell ist die Vorgabe, dunkel über data-theme="dunkel" am Wurzelelement (html) oder an einem Teil der Seite. Schriftstufen: dicht ist die Vorgabe (Schale des Appkerns, Nutzer 20.10.2026: eine feste, dichte Schrift); klein, mittel, gross und sehr-gross über data-schrift für Apps mit eigener Schale und Schriftstufen (Leitstelle, Fundus; Groß ist dort die Vorgabe). Wie die Themen gilt eine Stufe auch für einen Teil der Seite.
 
 In jeder App steht dieselbe Seite unter Einstellungen, Gestaltung: alle Bausteine echt gerendert, hell und dunkel nebeneinander.
 
@@ -53,27 +53,27 @@ Barlow liest sich ruhig und breit; Zahlen stehen in Chakra Petch, damit Werte, Z
 
 Stufe dicht (Vorgabe der Schale): Grundschrift 15, klein 13, Etiketten 12 Pixel. Größer wird nur über eine Stufe, nie über feste Werte in einer App; data-schrift="dicht" stellt sie für einen Teil der Seite her.
 
-| Marke | dicht | klein | mittel | gross | Zweck |
-|---|---|---|---|---|---|
-| `--gross` | `15px` | `16px` | `17px` | `18px` | Grundschrift: Fließtext, Eingaben, Listen |
-| `--klein` | `13px` | `14px` | `15px` | `16px` | Nebenangaben, Knöpfe, Beschreibungen |
-| `--marke` | `12px` | `13px` | `15px` | `15px` | Etiketten, Zähler, Versalien-Überschriften: nie kleiner |
-| `--titel` | `17px` | `19px` | `21px` | `22px` | Überschrift einer Karte, Leiste oder Gruppe |
-| `--seitentitel` | `20px` | `27px` | `30px` | `32px` | Überschrift einer Seite |
-| `--kennzahl` | `24px` | `24px` | `27px` | `30px` | große Zahlen und Codes zum Ablesen (Kennzahlen, Kopplungscode) |
-| `--appname` | `18px` | `21px` | `21px` | `21px` | Name der App im Kopf |
+| Marke | dicht | klein | mittel | gross | sehr-gross | Zweck |
+|---|---|---|---|---|---|---|
+| `--gross` | `15px` | `16px` | `17px` | `18px` | `20px` | Grundschrift: Fließtext, Eingaben, Listen |
+| `--klein` | `13px` | `14px` | `15px` | `16px` | `17px` | Nebenangaben, Knöpfe, Beschreibungen |
+| `--marke` | `12px` | `13px` | `15px` | `15px` | `16px` | Etiketten, Zähler, Versalien-Überschriften: nie kleiner |
+| `--titel` | `17px` | `19px` | `21px` | `22px` | `24px` | Überschrift einer Karte, Leiste oder Gruppe |
+| `--seitentitel` | `20px` | `27px` | `30px` | `32px` | `34px` | Überschrift einer Seite |
+| `--kennzahl` | `24px` | `24px` | `27px` | `30px` | `32px` | große Zahlen und Codes zum Ablesen (Kennzahlen, Kopplungscode) |
+| `--appname` | `18px` | `21px` | `21px` | `21px` | `23px` | Name der App im Kopf |
 
 ### Maße
 
 Feste Höhen und Breiten der Rahmen, je Schriftstufe (oben bei den Stufen); die Seite selbst rollt nie, nur ihre Felder.
 
-| Marke | dicht | klein | mittel | gross | Zweck |
-|---|---|---|---|---|---|
-| `--kopf-hoehe` | `50px` | `58px` | `62px` | `62px` | Kopf mit Marke, Rolle und Verbindungen |
-| `--nav-breite` | `232px` | `232px` | `248px` | `264px` | Seitenleiste mit Bereichen |
-| `--fuss-hoehe` | `30px` | `44px` | `44px` | `44px` | Fußleiste mit Verbindungen und laufender Arbeit |
-| `--zeile` | `34px` | `34px` | `34px` | `34px` | Eintrag der Seitenleiste |
-| `--knopf-hoehe` | `32px` | `42px` | `42px` | `42px` | Knöpfe, Suche, runde Knöpfe |
+| Marke | dicht | klein | mittel | gross | sehr-gross | Zweck |
+|---|---|---|---|---|---|---|
+| `--kopf-hoehe` | `50px` | `58px` | `62px` | `62px` | `68px` | Kopf mit Marke, Rolle und Verbindungen |
+| `--nav-breite` | `232px` | `232px` | `248px` | `264px` | `290px` | Seitenleiste mit Bereichen |
+| `--fuss-hoehe` | `30px` | `44px` | `44px` | `44px` | `48px` | Fußleiste mit Verbindungen und laufender Arbeit |
+| `--zeile` | `34px` | `34px` | `34px` | `34px` | `34px` | Eintrag der Seitenleiste |
+| `--knopf-hoehe` | `32px` | `42px` | `42px` | `42px` | `46px` | Knöpfe, Suche, runde Knöpfe |
 
 ### Abstände
 
@@ -271,6 +271,7 @@ Karten heben sich leicht ab; Schwebendes (Fenster, Menüs, Meldungen) deutlich.
 | klein | kleinste Stufe der Leitstelle; Etiketten unterschreiten dort bewusst 14 Pixel |
 | mittel | Grundschrift 17 Pixel, nichts unter 15 |
 | gross | Grundschrift 18 Pixel (Vorgabe von Leitstelle und Fundus, Nutzer 16.10.2026: "das was jetzt normal ist, sollte das größte sein"), Etiketten 15 Pixel wie in Fundus |
+| sehr-gross | Grundschrift 20 Pixel, nichts unter 16, für Bedienung aus der Entfernung und schlechte Augen (RadioHub, Nutzer 16.11.2026, RAD-6); Rahmen und Knöpfe wachsen mit, damit nichts abschneidet |
 
 ## Bausteine
 

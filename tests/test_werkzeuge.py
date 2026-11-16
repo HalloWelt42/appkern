@@ -344,6 +344,8 @@ def test_gestaltung_aus_der_wahrheit(tmp_path):
         "}",
         "/* Stufe gross: groß für eigene Schalen */",
         '[data-schrift="gross"] { --gross: 18px; }',
+        "/* Stufe sehr-gross: noch größer */",
+        '[data-schrift="sehr-gross"] { --gross: 20px; }',
         "/* == Flächen == Von hinten nach vorn. */",
         ':root, [data-theme="hell"] {',
         "  --hg: #e4eaf2;   /* Seitengrund */",
@@ -355,15 +357,17 @@ def test_gestaltung_aus_der_wahrheit(tmp_path):
                        "html": '<button class="knopf">Los</button>'}], "nutzen": ["stil.css laden"], "pruefung": "Haken"}))
     m = gestaltung.marken_lesen((tmp_path / "oberflaeche/stil/marken.css").read_text())
     assert m.einleitung == "Kopf der Marken" and m.stufen["gross"] == "groß für eigene Schalen"
+    assert m.stufen["sehr-gross"] == "noch größer"
     gross, hg = m.alle()
     assert (gross.gruppe, gross.zweck, gross.werte, gross.art) == ("Schriftgrößen", "Grundschrift",
-                                                                   {"alle": "15px", "stufe:gross": "18px"}, "schriftgroesse")
+                                                                   {"alle": "15px", "stufe:gross": "18px", "stufe:sehr-gross": "20px"},
+                                                                   "schriftgroesse")
     assert (hg.gruppe, hg.werte, hg.art) == ("Flächen", {"hell": "#e4eaf2", "dunkel": "#16202c"}, "farbe")
     assert gestaltung.ist_quelle(tmp_path) and set(gestaltung.veraltet(tmp_path)) == {gestaltung.DATEN, gestaltung.SEITE}
     gestaltung.schreiben(tmp_path)
     assert gestaltung.veraltet(tmp_path) == []
     seite = (tmp_path / "docs/gestaltung.md").read_text()
-    assert "| `--gross` | `15px` | `15px` | `15px` | `18px` | Grundschrift |" in seite   # ohne eigenen Wert gilt dicht and '<button class="knopf">Los</button>' in seite
+    assert "| `--gross` | `15px` | `15px` | `15px` | `18px` | `20px` | Grundschrift |" in seite   # ohne eigenen Wert gilt dicht and '<button class="knopf">Los</button>' in seite
     css = tmp_path / "oberflaeche/stil/marken.css"
     css.write_text(css.read_text().replace("#16202c", "#16202d"))
     assert gestaltung.veraltet(tmp_path) == [gestaltung.DATEN, gestaltung.SEITE]

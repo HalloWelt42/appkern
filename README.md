@@ -594,8 +594,8 @@ Muster, Bausteine mit Markup, wann und warum). Der Haken des Appkerns schreibt b
 meldet einen veralteten Stand.
 
 Themen: hell ist die Vorgabe, dunkel über `data-theme="dunkel"`. Schriftstufen: dicht ist die Vorgabe der Schale;
-`data-schrift="klein"`, `"mittel"` oder `"gross"` heben Schrift und Maße für Apps mit eigener Schale und Schriftstufen
-(Leitstelle, Fundus). Beides gilt auch für einen Teil der Seite (etwa eine Probe in hell neben einer in dunkel); dort
+`data-schrift="klein"`, `"mittel"`, `"gross"` oder `"sehr-gross"` (Grundschrift 20 Pixel, nichts unter 16) heben Schrift
+und Maße für Apps mit eigener Schale und Schriftstufen (Leitstelle, Fundus, RadioHub). Beides gilt auch für einen Teil der Seite (etwa eine Probe in hell neben einer in dunkel); dort
 die Schriftgröße mit `font-size: var(--gross)` neu setzen. Mischungen gehen über `color-mix` statt eigener
 RGB-Werte: `color-mix(in srgb, var(--gefahr) var(--toenung), transparent)`.
 

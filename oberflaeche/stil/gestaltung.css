@@ -50,7 +50,7 @@
                                     align-items: center; padding: var(--a2) 0; border-top: 1px solid var(--rand); }
 .gs-mass-zeile { grid-template-columns: minmax(0, 13em) 60px minmax(0, 12em) minmax(0, 1fr); }
 .gs-schrift-probe { font-size: var(--gross); min-width: 0; overflow-wrap: anywhere; }
-.gs-stufen { display: grid; grid-template-columns: minmax(0, 10em) repeat(4, minmax(0, 1fr)); gap: var(--a2) var(--a3); align-items: end; }
+.gs-stufen { display: grid; grid-template-columns: minmax(0, 10em) repeat(var(--gs-stufen, 4), minmax(0, 1fr)); gap: var(--a2) var(--a3); align-items: end; }
 .gs-stufe { display: flex; align-items: baseline; gap: var(--a2); min-width: 0; }
 .gs-stufe-probe { line-height: 1.1; }
 .gs-stufe-name { display: none; }

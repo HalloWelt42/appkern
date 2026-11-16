@@ -1,6 +1,6 @@
 {
  "quelle": "oberflaeche/stil/marken.css",
- "einleitung": "Marken des Appkerns: die eine Wahrheit für Farben, Schriften, Schriftgrößen, Abstände, Ecken und Schatten aller eigenen Apps (Grunddesign, Nutzer 24.10.2026: \"Appkern, alle ziehen um\"; \"Nur Marken, Ausnahme begründet\"). Der Stil einer App nutzt nur diese Marken; eine neue Farbe kommt zuerst hierher (python -m appkern.werkzeuge pruefen meldet feste Werte). Jede Marke trägt ihren Zweck als Kommentar; daraus entstehen die Seite Gestaltung in jeder App und die Seite im Handbuch (python -m appkern.werkzeuge gestaltung). Themen: hell ist die Vorgabe, dunkel über data-theme=\"dunkel\" am Wurzelelement (html) oder an einem Teil der Seite. Schriftstufen: dicht ist die Vorgabe (Schale des Appkerns, Nutzer 20.10.2026: eine feste, dichte Schrift); klein, mittel und gross über data-schrift für Apps mit eigener Schale und Schriftstufen (Leitstelle, Fundus; Groß ist dort die Vorgabe). Wie die Themen gilt eine Stufe auch für einen Teil der Seite.",
+ "einleitung": "Marken des Appkerns: die eine Wahrheit für Farben, Schriften, Schriftgrößen, Abstände, Ecken und Schatten aller eigenen Apps (Grunddesign, Nutzer 24.10.2026: \"Appkern, alle ziehen um\"; \"Nur Marken, Ausnahme begründet\"). Der Stil einer App nutzt nur diese Marken; eine neue Farbe kommt zuerst hierher (python -m appkern.werkzeuge pruefen meldet feste Werte). Jede Marke trägt ihren Zweck als Kommentar; daraus entstehen die Seite Gestaltung in jeder App und die Seite im Handbuch (python -m appkern.werkzeuge gestaltung). Themen: hell ist die Vorgabe, dunkel über data-theme=\"dunkel\" am Wurzelelement (html) oder an einem Teil der Seite. Schriftstufen: dicht ist die Vorgabe (Schale des Appkerns, Nutzer 20.10.2026: eine feste, dichte Schrift); klein, mittel, gross und sehr-gross über data-schrift für Apps mit eigener Schale und Schriftstufen (Leitstelle, Fundus; Groß ist dort die Vorgabe). Wie die Themen gilt eine Stufe auch für einen Teil der Seite.",
  "stufen": [
   {
    "name": "dicht",
@@ -17,6 +17,10 @@
   {
    "name": "gross",
    "text": "Grundschrift 18 Pixel (Vorgabe von Leitstelle und Fundus, Nutzer 16.10.2026: \"das was jetzt normal ist, sollte das größte sein\"), Etiketten 15 Pixel wie in Fundus"
+  },
+  {
+   "name": "sehr-gross",
+   "text": "Grundschrift 20 Pixel, nichts unter 16, für Bedienung aus der Entfernung und schlechte Augen (RadioHub, Nutzer 16.11.2026, RAD-6); Rahmen und Knöpfe wachsen mit, damit nichts abschneidet"
   }
  ],
  "gruppen": [
@@ -62,7 +66,8 @@
       "alle": "15px",
       "stufe:klein": "16px",
       "stufe:mittel": "17px",
-      "stufe:gross": "18px"
+      "stufe:gross": "18px",
+      "stufe:sehr-gross": "20px"
      }
     },
     {
@@ -73,7 +78,8 @@
       "alle": "13px",
       "stufe:klein": "14px",
       "stufe:mittel": "15px",
-      "stufe:gross": "16px"
+      "stufe:gross": "16px",
+      "stufe:sehr-gross": "17px"
      }
     },
     {
@@ -84,7 +90,8 @@
       "alle": "12px",
       "stufe:klein": "13px",
       "stufe:mittel": "15px",
-      "stufe:gross": "15px"
+      "stufe:gross": "15px",
+      "stufe:sehr-gross": "16px"
      }
     },
     {
@@ -95,7 +102,8 @@
       "alle": "17px",
       "stufe:klein": "19px",
       "stufe:mittel": "21px",
-      "stufe:gross": "22px"
+      "stufe:gross": "22px",
+      "stufe:sehr-gross": "24px"
      }
     },
     {
@@ -106,7 +114,8 @@
       "alle": "20px",
       "stufe:klein": "27px",
       "stufe:mittel": "30px",
-      "stufe:gross": "32px"
+      "stufe:gross": "32px",
+      "stufe:sehr-gross": "34px"
      }
     },
     {
@@ -117,7 +126,8 @@
       "alle": "24px",
       "stufe:klein": "24px",
       "stufe:mittel": "27px",
-      "stufe:gross": "30px"
+      "stufe:gross": "30px",
+      "stufe:sehr-gross": "32px"
      }
     },
     {
@@ -128,7 +138,8 @@
       "alle": "18px",
       "stufe:klein": "21px",
       "stufe:mittel": "21px",
-      "stufe:gross": "21px"
+      "stufe:gross": "21px",
+      "stufe:sehr-gross": "23px"
      }
     }
    ]
@@ -145,7 +156,8 @@
       "alle": "50px",
       "stufe:klein": "58px",
       "stufe:mittel": "62px",
-      "stufe:gross": "62px"
+      "stufe:gross": "62px",
+      "stufe:sehr-gross": "68px"
      }
     },
     {
@@ -156,7 +168,8 @@
       "alle": "232px",
       "stufe:klein": "232px",
       "stufe:mittel": "248px",
-      "stufe:gross": "264px"
+      "stufe:gross": "264px",
+      "stufe:sehr-gross": "290px"
      }
     },
     {
@@ -167,7 +180,8 @@
       "alle": "30px",
       "stufe:klein": "44px",
       "stufe:mittel": "44px",
-      "stufe:gross": "44px"
+      "stufe:gross": "44px",
+      "stufe:sehr-gross": "48px"
      }
     },
     {
@@ -186,7 +200,8 @@
       "alle": "32px",
       "stufe:klein": "42px",
       "stufe:mittel": "42px",
-      "stufe:gross": "42px"
+      "stufe:gross": "42px",
+      "stufe:sehr-gross": "46px"
      }
     }
    ]

@@ -7,8 +7,8 @@
 
    Themen: hell ist die Vorgabe, dunkel über data-theme="dunkel" am Wurzelelement (html) oder an einem Teil der Seite.
    Schriftstufen: dicht ist die Vorgabe (Schale des Appkerns, Nutzer 20.10.2026: eine feste, dichte Schrift); klein,
-   mittel und gross über data-schrift für Apps mit eigener Schale und Schriftstufen (Leitstelle, Fundus; Groß ist dort
-   die Vorgabe). Wie die Themen gilt eine Stufe auch für einen Teil der Seite. */
+   mittel, gross und sehr-gross über data-schrift für Apps mit eigener Schale und Schriftstufen (Leitstelle, Fundus; Groß
+   ist dort die Vorgabe). Wie die Themen gilt eine Stufe auch für einen Teil der Seite. */
 
 /* == Schriften == Barlow liest sich ruhig und breit; Zahlen stehen in Chakra Petch, damit Werte, Zeiten und Zähler
    als solche erkennbar sind und Ziffern gleich breit stehen; Code in der Schrift des Systems mit fester Breite. */
@@ -54,6 +54,12 @@
 [data-schrift="gross"] {
   --gross: 18px; --klein: 16px; --marke: 15px; --titel: 22px; --seitentitel: 32px; --kennzahl: 30px; --appname: 21px;
   --kopf-hoehe: 62px; --nav-breite: 264px; --fuss-hoehe: 44px; --knopf-hoehe: 42px;
+}
+/* Stufe sehr-gross: Grundschrift 20 Pixel, nichts unter 16, für Bedienung aus der Entfernung und schlechte Augen (RadioHub,
+   Nutzer 16.11.2026, RAD-6); Rahmen und Knöpfe wachsen mit, damit nichts abschneidet */
+[data-schrift="sehr-gross"] {
+  --gross: 20px; --klein: 17px; --marke: 16px; --titel: 24px; --seitentitel: 34px; --kennzahl: 32px; --appname: 23px;
+  --kopf-hoehe: 68px; --nav-breite: 290px; --fuss-hoehe: 48px; --knopf-hoehe: 46px;
 }
 
 /* == Abstände == Eine Leiter für Lücken und Innenabstände; ungerade Werte nur, wo ein Rahmen sie ausgleicht. */

@@ -117,9 +117,9 @@
     </section>
     <section class="gs-gruppe">
       <h3>Schriftgrößen je Stufe</h3>
-      <p class="gs-satz">Die Schale ist dicht und fest; Apps mit eigener Schale bieten die Stufen klein, mittel und groß
-        (Vorgabe groß). Größer wird nur über eine Stufe, nie über feste Werte.</p>
-      <div class="gs-stufen">
+      <p class="gs-satz">Die Schale ist dicht und fest; Apps mit eigener Schale bieten die Stufen klein, mittel, groß und
+        sehr groß (Vorgabe groß). Größer wird nur über eine Stufe, nie über feste Werte.</p>
+      <div class="gs-stufen" style="--gs-stufen: {STUFEN.length}">
         <span class="gs-spalte">Marke</span>
         {#each STUFEN as s (s.name)}<span class="gs-spalte" title={s.text}>{s.name}</span>{/each}
         {#each groessen as m (m.name)}

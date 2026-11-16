@@ -31,7 +31,7 @@ DEKLARATION = re.compile(r"(--[\w-]+)\s*:\s*([^;]+?)\s*;[ \t]*(?:/\*(.*?)\*/)?",
 FARBE = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|color-mix|linear-gradient)\(")
 ART_DER_GRUPPE = {"Schriften": "schrift", "Schriftgrößen": "schriftgroesse", "Maße": "mass", "Abstände": "mass",
                   "Ecken": "mass", "Bewegung": "zeit", "Schatten und Schleier": "schatten"}
-STUFEN = ("dicht", "klein", "mittel", "gross")
+STUFEN = ("dicht", "klein", "mittel", "gross", "sehr-gross")
 THEMEN = ("hell", "dunkel")
 
 
@@ -77,7 +77,7 @@ def _kontexte(selektor: str) -> list[str]:
         teil = teil.strip()
         if m := re.search(r'data-theme="(\w+)"', teil):
             kontexte.append(m.group(1))
-        elif m := re.search(r'data-schrift="(\w+)"', teil):
+        elif m := re.search(r'data-schrift="([\w-]+)"', teil):
             kontexte.append("stufe:" + m.group(1))
         elif teil == ":root":
             kontexte.append("alle")
@@ -103,7 +103,7 @@ def marken_lesen(text: str) -> Marken:
             elif not einleitung and i == 0:
                 einleitung = _ohne_rahmen(stueck)
             else:
-                letzter_kommentar = re.sub(r"^Stufe \w+:\s*", "", _ohne_rahmen(stueck))
+                letzter_kommentar = re.sub(r"^Stufe [\w-]+:\s*", "", _ohne_rahmen(stueck))
             i += 1
             continue
         i += 1
@@ -178,7 +178,7 @@ def seite(marken: Marken, katalog: dict) -> str:
     for g in marken.gruppen:
         teile += [f"### {g.name}", "", g.text, ""]
         if g.name == "Schriftgrößen" or any(f"stufe:{s}" in m.werte for m in g.marken for s in STUFEN):
-            teile += ["| Marke | dicht | klein | mittel | gross | Zweck |", "|---|---|---|---|---|---|"]
+            teile += ["| Marke | " + " | ".join(STUFEN) + " | Zweck |", "|---|" + "---|" * len(STUFEN) + "---|"]
             teile += [f"| `{m.name}` | " + " | ".join(_code(wert(m, stufe=s)) for s in STUFEN) + f" | {_zelle(m.zweck)} |"
                       for m in g.marken]
         elif any(t in m.werte for m in g.marken for t in THEMEN):
