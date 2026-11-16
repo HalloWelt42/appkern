@@ -1,8 +1,10 @@
 // Vorlage des Aussehens: Klassisch (das Grunddesign) oder eine Vorlage aus stil/vorlagen.css. Eine Vorlage ändert das
-// ganze Aussehen der Apps im Leitstand, nicht nur Farben, und wirkt nur auf dem Rechner (ab 1000 Pixel, das regeln ihre
-// Stile; am Telefon bleibt das Grunddesign). Gewählt je Gerät, gemerkt im Browser, wirksam über das Merkmal
+// ganze Aussehen der Apps im Leitstand, nicht nur Farben. In welchen Breiten sie wirkt, wählt die App mit dem Einstieg
+// ihrer Stile: vorlagen.css nur auf dem Rechner (ab 1000 Pixel; am Telefon bleibt das Grunddesign),
+// vorlagen-alle-breiten.css auch am Telefon. Gewählt je Gerät, gemerkt im Browser, wirksam über das Merkmal
 // data-vorlage an der Wurzel. Diese Liste ist die eine Wahrheit der wählbaren Vorlagen: eine neue kommt mit ihren
-// Stilen in stil/vorlagen.css und mit ihrem Eintrag hierher. Entwürfe zeigt oberflaeche/mockups/vorlagen.html.
+// Stilen in beide Einstiege (stil/vorlagen.css, stil/vorlagen-alle-breiten.css) und mit ihrem Eintrag hierher; ein Test
+// hält beides gleich. Entwürfe zeigt oberflaeche/mockups/vorlagen.html.
 const SCHLUESSEL = "appkern_vorlage";
 const GRUNDDESIGN = "klassisch";
 
@@ -21,6 +23,7 @@ export const VORLAGEN: readonly Vorlage[] = [
   { id: "papyrus", name: "Papyrus", text: "Cremeweiß und warmes Braun, kleine leuchtende Akzente, Titel mit Serifen", symbol: "fa-scroll" },
   { id: "klar", name: "Klar", text: "Luftig und weich: viel Weißraum, runde Formen, Schatten statt Linien", symbol: "fa-cloud" },
   { id: "plakat", name: "Plakat", text: "Mutig: kräftige Konturen, harte Schatten, Gelb als Signal, schwere Titel", symbol: "fa-bullhorn" },
+  { id: "hifi", name: "HiFi", text: "Material und Licht wie Studiotechnik: gebürstetes Metall, Leuchten, Anzeigen hinter Glas", symbol: "fa-sliders" },
 ];
 
 export const vorlage = $state<{ wahl: string }>({ wahl: GRUNDDESIGN });

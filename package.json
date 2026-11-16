@@ -7,6 +7,7 @@
   "files": [
     "oberflaeche/index.ts",
     "oberflaeche/code/",
+    "oberflaeche/instrumente/",
     "oberflaeche/lib/",
     "oberflaeche/teile/",
     "oberflaeche/stil/",
@@ -46,6 +47,10 @@
       "svelte": "./oberflaeche/code/index.ts",
       "default": "./oberflaeche/code/index.ts"
     },
+    "./instrumente": {
+      "svelte": "./oberflaeche/instrumente/index.ts",
+      "default": "./oberflaeche/instrumente/index.ts"
+    },
     "./stil.css": "./oberflaeche/stil/alles.css",
     "./marken.css": "./oberflaeche/stil/marken.css",
     "./leitstand.css": "./oberflaeche/stil/leitstand.css",
@@ -54,6 +59,8 @@
     "./auswahl.css": "./oberflaeche/stil/auswahl.css",
     "./hilfe.css": "./oberflaeche/stil/hilfe.css",
     "./vorlagen.css": "./oberflaeche/stil/vorlagen.css",
+    "./vorlagen-alle-breiten.css": "./oberflaeche/stil/vorlagen-alle-breiten.css",
+    "./instrumente.css": "./oberflaeche/stil/instrumente.css",
     "./gestaltung": {
       "svelte": "./oberflaeche/teile/Gestaltung.svelte",
       "default": "./oberflaeche/teile/Gestaltung.svelte"

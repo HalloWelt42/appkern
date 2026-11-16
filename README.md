@@ -556,10 +556,38 @@ In `package.json` der App: `"appkern-oberflaeche": "github:HalloWelt42/appkern"`
 - **Seitenleiste** des Leitstands: `seitenleisteStarten()` beim Start, `seitenleisteUmschalten()` am Knopf, Zustand in
   `seitenleiste.schmal`. Ohne Wahl schmal bis 1240 Pixel Breite, sonst nach der Wahl dieses Geräts (Merkmal
   `data-seitenleiste` an der Wurzel, auf das `leitstand.css` hört; Apps ohne den Baustein klappen nach der Breite).
-- **Vorlagen** für ein anderes Aussehen im Leitstand, nur auf dem Rechner (ab 1000 Pixel): `vorlagen.css` nach
-  `leitstand.css` und `hilfe.css` laden, `vorlageStarten()` beim Start, `vorlageSetzen(id)` an der Wahl, die wählbaren
-  in `VORLAGEN` (Klassisch ist das Grunddesign; dazu Futur, Glas, Papyrus, Klar, Plakat). Gemerkt je Gerät, wirksam über `data-vorlage` an der Wurzel. Eine
-  Vorlage sind eigene Marken plus Bausteine unter `stil/vorlagen/<name>/`; Entwürfe zeigt `oberflaeche/mockups/vorlagen.html`.
+- **Vorlagen** für ein anderes Aussehen im Leitstand: `vorlagen.css` nach `leitstand.css` und `hilfe.css` laden,
+  `vorlageStarten()` beim Start, `vorlageSetzen(id)` an der Wahl, die wählbaren in `VORLAGEN` (Klassisch ist das
+  Grunddesign; dazu Futur, Glas, Papyrus, Klar, Plakat, HiFi). Gemerkt je Gerät, wirksam über `data-vorlage` an der
+  Wurzel. Eine Vorlage sind eigene Marken plus Bausteine unter `stil/vorlagen/<name>/`; Entwürfe zeigt
+  `oberflaeche/mockups/vorlagen.html`. Die Breite wählt die App mit dem Einstieg: `vorlagen.css` gilt nur auf dem
+  Rechner (ab 1000 Pixel, am Telefon bleibt das Grunddesign), `vorlagen-alle-breiten.css` lädt dieselben Vorlagen auch
+  fürs Telefon. Eine App lädt genau einen der beiden; wer nichts ändert, bleibt beim Rechner.
+- **Instrumente** (aus hifi-regler, RAD-6): Regler und Anzeigen als eigene Elemente, im Markup wie gewöhnliche Tags,
+  mit Typen für svelte-check: `ak-dreh` (Drehregler, mit `raster` Drehwahl), `ak-schieber` (Bahn, Fader, Leuchtschiene,
+  Leuchtbalken), `ak-taster` (flach, glas, pille, fuss; rasten, tasten, tippen), `ak-kipp`, `ak-wahl` (Wahltasten,
+  Schiebeschalter), `ak-led`, `ak-segmente` (7 und 14 Segmente, Punktmatrix), `ak-zeiger` (VU, Stimmgerät), `ak-pegel`,
+  `ak-schirm`. Laden mit `import "appkern-oberflaeche/instrumente.css"` (vor den Vorlagen) und
+  `import "appkern-oberflaeche/instrumente"` (meldet die Elemente an); Material gibt die Vorlage HiFi. Laufende Werte
+  sind Eigenschaften (`wert`, `an`, `stellung`), Bedienung meldet `input` am Element und `ak-eingabe` am Dokument;
+  Pegel und Zeiger folgen `wert` (dB), ohne ihn zeigen sie ein Beispielsignal. **Tastenlicht**: `licht="gruen"` am
+  Taster oder `<ak-led art="schlitz">` als erstes Kind jeder Taste setzt die Leuchte als Lichtschlitz in die obere
+  Kante, die Taste bleibt gleich hoch; `.ak-tastenreihe` hält alle Tasten einer Reihe gleich hoch.
+
+  ```svelte
+  <script lang="ts">
+    import "appkern-oberflaeche/instrumente";
+    let lautstaerke = $state(40), spielt = $state(false);
+  </script>
+  <div class="ak-geraet">
+    <ak-dreh name="Lautstärke" einheit="%" wert={lautstaerke}
+             oninput={(e) => (lautstaerke = e.currentTarget.wert ?? 0)}></ak-dreh>
+    <div class="ak-tastenreihe">
+      <ak-taster art="glas" symbol="fa-play" farbe="blau" licht="blau" an={spielt}
+                 oninput={(e) => (spielt = e.currentTarget.an)}></ak-taster>
+    </div>
+  </div>
+  ```
 - **Einstellungen der App** in eigener Schale: `einstellungenLaden()`, Entwurf in `einstellungen.entwurf`,
   `einstellungenSpeichern()` und `einstellungenVerwerfen()`; `<EinstellungsZeile feld melden />` zeichnet eine
   Einstellung als Zeile des Leitstands (Schalter, Zahl mit Schritten, Auswahl auch aus dem Angebot mit eigenem Wert,

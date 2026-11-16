@@ -23,8 +23,8 @@ oder über einer Regel (dann für die ganze Regel); im Markup als `<!-- Ausnahme
 
 Geprüft werden CSS-, Svelte- und HTML-Dateien außerhalb von Entwürfen (`mockups`, `docs`), Abhängigkeiten und
 Gebautem. Die Marken selbst sind die Wahrheit und bleiben frei, ebenso die Marken einer Vorlage
-(`oberflaeche/stil/vorlagen/<name>/marken.css`): ihre Werte für ein anderes Aussehen; die Bausteine der Vorlage daneben
-werden geprüft wie jeder Stil. Ob ein Befund den Commit aufhält, sagt
+(`oberflaeche/stil/vorlagen/<name>/marken.css`): ihre Werte für ein anderes Aussehen, und die Marken der Instrumente
+(`oberflaeche/stil/instrumente/marken.css`); die Bausteine daneben werden geprüft wie jeder Stil. Ob ein Befund den Commit aufhält, sagt
 `gestaltung.toml` im Wurzelordner (`marken = "scharf"`); ohne diese Angabe wird nur gemeldet, damit eine App erst
 sauber wird und dann scharf geschaltet werden kann.
 """
@@ -43,6 +43,8 @@ from .stil import deklarationen, regeln
 MARKEN_IM_APPKERN = Path("oberflaeche") / "stil" / "marken.css"
 #: Marken einer Vorlage (vorlagen/<name>/marken.css): die Werte eines anderen Aussehens, frei wie die Marken selbst
 VORLAGEN = Path("oberflaeche") / "stil" / "vorlagen"
+#: Marken der Instrumente (Regler, Leuchten, Anzeigen): ihre Werte, frei wie die Marken des Appkerns
+MARKEN_DER_INSTRUMENTE = Path("oberflaeche") / "stil" / "instrumente" / "marken.css"
 MARKEN_IM_PAKET = Path("frontend") / "node_modules" / "appkern-oberflaeche" / "oberflaeche" / "stil" / "marken.css"
 EINSTELLUNG = "gestaltung.toml"
 Strenge = Literal["melden", "scharf"]
@@ -130,7 +132,7 @@ def gehoert_zum_stil(p: Path, wurzel: Path) -> bool:
         return False
     pfad = Path(*teile)
     vorlagen_marken = pfad.name == "marken.css" and pfad.parent.parent == VORLAGEN
-    return pfad != MARKEN_IM_APPKERN and not vorlagen_marken
+    return pfad not in (MARKEN_IM_APPKERN, MARKEN_DER_INSTRUMENTE) and not vorlagen_marken
 
 
 # ----- Werte -----

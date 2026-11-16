@@ -1,0 +1,113 @@
+/* Marken der Instrumente (Regler, Taster, Leuchten, Anzeigen): ihre eine Wahrheit für Maße, Flächen, Licht und
+   Leuchtfarben, wie stil/marken.css für das Grunddesign. Die Bausteine daneben (instrumente/bausteine.css) nutzen nur
+   diese Marken und die des Appkerns. Im Grunddesign flach; eine Vorlage (etwa HiFi) gibt den Instrumenten Material,
+   Licht und Tiefe, indem sie diese Marken neu setzt (vorlagen/hifi/marken.css), nie über eigene Regeln je Baustein.
+   Übernommen aus hifi-regler (appkern/instrumente.css, Stand 9a7c0fe vom 09.11.2026, RAD-6).
+
+   Die Marken stehen an der Wurzel und an jedem Teil mit eigenem Thema: dort rechnen sie mit dessen Farben neu. */
+:root, [data-theme] {
+  /* == Maße == */
+  --ak-zelle-min: 88px;           /* schmalste Zelle eines Reglers im Raster; darunter bricht die Reihe um */
+  --ak-spalten: 4;                /* höchstens so viele Regler nebeneinander */
+  --ak-luecke: 10px;              /* Abstand der Zellen */
+  --ak-d-min: 40px;               /* kleinste Kappe */
+  --ak-d-anteil: 0.72;            /* Kappe im Verhältnis zur Zelle */
+  --ak-d-max: 112px;              /* größte Kappe */
+  --ak-treffer: 44px;             /* kleinste Trefferfläche (Finger) */
+  --ak-led-d: 12px;               /* Leuchte mittel */
+  --ak-glastaster-symbol: 20px;   /* Symbol auf einem Glastaster (Kasten fester Größe, wächst nicht mit der Schrift) */
+  --ak-schlitz-b: 16px;           /* Tastenlicht: Breite des Lichtschlitzes in der oberen Tastenkante */
+  --ak-schlitz-h: 4px;            /* Tastenlicht: Höhe des Lichtschlitzes */
+  --ak-schlitz-oben: 5px;         /* Tastenlicht: Abstand des Schlitzes von der oberen Kante der Taste */
+  --ak-tastenreihe-h: 56px;       /* Höhe jeder Taste in einer Tastenreihe: alle gleich hoch, Hervorhebung nur über Licht */
+
+  /* == Flächen == im Grunddesign flach, die Vorlage setzt Material */
+  --ak-front: var(--flaeche);                 /* Front eines Geräts */
+  --ak-front-bild: none;                      /* Struktur der Front: Bürstung, Körnung */
+  --ak-front-licht: none;                     /* Licht über der Front: oben heller, unten dunkler */
+  --ak-tinte: var(--text);                    /* Beschriftung auf der Front */
+  --ak-tinte-2: var(--text-2);                /* Nebenbeschriftung auf der Front */
+  --ak-kante: 0 0 0 1px var(--rand);          /* Kante eines Geräts */
+  --ak-tiefe: var(--schatten);                /* Schatten eines Geräts */
+  --ak-mulde: var(--mulde);                   /* eingelassen: Schiene, Fassung, Schlitz */
+  --ak-mulde-tiefe: inset 0 0 0 1px var(--rand); /* Innenschatten der Mulde */
+  --ak-mulde-tinte: var(--text-2);            /* Schrift in der Mulde (Schiebeschalter) */
+  --ak-mulde-tinte-an: var(--text);           /* gewählte Schrift in der Mulde */
+  --ak-glas: #0b0f14;                         /* Anzeigeglas: in beiden Themen dunkel, Leuchtschrift braucht Nacht */
+  --ak-glas-tinte: #d8e2ee;                   /* Schrift hinter dem Glas */
+  --ak-glas-bild: none;                       /* Spiegelung über dem Glas */
+  --ak-glas-tiefe: inset 0 0 0 1px rgba(255, 255, 255, 0.08); /* Fassung des Glases */
+  --ak-kappe: var(--flaeche-2);               /* Deckel eines Drehreglers */
+  --ak-kappe-bild: none;                      /* Drehschliff des Deckels */
+  --ak-kappe-glanz-bild: radial-gradient(circle at 34% 26%, rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 38%),
+                         radial-gradient(circle at 50% 50%, transparent 62%, rgba(255, 255, 255, .10) 64%, transparent 70%); /* Glanzlicht oben links auf der Kappe (Deckkraft über --ak-glanz) */
+  --ak-riffel: var(--rand-stark);             /* Riffelrand (Farbe) */
+  --ak-riffel-bild: none;                     /* Riffelrand (Muster, dreht mit) */
+  --ak-kappe-schatten: 0 1px 2px color-mix(in srgb, var(--schattenfarbe) 30%, transparent); /* kleine Teile: Griff, Taster, Mutter */
+  --ak-tiefe-n: .25;                          /* Tiefe der Drehkappe (0 bis 1); Schattenlänge folgt dem Durchmesser */
+  --ak-weich-n: 1;                            /* Weichheit ihres Schattens */
+  --ak-zeiger: var(--text);                   /* Zeigerstrich auf der Kappe */
+  --ak-metall: var(--flaeche-2);              /* Chrom an Tastern, Muttern, Schrauben, Hebeln */
+  --ak-metall-bild: none;
+  --ak-glanz: 0;                              /* Deckkraft der Glanzlichter (0 bis 1) */
+  /* Lichtmodell der Teile: Licht oben links; ein Teil wirft je Millimeter Höhe so weit Schatten (mal Tiefe der Stufe) */
+  --ak-mm-x: calc(1px * var(--ak-tiefe-n));   /* nach rechts je Millimeter */
+  --ak-mm-y: calc(1.5px * var(--ak-tiefe-n)); /* nach unten je Millimeter */
+  --ak-leuchten: 0.35;                        /* Stärke des Überstrahlens (0 bis 1) */
+  --ak-skala: var(--text-3);                  /* Skalenstriche */
+  --ak-bahn: var(--rand-stark);               /* Bahn unter dem Wertbogen */
+  --ak-wert: var(--akzent-flaeche);           /* Wertbogen, Füllung, Griff */
+  --ak-mod: var(--tuerkis);                   /* Modulation (Steuerung türkis) */
+  --ak-farbe: var(--akzent-flaeche);          /* Farbe des Geräts (Modul); die App setzt sie */
+  --ak-auf-farbe: var(--auf-akzent);          /* Schrift auf der Gerätefarbe (Schild); die App setzt sie mit der Farbe als Paar */
+  --ak-aktiv: var(--akzent);                  /* Schrift im aktiven Zustand (gezogen, Fokus) auf der Front; folgt der Front, nicht nur dem Thema */
+  --ak-auswahl-licht: color-mix(in srgb, var(--akzent-flaeche) 22%, rgb(255 255 255 / .16)); /* Lichtkegel über dem gewählten Regler */
+  --ak-lack: var(--flaeche-2);                /* Lack der Front in kleinen Bauformen; die App setzt ihn */
+  --ak-lack-tinte: var(--text);               /* Schrift auf dem Lack */
+
+  /* == Teile == feste Bauteile, in beiden Themen gleich: Muttern, Hebel, Fassungen, Wahltasten auf dunklem Glas */
+  --ak-kipp-loch: radial-gradient(circle, #111111 0 40%, #3a3d42 100%); /* Bohrung in der Mutter des Kippschalters */
+  --ak-riffelung: repeating-linear-gradient(90deg, transparent 0 3px, rgba(0, 0, 0, .22) 3px 4px); /* Rillen auf dem Schieber eines Schiebeschalters */
+  --ak-wahl-taste: #1a1f26;                   /* Wahltaste auf dem Glas, nicht gewählt */
+  --ak-wahl-tinte: #8b97a6;                   /* Schrift einer nicht gewählten Wahltaste */
+  --ak-wahl-taste-an: #12161b;                /* gewählte Wahltaste: eingedrückt */
+  --ak-wahl-taste-an-schatten: inset 0 2px 4px rgba(0, 0, 0, .6); /* eingedrückte Wahltaste */
+  --ak-led-fassung-hell: #3a3f46;             /* dunkle Leuchte: Glanzpunkt der Kuppel */
+  --ak-led-fassung-dunkel: #0b0d10;           /* dunkle Leuchte: Grund der Kuppel */
+  --ak-glastaster-kante: 0 0 0 1px rgba(255, 255, 255, .3); /* Kante eines leuchtenden Glastasters */
+  --ak-glastaster-glut: inset 0 0 12px rgba(255, 255, 255, .35); /* Glut im Inneren eines leuchtenden Glastasters */
+
+  /* == Licht == */
+  --ak-licht-kern: #ffffff;                   /* heißer Kern eines Lichts: Mitte einer Leuchte, Leuchtgriff, Leuchtschrift */
+  --ak-licht-grund: #000000;                  /* Rand eines Lichts: dunkelt die Leuchtfarbe zur Kante ab */
+
+  /* == Zeigerinstrument == beleuchtete Skala aus Papier, gedruckt wie ein echtes Messgerät */
+  --ak-zeiger-skala: #ffd27a;                 /* Grundfarbe der beleuchteten Skala */
+  --ak-zeiger-licht: radial-gradient(ellipse 90% 80% at 50% 100%, rgb(255 250 235 / .7) 0%, rgb(255 250 235 / .3) 55%, rgb(60 40 10 / .3) 100%); /* Licht von unten hinter der Skala */
+  --ak-zeiger-druck: #2b2116;                 /* Druckfarbe der Skala: Bogen, Striche, Zahlen, Name */
+  --ak-zeiger-rot: #c3261b;                   /* Bereich über dem Bezugspegel (Bogen und Striche) */
+  --ak-zeiger-rot-text: #a11c12;              /* Zahlen im roten Bereich */
+  --ak-zeiger-nadel: #1b130b;                 /* Zeigernadel */
+
+  /* == Leuchtfarben == in beiden Themen gleich: Licht ist Licht */
+  --led-rot: #ff3b30;
+  --led-gruen: #36e46f;
+  --led-bernstein: #ffae1a;
+  --led-gelb: #ffe14a;
+  --led-blau: #3d8bff;
+  --led-weiss: #f4f8ff;
+  --led-tuerkis: #2ee6d6;
+  --led-violett: #b76bff;
+  --led-cyan: #5ff2ff;
+  --pegel-gut: var(--led-gruen);
+  --pegel-warn: var(--led-gelb);
+  --pegel-spitze: var(--led-rot);
+}
+
+/* == Abgeleitet == rechnen mit dem Glanz der Stufe; an jedem Teil neu, das Thema oder Stufe ändert (data-effekte der
+   Vorlage HiFi), damit ein Vergleich in Stufen auf einer Seite stimmt */
+:root, [data-theme], [data-effekte] {
+  --ak-mutter-licht: linear-gradient(160deg, rgba(255, 255, 255, calc(.35 * var(--ak-glanz))), rgba(0, 0, 0, .35)); /* Licht auf der Sechskantmutter des Fußtasters */
+  --ak-hebel-bild: linear-gradient(90deg, rgba(0, 0, 0, .25), rgba(255, 255, 255, calc(.55 * var(--ak-glanz))) 40%, rgba(0, 0, 0, .3)); /* runder Hebel: Licht von links */
+  --ak-wahl-taste-schatten: inset 0 1px 0 rgba(255, 255, 255, calc(.10 * var(--ak-glanz))), 0 1px 2px rgba(0, 0, 0, .5); /* erhabene Wahltaste */
+}

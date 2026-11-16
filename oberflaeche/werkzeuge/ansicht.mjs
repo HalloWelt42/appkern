@@ -32,7 +32,8 @@
 //   { "name": "plan", "abfrage": "/api/v1/plaene?anzahl=1", "pfad": "/vertonen/{eintraege.0.id}" }
 // Gibt die Abfrage keinen Wert her, ist das ein Befund (die Seite fehlt sonst still in der Prüfung).
 // --vorlage wählt eine Vorlage des Aussehens (lib/vorlage.svelte.ts, etwa futur) wie die App es auf dem Gerät tut; sie
-// wirkt nur ab 1000 Pixel, die Bilder tragen ihren Namen. Ohne Angabe gilt Klassisch.
+// wirkt ab 1000 Pixel oder, wenn die App vorlagen-alle-breiten.css lädt, in allen Breiten; die Bilder tragen ihren
+// Namen. Ohne Angabe gilt Klassisch.
 // Entwürfe ohne Backend (Ordner mockups einer App): eigene Seitenliste mit --seiten und darin "anmeldung": false; dann
 // fragt die Prüfung die App nicht ab und meldet sich nicht an, das Thema setzt sie wie sonst über appkern_anzeige.
 // Angemeldet wird mit dem Testzugang aus backend/.env.test (KELLERWOLKE_KENNUNG, KELLERWOLKE_PASSWORT; gleichnamige

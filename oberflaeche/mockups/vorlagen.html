@@ -6,7 +6,8 @@
     <title>Appkern - Vorlagen</title>
     <!-- Entwürfe der Vorlagen: eine typische Seite einer App im Leitstand mit den echten Stilen des Appkerns
          (leitstand, auswahl, hilfe) und der Vorlagen (stil/vorlagen.css); das Markup folgt den Bausteinen in
-         teile/ und gestaltung/katalog.json. Unten rechts lassen sich Vorlage, Thema und Hilfefenster umschalten.
+         teile/ und gestaltung/katalog.json. Unten rechts lassen sich Vorlage, Thema, Schriftstufe, die Breiten der
+         Vorlage (nur Rechner wie vorlagen.css oder alle wie vorlagen-alle-breiten.css) und das Hilfefenster umschalten.
          Servieren aus der Wurzel des Appkerns (wegen node_modules):
          python3 -m http.server 8691 --directory ~/Entwicklung/Werkzeuge/Appkern
          dann http://localhost:8691/oberflaeche/mockups/vorlagen.html -->
@@ -26,7 +27,7 @@
     <link rel="stylesheet" href="../stil/leitstand.css" />
     <link rel="stylesheet" href="../stil/auswahl.css" />
     <link rel="stylesheet" href="../stil/hilfe.css" />
-    <link rel="stylesheet" href="../stil/vorlagen.css" />
+    <link rel="stylesheet" href="../stil/vorlagen.css" data-mock-vorlagen />
     <style>
       /* Nur für den Entwurf: Anordnung der Beispielseite und die Umschaltleiste; alles andere kommt aus dem Appkern */
       .mock-symbol { width: 34px; height: 34px; display: inline-grid; place-items: center; flex: none; border-radius: var(--r2);
@@ -37,7 +38,7 @@
       :where(.seite) button.navi { border: 0; background: none; font: inherit; color: var(--text-2); cursor: pointer; text-align: left; width: 100%; }
       .mock-reiter { margin: var(--a4) 0 0; }
       .filter .mock-filtersuche { height: 36px; max-width: 240px; }
-      .mock-streifen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--a3); margin-bottom: var(--a4); }
+      .mock-streifen { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11em), 1fr)); gap: var(--a3); margin-bottom: var(--a4); }
       .mock-spalte { padding: var(--a3); min-width: 0; }
       .mock-spaltenkopf { display: flex; align-items: center; gap: var(--a2); margin-bottom: var(--a3); }
       .mock-spaltenkopf .zaehler { margin-left: auto; }
@@ -59,7 +60,8 @@
       .mock-balken .balken { grid-column: 1 / -1; }
 
       .hilfe-fenster[hidden], .mock-leiste[hidden] { display: none; }
-      .mock-leiste { position: fixed; z-index: 80; right: var(--a4); bottom: calc(var(--fuss-hoehe) + var(--a3)); display: flex; align-items: center; gap: var(--a2);
+      .mock-leiste { position: fixed; z-index: 80; right: var(--a4); bottom: calc(var(--fuss-hoehe) + var(--a3)); display: flex; flex-wrap: wrap; align-items: center; gap: var(--a2);
+                     max-width: calc(100vw - 2 * var(--a4));
                      padding: var(--a2) var(--a3); background: var(--flaeche); border: 1px solid var(--rand-stark); border-radius: var(--r2);
                      box-shadow: var(--schatten-schwebend); }
       .mock-leiste .etikett { margin-right: var(--a1); }
@@ -341,14 +343,18 @@
 
     <div class="mock-leiste" role="group" aria-label="Entwurf umschalten">
       <span class="etikett">Entwurf</span>
-      <span class="stufen" aria-label="Vorlage"><button type="button" data-vorlage-wahl="klassisch">Klassisch</button><button type="button" data-vorlage-wahl="futur">Futur</button><button type="button" data-vorlage-wahl="papyrus">Papyrus</button><button type="button" data-vorlage-wahl="klar">Klar</button><button type="button" data-vorlage-wahl="plakat">Plakat</button><button type="button" data-vorlage-wahl="glas">Glas</button></span>
+      <span class="stufen" aria-label="Vorlage"><button type="button" data-vorlage-wahl="klassisch">Klassisch</button><button type="button" data-vorlage-wahl="futur">Futur</button><button type="button" data-vorlage-wahl="papyrus">Papyrus</button><button type="button" data-vorlage-wahl="klar">Klar</button><button type="button" data-vorlage-wahl="plakat">Plakat</button><button type="button" data-vorlage-wahl="glas">Glas</button><button type="button" data-vorlage-wahl="hifi">HiFi</button></span>
       <span class="stufen" aria-label="Thema"><button type="button" data-thema-wahl="hell">Hell</button><button type="button" data-thema-wahl="dunkel">Dunkel</button></span>
+      <span class="stufen" aria-label="Schriftstufe"><button type="button" data-schrift-wahl="klein">Klein</button><button type="button" data-schrift-wahl="mittel">Mittel</button><button type="button" data-schrift-wahl="gross">Groß</button><button type="button" data-schrift-wahl="sehr-gross">Sehr groß</button></span>
+      <span class="stufen" aria-label="Breiten der Vorlage"><button type="button" data-breiten-wahl="rechner">Rechner</button><button type="button" data-breiten-wahl="alle">Alle Breiten</button></span>
       <button class="knopf klein" type="button" data-mock="hilfe"><i class="fa-solid fa-circle-question"></i>Hilfe</button>
     </div>
 
     <script>
       // Nur für den Entwurf: Vorlage, Thema, Hilfefenster und Seitenleiste umschalten; Startwerte auch über die Adresse
-      // (?vorlage=klassisch&thema=hell&hilfe=aus&leiste=schmal&umschalter=aus), damit sich jede Fassung direkt aufnehmen lässt.
+      // (?vorlage=klassisch&thema=hell&schrift=sehr-gross&breiten=alle&hilfe=aus&leiste=schmal&umschalter=aus), damit sich
+      // jede Fassung direkt aufnehmen lässt. breiten=alle lädt vorlagen-alle-breiten.css statt vorlagen.css (Vorlage auch
+      // am Telefon, wie eine App, die das wählt).
       const wurzel = document.documentElement;
       const adresse = new URLSearchParams(location.search);
       const hilfe = document.querySelector("[data-mock-hilfe]");
@@ -365,6 +371,14 @@
         wurzel.dataset.theme = wert;
         for (const b of document.querySelectorAll("[data-thema-wahl]")) b.classList.toggle("an", b.dataset.themaWahl === wert);
       }
+      function schrift(wert) {
+        wurzel.dataset.schrift = wert;
+        for (const b of document.querySelectorAll("[data-schrift-wahl]")) b.classList.toggle("an", b.dataset.schriftWahl === wert);
+      }
+      function breiten(wert) {
+        document.querySelector("[data-mock-vorlagen]").href = wert === "alle" ? "../stil/vorlagen-alle-breiten.css" : "../stil/vorlagen.css";
+        for (const b of document.querySelectorAll("[data-breiten-wahl]")) b.classList.toggle("an", b.dataset.breitenWahl === wert);
+      }
       function hilfeZeigen(an) {
         hilfe.hidden = !an;
         for (const b of document.querySelectorAll(".kopf [data-mock=hilfe], .seite [data-mock=hilfe]")) b.classList.toggle("aktiv", an);
@@ -378,11 +392,15 @@
 
       for (const b of document.querySelectorAll("[data-vorlage-wahl]")) b.addEventListener("click", () => vorlage(b.dataset.vorlageWahl));
       for (const b of document.querySelectorAll("[data-thema-wahl]")) b.addEventListener("click", () => thema(b.dataset.themaWahl));
+      for (const b of document.querySelectorAll("[data-schrift-wahl]")) b.addEventListener("click", () => schrift(b.dataset.schriftWahl));
+      for (const b of document.querySelectorAll("[data-breiten-wahl]")) b.addEventListener("click", () => breiten(b.dataset.breitenWahl));
       for (const b of document.querySelectorAll("[data-mock=hilfe]")) b.addEventListener("click", () => hilfeZeigen(hilfe.hidden));
       leisteKnopf.addEventListener("click", () => seitenleiste(wurzel.dataset.seitenleiste === "schmal" ? "breite" : "schmal"));
 
       vorlage(adresse.get("vorlage") ?? "futur");
       thema(adresse.get("thema") ?? "dunkel");
+      schrift(adresse.get("schrift") ?? "klein");
+      breiten(adresse.get("breiten") === "alle" ? "alle" : "rechner");
       hilfeZeigen(adresse.get("hilfe") !== "aus");
       document.querySelector(".mock-leiste").hidden = adresse.get("umschalter") === "aus";
       seitenleiste(adresse.get("leiste") ?? "breite");

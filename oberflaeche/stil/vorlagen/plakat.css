@@ -1,8 +1,8 @@
 /* Vorlage Plakat: mutig, mit kräftigen Konturen, harten versetzten Schatten, satten Farbflächen und schweren Titeln,
-   dabei gut lesbar. Umschaltbar über data-vorlage="plakat" am Wurzelelement, nur auf dem Rechner (ab 1000 Pixel); ohne
-   das Merkmal bleibt das Grunddesign unverändert. Laden nach leitstand.css und hilfe.css. Die schweren Schnitte der
-   Grundschrift (800, 900) tragen Titel, Etiketten und Marke.
-   Entwurf zum Ansehen: oberflaeche/mockups/vorlagen.html?vorlage=plakat. */
+   dabei gut lesbar. Umschaltbar über data-vorlage="plakat" am Wurzelelement; die Breite regelt der Einstieg
+   (vorlagen.css ab 1000 Pixel, vorlagen-alle-breiten.css in allen Breiten); ohne das Merkmal bleibt das Grunddesign
+   unverändert. Laden nach leitstand.css und hilfe.css. Die schweren Schnitte der Grundschrift (800, 900) tragen Titel,
+   Etiketten und Marke. Entwurf zum Ansehen: oberflaeche/mockups/vorlagen.html?vorlage=plakat. */
 @import "@fontsource/barlow/800.css";
 @import "@fontsource/barlow/900.css";
 @import "./plakat/marken.css";

@@ -1,9 +1,13 @@
-/* Vorlagen des Appkerns: andere Aussehen für Apps im Leitstand, nur auf dem Rechner (ab 1000 Pixel). Jede wirkt nur mit
-   ihrem Merkmal data-vorlage am Wurzelelement; ohne Merkmal gilt das Grunddesign (Klassisch). Laden nach leitstand.css
-   und hilfe.css; gewählt wird über lib/vorlage.svelte.ts. Hier stehen nur freigegebene Vorlagen; ein Entwurf lädt die
-   Musterseite oberflaeche/mockups/vorlagen.html einzeln dazu, bis er freigegeben ist. */
-@import "./vorlagen/futur.css";
-@import "./vorlagen/glas.css";
-@import "./vorlagen/papyrus.css";
-@import "./vorlagen/klar.css";
-@import "./vorlagen/plakat.css";
+/* Vorlagen des Appkerns: andere Aussehen für Apps im Leitstand, über diesen Einstieg nur auf dem Rechner (ab 1000
+   Pixel); am Telefon bleibt das Grunddesign. Eine App, die ihre Vorlage auch am Telefon zeigen will, lädt statt dieser
+   Datei vorlagen-alle-breiten.css (gleiche Vorlagen, ohne Grenze der Breite). Die Breite steht nur hier an den
+   Einbindungen, nie in den Vorlagen selbst. Jede wirkt nur mit ihrem Merkmal data-vorlage am Wurzelelement; ohne
+   Merkmal gilt das Grunddesign (Klassisch). Laden nach leitstand.css und hilfe.css (HiFi auch nach instrumente.css);
+   gewählt wird über lib/vorlage.svelte.ts. Hier stehen nur freigegebene Vorlagen; ein Entwurf lädt die Musterseite
+   oberflaeche/mockups/vorlagen.html einzeln dazu, bis er freigegeben ist. */
+@import "./vorlagen/futur.css" (min-width: 1000px);
+@import "./vorlagen/glas.css" (min-width: 1000px);
+@import "./vorlagen/papyrus.css" (min-width: 1000px);
+@import "./vorlagen/klar.css" (min-width: 1000px);
+@import "./vorlagen/plakat.css" (min-width: 1000px);
+@import "./vorlagen/hifi.css" (min-width: 1000px);

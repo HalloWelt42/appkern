@@ -1,0 +1,7 @@
+/* Instrumente des Appkerns (RAD-6, aus hifi-regler): Regler, Taster, Leuchten und Anzeigen. Einstieg für Apps, die
+   Instrumente nutzen (import "appkern-oberflaeche/instrumente.css" zusammen mit "appkern-oberflaeche/instrumente");
+   Apps ohne Instrumente laden nichts davon. Marken (Werte) und Bausteine (Formen) getrennt wie bei den Vorlagen; die
+   Bausteine nutzen nur Marken. Laden nach leitstand.css oder stil.css und vor den Vorlagen, damit eine Vorlage (HiFi)
+   die Marken der Instrumente setzen kann. */
+@import "./instrumente/marken.css";
+@import "./instrumente/bausteine.css";

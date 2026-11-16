@@ -1,0 +1,10 @@
+/* Vorlagen des Appkerns in allen Breiten, auch am Telefon: dieselben Vorlagen wie vorlagen.css, ohne Grenze der Breite.
+   Wahl je App (Nutzer 16.11.2026, RadioHub): eine App lädt genau einen der beiden Einstiege, entweder vorlagen.css (nur
+   ab 1000 Pixel, wie bisher) oder diesen. Apps, die nichts ändern, bleiben beim Rechner. Die Liste muss der in
+   vorlagen.css gleichen (python -m pytest tests/test_werkzeuge.py prüft das). */
+@import "./vorlagen/futur.css";
+@import "./vorlagen/glas.css";
+@import "./vorlagen/papyrus.css";
+@import "./vorlagen/klar.css";
+@import "./vorlagen/plakat.css";
+@import "./vorlagen/hifi.css";

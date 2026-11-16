@@ -1,0 +1,10 @@
+/* Vorlage HiFi: Material, Licht und Leuchten nach dem Vorbild von Effektgeräten und Studiotechnik; Geräte kräftig, Schale
+   ruhig. Umschaltbar über data-vorlage="hifi" am Wurzelelement; die Breite regelt der Einstieg (vorlagen.css ab 1000
+   Pixel, vorlagen-alle-breiten.css in allen Breiten). Stufen über data-effekte (flach, mittel, kraeftig), auch für einen
+   Teil der Seite. Ohne das Merkmal bleibt das Grunddesign unverändert. Laden nach leitstand.css, hilfe.css und, wenn die
+   App Instrumente nutzt, nach instrumente.css (die Vorlage setzt deren Marken --ak-*). Übernommen aus hifi-regler
+   (appkern/vorlagen/hifi, Stand 9a7c0fe vom 09.11.2026, RAD-6). Entwurf zum Ansehen:
+   oberflaeche/mockups/vorlagen.html?vorlage=hifi. */
+@import "@fontsource/barlow/700.css";
+@import "./hifi/marken.css";
+@import "./hifi/bausteine.css";
