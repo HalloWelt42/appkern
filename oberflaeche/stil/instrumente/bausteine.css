@@ -172,7 +172,7 @@ ak-schieber[art="fader"] .ak-schieber-fuellung { display: none; }
 ak-schieber[art="leuchte"] { --bahn-h: 16px; --griff: 24px; }
 ak-schieber[art="leuchte"] .ak-schieber-bahn { border-radius: var(--r1); background-color: var(--ak-glas); }
 ak-schieber[art="leuchte"] .ak-schieber-fuellung { border-radius: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--ak-wert) 55%, transparent), var(--ak-wert)); }
-ak-schieber[art="leuchte"] .ak-schieber-griff { background: radial-gradient(circle, var(--ak-licht-kern) 0 40%, color-mix(in srgb, var(--ak-wert) 70%, var(--ak-licht-kern)) 70%);
+ak-schieber[art="leuchte"] .ak-schieber-griff { background: radial-gradient(circle, var(--ak-wert) 0 55%, color-mix(in srgb, var(--ak-wert) 78%, var(--ak-licht-grund)) 100%);
   box-shadow: 0 0 calc(18px * var(--ak-leuchten)) var(--ak-wert), 0 0 0 2px color-mix(in srgb, var(--ak-wert) 40%, transparent); }
 /* Leuchtbalken: LED-Kette als Eingabe, kein Griff */
 ak-schieber[art="balken"] { --bahn-h: 18px; }
@@ -238,7 +238,7 @@ ak-led[art="schlitz"] { position: absolute; top: var(--ak-schlitz-oben); left: 5
 ak-led[art="schlitz"] .ak-led-licht { inline-size: var(--ak-schlitz-b); block-size: var(--ak-schlitz-h); border-radius: calc(var(--ak-schlitz-h) / 2);
   background: color-mix(in srgb, var(--farbe) 14%, var(--ak-glas)); box-shadow: var(--ak-mulde-tiefe); }
 ak-led[art="schlitz"] .ak-led-licht::after { border-radius: inherit;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--farbe) 45%, var(--ak-licht-kern)), var(--farbe));
+  background: linear-gradient(180deg, var(--farbe), color-mix(in srgb, var(--farbe) 82%, var(--ak-licht-grund)));
   box-shadow: 0 0 calc(8px * var(--ak-leuchten)) var(--farbe), 0 0 3px color-mix(in srgb, var(--farbe) 70%, transparent); }
 ak-led[art="schlitz"] .ak-led-text { display: none; }
 /* Tastenreihe: alle Tasten einer Reihe gleich hoch auf einer Linie, gleich welcher Art (runde Pillen- und Fußtaster
@@ -287,7 +287,8 @@ ak-led[groesse="gross"] { --d: 18px; }
   box-shadow: 0 0 0 max(1.5px, calc(var(--d) * .14)) var(--ak-metall), 0 1px 2px max(1.5px, calc(var(--d) * .14)) color-mix(in srgb, var(--schattenfarbe) 40%, transparent); }
 /* das Licht: eigene Ebene, die nur ihre Deckkraft ändert (blinken und atmen ohne Neuzeichnen) */
 .ak-led-licht::after { content: ""; position: absolute; inset: 0; border-radius: 50%; opacity: 0; transition: opacity var(--schnell);
-  background: radial-gradient(circle at 42% 38%, var(--ak-licht-kern) 0 14%, color-mix(in srgb, var(--farbe) 70%, var(--ak-licht-kern)) 30%, var(--farbe) 62%, color-mix(in srgb, var(--farbe) 75%, var(--ak-licht-grund)) 100%);
+  /* leuchtend ohne Glanzpunkt: die Farbe satt bis über die Mitte, zum Rand nur dunkler, nie heller */
+  background: radial-gradient(circle at 50% 50%, var(--farbe) 0 58%, color-mix(in srgb, var(--farbe) 78%, var(--ak-licht-grund)) 100%);
   box-shadow: 0 0 calc(var(--d) * .9 * var(--ak-leuchten)) var(--farbe), 0 0 calc(var(--d) * 2.6 * var(--ak-leuchten)) color-mix(in srgb, var(--farbe) 55%, transparent); }
 ak-led:is([zustand="an"], [zustand="blinkt"], [zustand="atmet"], [zustand="flackert"]) .ak-led-licht::after { opacity: 1; }
 ak-led[zustand="blinkt"] .ak-led-licht::after { animation: ak-blinkt 1s steps(1, end) infinite; }
@@ -319,13 +320,13 @@ ak-segmente[art="punkt"] { --seitenverhaeltnis: .75; }
 .ak-segmente-glas .an { fill: var(--farbe); }
 .ak-segmente-glas .schein { fill: none; stroke: var(--farbe); stroke-width: 7; stroke-linejoin: round; opacity: calc(var(--ak-leuchten) * .26); }
 .ak-segmente-glas .schein:not(.an) { display: none; }
-.ak-segmente-glas .kern { fill: color-mix(in srgb, var(--farbe) 45%, var(--ak-licht-kern)); opacity: calc(var(--ak-leuchten) * .55); }
+.ak-segmente-glas .kern { fill: var(--farbe); opacity: calc(var(--ak-leuchten) * .35); }
 .ak-segmente-glas .kern:not(.an) { display: none; }
 /* Leuchtschirm: echte Schrift hinter Glas (wie ein kleiner Bildschirm im Gerät) */
 .ak-schirmtext { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 10px 14px; min-block-size: 64px; text-align: center; }
 .ak-schirmtext b { font-family: var(--schrift-zahl); font-weight: 600; font-size: var(--titel); letter-spacing: .06em; color: var(--farbe, var(--led-cyan));
                    text-shadow: 0 0 calc(12px * var(--ak-leuchten)) var(--farbe, var(--led-cyan)); }
-.ak-schirmtext span { font-family: var(--schrift-zahl); font-size: var(--klein); color: color-mix(in srgb, var(--farbe, var(--led-cyan)) 65%, var(--ak-licht-kern)); }
+.ak-schirmtext span { font-family: var(--schrift-zahl); font-size: var(--klein); color: var(--farbe, var(--led-cyan)); }
 
 /* Zeigerinstrument: beleuchtete Skala, Zeiger dreht über transform */
 ak-zeiger { container: instrument / inline-size; display: block; inline-size: var(--ak-zelle, 100%); min-width: 0; --farbe: var(--ak-zeiger-skala); }

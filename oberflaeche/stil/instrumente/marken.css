@@ -89,16 +89,17 @@
   --ak-zeiger-rot-text: #a11c12;              /* Zahlen im roten Bereich */
   --ak-zeiger-nadel: #1b130b;                 /* Zeigernadel */
 
-  /* == Leuchtfarben == in beiden Themen gleich: Licht ist Licht */
-  --led-rot: #ff3b30;
-  --led-gruen: #36e46f;
-  --led-bernstein: #ffae1a;
-  --led-gelb: #ffe14a;
-  --led-blau: #3d8bff;
+  /* == Leuchtfarben == in beiden Themen gleich: Licht ist Licht. Satte, reine Töne wie echte Leuchtdioden, ohne
+     Weißanteil (Nutzer 17.11.2026: leuchtende LEDs haben sehr satte Farben, das Grün tief, nichts blass oder matt) */
+  --led-rot: #ff1a0d;
+  --led-gruen: #00d23c;
+  --led-bernstein: #ff9900;
+  --led-gelb: #ffd000;
+  --led-blau: #0066ff;
   --led-weiss: #f4f8ff;
-  --led-tuerkis: #2ee6d6;
-  --led-violett: #b76bff;
-  --led-cyan: #5ff2ff;
+  --led-tuerkis: #00d6c4;
+  --led-violett: #8f3cff;
+  --led-cyan: #00dcff;
   --pegel-gut: var(--led-gruen);
   --pegel-warn: var(--led-gelb);
   --pegel-spitze: var(--led-rot);
