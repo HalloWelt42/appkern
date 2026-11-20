@@ -155,7 +155,7 @@ ak-schieber[aria-disabled="true"] { --ak-wert: var(--ak-bahn); }
 ak-schieber[aria-disabled="true"] .ak-schieber-feld { cursor: default; }
 .ak-schieber-kopf { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .ak-schieber-kopf .ak-dreh-name { flex: 1; min-width: 0; }
-.ak-schieber-feld { position: relative; block-size: var(--ak-treffer); touch-action: pan-y; cursor: default; display: grid; align-items: center; }
+.ak-schieber-feld { position: relative; block-size: var(--ak-treffer); touch-action: pan-y; cursor: pointer; display: grid; align-items: center; }
 .ak-schieber-bahn { position: relative; block-size: var(--bahn-h); border-radius: 99px; background-color: var(--ak-mulde); box-shadow: var(--ak-mulde-tiefe); overflow: hidden; }
 /* Füllung über transform (nur Zusammensetzen, kein Layout); zweipolig ab der Mitte */
 .ak-schieber-fuellung { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(var(--a)); background: var(--ak-wert); border-radius: inherit; }

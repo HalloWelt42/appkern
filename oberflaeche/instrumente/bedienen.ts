@@ -2,8 +2,10 @@
 // Übernommen aus hifi-regler (appkern/instrumente.js, Stand 9a7c0fe vom 09.11.2026, RAD-6).
 //
 // Bedienung aller Regler:
-//   Maus: nur das Rad, sobald der Zeiger über dem Regler steht; ein Klick verstellt nichts (kein Ziehen, keine Vorgabe
-//   per Doppelklick, kein Sprung auf der Bahn), Nutzer 20.11.2026: "es soll nur scrollen per mausover, nicht per klick".
+//   Drehregler mit der Maus: nur das Rad, sobald der Zeiger darüber steht; ein Klick verstellt nichts (kein Ziehen,
+//   keine Vorgabe per Doppelklick), Nutzer 20.11.2026: "es soll nur scrollen per mausover, nicht per klick".
+//   Schieber (mit Bahn): auch mit der Maus Klick auf die Bahn und Ziehen am Griff, dazu das Rad (RAD-21: die Wahl der
+//   Mindestbitrate ging sonst nicht mehr).
 //   Finger und Stift: Ziehen hoch und runter (Schieber: entlang der Bahn), Doppeltipp: Vorgabe.
 //   Tastatur: Pfeiltasten, Bild auf und ab (zehnmal), Pos1 und Ende, Entf: Vorgabe; Umschalttaste hält: ein Zehntel
 //   (fein, auch beim Rad). Klick auf den Wert oder Eingabetaste: Wert eintippen. Jede Eingabe meldet sich als "input" am Element und als Ereignis "ak-eingabe" am
@@ -101,7 +103,7 @@ export function bedienen(ziel: ReglerZiel): void {
     if (gesperrt() || e.button > 0 || quelle.closest(".ak-eingabe")) return;
     if (quelle === ziel.wertFeld) return;      // Klick auf den Wert öffnet die Eingabe
     e.preventDefault();
-    if (e.pointerType === "mouse") return;      // mit der Maus dreht nur das Rad (oben); ein Klick verstellt nichts
+    if (e.pointerType === "mouse" && !ziel.bahn) return;   // Drehregler: mit der Maus dreht nur das Rad (unten)
     // kein Fokus beim Klick: Rad und Ziehen brauchen keinen, und ein Fokus aus dem Skript zählt im Browser als Fokus der
     // Tastatur, der Regler bliebe mit Rahmen stehen (Nutzer 20.11.2026: "niemals hängen bei klick")
     // Doppeltipp: Vorgabe (eigene Erkennung, weil dblclick bei Fingern unzuverlässig kommt)
