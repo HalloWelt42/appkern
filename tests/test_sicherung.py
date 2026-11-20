@@ -152,6 +152,17 @@ def test_werte_aus_den_einstellungen_der_app_gespeichert_vor_umgebung_vor_vorgab
     v.close()
 
 
+def test_feste_werte_gehen_wie_in_der_laufenden_app_vor(tmp_path):
+    pfad = tmp_path / "probe.sqlite"
+    v = datenbank(pfad)
+    v.execute("CREATE TABLE einstellung (schluessel TEXT PRIMARY KEY, wert TEXT NOT NULL, geaendert_am TEXT NOT NULL)")
+    v.execute("INSERT INTO einstellung VALUES ('sicherung_behalten', ?, 'x')", (json.dumps(5),))
+    umgebung = {"PROBE_SICHERUNG_BEHALTEN": "9", "PROBE_FEST_SICHERUNG_BEHALTEN": "3", "PROBE_FEST_SICHERUNG_ABSTAND_TAGE": "2"}
+    regel = regel_aus(nur_lesen(pfad, Grundeinstellungen, umgebung_praefix="PROBE_", umgebung=umgebung))
+    assert (regel.behalten, regel.abstand_tage) == (3, 2)        # fest vor gespeichert vor Umgebung
+    v.close()
+
+
 def test_aufruf_vor_dem_ausrollen_schreibt_nie_in_die_datenbank(tmp_path, monkeypatch, capsys):
     pfad = tmp_path / "daten" / "probe.sqlite"
     v = datenbank(pfad)

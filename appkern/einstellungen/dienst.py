@@ -126,9 +126,10 @@ def umgebung_vorsilbe(kennung: str) -> str:
 
 def nur_lesen(pfad: Path | str, modell: type[M], *, umgebung_praefix: str = "",
               umgebung: Mapping[str, str] | None = None) -> M:
-    """Der gültige Stand wie in der laufenden App (gespeichert, dann Umgebung, dann Vorgabe), nur lesend und ohne das
-    Schema einzurichten: für ein Werkzeug neben der laufenden App, etwa die Sicherung vor dem Ausrollen. Fehlen Datei
-    oder Tabelle, gelten Umgebung und Vorgabe."""
+    """Der gültige Stand wie in der laufenden App (fest, dann gespeichert, dann Umgebung, dann Vorgabe), nur lesend und
+    ohne das Schema einzurichten: für ein Werkzeug neben der laufenden App, etwa die Sicherung vor dem Ausrollen. Fehlen
+    Datei oder Tabelle, gelten fest, Umgebung und Vorgabe. Ohne die festen Werte fehlten einem Werkzeug im Betrieb die
+    Zugänge, die das Ausrollen setzt (etwa der Schlüssel der Kellerwolke)."""
     gespeichert: dict[str, Any] = {}
     datei = Path(pfad)
     if datei.is_file():
@@ -139,8 +140,10 @@ def nur_lesen(pfad: Path | str, modell: type[M], *, umgebung_praefix: str = "",
                                if s in modell.model_fields}
         finally:
             v.close()
-    werte = aus_umgebung(modell, umgebung_praefix, umgebung if umgebung is not None else os.environ)
-    return modell.model_validate({**werte, **gespeichert})
+    quelle = umgebung if umgebung is not None else os.environ
+    werte = aus_umgebung(modell, umgebung_praefix, quelle)
+    fest = aus_umgebung(modell, f"{umgebung_praefix}FEST_", quelle)
+    return modell.model_validate({**werte, **gespeichert, **fest})
 
 
 class Einstellungen(Generic[M]):
