@@ -47,7 +47,11 @@ ak-dreh {
   --a: 0; --winkel: calc(-135deg + var(--a) * 270deg);
 }
 ak-dreh.zieht { cursor: grabbing; }
-ak-dreh[aria-disabled="true"] { cursor: default; opacity: .45; }
+/* Gesperrt: nichts wird durchscheinend (Nutzer 20.11.2026: gesperrte Tasten und Drehregler dürfen den Hintergrund nicht
+   durchscheinen lassen); Kappe und Skala bleiben deckend, der Wertbogen erlischt, Zeiger und Beschriftung treten zurück */
+ak-dreh[aria-disabled="true"] { cursor: default; --ak-wert: var(--ak-bahn); --ak-zeiger: var(--ak-gesperrt-tinte); --ak-skala: var(--ak-bahn); }
+ak-dreh[aria-disabled="true"] .ak-dreh-skala .schein { display: none; }
+:is(ak-dreh, ak-schieber)[aria-disabled="true"] :is(.ak-dreh-name, .ak-dreh-wert, .ak-dreh-grenzen, .ak-schieber-grenzen, .ak-schieber-grenzen span.an) { color: var(--ak-gesperrt-tinte); }
 .ak-dreh-koerper { position: relative; inline-size: calc(var(--d) * 1.32); block-size: calc(var(--d) * 1.32); display: grid; place-items: center; }
 .ak-dreh-skala { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .ak-dreh-skala .bahn { fill: none; stroke: var(--ak-bahn); stroke-width: 3.2; stroke-linecap: round; }
@@ -114,9 +118,8 @@ ak-dreh:not([kappe="ring"]) .ak-dreh-skala .kranz { display: none; }
 /* Drehwahl mit Rasten: Namen rund um die Kappe ab einer Zelle, in der sie lesbar Platz haben */
 @container regler (min-width: 150px) { .ak-dreh-rastname { display: block; } ak-dreh[raster] .ak-dreh-koerper { margin: 18px 0 10px; } }
 /* Fokus und Ziehen: Ring um die Kappe, Wert hervorgehoben */
-/* Auswahl und Fokus aller Bedienelemente: kein Rahmen und keine Markierung im
-   Element; ein weicher Lichtkegel fällt auf die Front hinter dem gewählten Element, wie eine kleine Leuchte über dem Pult.
-   Gilt für den Fokus der Tastatur, beim Ziehen und für ein gewähltes Element (Attribut `gewaehlt`, etwa der Regler, den ein
+/* Auswahl aller Bedienelemente: keine Markierung im Element; ein weicher Lichtkegel fällt auf die Front hinter dem
+   gewählten Element, wie eine kleine Leuchte über dem Pult. Gilt beim Ziehen und für ein gewähltes Element (Attribut `gewaehlt`, etwa der Regler, den ein
    Inspektor zeigt). Das Licht ist eine Fläche innerhalb des Elements mit weichem Schein (box-shadow): so ragt nichts über
    den Rand hinaus, das die Rollfläche vergrößert (Schein ist kein größeres Element). Lage und Größe je Bauform über
    --licht-flaeche (inset), --licht-weich (Unschärfe) und --licht-weite (Ausdehnung). */
@@ -131,10 +134,12 @@ ak-schieber[richtung="senkrecht"] { --licht-flaeche: 6% 30% 22%; --licht-weich: 
 ak-kipp { --licht-flaeche: 14% 22% 32%; --licht-weich: 24px; --licht-weite: 8px; }
 ak-taster { --licht-flaeche: 6% 4% 24%; --licht-weich: 34px; --licht-weite: 22px; }
 ak-wahl { --licht-flaeche: 30% 4% 4%; --licht-weich: 32px; --licht-weite: 20px; }
-:is(ak-dreh, ak-schieber):is(:focus-visible, .zieht, [gewaehlt])::before,
-:is(ak-taster, ak-kipp, ak-wahl):is(:has(:focus-visible), [gewaehlt])::before { opacity: 1; }
-/* die allgemeine Fokusregel der Schale (Rahmen) gilt für die Bedienelemente nicht */
-:is(ak-dreh, ak-schieber):focus-visible, :is(.ak-taster-knopf, .ak-kipp-knopf, .ak-wahl-reihe button):focus-visible { outline: none; }
+:is(ak-dreh, ak-schieber):is(.zieht, [gewaehlt])::before,
+:is(ak-taster, ak-kipp, ak-wahl)[gewaehlt]::before { opacity: 1; }
+/* Fokus der Tastatur: ein schmaler neutraler Rahmen, kein Licht (Nutzer 20.11.2026: "das erscheinen des gelben
+   leuchtens focussierter tasten muss raus") */
+:is(ak-dreh, ak-schieber):focus-visible, :is(.ak-taster-knopf, .ak-kipp-knopf, .ak-wahl-reihe button):focus-visible {
+  outline: 1px solid var(--ak-fokus-rand); outline-offset: 3px; border-radius: var(--r2); }
 ak-dreh:is(.zieht, :focus-visible) .ak-dreh-wert { color: var(--ak-aktiv); }
 .ak-eingabe { font: inherit; font-family: var(--schrift-zahl); font-size: max(17px, var(--klein)); inline-size: 100%; max-inline-size: 9em; text-align: center;
               border: 0; border-radius: var(--r1); padding: 2px 4px; background: var(--ak-glas); color: var(--ak-glas-tinte); outline: 2px solid var(--akzent-flaeche); }
@@ -144,7 +149,8 @@ ak-schieber {
   container: regler / inline-size; inline-size: var(--ak-zelle, 100%); min-width: 0; display: flex; flex-direction: column; gap: 6px;
   user-select: none; -webkit-user-select: none; outline: none; --a: 0; --griff: 22px; --bahn-h: 10px;
 }
-ak-schieber[aria-disabled="true"] { opacity: .45; }
+ak-schieber[aria-disabled="true"] { --ak-wert: var(--ak-bahn); }
+ak-schieber[aria-disabled="true"] .ak-schieber-feld { cursor: default; }
 .ak-schieber-kopf { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .ak-schieber-kopf .ak-dreh-name { flex: 1; min-width: 0; }
 .ak-schieber-feld { position: relative; block-size: var(--ak-treffer); touch-action: pan-y; cursor: pointer; display: grid; align-items: center; }
@@ -224,6 +230,12 @@ ak-taster[art="glas"] .ak-taster-knopf { inline-size: 56px; block-size: 56px; pa
   background-color: color-mix(in srgb, var(--farbe, var(--led-rot)) 22%, var(--ak-glas)); color: color-mix(in srgb, var(--farbe, var(--led-rot)) 60%, var(--ak-licht-kern)); }
 ak-taster[art="glas"][an] .ak-taster-knopf { background-color: var(--farbe, var(--led-rot)); color: var(--ak-licht-kern);
   box-shadow: var(--ak-glastaster-kante), 0 0 calc(24px * var(--ak-leuchten)) var(--farbe, var(--led-rot)), var(--ak-glastaster-glut); }
+
+/* Gesperrte Taster: deckend, aber als eigene Bauform (Nutzer 20.11.2026: "inaktive tasten müssen andere optische
+   repräsentation bekommen"): die Kappe liegt versenkt in der Mulde, matt und ohne Glanz, Symbol und Schrift treten
+   zurück; das Tastenlicht bleibt aus (vor den Vorlagen, darum mit :root) */
+:root ak-taster .ak-taster-knopf:disabled { cursor: default; color: var(--ak-gesperrt-tinte); background-color: var(--ak-kappe-gesperrt); background-image: none;
+  box-shadow: var(--ak-mulde-tiefe); transform: none; }
 
 /* ═══ Tastenlicht ═══ eingelassene Leuchte als Lichtschlitz in der oberen Kante einer Taste (Nutzer 16.11.2026, RAD-3:
    "achte hier auf gleichhohe tasten", "integrier die mini LED in die taste"). Die Leuchte liegt in der Taste und nimmt

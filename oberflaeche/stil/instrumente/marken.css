@@ -27,6 +27,9 @@
   --ak-front-licht: none;                     /* Licht über der Front: oben heller, unten dunkler */
   --ak-tinte: var(--text);                    /* Beschriftung auf der Front */
   --ak-tinte-2: var(--text-2);                /* Nebenbeschriftung auf der Front */
+  --ak-gesperrt-tinte: var(--text-3);
+  --ak-kappe-gesperrt: var(--ak-mulde);       /* versenkte Kappe eines gesperrten Tasters */         /* Beschriftung, Symbol und Zeiger gesperrter Bedienteile (Teile bleiben deckend) */
+  --ak-fokus-rand: var(--text-3);             /* Rahmen um ein Bedienteil im Fokus der Tastatur (kein Licht) */
   --ak-kante: 0 0 0 1px var(--rand);          /* Kante eines Geräts */
   --ak-tiefe: var(--schatten);                /* Schatten eines Geräts */
   --ak-mulde: var(--mulde);                   /* eingelassen: Schiene, Fassung, Schlitz */

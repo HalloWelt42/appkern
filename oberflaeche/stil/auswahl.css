@@ -33,7 +33,6 @@
               background: var(--flaeche); color: var(--text-2); font: inherit; font-size: var(--klein); cursor: pointer; }
 .paar-knopf:hover:not(:disabled) { color: var(--text); background: var(--akzent-weich); }
 .paar-knopf.dazu:not(:disabled) { color: var(--akzent); }
-.paar-knopf:disabled { opacity: .45; cursor: default; }
 .paar-leer { font-size: var(--klein); color: var(--text-3); }
 @media (max-width: 600px) {
   .paar-zeile { grid-template-columns: minmax(0, 1fr) 38px; }

@@ -195,7 +195,6 @@ code, .code { font-family: var(--schrift-code); font-size: 0.92em; background: v
 .knopf.klein { height: 36px; padding: 0 var(--a3); }
 .knopf.symbol { width: 42px; padding: 0; }
 .knopf.symbol.klein { width: 36px; }
-.knopf[disabled], .knopf.gesperrt { opacity: 0.45; cursor: not-allowed; }
 
 /* Zähler und Etiketten */
 .zaehler {

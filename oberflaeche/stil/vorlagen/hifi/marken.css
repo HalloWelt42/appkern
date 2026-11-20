@@ -109,6 +109,7 @@
   --ak-tiefe: var(--hifi-schatten-geraet);
   --ak-mulde: #0c0e11;
   --ak-mulde-tiefe: var(--hifi-mulde);
+  --ak-kappe-gesperrt: color-mix(in srgb, var(--hifi-metall-front) 80%, #000); /* versenkt in die Front, nicht dunkles Glas */
   --ak-mulde-tinte: #b7c1cc;
   --ak-mulde-tinte-an: #ffffff;
   --ak-glas: #07090c;

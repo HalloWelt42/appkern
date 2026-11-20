@@ -91,7 +91,9 @@
 }
 :root[data-vorlage="hifi"] :is(.knopf, .auswahl-knopf, .rund):hover:not(:disabled) { background-color: var(--karte-2); }
 :root[data-vorlage="hifi"] :is(.knopf, .auswahl-knopf, .rund):active:not(:disabled) { transform: translateY(1px); box-shadow: var(--hifi-mulde); background-image: none; }
-:root[data-vorlage="hifi"] .knopf:is(.primaer, .haupt) { background-color: var(--akzent-flaeche);
+/* gesperrt: versenkt und matt statt erhaben (wie die gesperrten Taster) */
+:root[data-vorlage="hifi"] :is(.knopf, .auswahl-knopf, .rund):is(:disabled, .gesperrt) { background-image: none; box-shadow: var(--hifi-mulde); }
+:root[data-vorlage="hifi"] .knopf:is(.primaer, .haupt):not(:disabled, .gesperrt) { background-color: var(--akzent-flaeche);
   box-shadow: var(--hifi-lichtkante-primaer), 0 1px 2px rgb(0 0 0 / calc(.35 * var(--hifi-tiefe))),
               0 0 calc(18px * var(--ak-leuchten)) color-mix(in srgb, var(--akzent-flaeche) 38%, transparent); }
 :root[data-vorlage="hifi"] .knopf:is(.primaer, .haupt):hover:not(:disabled) { background-color: var(--hifi-primaer-hover); }

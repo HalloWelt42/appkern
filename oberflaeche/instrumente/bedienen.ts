@@ -4,8 +4,10 @@
 // Bedienung aller Regler:
 //   Ziehen hoch und runter (Schieber: entlang der Bahn), Mausrad, Pfeiltasten, Bild auf und ab (zehnmal), Pos1 und Ende;
 //   Umschalttaste hält: ein Zehntel (fein); Doppelklick oder Doppeltipp: Vorgabe; Entf: Vorgabe; Klick auf den Wert oder
-//   Eingabetaste: Wert eintippen. Jede Eingabe meldet sich als "input" am Element (beim Loslassen "change") und als
-//   Ereignis "ak-eingabe" am Dokument (für Anzeigen der Seite).
+//   Eingabetaste: Wert eintippen. Jede Eingabe meldet sich als "input" am Element und als Ereignis "ak-eingabe" am
+//   Dokument (für Anzeigen der Seite); ist die Eingabe abgeschlossen, folgt "change": nach dem Loslassen, nach jeder
+//   Taste, Vorgabe und Werteingabe, beim Mausrad, sobald das Rad kurz ruht (RAD_RUHE_MS). Das Rad dreht, sobald der
+//   Zeiger über dem Regler steht, ohne Klick (Nutzer 20.11.2026).
 import type { Wert } from "./wert";
 
 const FEIN = 0.1;            // Umschalttaste: ein Zehntel
@@ -14,6 +16,7 @@ const RAD_JE_PX = 0.0002;    // Mausrad: Anteil je Pixel Drehung (eine Raste von
 const RAD_RASTE_PX = 60;     // Mausrad bei Rastern: so viel Drehung für eine Raste
 const DOPPEL_MS = 330;       // Doppeltipp: höchstens so lange und
 const DOPPEL_PX = 14;        //   so weit auseinander
+const RAD_RUHE_MS = 350;     // Mausrad: so lange Ruhe, dann gilt die Eingabe als abgeschlossen ("change")
 const ROLLPAUSE_MS = 450;    // so lange nach dem Rollen der Seite dreht das Rad keinen Regler (kein Kapern beim Rollen)
 
 /** Inhalt des Ereignisses "ak-eingabe" am Dokument: welches Instrument, welcher Wert, auf welchem Weg */
@@ -48,6 +51,11 @@ function rollenBeobachten(): void {
   document.addEventListener("scroll", () => { zuletztGerollt = performance.now(); }, { capture: true, passive: true });
 }
 
+/** Abgeschlossene Eingabe melden ("change", sprudelt) */
+export function abschlussMelden(el: HTMLElement): void {
+  el.dispatchEvent(new CustomEvent("change", { bubbles: true }));
+}
+
 /** Eingabe melden: am Element ("input", sprudelt) und am Dokument ("ak-eingabe") */
 export function eingabeMelden(el: HTMLElement, meldung: EingabeMeldung): void {
   el.dispatchEvent(new CustomEvent("input", { bubbles: true }));
@@ -64,6 +72,7 @@ export function bedienen(ziel: ReglerZiel): void {
   let zieht: { id: number; x: number; y: number; roh: number } | null = null;
   let letzterTipp: { t: number; x: number; y: number } | null = null;
   let radRest = 0;
+  let radRuhe: ReturnType<typeof setTimeout> | undefined;
   const gesperrt = () => el.getAttribute("aria-disabled") === "true";
   const melden = (art: string, fein: boolean) =>
     eingabeMelden(el, { name: el.getAttribute("name") ?? "", text: modell.text, art, fein });
@@ -73,7 +82,15 @@ export function bedienen(ziel: ReglerZiel): void {
     ziel.zeigen();
     if (modell.wert !== vorher) melden(art, fein);
   };
-  const vorgabe = (art: string) => { modell.wert = modell.klemmen(modell.vorgabe); ziel.zeigen(); melden(art, false); };
+  const vorgabe = (art: string) => { modell.wert = modell.klemmen(modell.vorgabe); ziel.zeigen(); melden(art, false); abschlussMelden(el); };
+  /** Mausrad: setzen und den Abschluss melden, sobald das Rad ruht */
+  const radSetzen = (a: number, fein: boolean) => {
+    const vorher = modell.wert;
+    setzenAnteil(a, "Mausrad", fein);
+    if (modell.wert === vorher) return;
+    clearTimeout(radRuhe);
+    radRuhe = setTimeout(() => abschlussMelden(el), RAD_RUHE_MS);
+  };
 
   // Ziehen: relativ (Drehregler, Griff) oder absolut (Klick auf die Bahn, danach relativ weiter)
   ziel.griff.addEventListener("pointerdown", (e) => {
@@ -115,7 +132,7 @@ export function bedienen(ziel: ReglerZiel): void {
     if (!zieht || e.pointerId !== zieht.id) return;
     zieht = null;
     el.classList.remove("zieht");
-    el.dispatchEvent(new CustomEvent("change", { bubbles: true }));
+    abschlussMelden(el);
   };
   el.addEventListener("pointerup", ende);
   el.addEventListener("pointercancel", ende);
@@ -130,10 +147,10 @@ export function bedienen(ziel: ReglerZiel): void {
       if (Math.abs(radRest) < RAD_RASTE_PX) return;
       const n = Math.sign(radRest);
       radRest = 0;
-      setzenAnteil(modell.anteil - n * modell.tastenAnteil(false), "Mausrad", false);
+      radSetzen(modell.anteil - n * modell.tastenAnteil(false), false);
       return;
     }
-    setzenAnteil(modell.anteil - delta * RAD_JE_PX * (e.shiftKey ? FEIN : 1), "Mausrad", e.shiftKey);
+    radSetzen(modell.anteil - delta * RAD_JE_PX * (e.shiftKey ? FEIN : 1), e.shiftKey);
   }, { passive: false });
 
   // Tasten
@@ -145,7 +162,13 @@ export function bedienen(ziel: ReglerZiel): void {
       ArrowUp: a + s, ArrowRight: a + s, ArrowDown: a - s, ArrowLeft: a - s,
       PageUp: a + (modell.raster ? s : 0.1), PageDown: a - (modell.raster ? s : 0.1), Home: 0, End: 1,
     };
-    if (e.key in tasten) { e.preventDefault(); setzenAnteil(tasten[e.key], `Taste ${TASTENNAME[e.key]}`, e.shiftKey); return; }
+    if (e.key in tasten) {
+      e.preventDefault();
+      const vorher = modell.wert;
+      setzenAnteil(tasten[e.key], `Taste ${TASTENNAME[e.key]}`, e.shiftKey);
+      if (modell.wert !== vorher) abschlussMelden(el);
+      return;
+    }
     if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); vorgabe("Taste Entf"); return; }
     if (e.key === "Enter") { e.preventDefault(); eintippen(ziel); }
   });
@@ -175,6 +198,7 @@ function eintippen(ziel: ReglerZiel): void {
       if (w !== null && !Number.isNaN(w)) {
         modell.wert = modell.klemmen(w);
         eingabeMelden(el, { name: el.getAttribute("name") ?? "", text: modell.text, art: "Eingetippt", fein: false });
+        abschlussMelden(el);
       }
     }
     feld.remove();

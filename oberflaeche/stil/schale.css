@@ -180,7 +180,11 @@ a.herkunft i { font-size: var(--marke); }
 
 /* ----- Ergänzungen der Umsetzung ----- */
 .fenster-voll { height: 100vh; height: 100dvh; display: grid; grid-template-rows: auto auto minmax(0, 1fr); background: var(--hg); }
-.knopf:disabled { opacity: .5; cursor: default; }
+/* Gesperrte Knöpfe bleiben deckend (Nutzer 20.11.2026: nichts Gesperrtes lässt den Hintergrund durchscheinen): Fläche
+   wie sonst, Schrift und Symbol treten zurück; ein Primärknopf verliert seine Akzentfläche. Eine Wahrheit für alle
+   Knöpfe der Schale, des Leitstands, der Anmeldung und der Paarwahl. */
+:is(.knopf, .rund, .paar-knopf):is(:disabled, .gesperrt) { cursor: default; color: var(--text-3); background-image: none; box-shadow: none; }
+.knopf:is(.primaer, .haupt, .zweit):is(:disabled, .gesperrt) { background: var(--flaeche-2); border-color: var(--rand); color: var(--text-3); }
 .eingabe input, .eingabe-roh { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; color: inherit; outline: none; }
 .eingabe:focus-within { border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-weich); }
 .eingabe .auge { cursor: pointer; border: 0; background: transparent; padding: 4px; }
