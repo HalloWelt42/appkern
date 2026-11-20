@@ -17,6 +17,7 @@ import secrets
 import time
 from collections.abc import Callable
 from pathlib import Path
+from appkern.einstellungen.dienst import umgebung_vorsilbe
 
 # Ohne leicht verwechselbare Zeichen (0/O, 1/I/L), damit man den Code abtippen kann
 ZEICHEN = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
@@ -49,7 +50,7 @@ class Einrichtungscode:
 
     @classmethod
     def aus_umgebung(cls, kennung: str, daten: Path) -> Einrichtungscode:
-        praefix = kennung.upper()
+        praefix = umgebung_vorsilbe(kennung)
         datei = os.environ.get(f"{praefix}_EINRICHTUNGSCODE_DATEI") or str(Path(daten) / "einrichtungscode")
         return cls(Path(datei), os.environ.get(f"{praefix}_EINRICHTUNGSCODE_ORT", ""))
 

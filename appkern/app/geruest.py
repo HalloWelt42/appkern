@@ -65,6 +65,7 @@ from .einrichtungscode import Einrichtungscode, Gesperrt
 from .einstellungen import MIT_KELLERWOLKE, OHNE_ANMELDUNG, Anmeldeart, Grundeinstellungen
 from .sicherung import RegelmaessigeSicherung, ablage_der_app, regel_aus
 from .speicher import Speicherwache
+from appkern.einstellungen import umgebung_vorsilbe
 
 logger = logging.getLogger("appkern.app")
 
@@ -89,7 +90,7 @@ for _endung, _typ in {".webp": "image/webp", ".avif": "image/avif", ".webmanifes
 
 def schnittstellen_doku(kennung: str) -> bool:
     """Ob die App ihre Schnittstellendoku zeigt: nur mit `<KENNUNG>_SCHNITTSTELLEN_DOKU=1` (Entwicklung)."""
-    return os.environ.get(f"{kennung.upper()}_SCHNITTSTELLEN_DOKU", "").strip().lower() in JA
+    return os.environ.get(f"{umgebung_vorsilbe(kennung)}_SCHNITTSTELLEN_DOKU", "").strip().lower() in JA
 
 
 def hausstelle() -> Path | None:
@@ -222,7 +223,7 @@ class Geruest(Generic[E]):
         self._transport = transport
         self.db = Datenbank(self.daten / f"{kennung}.sqlite", leser=leseverbindungen)
         self.einrichtungscode = Einrichtungscode.aus_umgebung(kennung, self.daten)
-        self.einstellungen: Einstellungen[E] = Einstellungen(self.db, einstellungen, umgebung_praefix=f"{kennung.upper()}_")
+        self.einstellungen: Einstellungen[E] = Einstellungen(self.db, einstellungen, umgebung_praefix=f"{umgebung_vorsilbe(kennung)}_")
         self.protokoll = Protokoll(self.db)
         self.auftraege = Auftraege(self.db, arten, gleichzeitig=gleichzeitig, protokoll=self.protokoll)
         self.verzeichnis = Verzeichnis()

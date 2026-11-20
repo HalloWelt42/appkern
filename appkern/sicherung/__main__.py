@@ -23,6 +23,7 @@ from appkern.app.sicherung import regel_aus
 from appkern.einstellungen import nur_lesen
 
 from .regel import Ablage, vor_ausrollen
+from appkern.einstellungen.dienst import umgebung_vorsilbe
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -34,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("--ordner", required=True, type=Path, help="Ordner der Sicherungen")
     a = teiler.parse_args(argv)
     try:
-        stand = nur_lesen(a.datenbank, Grundeinstellungen, umgebung_praefix=f"{a.kennung.upper()}_")
+        stand = nur_lesen(a.datenbank, Grundeinstellungen, umgebung_praefix=f"{umgebung_vorsilbe(a.kennung)}_")
         ergebnis = vor_ausrollen(Ablage(a.datenbank, a.ordner, a.kennung), regel_aus(stand), time.time())
     except (OSError, sqlite3.Error, ValidationError, ValueError) as f:
         print(f"Sicherung gescheitert: {f}", file=sys.stderr)

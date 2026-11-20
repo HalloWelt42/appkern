@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import types
 import typing
@@ -114,6 +115,13 @@ def aus_umgebung(modell: type[BaseModel], praefix: str, umgebung: Mapping[str, s
         else:
             werte[name] = roh
     return werte
+
+
+def umgebung_vorsilbe(kennung: str) -> str:
+    """Vorsilbe der Umgebungswerte einer App aus ihrer Kennung, etwa `telegram-archiv` -> `TELEGRAM_ARCHIV`: nur
+    Großbuchstaben, Ziffern und Unterstrich, damit Compose, Shell und .env dieselben Namen tragen (ein Bindestrich
+    im Namen ließ sich in compose.pi.yml nicht setzen, TGA-1). Die eine Stelle für Gerüst, Ausrollen und Vorlage."""
+    return re.sub(r"[^A-Z0-9]", "_", kennung.upper())
 
 
 def nur_lesen(pfad: Path | str, modell: type[M], *, umgebung_praefix: str = "",

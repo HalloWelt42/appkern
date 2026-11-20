@@ -21,6 +21,7 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from appkern.einstellungen.dienst import umgebung_vorsilbe
 
 DATEIEN = Path(__file__).resolve().parent / "dateien"
 REPO = Path(__file__).resolve().parents[2]
@@ -125,7 +126,7 @@ def erzeugen(*, name: str, kennung: str, rolle: str, symbol: str, port: int, zie
         "__DEVPORT__": str(devport or port + 1000), "__FARBE__": farbe, "__ORDNER__": _heimkurz(ordner),
         "__APPKERN_PY__": f"-e {lokal}[{extras}]" if lokal else GITHUB_PY.format(extras=extras),
         "__APPKERN_NPM__": f"file:{lokal}" if lokal else GITHUB_NPM,
-        "__UMGEBUNG__": kennung.upper().replace("-", "_"), "__TON__": "true" if ton else "false",
+        "__UMGEBUNG__": umgebung_vorsilbe(kennung), "__TON__": "true" if ton else "false",
     }
     assert set(ersetzen) == set(PLATZHALTER)
     for datei in ordner.rglob("*"):

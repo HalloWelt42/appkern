@@ -48,6 +48,7 @@ import httpx
 from pydantic import BaseModel, Field, model_validator
 
 from .regeln import regeln_pruefen
+from appkern.einstellungen.dienst import umgebung_vorsilbe
 
 SCHWELLE_S = 60 * 86400
 BAUCACHE_GB = 20         # Vorgabe: so viel Baucache bleibt nach dem Aufräumen (Einstellung baucache_gb, BAUCACHE_GB)
@@ -449,7 +450,7 @@ def zugaenge_besorgen(z: Ziel, erneuern: bool = False, client: httpx.Client | No
 
 
 def _fest(z: Ziel, feld: str) -> str:
-    return f"{z.kennung.upper()}_FEST_{feld}"
+    return f"{umgebung_vorsilbe(z.kennung)}_FEST_{feld}"
 
 
 def _in_umgebung(z: Ziel, schluessel: str) -> bool:
