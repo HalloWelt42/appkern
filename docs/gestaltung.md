@@ -154,6 +154,7 @@ Drei Abstufungen der Schrift, Ränder nur als feine Linie oder Rahmen rundum.
 | `--text-3` | `#5d7187` | `#8296ab` | schwacher Text, Etiketten, Symbole in Ruhe |
 | `--rand` | `rgba(22, 34, 46, 0.12)` | `rgba(255, 255, 255, 0.09)` | Trennlinien und Rahmen |
 | `--rand-stark` | `rgba(22, 34, 46, 0.2)` | `rgba(255, 255, 255, 0.16)` | Rahmen von Knöpfen und schwebenden Teilen im Leitstand |
+| `--fokus-rand` | `var(--text-3)` | - | Fokus der Tastatur: schmaler neutraler Rahmen, nie ein farbiger Schein |
 | `--diagrammlinie` | `rgba(22, 34, 46, 0.09)` | `rgba(255, 255, 255, 0.07)` | Hilfslinien in Diagrammen |
 
 ### Akzent

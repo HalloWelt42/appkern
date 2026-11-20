@@ -99,7 +99,8 @@ export function bedienen(ziel: ReglerZiel): void {
     if (gesperrt() || e.button > 0 || quelle.closest(".ak-eingabe")) return;
     if (quelle === ziel.wertFeld) return;      // Klick auf den Wert öffnet die Eingabe
     e.preventDefault();
-    el.focus({ preventScroll: true });
+    // kein Fokus beim Klick: Rad und Ziehen brauchen keinen, und ein Fokus aus dem Skript zählt im Browser als Fokus der
+    // Tastatur, der Regler bliebe mit Rahmen stehen (Nutzer 20.11.2026: "niemals hängen bei klick")
     // Doppeltipp und Doppelklick: Vorgabe (eigene Erkennung, weil dblclick bei Fingern unzuverlässig kommt)
     const jetzt = performance.now();
     if (letzterTipp && jetzt - letzterTipp.t < DOPPEL_MS && Math.hypot(e.clientX - letzterTipp.x, e.clientY - letzterTipp.y) < DOPPEL_PX) {

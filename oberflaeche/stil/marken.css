@@ -137,6 +137,7 @@
   --text-3: #5d7187;              /* schwacher Text, Etiketten, Symbole in Ruhe */
   --rand: rgba(22, 34, 46, 0.12); /* Trennlinien und Rahmen */
   --rand-stark: rgba(22, 34, 46, 0.2); /* Rahmen von Knöpfen und schwebenden Teilen im Leitstand */
+  --fokus-rand: var(--text-3);    /* Fokus der Tastatur: schmaler neutraler Rahmen, nie ein farbiger Schein */
   --diagrammlinie: rgba(22, 34, 46, 0.09); /* Hilfslinien in Diagrammen */
 }
 [data-theme="dunkel"] {

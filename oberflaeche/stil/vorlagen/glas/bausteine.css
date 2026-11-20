@@ -30,7 +30,7 @@
 }
 :root[data-vorlage="glas"] :is(h1, h2) { font-weight: 600; letter-spacing: 0; }
 :root[data-vorlage="glas"] .etikett { font-weight: 600; letter-spacing: 0.12em; }
-:root[data-vorlage="glas"] :focus-visible { outline: 2px solid color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); outline-offset: 2px; }
+:root[data-vorlage="glas"] :focus-visible { outline: 1px solid var(--fokus-rand); outline-offset: 3px; }
 
 /* ═══ Schale: vier Glasinseln mit Fugen ═══ */
 :root[data-vorlage="glas"] .schale { gap: var(--glas-fuge); padding: var(--glas-fuge); }

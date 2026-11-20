@@ -12,7 +12,7 @@
 :root[data-vorlage="futur"] ::selection { background: var(--akzent-weich); }
 :root[data-vorlage="futur"] :is(h1, h2, h3) { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: 0.02em; }
 :root[data-vorlage="futur"] .etikett { font-family: var(--schrift-titel); font-weight: 600; letter-spacing: var(--sperrung); }
-:root[data-vorlage="futur"] :focus-visible { outline: 1px solid var(--akzent-flaeche); outline-offset: 2px; }
+:root[data-vorlage="futur"] :focus-visible { outline: 1px solid var(--fokus-rand); outline-offset: 3px; }
 
 /* ═══ Schale ═══ */
 :root[data-vorlage="futur"] .kopf { background-image: linear-gradient(180deg, var(--schein), transparent); }

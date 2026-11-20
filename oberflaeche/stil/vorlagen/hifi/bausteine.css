@@ -80,7 +80,7 @@
 /* ═══ Karten, Leisten, Felder ═══ */
 :root[data-vorlage="hifi"] :is(.karte, .kb, .leiste, .hilfe-fenster) { box-shadow: var(--hifi-kante-ruhig), var(--hifi-schatten-ruhig); background-image: var(--hifi-erhaben); }
 :root[data-vorlage="hifi"] :is(.eingabe, .suche) { background-color: var(--hifi-feld); box-shadow: var(--hifi-mulde); border-color: transparent; }
-:root[data-vorlage="hifi"] :is(.eingabe, .suche):focus-within { box-shadow: var(--hifi-mulde), 0 0 0 2px var(--akzent-flaeche), 0 0 calc(14px * var(--ak-leuchten)) color-mix(in srgb, var(--akzent-flaeche) 45%, transparent); }
+:root[data-vorlage="hifi"] :is(.eingabe, .suche):focus-within { box-shadow: var(--hifi-mulde), 0 0 0 1px var(--fokus-rand); }
 
 /* ═══ Knöpfe ═══ flach gewölbt, beim Drücken eingelassen; der Hauptknopf leuchtet leicht. Hauptknopf heißt in der
    Schale .primaer, im Leitstand .haupt; ein Knopf ohne Fläche .still oder .ohne, voll gefährlich .gefahr-voll */

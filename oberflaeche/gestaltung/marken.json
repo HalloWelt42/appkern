@@ -559,6 +559,14 @@
      }
     },
     {
+     "name": "--fokus-rand",
+     "art": "farbe",
+     "zweck": "Fokus der Tastatur: schmaler neutraler Rahmen, nie ein farbiger Schein",
+     "werte": {
+      "hell": "var(--text-3)"
+     }
+    },
+    {
      "name": "--diagrammlinie",
      "art": "farbe",
      "zweck": "Hilfslinien in Diagrammen",

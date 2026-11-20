@@ -76,7 +76,7 @@ button { font: inherit; color: inherit; }
 .suche { display: inline-flex; align-items: center; gap: 8px; height: var(--knopf-hoehe); padding: 0 12px; border-radius: var(--r2); background: var(--flaeche); border: 1px solid var(--rand); color: var(--text-3); font-size: var(--klein); min-width: 180px; }
 /* das Eingabefeld im Kasten ohne eigenen Rahmen und Grund; den Fokus zeigt der Kasten */
 .suche input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--text); font: inherit; }
-.suche:focus-within { border-color: color-mix(in srgb, var(--akzent-flaeche) 60%, transparent); }
+.suche:focus-within { border-color: var(--fokus-rand); }
 .knopf { display: inline-flex; align-items: center; gap: 8px; height: var(--knopf-hoehe); padding: 0 12px; border-radius: var(--r2); border: 1px solid var(--rand); background: var(--flaeche-2); color: var(--text); cursor: pointer; font-size: var(--klein); white-space: nowrap; }
 .knopf.primaer { background: var(--akzent-flaeche); color: var(--auf-akzent); border-color: transparent; font-weight: 600; }
 .knopf.gefahr { color: var(--gefahr); }
@@ -186,7 +186,7 @@ a.herkunft i { font-size: var(--marke); }
 :is(.knopf, .rund, .paar-knopf):is(:disabled, .gesperrt) { cursor: default; color: var(--text-3); background-image: none; box-shadow: none; }
 .knopf:is(.primaer, .haupt, .zweit):is(:disabled, .gesperrt) { background: var(--flaeche-2); border-color: var(--rand); color: var(--text-3); }
 .eingabe input, .eingabe-roh { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; color: inherit; outline: none; }
-.eingabe:focus-within { border-color: var(--akzent); box-shadow: 0 0 0 3px var(--akzent-weich); }
+.eingabe:focus-within { border-color: var(--fokus-rand); }
 .eingabe .auge { cursor: pointer; border: 0; background: transparent; padding: 4px; }
 .fehlerzeile { color: var(--gefahr); font-size: var(--klein); }
 .leer { color: var(--text-3); font-size: var(--klein); padding: 30px 4px; text-align: center; }
@@ -304,7 +304,8 @@ a.herkunft i { font-size: var(--marke); }
 .leiste-schleier { display: none; }
 
 /* ----- Fokus nur bei Tastatur sichtbar, in der Farbe der Schale ----- */
-:focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; }
+/* Fokus der Tastatur neutral, ohne Akzentfarbe und ohne Schein (Nutzer 20.11.2026) */
+:focus-visible { outline: 1px solid var(--fokus-rand); outline-offset: 3px; }
 button:focus:not(:focus-visible), [tabindex]:focus:not(:focus-visible) { outline: none; }
 
 /* ----- Breiten -----
