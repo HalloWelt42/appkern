@@ -2,9 +2,11 @@
 // Übernommen aus hifi-regler (appkern/instrumente.js, Stand 9a7c0fe vom 09.11.2026, RAD-6).
 //
 // Bedienung aller Regler:
-//   Ziehen hoch und runter (Schieber: entlang der Bahn), Mausrad, Pfeiltasten, Bild auf und ab (zehnmal), Pos1 und Ende;
-//   Umschalttaste hält: ein Zehntel (fein); Doppelklick oder Doppeltipp: Vorgabe; Entf: Vorgabe; Klick auf den Wert oder
-//   Eingabetaste: Wert eintippen. Jede Eingabe meldet sich als "input" am Element und als Ereignis "ak-eingabe" am
+//   Maus: nur das Rad, sobald der Zeiger über dem Regler steht; ein Klick verstellt nichts (kein Ziehen, keine Vorgabe
+//   per Doppelklick, kein Sprung auf der Bahn), Nutzer 20.11.2026: "es soll nur scrollen per mausover, nicht per klick".
+//   Finger und Stift: Ziehen hoch und runter (Schieber: entlang der Bahn), Doppeltipp: Vorgabe.
+//   Tastatur: Pfeiltasten, Bild auf und ab (zehnmal), Pos1 und Ende, Entf: Vorgabe; Umschalttaste hält: ein Zehntel
+//   (fein, auch beim Rad). Klick auf den Wert oder Eingabetaste: Wert eintippen. Jede Eingabe meldet sich als "input" am Element und als Ereignis "ak-eingabe" am
 //   Dokument (für Anzeigen der Seite); ist die Eingabe abgeschlossen, folgt "change": nach dem Loslassen, nach Vorgabe
 //   und Werteingabe sofort, bei Mausrad und Pfeiltasten, sobald die Eingabe kurz ruht (RUHE_MS; mehrere Schritte
 //   hintereinander ergeben eine Änderung). Das Rad dreht, sobald der
@@ -70,7 +72,7 @@ const TASTENNAME: Record<string, string> = { ArrowUp: "hoch", ArrowRight: "recht
 export function bedienen(ziel: ReglerZiel): void {
   rollenBeobachten();
   const { el, modell } = ziel;
-  let zieht: { id: number; x: number; y: number; roh: number } | null = null;
+  let zieht: { id: number; x: number; y: number; roh: number; anfang: number } | null = null;
   let letzterTipp: { t: number; x: number; y: number } | null = null;
   let radRest = 0;
   let ruhe: ReturnType<typeof setTimeout> | undefined;
@@ -99,9 +101,10 @@ export function bedienen(ziel: ReglerZiel): void {
     if (gesperrt() || e.button > 0 || quelle.closest(".ak-eingabe")) return;
     if (quelle === ziel.wertFeld) return;      // Klick auf den Wert öffnet die Eingabe
     e.preventDefault();
+    if (e.pointerType === "mouse") return;      // mit der Maus dreht nur das Rad (oben); ein Klick verstellt nichts
     // kein Fokus beim Klick: Rad und Ziehen brauchen keinen, und ein Fokus aus dem Skript zählt im Browser als Fokus der
     // Tastatur, der Regler bliebe mit Rahmen stehen (Nutzer 20.11.2026: "niemals hängen bei klick")
-    // Doppeltipp und Doppelklick: Vorgabe (eigene Erkennung, weil dblclick bei Fingern unzuverlässig kommt)
+    // Doppeltipp: Vorgabe (eigene Erkennung, weil dblclick bei Fingern unzuverlässig kommt)
     const jetzt = performance.now();
     if (letzterTipp && jetzt - letzterTipp.t < DOPPEL_MS && Math.hypot(e.clientX - letzterTipp.x, e.clientY - letzterTipp.y) < DOPPEL_PX) {
       letzterTipp = null;
@@ -116,7 +119,7 @@ export function bedienen(ziel: ReglerZiel): void {
       roh = Math.min(1, Math.max(0, roh));
       setzenAnteil(roh, "Klick auf die Bahn", false);
     }
-    zieht = { id: e.pointerId, x: e.clientX, y: e.clientY, roh };
+    zieht = { id: e.pointerId, x: e.clientX, y: e.clientY, roh, anfang: modell.wert };
     el.setPointerCapture?.(e.pointerId);
     el.classList.add("zieht");
   });
@@ -132,9 +135,10 @@ export function bedienen(ziel: ReglerZiel): void {
   });
   const ende = (e: PointerEvent) => {
     if (!zieht || e.pointerId !== zieht.id) return;
+    const geaendert = modell.wert !== zieht.anfang;
     zieht = null;
     el.classList.remove("zieht");
-    abschlussMelden(el);
+    if (geaendert) abschlussMelden(el);         // nur Tippen ohne neuen Wert schließt nichts ab (kein "change")
   };
   el.addEventListener("pointerup", ende);
   el.addEventListener("pointercancel", ende);

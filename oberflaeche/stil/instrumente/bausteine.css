@@ -42,11 +42,10 @@
 ak-dreh {
   container: regler / inline-size; inline-size: var(--ak-zelle, 100%); min-inline-size: var(--ak-treffer); min-width: 0;
   display: flex; flex-direction: column; align-items: center; gap: 2px; padding-block: 2px;
-  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; outline: none; position: relative;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: default; outline: none; position: relative;
   --d: clamp(var(--ak-d-min), calc(var(--ak-d-anteil) * 100cqi), var(--ak-d-max));
   --a: 0; --winkel: calc(-135deg + var(--a) * 270deg);
 }
-ak-dreh.zieht { cursor: grabbing; }
 /* Gesperrt: nichts wird durchscheinend (Nutzer 20.11.2026: gesperrte Tasten und Drehregler dürfen den Hintergrund nicht
    durchscheinen lassen); Kappe und Skala bleiben deckend, der Wertbogen erlischt, Zeiger und Beschriftung treten zurück */
 ak-dreh[aria-disabled="true"] { cursor: default; --ak-wert: var(--ak-bahn); --ak-zeiger: var(--ak-gesperrt-tinte); --ak-skala: var(--ak-bahn); }
@@ -156,7 +155,7 @@ ak-schieber[aria-disabled="true"] { --ak-wert: var(--ak-bahn); }
 ak-schieber[aria-disabled="true"] .ak-schieber-feld { cursor: default; }
 .ak-schieber-kopf { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .ak-schieber-kopf .ak-dreh-name { flex: 1; min-width: 0; }
-.ak-schieber-feld { position: relative; block-size: var(--ak-treffer); touch-action: pan-y; cursor: pointer; display: grid; align-items: center; }
+.ak-schieber-feld { position: relative; block-size: var(--ak-treffer); touch-action: pan-y; cursor: default; display: grid; align-items: center; }
 .ak-schieber-bahn { position: relative; block-size: var(--bahn-h); border-radius: 99px; background-color: var(--ak-mulde); box-shadow: var(--ak-mulde-tiefe); overflow: hidden; }
 /* Füllung über transform (nur Zusammensetzen, kein Layout); zweipolig ab der Mitte */
 .ak-schieber-fuellung { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(var(--a)); background: var(--ak-wert); border-radius: inherit; }
