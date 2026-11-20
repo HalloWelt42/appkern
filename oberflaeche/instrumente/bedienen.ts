@@ -5,8 +5,9 @@
 //   Ziehen hoch und runter (Schieber: entlang der Bahn), Mausrad, Pfeiltasten, Bild auf und ab (zehnmal), Pos1 und Ende;
 //   Umschalttaste hält: ein Zehntel (fein); Doppelklick oder Doppeltipp: Vorgabe; Entf: Vorgabe; Klick auf den Wert oder
 //   Eingabetaste: Wert eintippen. Jede Eingabe meldet sich als "input" am Element und als Ereignis "ak-eingabe" am
-//   Dokument (für Anzeigen der Seite); ist die Eingabe abgeschlossen, folgt "change": nach dem Loslassen, nach jeder
-//   Taste, Vorgabe und Werteingabe, beim Mausrad, sobald das Rad kurz ruht (RAD_RUHE_MS). Das Rad dreht, sobald der
+//   Dokument (für Anzeigen der Seite); ist die Eingabe abgeschlossen, folgt "change": nach dem Loslassen, nach Vorgabe
+//   und Werteingabe sofort, bei Mausrad und Pfeiltasten, sobald die Eingabe kurz ruht (RUHE_MS; mehrere Schritte
+//   hintereinander ergeben eine Änderung). Das Rad dreht, sobald der
 //   Zeiger über dem Regler steht, ohne Klick (Nutzer 20.11.2026).
 import type { Wert } from "./wert";
 
@@ -16,7 +17,7 @@ const RAD_JE_PX = 0.0002;    // Mausrad: Anteil je Pixel Drehung (eine Raste von
 const RAD_RASTE_PX = 60;     // Mausrad bei Rastern: so viel Drehung für eine Raste
 const DOPPEL_MS = 330;       // Doppeltipp: höchstens so lange und
 const DOPPEL_PX = 14;        //   so weit auseinander
-const RAD_RUHE_MS = 350;     // Mausrad: so lange Ruhe, dann gilt die Eingabe als abgeschlossen ("change")
+const RUHE_MS = 350;         // Mausrad und Pfeiltasten: so lange Ruhe, dann gilt die Eingabe als abgeschlossen ("change")
 const ROLLPAUSE_MS = 450;    // so lange nach dem Rollen der Seite dreht das Rad keinen Regler (kein Kapern beim Rollen)
 
 /** Inhalt des Ereignisses "ak-eingabe" am Dokument: welches Instrument, welcher Wert, auf welchem Weg */
@@ -72,7 +73,7 @@ export function bedienen(ziel: ReglerZiel): void {
   let zieht: { id: number; x: number; y: number; roh: number } | null = null;
   let letzterTipp: { t: number; x: number; y: number } | null = null;
   let radRest = 0;
-  let radRuhe: ReturnType<typeof setTimeout> | undefined;
+  let ruhe: ReturnType<typeof setTimeout> | undefined;
   const gesperrt = () => el.getAttribute("aria-disabled") === "true";
   const melden = (art: string, fein: boolean) =>
     eingabeMelden(el, { name: el.getAttribute("name") ?? "", text: modell.text, art, fein });
@@ -83,13 +84,13 @@ export function bedienen(ziel: ReglerZiel): void {
     if (modell.wert !== vorher) melden(art, fein);
   };
   const vorgabe = (art: string) => { modell.wert = modell.klemmen(modell.vorgabe); ziel.zeigen(); melden(art, false); abschlussMelden(el); };
-  /** Mausrad: setzen und den Abschluss melden, sobald das Rad ruht */
-  const radSetzen = (a: number, fein: boolean) => {
+  /** Mausrad und Pfeiltasten: setzen und den Abschluss melden, sobald die Eingabe ruht */
+  const schrittSetzen = (a: number, art: string, fein: boolean) => {
     const vorher = modell.wert;
-    setzenAnteil(a, "Mausrad", fein);
+    setzenAnteil(a, art, fein);
     if (modell.wert === vorher) return;
-    clearTimeout(radRuhe);
-    radRuhe = setTimeout(() => abschlussMelden(el), RAD_RUHE_MS);
+    clearTimeout(ruhe);
+    ruhe = setTimeout(() => abschlussMelden(el), RUHE_MS);
   };
 
   // Ziehen: relativ (Drehregler, Griff) oder absolut (Klick auf die Bahn, danach relativ weiter)
@@ -147,10 +148,10 @@ export function bedienen(ziel: ReglerZiel): void {
       if (Math.abs(radRest) < RAD_RASTE_PX) return;
       const n = Math.sign(radRest);
       radRest = 0;
-      radSetzen(modell.anteil - n * modell.tastenAnteil(false), false);
+      schrittSetzen(modell.anteil - n * modell.tastenAnteil(false), "Mausrad", false);
       return;
     }
-    radSetzen(modell.anteil - delta * RAD_JE_PX * (e.shiftKey ? FEIN : 1), e.shiftKey);
+    schrittSetzen(modell.anteil - delta * RAD_JE_PX * (e.shiftKey ? FEIN : 1), "Mausrad", e.shiftKey);
   }, { passive: false });
 
   // Tasten
@@ -164,9 +165,7 @@ export function bedienen(ziel: ReglerZiel): void {
     };
     if (e.key in tasten) {
       e.preventDefault();
-      const vorher = modell.wert;
-      setzenAnteil(tasten[e.key], `Taste ${TASTENNAME[e.key]}`, e.shiftKey);
-      if (modell.wert !== vorher) abschlussMelden(el);
+      schrittSetzen(tasten[e.key], `Taste ${TASTENNAME[e.key]}`, e.shiftKey);
       return;
     }
     if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); vorgabe("Taste Entf"); return; }
