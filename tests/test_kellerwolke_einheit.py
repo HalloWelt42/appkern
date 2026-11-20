@@ -273,3 +273,23 @@ async def test_alles_lesen_wurzel_volltext_text():
             await k.volltext("verboten")
     assert ("POST", "/api/v1/ablage/volltext") == gesehen[1][:2] and json.loads(gesehen[1][3]) == {"q": "Mietvertrag", "anzahl": 5}
     assert gesehen[2][2] == {"grenze": "1000"}
+
+
+async def test_pruefsumme_und_verweis():
+    gesehen = []
+    ziel = knoten_json("bild.jpg", sha256="a" * 64)
+
+    def handler(r: httpx.Request) -> httpx.Response:
+        gesehen.append((r.method, r.url.path, r.content))
+        if r.url.path == "/api/v1/ablage/pruefsumme/" + "a" * 64:
+            return httpx.Response(200, json=[ziel])
+        if r.url.path == "/api/v1/ablage/verweis":
+            return httpx.Response(200, json=knoten_json("bild.jpg", typ="verweis", ziel_id=ziel["id"], sha256="a" * 64))
+        return httpx.Response(404, json={"detail": "nicht da"})
+
+    kw = wolke(handler)
+    treffer = await kw.pruefsumme("A" * 64)
+    assert treffer[0].sha256 == "a" * 64 and not treffer[0].ist_verweis
+    v = await kw.verweis_anlegen(treffer[0].id, "Apps/Test/2026-11/bild.jpg")
+    assert v.ist_verweis and str(v.ziel_id) == ziel["id"] and not v.verwaist
+    assert json.loads(gesehen[-1][2]) == {"ziel_id": ziel["id"], "pfad": "Apps/Test/2026-11/bild.jpg"}

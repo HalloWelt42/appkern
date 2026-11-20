@@ -56,7 +56,7 @@ class Knoten(_Modell):
     id: UUID
     parent_id: UUID | None = None
     name: str
-    typ: str  # datei, ordner
+    typ: str  # datei, ordner, extern, verweis (Kellerwolke ab 0.97)
     pfad: str
     recht: Recht
     etag: str | None = None  # Stand der Datei: beim Überschreiben als `stand` mitgeben
@@ -65,6 +65,9 @@ class Knoten(_Modell):
     app: str | None = None  # App, die zuletzt geschrieben hat
     felder: dict[str, Any] = Field(default_factory=dict)
     sperre: Sperre | None = None
+    ziel_id: UUID | None = None   # ein Verweis: das Original (Kellerwolke ab 0.97, KW-10)
+    verwaist: bool = False        # ein Verweis, dessen Original fehlt oder im Papierkorb liegt
+    sha256: str | None = None     # Prüfsumme des ganzen Inhalts (beim Verweis die des Originals)
     haupt_id: UUID | None = None  # ein Begleiter: seine Hauptdatei
     rolle: str | None = None      # ein Begleiter: seine Rolle (transkript, untertitel, sprache ...)
     erstellt_am: datetime
@@ -73,6 +76,10 @@ class Knoten(_Modell):
     @property
     def ist_ordner(self) -> bool:
         return self.typ == "ordner"
+
+    @property
+    def ist_verweis(self) -> bool:
+        return self.typ == "verweis"
 
 
 

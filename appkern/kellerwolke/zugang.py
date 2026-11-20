@@ -324,6 +324,26 @@ class Kellerwolke:
         antwort = await self._anfrage("PATCH", f"/knoten/{knoten_id}/felder", json={"felder": aenderung})
         return Knoten.model_validate(antwort.json())
 
+    # --- Verweise und Prüfsumme (Kellerwolke ab 0.97, KW-10/KW-11) -----------------------------------------------
+    # Jede Datei gibt es genau einmal: liegt ein Inhalt schon im lesbaren Bereich, legt die App einen Verweis an.
+
+    async def pruefsumme(self, sha256: str) -> list[Knoten]:
+        """Lebende Dateien mit genau diesem Inhalt, soweit die App sie lesen darf, älteste zuerst (Verweise zählen
+        nicht)."""
+        antwort = await self._anfrage("GET", f"/pruefsumme/{sha256.lower()}")
+        return [Knoten.model_validate(k) for k in antwort.json()]
+
+    async def verweis_anlegen(self, ziel_id: UUID | str, pfad: str) -> Knoten:
+        """Verweis unter `pfad` (Ordner und Name) auf eine Datei; der Ordner muss es geben (`ordner`). Derselbe Aufruf
+        liefert den vorhandenen Verweis; ein anderer Eintrag unter dem Namen wirft `Konflikt`."""
+        antwort = await self._anfrage("POST", "/verweis", json={"ziel_id": str(ziel_id), "pfad": pfad})
+        return Knoten.model_validate(antwort.json())
+
+    async def verweise(self, knoten_id: UUID | str) -> list[Knoten]:
+        """Lebende Verweise auf eine Datei, soweit die App sie sehen darf."""
+        antwort = await self._anfrage("GET", f"/knoten/{knoten_id}/verweise")
+        return [Knoten.model_validate(k) for k in antwort.json()]
+
     async def suchen(self, felder: dict[str, Any], anzahl: int = 100) -> list[Knoten]:
         """Dateien des Kontos, deren Felder diese Werte enthalten, neueste zuerst."""
         antwort = await self._anfrage("POST", "/suche", json={"felder": felder, "anzahl": anzahl})
