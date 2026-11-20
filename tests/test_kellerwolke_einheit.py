@@ -283,6 +283,8 @@ async def test_pruefsumme_und_verweis():
         gesehen.append((r.method, r.url.path, r.content))
         if r.url.path == "/api/v1/ablage/pruefsumme/" + "a" * 64:
             return httpx.Response(200, json=[ziel])
+        if r.url.path.endswith("/loeschfolgen"):
+            return httpx.Response(200, json={"folgen": [{"id": "x", "name": "bild.jpg", "art": "verweis", "pfad": "Apps/B/bild.jpg"}], "verborgen": 0})
         if r.url.path == "/api/v1/ablage/verweis":
             return httpx.Response(200, json=knoten_json("bild.jpg", typ="verweis", ziel_id=ziel["id"], sha256="a" * 64))
         return httpx.Response(404, json={"detail": "nicht da"})
@@ -293,3 +295,4 @@ async def test_pruefsumme_und_verweis():
     v = await kw.verweis_anlegen(treffer[0].id, "Apps/Test/2026-11/bild.jpg")
     assert v.ist_verweis and str(v.ziel_id) == ziel["id"] and not v.verwaist
     assert json.loads(gesehen[-1][2]) == {"ziel_id": ziel["id"], "pfad": "Apps/Test/2026-11/bild.jpg"}
+    assert (await kw.loeschfolgen(ziel["id"]))["folgen"][0]["art"] == "verweis"

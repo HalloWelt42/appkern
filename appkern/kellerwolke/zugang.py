@@ -339,6 +339,11 @@ class Kellerwolke:
         antwort = await self._anfrage("POST", "/verweis", json={"ziel_id": str(ziel_id), "pfad": pfad})
         return Knoten.model_validate(antwort.json())
 
+    async def loeschfolgen(self, knoten_id: UUID | str) -> dict[str, Any]:
+        """Was Löschen mitnähme (Begleiter und Verweise), vor jeder Rückfrage zu zeigen:
+        `{folgen: [{id, name, art, pfad, zu_id, rolle}], verborgen}`; `verborgen` zählt, was die App nicht sehen darf."""
+        return (await self._anfrage("GET", f"/knoten/{knoten_id}/loeschfolgen")).json()
+
     async def verweise(self, knoten_id: UUID | str) -> list[Knoten]:
         """Lebende Verweise auf eine Datei, soweit die App sie sehen darf."""
         antwort = await self._anfrage("GET", f"/knoten/{knoten_id}/verweise")
