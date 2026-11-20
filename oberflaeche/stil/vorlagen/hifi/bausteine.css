@@ -100,7 +100,8 @@
 :root[data-vorlage="hifi"] .knopf.gefahr { color: var(--gefahr); }
 :root[data-vorlage="hifi"] .knopf:is(.still, .ohne) { background: transparent; box-shadow: none; }
 :root[data-vorlage="hifi"] .knopf.gefahr-voll { background-color: var(--gefahr-flaeche); }
-:root[data-vorlage="hifi"] :is(.knopf, .auswahl-knopf, .rund, .segment button, .reiterleiste button, .chip.wahl):focus-visible { outline: 2px solid var(--akzent-flaeche); outline-offset: 2px; }
+/* Fokus der Tastatur an Tasten: schmaler neutraler Rahmen wie an den Instrumenten, kein Akzentlicht */
+:root[data-vorlage="hifi"] :is(.knopf, .auswahl-knopf, .rund, .segment button, .reiterleiste button, .chip.wahl):focus-visible { outline: 1px solid var(--ak-fokus-rand); outline-offset: 3px; }
 
 /* ═══ Segment und Reiter ═══ eingelassene Schiene, der gewählte Teil steht erhaben und leuchtet */
 :root[data-vorlage="hifi"] .segment { background-color: var(--mulde); box-shadow: var(--hifi-mulde); }
@@ -145,7 +146,7 @@
 :root[data-vorlage="hifi"] :is(input[type="checkbox"], input[type="radio"])::after { content: ""; inline-size: 10px; block-size: 10px; border-radius: inherit; opacity: 0;
   background: var(--akzent-flaeche); box-shadow: 0 0 calc(10px * var(--ak-leuchten)) var(--akzent-flaeche); transition: opacity var(--schnell); }
 :root[data-vorlage="hifi"] :is(input[type="checkbox"], input[type="radio"]):checked::after { opacity: 1; }
-:root[data-vorlage="hifi"] :is(input[type="checkbox"], input[type="radio"]):focus-visible { outline: 2px solid var(--akzent-flaeche); outline-offset: 2px; }
+:root[data-vorlage="hifi"] :is(input[type="checkbox"], input[type="radio"]):focus-visible { outline: 1px solid var(--ak-fokus-rand); outline-offset: 3px; }
 
 /* ═══ Taster in der Vorlage ═══ Metallkappen tragen dunkle Gravur, Flach- und Pillentaster sind dunkel mit heller Schrift */
 :root[data-vorlage="hifi"] .ak-taster-knopf { color: var(--hifi-gravur); }

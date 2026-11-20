@@ -108,6 +108,8 @@ export class Drehregler extends Regler {
   private bogenMod: SVGPathElement | null = null;
   private punkte: SVGCircleElement[] = [];
   private rastnamen: HTMLElement[] = [];
+  /** Rastpunkte rund um die Kappe; der gewählte leuchtet */
+  private rastpunkte: SVGCircleElement[] = [];
 
   protected bauen(m: Wert): void {
     const raster = m.raster;
@@ -136,6 +138,7 @@ export class Drehregler extends Regler {
     this.bogenMod = this.querySelector<SVGPathElement>(".ak-dreh-skala .mod");
     this.punkte = [...this.querySelectorAll<SVGCircleElement>(".kranz circle")];
     this.rastnamen = [...this.querySelectorAll<HTMLElement>(".ak-dreh-rastname")];
+    this.rastpunkte = [...this.querySelectorAll<SVGCircleElement>(".rasten circle")];
   }
 
   protected ziel(m: Wert): ReglerZiel {
@@ -167,6 +170,7 @@ export class Drehregler extends Regler {
       this.punkte.forEach((p, i) => p.classList.toggle("an", i / n <= a + 1e-6 && (a > 0.001 || i === 0)));
     }
     this.rastnamen.forEach((s, i) => s.classList.toggle("an", i === m.wert));
+    this.rastpunkte.forEach((p, i) => p.classList.toggle("an", i === m.wert));
   }
 }
 

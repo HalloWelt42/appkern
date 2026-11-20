@@ -60,6 +60,9 @@ ak-dreh[aria-disabled="true"] .ak-dreh-skala .schein { display: none; }
 .ak-dreh-skala .mod { fill: none; stroke: var(--ak-mod); stroke-width: 1.8; stroke-linecap: round; }
 .ak-dreh-skala .striche { fill: none; stroke: var(--ak-skala); stroke-width: 1.4px; vector-effect: non-scaling-stroke; stroke-linecap: round; display: none; }
 .ak-dreh-skala .rasten { fill: var(--ak-skala); }
+/* der Punkt der gewählten Raste leuchtet satt (Nutzer 20.11.2026: "die aktive punkte müssen leuchten, blau") */
+.ak-dreh-skala .rasten circle.an { fill: var(--ak-rast-licht); filter: drop-shadow(0 0 calc(2.5px * var(--ak-leuchten)) var(--ak-rast-licht)); }
+ak-dreh[aria-disabled="true"] .ak-dreh-skala .rasten circle.an { fill: var(--ak-gesperrt-tinte); filter: none; }
 .ak-dreh-kappe {
   position: relative; inline-size: var(--d); block-size: var(--d); border-radius: 50%;
   background-color: var(--ak-riffel);
