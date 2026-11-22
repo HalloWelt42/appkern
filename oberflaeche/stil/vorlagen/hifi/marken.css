@@ -111,6 +111,9 @@
   --hifi-erhaben: linear-gradient(180deg, rgb(255 255 255 / calc(.07 * var(--hifi-glanz))), rgb(0 0 0 / calc(.10 * var(--hifi-tiefe))));
   --hifi-mulde: inset 0 calc(2px * var(--hifi-tiefe)) calc(5px * var(--hifi-weich)) rgb(0 0 0 / calc(.55 * var(--hifi-tiefe))),
                 inset 0 -1px 0 rgb(255 255 255 / calc(.07 * var(--hifi-glanz))), inset 0 0 0 1px rgb(0 0 0 / .25);
+  /* Leuchte angekreuzter Felder und Optionen; eine App kann sie je Thema setzen, etwa wo der Akzent auf heller Mulde
+     zu schwach steht */
+  --hifi-ankreuz-leuchte: var(--akzent-flaeche);
 
   /* Material der Instrumente */
   --ak-front: var(--hifi-metall-front);

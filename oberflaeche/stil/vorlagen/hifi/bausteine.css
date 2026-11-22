@@ -142,7 +142,7 @@
 }
 :root[data-vorlage="hifi"] input[type="radio"] { border-radius: 50%; }
 :root[data-vorlage="hifi"] :is(input[type="checkbox"], input[type="radio"])::after { content: ""; inline-size: 10px; block-size: 10px; border-radius: inherit; opacity: 0;
-  background: var(--akzent-flaeche); box-shadow: 0 0 calc(10px * var(--ak-leuchten)) var(--akzent-flaeche); transition: opacity var(--schnell); }
+  background: var(--hifi-ankreuz-leuchte); box-shadow: 0 0 calc(10px * var(--ak-leuchten)) var(--hifi-ankreuz-leuchte); transition: opacity var(--schnell); }
 :root[data-vorlage="hifi"] :is(input[type="checkbox"], input[type="radio"]):checked::after { opacity: 1; }
 :root[data-vorlage="hifi"] :is(input[type="checkbox"], input[type="radio"]):focus-visible { outline: 1px solid var(--ak-fokus-rand); outline-offset: 3px; }
 
