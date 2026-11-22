@@ -145,6 +145,14 @@
   background: var(--hifi-ankreuz-leuchte); box-shadow: 0 0 calc(10px * var(--ak-leuchten)) var(--hifi-ankreuz-leuchte); transition: opacity var(--schnell); }
 :root[data-vorlage="hifi"] :is(input[type="checkbox"], input[type="radio"]):checked::after { opacity: 1; }
 :root[data-vorlage="hifi"] :is(input[type="checkbox"], input[type="radio"]):focus-visible { outline: 1px solid var(--ak-fokus-rand); outline-offset: 3px; }
+/* Schalter (Ankreuzfeld mit role="switch", RAD-90): Kippschalter in der Mulde, der Knopf wandert und leuchtet, wenn an;
+   auch aus deutlich zu sehen. Für Ein und Aus, das sofort wirkt (Wecker, Bildschirm wach halten) */
+:root[data-vorlage="hifi"] input[type="checkbox"][role="switch"] { inline-size: 56px; block-size: 32px; border-radius: 16px; place-items: center start; padding: 0 4px; }
+:root[data-vorlage="hifi"] input[type="checkbox"][role="switch"]::after { inline-size: 24px; block-size: 24px; border-radius: 50%; opacity: 1;
+  background: var(--flaeche-2); box-shadow: var(--schatten); transition: translate var(--schnell), background-color var(--schnell); }
+:root[data-vorlage="hifi"] input[type="checkbox"][role="switch"]:checked::after { translate: 24px 0; background: var(--hifi-ankreuz-leuchte);
+  box-shadow: 0 0 calc(10px * var(--ak-leuchten)) var(--hifi-ankreuz-leuchte); }
+@media (prefers-reduced-motion: reduce) { :root[data-vorlage="hifi"] input[type="checkbox"][role="switch"]::after { transition: none; } }
 
 /* ═══ Taster in der Vorlage ═══ Metallkappen tragen dunkle Gravur, Flach- und Pillentaster sind dunkel mit heller Schrift */
 :root[data-vorlage="hifi"] .ak-taster-knopf { color: var(--hifi-gravur); }

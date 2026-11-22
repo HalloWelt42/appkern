@@ -183,7 +183,8 @@ ak-schieber[art="leuchte"] .ak-schieber-griff { background: radial-gradient(circ
   box-shadow: 0 0 calc(18px * var(--ak-leuchten)) var(--ak-wert), 0 0 0 2px color-mix(in srgb, var(--ak-wert) 40%, transparent); }
 /* Leuchtbalken: LED-Kette als Eingabe, kein Griff */
 ak-schieber[art="balken"] { --bahn-h: 18px; }
-ak-schieber[art="balken"] .ak-schieber-bahn { border-radius: var(--r1); background-color: var(--ak-glas); }
+/* unbeleuchtete Felder schwach in ihrer Farbe, damit die Kette auch ganz aus als Regler zu erkennen ist (RAD-90) */
+ak-schieber[art="balken"] .ak-schieber-bahn { border-radius: var(--r1); background-color: color-mix(in srgb, var(--ak-wert, var(--led-gruen)) 14%, var(--ak-glas)); }
 ak-schieber[art="balken"] .ak-schieber-fuellung { border-radius: 0; }
 ak-schieber[art="balken"] .ak-schieber-griff { display: none; }
 /* senkrecht: feste Bahnhöhe, Griff über translateY */
