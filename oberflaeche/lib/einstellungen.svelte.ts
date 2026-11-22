@@ -40,6 +40,13 @@ export async function einstellungenSpeichern(): Promise<number> {
   return n;
 }
 
+/** Speichert einen Wert sofort, ohne den übrigen Entwurf (etwa die Sprache aus dem Kopf); andere Entwürfe warten weiter */
+export async function einstellungSofortSpeichern(name: string, wert: unknown): Promise<void> {
+  einstellungen.felder = await hole<Feld[]>("/einstellungen", { method: "PATCH", ...json({ werte: { [name]: wert } }) });
+  const { [name]: _gespeichert, ...rest } = einstellungen.entwurf;
+  einstellungen.entwurf = rest;
+}
+
 export function einstellungenVerwerfen(): void {
   einstellungen.entwurf = {};
 }

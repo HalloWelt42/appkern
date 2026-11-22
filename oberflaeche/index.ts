@@ -51,7 +51,7 @@ export { fest, freierBereich, Mitrollen, rollfeldVon, stelleFolgen, stelleFrei, 
 export { hilfe, hilfeThemen, type HilfeAbschnitt, type HilfeThema } from "./lib/hilfe.svelte";
 export { seitenleiste, seitenleisteStarten, seitenleisteUmschalten, type Seitenwahl } from "./lib/seitenleiste.svelte";
 export { VORLAGEN, vorlage, vorlageSetzen, vorlageStarten, type Vorlage } from "./lib/vorlage.svelte";
-export { einstellungen, einstellungenLaden, einstellungenSpeichern, einstellungenVerwerfen, einstellungsAngebot, einstellungsFeld,
+export { einstellungen, einstellungenLaden, einstellungenSpeichern, einstellungSofortSpeichern, einstellungenVerwerfen, einstellungsAngebot, einstellungsFeld,
          einstellungsGeheimnis, einstellungSetzen, einstellungsWert } from "./lib/einstellungen.svelte";
 export { push, pushAusschalten, pushEinschalten, pushGeraete, pushGeraetEntfernen, pushGeraetName, pushLage, pushProbe, pushStarten,
          type PushGeraet, type PushLage, type PushVersand } from "./lib/push.svelte";
