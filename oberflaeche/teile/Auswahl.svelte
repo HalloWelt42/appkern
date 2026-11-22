@@ -27,6 +27,8 @@
   let offen = $state(false);
   let oben = $state(false);
   let rechts = $state(false);
+  /** so breit darf die Liste werden: bis zum Fensterrand auf der Seite, zu der sie aufklappt */
+  let breite = $state(0);
   let wurzel: HTMLElement;
   const gewaehlt = $derived(optionen.find((o) => o.wert === wert));
   const anzeige = $derived(gewaehlt?.titel ?? "");
@@ -43,6 +45,7 @@
       const darunter = window.innerHeight - r.bottom;
       oben = darunter < LISTE_MAX && r.top > darunter;
       rechts = r.left + r.width / 2 > window.innerWidth / 2;
+      breite = Math.max(r.width, (rechts ? r.right : window.innerWidth - r.left) - 8);
     }
     offen = !offen;
   }
@@ -60,7 +63,7 @@
     {#if symbol}<i class="fa-solid {symbol}"></i>{/if}{#if anzeige}<span class="auswahl-text">{anzeige}{#if gewaehlt?.aufgabe}<span class="auswahl-aufgabe">{` · ${gewaehlt.aufgabe}`}</span>{/if}</span>{:else if platzhalter}<span class="auswahl-text platzhalter">{platzhalter}</span>{/if}<i class="fa-solid fa-chevron-down auswahl-pfeil"></i>
   </button>
   {#if offen}
-    <span class="auswahl-liste" class:oben class:rechts role="listbox">
+    <span class="auswahl-liste" class:oben class:rechts role="listbox" style:max-width={breite ? `${breite}px` : null}>
       {#each optionen as o (o.wert)}
         <button type="button" role="option" aria-selected={o.wert === wert} class:aktiv={o.wert === wert} onclick={() => waehlen(o.wert)}>
           {o.titel}{#if o.aufgabe}<span class="auswahl-aufgabe">{` · ${o.aufgabe}`}</span>{/if}{#if o.hinweis}<span class="auswahl-hinweis">{o.hinweis}</span>{/if}</button>
