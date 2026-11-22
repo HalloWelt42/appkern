@@ -14,9 +14,6 @@
   background-color: var(--hg);
   background-image: radial-gradient(ellipse 90% 60% at 50% -12%, var(--hifi-grund-licht), transparent 72%), var(--hifi-koernung);
 }
-:root[data-vorlage="hifi"][data-theme="hell"] body, :root[data-vorlage="hifi"]:not([data-theme]) body {
-  background-image: radial-gradient(ellipse 90% 60% at 50% -12%, var(--hifi-grund-licht), transparent 72%), var(--hifi-buerste);
-}
 :root[data-vorlage="hifi"] ::selection { background: var(--akzent-weich); }
 
 /* ═══ Geräte: Lack für kleine Bauformen, Metall mit Farbakzent für den Inspektor ═══ */

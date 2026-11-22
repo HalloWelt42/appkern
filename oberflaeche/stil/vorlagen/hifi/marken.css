@@ -20,8 +20,9 @@
 
 /* ═══ Texturen ═══ Rauschen als Vektorgrafik (feTurbulence), vom Browser einmal je Kachel gerastert */
 :root[data-vorlage="hifi"] {
-  /* gebürstet: lang gezogenes Rauschen, hell und dunkel zu gleichen Teilen, darum ohne Tönung */
-  --hifi-buerste: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='300'%3E%3Cfilter id='b' x='0' y='0' width='100%25' height='100%25' filterUnits='userSpaceOnUse'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.0028 0.62' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='4 0 0 0 -1.5 4 0 0 0 -1.5 4 0 0 0 -1.5 0 0 0 0 0.075'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+  /* gebürstet, hauchfein (RAD-76): feine, lang gezogene Striche mit weichem Kontrast, hell und dunkel zu gleichen Teilen,
+     darum ohne Tönung */
+  --hifi-buerste: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='300'%3E%3Cfilter id='b' x='0' y='0' width='100%25' height='100%25' filterUnits='userSpaceOnUse'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.003 1.6' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='2.4 0 0 0 -0.7 2.4 0 0 0 -0.7 2.4 0 0 0 -0.7 0 0 0 0 0.035'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
   /* Pulverlack: feines, gleichmäßiges Korn */
   --hifi-koernung: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='k' x='0' y='0' width='100%25' height='100%25' filterUnits='userSpaceOnUse'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='4 0 0 0 -1.5 4 0 0 0 -1.5 4 0 0 0 -1.5 0 0 0 0 0.055'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23k)'/%3E%3C/svg%3E");
   /* Rohblech: Wolken im Walzstahl plus Korn */
@@ -58,7 +59,7 @@
   --hifi-knopf-ring: rgb(0 0 0 / .6);             /* feine Kante rundum */
   --hifi-knopf-fall: .5;                          /* Stärke des Schattens nach unten */
 }
-/* ═══ Hell: gebürstetes Silber bei Tageslicht; Anzeigen bleiben dunkles Glas ═══ */
+/* ═══ Hell: Silber bei Tageslicht, Grund gekörnt wie im Dunkeln (RAD-76); Anzeigen bleiben dunkles Glas ═══ */
 :root[data-vorlage="hifi"][data-theme="hell"], :root[data-vorlage="hifi"] [data-theme="hell"],
 :root[data-vorlage="hifi"]:not([data-theme]) {
   --hg: #c8ccd1;
