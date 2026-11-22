@@ -51,6 +51,12 @@
   --hifi-feld: var(--mulde);       /* Eingabe und Suche: eingelassen */
   --hifi-weich: 1;
   --hifi-licht: 1;
+  /* Kappe aller Knöpfe und flachen Taster, mit oder ohne Licht (RAD-70): dunkel wie ein Flachtaster */
+  --hifi-knopf: #1c1f24;
+  --hifi-knopf-tinte: #e3e8ee;
+  --hifi-knopf-licht: .1;                         /* Stärke der Lichtkante oben */
+  --hifi-knopf-ring: rgb(0 0 0 / .6);             /* feine Kante rundum */
+  --hifi-knopf-fall: .5;                          /* Stärke des Schattens nach unten */
 }
 /* ═══ Hell: gebürstetes Silber bei Tageslicht; Anzeigen bleiben dunkles Glas ═══ */
 :root[data-vorlage="hifi"][data-theme="hell"], :root[data-vorlage="hifi"] [data-theme="hell"],
@@ -76,6 +82,12 @@
   --hifi-weich: .55;              /* kürzere, härtere Schatten */
   --ak-auswahl-licht: color-mix(in srgb, var(--akzent-flaeche) 34%, rgb(255 255 255 / .55)); /* auf Silber braucht das Licht mehr, sonst verschwindet es */
   --hifi-licht: .8;               /* Leuchten wirkt bei Tageslicht schwächer */
+  /* Kappe aller Knöpfe und flachen Taster (RAD-70): hell auf Silber, gleich gebaut wie im Dunkeln */
+  --hifi-knopf: #f3f5f6;
+  --hifi-knopf-tinte: #1b232c;
+  --hifi-knopf-licht: .9;
+  --hifi-knopf-ring: rgb(20 26 33 / .26);
+  --hifi-knopf-fall: .22;
 }
 
 /* ═══ Abgeleitete Marken ═══ an jedem Element neu gerechnet, das Thema oder Stufe ändert */
@@ -155,8 +167,6 @@
   --hifi-schwarz-riffel-bild: repeating-conic-gradient(#060708 0deg 4deg, #2a2d32 4deg 7deg, #060708 7deg 8deg);
   --hifi-schieber-schatten: 0 1px 2px rgb(0 0 0 / .45); /* Metallschieber im Schalter */
   --hifi-gravur: #15181c;                           /* Schrift auf Metallkappen von Tastern: dunkle Gravur */
-  --hifi-flachtaster: #1c1f24;                      /* Flachtaster: dunkle Kappe */
-  --hifi-flachtaster-tinte: #e3e8ee;                /* Flachtaster: helle Schrift */
   --hifi-pillentaster: #2a2e34;                     /* Pillentaster: dunkle Kuppe */
   --hifi-pillentaster-tinte: #eef2f6;               /* Pillentaster: helle Schrift */
 }
@@ -174,8 +184,14 @@
                           radial-gradient(circle at 50% 50%, rgb(0 0 0 / 0) 55%, rgb(0 0 0 / calc(.28 * var(--hifi-tiefe))) 100%); /* Glanz und Wölbung der Lackkappe */
   --hifi-schwarz-kappe-bild: radial-gradient(circle at 40% 28%, rgb(255 255 255 / calc(.22 * var(--hifi-glanz))), rgb(255 255 255 / 0) 46%),
                              conic-gradient(from 20deg, #24272c, #3a3e44 20%, #1a1c20 40%, #34383e 70%, #24272c); /* Drehschliff der schwarzen Kappe */
-  --hifi-flachtaster-schatten: inset 0 1px 0 rgb(255 255 255 / calc(.1 * var(--hifi-glanz))), 0 0 0 1px rgb(0 0 0 / .6),
-                               0 calc(3px * var(--hifi-tiefe)) calc(6px * var(--hifi-weich)) rgb(0 0 0 / calc(.5 * var(--hifi-tiefe))); /* Kante und Schatten des Flachtasters */
+  /* Knopf und flacher Taster sind ein Baustein in zwei Varianten, ohne und mit Licht (RAD-70): eine Kappe, eine Kante,
+     ein Schatten; gesperrt liegt die Kappe versenkt in der Mulde */
+  --hifi-knopf-schatten: inset 0 1px 0 rgb(255 255 255 / calc(var(--hifi-knopf-licht) * var(--hifi-glanz))), 0 0 0 1px var(--hifi-knopf-ring),
+                         0 calc(3px * var(--hifi-tiefe)) calc(6px * var(--hifi-weich)) rgb(0 0 0 / calc(var(--hifi-knopf-fall) * var(--hifi-tiefe)));
+  --hifi-knopf-hover: color-mix(in srgb, var(--hifi-knopf) 92%, var(--hifi-knopf-tinte));
+  --hifi-flachtaster: var(--hifi-knopf);
+  --hifi-flachtaster-tinte: var(--hifi-knopf-tinte);
+  --hifi-flachtaster-schatten: var(--hifi-knopf-schatten);
   --hifi-pillentaster-bild: radial-gradient(circle at 50% 30%, rgb(255 255 255 / calc(.16 * var(--hifi-glanz))), rgb(255 255 255 / 0) 60%); /* Glanz der Kuppe */
   --hifi-pillentaster-schatten: 0 0 0 5px var(--ak-metall), 0 0 0 6px rgb(0 0 0 / .4),
                                 0 calc(6px * var(--hifi-tiefe)) calc(12px * var(--hifi-weich)) 4px rgb(0 0 0 / calc(.5 * var(--hifi-tiefe))); /* Metallring und Schatten */

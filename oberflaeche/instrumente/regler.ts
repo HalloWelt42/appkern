@@ -215,6 +215,7 @@ export class Schieber extends Regler {
 // ─── Taster: rasten (an und aus), tasten (an, solange gedrückt), tippen (Tempo aus dem Abstand der Tipps) ───
 // Leuchten: "licht" setzt eine Leuchte als Lichtschlitz in die obere Kante der Taste (Tastenlicht: die Taste bleibt so
 // hoch wie ohne, hervorgehoben wird nur über Licht und Farbe, Nutzer 16.11.2026); "led" eine Leuchte über die Taste.
+// Die flache Taste trägt ihr Symbol vor der Beschriftung (kurze Beschriftungen wie Sperrsymbol und "Werbung", RAD-70).
 export class Taster extends HTMLElement {
   private knopf?: HTMLButtonElement;
   private leuchten: Element[] = [];
@@ -228,8 +229,10 @@ export class Taster extends HTMLElement {
     leuchtfarbe(this);
     const symbol = this.getAttribute("symbol");
     const beschriftung = sicher(attr(this, "beschriftung", ""));
-    const innen = art === "fuss" ? `<span class="ak-taster-mutter"></span>` : art === "flach" ? `<span class="ak-taster-streifen"></span><span>${beschriftung}</span>`
-      : symbol ? `<i class="fa-solid ${sicher(symbol)}" aria-hidden="true"></i>` : `<span>${beschriftung}</span>`;
+    const zeichen = symbol ? `<i class="fa-solid ${sicher(symbol)}" aria-hidden="true"></i>` : "";
+    const innen = art === "fuss" ? `<span class="ak-taster-mutter"></span>`
+      : art === "flach" ? `<span class="ak-taster-streifen"></span><span class="ak-taster-beschriftung">${zeichen}${beschriftung}</span>`
+      : symbol ? zeichen : `<span>${beschriftung}</span>`;
     const ueber = this.hasAttribute("led") ? `<ak-led farbe="${sicher(attr(this, "led", ""))}" groesse="${art === "fuss" ? "mittel" : "klein"}"></ak-led>` : "";
     const schlitz = this.hasAttribute("licht") ? `<ak-led art="schlitz" farbe="${sicher(attr(this, "licht", ""))}"></ak-led>` : "";
     const text = attr(this, "text", "");

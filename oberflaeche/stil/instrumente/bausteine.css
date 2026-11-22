@@ -224,6 +224,7 @@ ak-taster[art="pille"][an] .ak-taster-knopf::before, ak-taster[art="pille"].gedr
   box-shadow: 0 0 0 3px var(--farbe, var(--led-weiss)), 0 0 calc(22px * var(--ak-leuchten)) var(--farbe, var(--led-weiss)); }
 /* Flachtaster: rechteckig mit Leuchtstreifen über dem Wort */
 ak-taster[art="flach"] .ak-taster-knopf { min-inline-size: 120px; block-size: 48px; flex-direction: column; gap: 6px; }
+ak-taster[art="flach"] .ak-taster-beschriftung { display: inline-flex; align-items: center; gap: 6px; }
 .ak-taster-streifen { display: block; inline-size: 26px; block-size: 4px; border-radius: 2px; background: color-mix(in srgb, var(--farbe, var(--led-gruen)) 20%, var(--ak-glas)); transition: background var(--schnell), box-shadow var(--schnell); }
 ak-taster[an] .ak-taster-streifen { background: var(--farbe, var(--led-gruen)); box-shadow: 0 0 calc(10px * var(--ak-leuchten)) var(--farbe, var(--led-gruen)); }
 /* Glastaster: die ganze Kappe leuchtet */

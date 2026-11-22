@@ -56,7 +56,7 @@ export interface SchieberMerkmale extends ReglerMerkmale<Schieber> {
 export interface TasterMerkmale extends HTMLAttributes<Taster> {
   art?: "flach" | "pille" | "glas" | "fuss";
   modus?: "rasten" | "tasten" | "tippen";
-  /** Font-Awesome-Klasse des Symbols, etwa fa-play */
+  /** Font-Awesome-Klasse des Symbols, etwa fa-play; die flache Taste zeigt es vor der Beschriftung */
   symbol?: string;
   beschriftung?: string;
   /** Wort unter der Taste */
