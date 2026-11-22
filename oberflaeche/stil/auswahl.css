@@ -13,10 +13,9 @@
 .auswahl-liste.oben { top: auto; bottom: calc(100% + 4px); }
 /* Knopf in der rechten Hälfte: rechtsbündig aufklappen; nie breiter als das Fenster (RAD-92) */
 .auswahl-liste.rechts { left: auto; right: 0; }
-.auswahl-liste { max-width: calc(100vw - 16px); }
-.auswahl-liste button { white-space: normal; }
+.auswahl-liste { inline-size: max-content; max-width: calc(100vw - 16px); }
 .auswahl-liste button { border: 0; background: transparent; font: inherit; font-size: var(--klein); text-align: left; padding: 9px 12px;
-                        border-radius: var(--r1); cursor: pointer; color: var(--text); white-space: nowrap; }
+                        border-radius: var(--r1); cursor: pointer; color: var(--text); white-space: normal; }
 .auswahl-liste button:hover, .auswahl-liste button.aktiv { background: var(--akzent-weich); color: var(--akzent); }
 .auswahl-hinweis { font-size: var(--marke); color: var(--text-3); }
 /* Aufgabe klein hinter dem Modellnamen ("Whisper Large V3 · Spracherkennung") */
