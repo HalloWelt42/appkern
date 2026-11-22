@@ -29,12 +29,14 @@ export { default as Karte } from "./teile/Karte.svelte";
 export { default as KartenRaster } from "./teile/KartenRaster.svelte";
 export { default as Seitenkopf } from "./teile/Seitenkopf.svelte";
 export { default as Schnittstelle } from "./teile/Schnittstelle.svelte";
+export { default as Geraeteliste } from "./teile/Geraeteliste.svelte";
 export { leiste, leisteOeffnen, leisteSchliessen } from "./lib/leiste.svelte";
 export { abfrage, anfragenEinstellen, ApiFehler, ereignisse, hole, json, seitenFehler, seitenSignal, token, verbindung,
          type AnfrageOptionen, type FehlerArt } from "./lib/api.svelte";
 export { beiRueckkehr, pruefen as verbindungPruefen } from "./lib/erreichbar.svelte";
 export { auftraege, beiAuftrag } from "./lib/auftraege.svelte";
 export { geraet } from "./lib/geraet.svelte";
+export { Uebergabe, type GeraetInfo, type Geraeteart, type UebergabeWeg } from "./lib/uebergabe.svelte";
 export { sitzung } from "./lib/sitzung.svelte";
 export { fassung, ruhig } from "./lib/fassung.svelte";
 export { adresse, gehe, navigation } from "./lib/navigation.svelte";

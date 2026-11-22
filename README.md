@@ -296,6 +296,25 @@ Wege unter `/api/v1/push`: `schluessel`, `abo` (melden), `abo/entfernen`, `gerae
 führt ein Tippen auf eine Mitteilung an ihr Ziel; `pushLage()` sagt, ob und warum ein Gerät keine Mitteilungen
 bekommen kann.
 
+## Übergabe zwischen Geräten
+
+Holen und Dorthin für jede App mit Wiedergabe (RAD-18, aus TubeVault): jedes Fenster meldet sich per WebSocket beim
+Vermittler und sieht die anderen Fenster desselben Kontos mit dem, was dort läuft. Holen bittet ein anderes Gerät,
+seine Wiedergabe samt Stelle herzugeben; Dorthin gibt die eigene ab, hier hält sie an. Der Vermittler hält nichts
+fest; was ein Zustand und ein Paket enthalten, bestimmt die App mit eigenen Modellen. Angemeldet wird mit der ersten
+Nachricht der Verbindung (der Token reist nicht in der Adresse).
+
+```python
+from appkern.uebergabe import Vermittler, uebergabe_router
+
+vermittler = Vermittler(MeinZustand, MeinPaket)          # Pydantic-Modelle der App
+app.include_router(uebergabe_router(vermittler, geruest.anmeldung))     # WS /api/v1/geraete/ws
+```
+
+In der Oberfläche `new Uebergabe<Zustand, Paket>(pfad, kennung)` mit `starten({ paket, annehmen, abgegeben })` und
+`melden(zustand)`; `andere` und `spielenWoanders` für Knopf und Liste, `holen(id)`, `dorthin(id)`. Die Liste zeigt
+`<Geraeteliste uebergabe zeile hierSpielt texte telefon onzu />` (eigener Name antippen benennt das Gerät um).
+
 ## Ton
 
 Gerechnet wird an genau einem Ort (Nutzer 18.10.2026: "pi ist nur datenlieferant"): die Apps auf dem Pi nutzen die
