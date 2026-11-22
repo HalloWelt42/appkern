@@ -1,7 +1,9 @@
 <script lang="ts" generics="T extends string | number | null">
   // Auswahl als Knopf mit aufklappender Liste (statt nativer Auswahlfelder): zeigt immer die Beschriftung, nie den
   // Wert (ohne Wahl den Platzhalter). Schließt bei Klick daneben und mit Escape. Reicht der Platz unter dem Knopf nicht
-  // für die Liste (etwa in einer Leiste am unteren Rand) und ist darüber mehr, klappt sie nach oben auf (GSP-5).
+  // für die Liste (etwa in einer Leiste am unteren Rand) und ist darüber mehr, klappt sie nach oben auf (GSP-5). Steht
+  // der Knopf in der rechten Hälfte des Fensters, schließt die Liste rechtsbündig ab, damit sie nicht über den Rand ragt
+  // (RAD-92); breiter als das Fenster wird sie nie.
   let {
     wert = $bindable(),
     optionen,
@@ -24,6 +26,7 @@
   const LISTE_MAX = 340;
   let offen = $state(false);
   let oben = $state(false);
+  let rechts = $state(false);
   let wurzel: HTMLElement;
   const gewaehlt = $derived(optionen.find((o) => o.wert === wert));
   const anzeige = $derived(gewaehlt?.titel ?? "");
@@ -39,6 +42,7 @@
       const r = wurzel.getBoundingClientRect();
       const darunter = window.innerHeight - r.bottom;
       oben = darunter < LISTE_MAX && r.top > darunter;
+      rechts = r.left + r.width / 2 > window.innerWidth / 2;
     }
     offen = !offen;
   }
@@ -56,7 +60,7 @@
     {#if symbol}<i class="fa-solid {symbol}"></i>{/if}{#if anzeige}<span class="auswahl-text">{anzeige}{#if gewaehlt?.aufgabe}<span class="auswahl-aufgabe">{` · ${gewaehlt.aufgabe}`}</span>{/if}</span>{:else if platzhalter}<span class="auswahl-text platzhalter">{platzhalter}</span>{/if}<i class="fa-solid fa-chevron-down auswahl-pfeil"></i>
   </button>
   {#if offen}
-    <span class="auswahl-liste" class:oben role="listbox">
+    <span class="auswahl-liste" class:oben class:rechts role="listbox">
       {#each optionen as o (o.wert)}
         <button type="button" role="option" aria-selected={o.wert === wert} class:aktiv={o.wert === wert} onclick={() => waehlen(o.wert)}>
           {o.titel}{#if o.aufgabe}<span class="auswahl-aufgabe">{` · ${o.aufgabe}`}</span>{/if}{#if o.hinweis}<span class="auswahl-hinweis">{o.hinweis}</span>{/if}</button>
