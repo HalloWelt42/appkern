@@ -4,7 +4,8 @@ Jedes Fenster einer App, das sich per WebSocket meldet, ist ein Gerät. Der Verm
 nichts; er reicht nur weiter, und zwar nur zwischen Geräten desselben Kontos (Raum):
 
   zustand     ein Gerät meldet, was es gerade spielt; die anderen sehen es
-  befehl      ein Gerät bittet ein anderes um etwas (etwa "abgeben": seine Wiedergabe herschicken)
+  befehl      ein Gerät bittet ein anderes um etwas (etwa "abgeben": seine Wiedergabe herschicken), bei Bedarf mit einer
+              Zahl (etwa der Lautstärke); welche Befehle es gibt, bestimmt die App
   uebergabe   ein Gerät gibt seine Wiedergabe samt Stelle an ein anderes ab
   name        ein Gerät benennt sich um (gilt für alle Fenster desselben Browsers)
   aktiv       ein Fenster war zuletzt im Vordergrund
@@ -54,6 +55,7 @@ class _Befehl(BaseModel):
     typ: Literal["befehl"]
     an: str
     aktion: str = Field(min_length=1, max_length=40)
+    wert: Optional[float] = Field(None, allow_inf_nan=False)
 
 
 class _Name(BaseModel):
@@ -135,7 +137,8 @@ class Vermittler(Generic[Z, P]):
             absender.zustand = nachricht.zustand.model_dump() if nachricht.zustand else None
             await self._an_raum(raum, {"typ": "zustand", "id": geraet_id, "zustand": absender.zustand}, ausser=geraet_id)
         elif isinstance(nachricht, _Befehl):
-            await self._weiterreichen(absender, nachricht.an, {"typ": "befehl", "aktion": nachricht.aktion})
+            await self._weiterreichen(absender, nachricht.an, {"typ": "befehl", "aktion": nachricht.aktion,
+                                                            "wert": nachricht.wert})
         elif isinstance(nachricht, self._UebergabeNachricht):
             await self._weiterreichen(absender, nachricht.an, {"typ": "uebergabe", "paket": nachricht.paket.model_dump()})
         elif isinstance(nachricht, _Name):

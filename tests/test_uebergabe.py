@@ -74,6 +74,22 @@ def test_uebergabe_und_befehl_nur_im_eigenen_raum():
     lauf(f)
 
 
+def test_befehl_reist_mit_seiner_zahl():
+    async def f():
+        v = Vermittler(Zustand, Paket)
+        a, b = Leitung(), Leitung()
+        await v.beitreten(a, gruss("a"), raum="k1")
+        await v.beitreten(b, gruss("b"), raum="k1")
+        await v.behandeln("a", {"typ": "befehl", "an": "b", "aktion": "lautstaerke", "wert": 62})
+        n = b.letzte("befehl")
+        assert (n["aktion"], n["wert"], n["von"]) == ("lautstaerke", 62, "a")
+        await v.behandeln("a", {"typ": "befehl", "an": "b", "aktion": "stopp"})
+        assert b.letzte("befehl")["aktion"] == "stopp" and b.letzte("befehl")["wert"] is None
+        await v.behandeln("a", {"typ": "befehl", "an": "b", "aktion": "lautstaerke", "wert": "laut"})
+        assert a.letzte("fehler")["text"] == "Nachricht nicht verstanden"
+    lauf(f)
+
+
 def test_paket_wird_mit_dem_modell_der_app_geprueft():
     async def f():
         v = Vermittler(Zustand, Paket)

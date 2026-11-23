@@ -315,6 +315,10 @@ In der Oberfläche `new Uebergabe<Zustand, Paket>(pfad, kennung)` mit `starten({
 `melden(zustand)`; `andere` und `spielenWoanders` für Knopf und Liste, `holen(id)`, `dorthin(id)`. Die Liste zeigt
 `<Geraeteliste uebergabe zeile hierSpielt texte telefon onzu />` (eigener Name antippen benennt das Gerät um).
 
+Ein Gerät kann ein anderes auch steuern (RAD-96): `befehlen(id, aktion, wert?)` schickt eine Aktion der App (bei Bedarf
+mit einer Zahl, etwa der Lautstärke), das andere Gerät führt sie in `starten({ ..., befehl })` aus; `geben(id, paket)`
+lässt dort ein Paket spielen, ohne dass sich hier etwas ändert.
+
 ## Ton
 
 Gerechnet wird an genau einem Ort (Nutzer 18.10.2026: "pi ist nur datenlieferant"): die Apps auf dem Pi nutzen die

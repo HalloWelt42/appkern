@@ -25,6 +25,8 @@ export interface UebergabeWeg<Z extends { laeuft: boolean }, P> {
   annehmen(paket: P, von: string): void;
   /** die eigene Wiedergabe ist abgegeben: hier anhalten */
   abgegeben(): void;
+  /** ein anderes Gerät steuert dieses (RAD-96): welche Aktionen es gibt, bestimmt die App; unbekannte übergehen */
+  befehl?(aktion: string, wert: number | null, von: string): void;
 }
 
 const PAUSEN_MS = [1000, 2000, 5000, 10000, 30000];
@@ -112,9 +114,19 @@ export class Uebergabe<Z extends { laeuft: boolean }, P> {
   dorthin(id: string): boolean {
     const paket = this.weg?.paket();
     if (!paket) return false;
-    this.senden({ typ: "uebergabe", an: id, paket });
+    this.geben(id, paket);
     this.weg?.abgegeben();
     return true;
+  }
+
+  /** ein Paket auf dem anderen Gerät spielen lassen; hier ändert sich nichts */
+  geben(id: string, paket: P): void {
+    this.senden({ typ: "uebergabe", an: id, paket });
+  }
+
+  /** das andere Gerät steuern (RAD-96): Aktion der App, bei Bedarf mit einer Zahl */
+  befehlen(id: string, aktion: string, wert: number | null = null): void {
+    this.senden({ typ: "befehl", an: id, aktion, wert });
   }
 
   umbenennen(name: string): void {
@@ -170,6 +182,7 @@ export class Uebergabe<Z extends { laeuft: boolean }, P> {
         break;
       case "befehl":
         if (n.aktion === "abgeben") this.dorthin(n.von as string);
+        else this.weg?.befehl?.(String(n.aktion), typeof n.wert === "number" ? n.wert : null, String(n.von_name ?? ""));
         break;
       case "uebergabe":
         this.weg?.annehmen(n.paket as P, n.von_name as string);
