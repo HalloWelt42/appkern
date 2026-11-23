@@ -426,6 +426,27 @@ async def test_einordnung_masse_und_wichtig_aus_dem_kontext():
     assert gesehen == [{}, {"x-leitstelle-art": "masse"}, {"x-leitstelle-art": "masse"}, {"x-leitstelle-wichtig": "ja"}, {}]
 
 
+async def test_halten_beantragt_mehr_zeit():
+    """HELF-265: innerhalb von halten trägt jede Anfrage die Sekunden, auch zusammen mit Masse und Wichtig; 0 gibt frei."""
+    from appkern.leitstelle import als_masse, als_wichtig, halten
+    gesehen: list[tuple[str | None, str | None, str | None]] = []
+
+    def handler(r: httpx.Request) -> httpx.Response:
+        gesehen.append(tuple(r.headers.get(f"x-leitstelle-{k}") for k in ("halten", "art", "wichtig")))
+        return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.1]}], "model": "bge"})
+
+    async with leitstelle(handler) as ls:
+        await ls.einbetten(["a"], modell="bge")
+        with halten(300.4):
+            await ls.einbetten(["a"], modell="bge")
+            with als_masse():
+                await ls.einbetten(["a"], modell="bge")
+            with als_wichtig(), halten(0):
+                await ls.einbetten(["a"], modell="bge")
+        await ls.einbetten(["a"], modell="bge")
+    assert gesehen == [(None, None, None), ("300", None, None), ("300", "masse", None), ("0", None, "ja"), (None, None, None)]
+
+
 async def test_vorgabe_eines_dienstes():
     """LS-28: eine Leitstelle mit Vorgabe schickt mit jeder Anfrage Rechnerwunsch (prozentkodiert, in Reihenfolge) und
     Vorrang, auch an Dienste, gelesen beim Senden (eine geänderte Einstellung gilt sofort); eine Priorität beim Aufruf
