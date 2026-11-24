@@ -137,8 +137,8 @@ Ziels; die Adresse steht in einer Einstellung der App, nie fest im Code.
 **Vorlesen** (`appkern.vorlesen`): der eine Weg jeder App zur Sprachausgabe; gesprochen wird von der Vertonung, die
 die Stimmen und ihre Freigaben hält (das Sprechmodell bleibt im Klangwerk hinter der Leitstelle). Eine App erbt
 `VorlesenEinstellungen` (Felder `vertonung_adresse` und `vorlesen_stimme` unter Verbindungen), legt `Vorlesen(geruest)`
-an (Angebote aus dem Verzeichnis und, für die Vorlesestimme, jedes Mal aus der Vertonung: ihr Katalog und die privaten
-Stimmen, die sie dieser App freigibt; leer heißt die Stimme ab Werk; Verbindung in der Fußleiste) und bindet
+an (Angebote aus dem Verzeichnis und, für die Vorlesestimme, jedes Mal aus der Vertonung: die privaten Stimmen, die sie
+dieser App freigibt, fremde Klonstimmen und ihr Katalog; fehlt die Freigabe, steht es im Stand der Auswahl; leer heißt die Stimme ab Werk; Verbindung in der Fußleiste) und bindet
 `vorlesen.router()` ein: `POST /api/v1/vorlesen` mit `{"text"}` liefert den Strom der Vertonung im Auftrag der Person
 (NDJSON, je Zeile `satz` mit Base64-WAV, `ende`, `fehler`; lange Texte in Teilen bis 7500 Zeichen an Satzgrenzen, die
 Sätze durchgezählt), `GET /api/v1/vorlesen` sagt `{"da": ...}`. Mit eigener Prüfung vorher: `await

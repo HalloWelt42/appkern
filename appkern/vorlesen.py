@@ -18,7 +18,7 @@ mit `nr`, `text` und dem Ton als Base64-WAV in `ton`) liest der Vorleser der Obe
 vor dem ersten Satz scheitert, ist ein `VorlesenFehler` mit Grund und Status, danach kommt eine Zeile `fehler`.
 
 Die Vorlesestimme wählt jede App für sich (Feld `vorlesen_stimme`) aus dem, was die Vertonung ihr gerade anbietet: ihr
-Katalog und die privaten Stimmen, die sie genau dieser App freigibt. Die Auswahl kommt jedes Mal aus der Vertonung, nie
+Katalog, die klonbaren Stimmen: private, die sie genau dieser App freigibt, und fremde. Die Auswahl kommt jedes Mal aus der Vertonung, nie
 aus einer festen Liste; ohne Wahl spricht die Stimme ab Werk der Vertonung."""
 
 from __future__ import annotations
@@ -43,6 +43,9 @@ if TYPE_CHECKING:
 STROM = "/api/v1/sprechen/strom"
 #: so groß ist ein Teil für einen Aufruf der Vertonung (sie nimmt bis 8000 Zeichen)
 TEIL_HOECHSTENS = 7_500
+#: was die Vertonung zur Wahl stellt, klonbare Stimmen zuerst (Bereich dort, Hinweis an der Stimme)
+BEREICHE = (("privat", "private Stimme"), ("fremd", "fremde Stimme"), ("katalog", "eingebaut"))
+NICHT_FREI = "private Stimmen gibt die Vertonung dieser App nicht frei (dort Einstellungen, Private Stimmen für)"
 #: so beginnt der Wert einer Katalogstimme (wie die Vertonung ihre Kennungen schreibt)
 KATALOG = "katalog:"
 NDJSON = "application/x-ndjson"
@@ -140,25 +143,26 @@ class Vorlesen:
 
     async def stimmen_angebot(self) -> Angebot:
         """Auswahl für die Vorlesestimme, jedes Mal aus der Vertonung (`GET /api/v1/stimmen`, mit dem App-Schlüssel
-        dieser App): ihr Katalog und die privaten Stimmen, die sie dieser App freigibt; dazu leer für die Stimme ab
-        Werk."""
+        dieser App): die privaten Stimmen, die sie dieser App freigibt, fremde Klonstimmen und ihr Katalog; dazu leer
+        für die Stimme ab Werk. Gibt sie keine privaten frei, steht das im Stand: sonst fehlten sie ohne Grund."""
         optionen = [Option(wert="", titel="Stimme ab Werk", hinweis="wie in der Vertonung eingestellt")]
         if not self.da:
             return Angebot(optionen=optionen, eigener_wert=False, stand="erst die Adresse der Vertonung eintragen")
-        anzahl, stand = 0, ""
-        for bereich, hinweis in (("privat", "private Stimme, für diese App freigegeben"), ("katalog", "Katalog")):
+        anzahl, stand, gesperrt = 0, "", False
+        for bereich, hinweis in BEREICHE:
             try:
                 antwort = await self.g.verbund.anfrage("GET", self.adresse(), "/api/v1/stimmen", timeout=ABFRAGE,
                                                        params={"bereich": bereich})
             except VerbundFehler as f:
-                if f.status in (401, 403):           # private Stimmen gibt die Vertonung dieser App nicht frei
+                if bereich == "privat" and f.status in (401, 403):
+                    gesperrt = True
                     continue
                 stand = f"Vertonung antwortet nicht: {f.meldung}"
                 break
             stimmen = antwort.json()
             optionen += [Option(wert=str(s["id"]), titel=str(s["name"]), hinweis=hinweis) for s in stimmen]
             anzahl += len(stimmen)
-        return Angebot(optionen=optionen, eigener_wert=False, stand=stand or f"{anzahl} Stimmen")
+        return Angebot(optionen=optionen, eigener_wert=False, stand=stand or (f"{anzahl} Stimmen; {NICHT_FREI}" if gesperrt else f"{anzahl} Stimmen"))
 
     async def zeilen(self, text: str, *, sitzung: str | None = None) -> AsyncIterator[bytes]:
         """Die Zeilen der Vertonung für `text`, je Zeile mit Zeilenende, die Sätze über alle Teile durchgezählt, am Ende

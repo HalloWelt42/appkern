@@ -62,6 +62,8 @@ class Vertonung(Wolke):
                 if not self.privat_frei:
                     return httpx.Response(403, json={"detail": "Private Stimmen sind dieser App nicht erlaubt"})
                 return httpx.Response(200, json=[{"id": "p-1", "name": "Eigene", "bereich": "privat"}])
+            if request.url.params.get("bereich") == "fremd":
+                return httpx.Response(200, json=[{"id": "f-1", "name": "Fremde", "bereich": "fremd"}])
             return httpx.Response(200, json=[{"id": "katalog:eins", "name": "eins", "bereich": "katalog"}])
         text = json.loads(request.content)["text"]
         if text.startswith("verboten"):
@@ -133,10 +135,11 @@ async def test_vorlesestimme_der_app(umgebung):
     assert [o["wert"] for o in angebot["optionen"]] == [""] and not angebot["eigener_wert"]
     await geruest.einstellungen.aendern({"vertonung_adresse": "http://vt.test"})
     angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_stimme", headers=h)).json()
-    assert [o["wert"] for o in angebot["optionen"]] == ["", "p-1", "katalog:eins"]
-    ziel.privat_frei = False                                          # nicht freigegeben: nur der Katalog
+    assert [o["wert"] for o in angebot["optionen"]] == ["", "p-1", "f-1", "katalog:eins"] and angebot["stand"] == "3 Stimmen"
+    assert [o["hinweis"] for o in angebot["optionen"][1:]] == ["private Stimme", "fremde Stimme", "eingebaut"]
+    ziel.privat_frei = False                                          # nicht freigegeben: es steht dabei, warum sie fehlen
     angebot = (await c.get("/api/v1/einstellungen/angebot/vorlesen_stimme", headers=h)).json()
-    assert [o["wert"] for o in angebot["optionen"]] == ["", "katalog:eins"]
+    assert [o["wert"] for o in angebot["optionen"]] == ["", "f-1", "katalog:eins"] and "gibt die Vertonung dieser App nicht frei" in angebot["stand"]
     await geruest.einstellungen.aendern({"vorlesen_stimme": "p-1"})
     await c.post("/api/v1/vorlesen", headers=h, json={"text": "Zwei."})
     assert json.loads(strom(ziel)[-1].content)["stimme"] == {"art": "klon", "knoten_id": "p-1"}
