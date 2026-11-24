@@ -38,6 +38,16 @@ class Ich(_Modell):
         return f"Apps/{self.app}"
 
 
+class Speicher(_Modell):
+    """Platz des Bestands der Kellerwolke (Datenträger) und des Kontos; ohne Datenträger keine Zahlen (ab 0.98)."""
+
+    verfuegbar: bool
+    gesamt: int | None = None
+    frei: int | None = None
+    benutzt: int = 0
+    quota: int | None = None
+
+
 class AppZugang(_Modell):
     """Ein App-Zugang des Kontos, nur Name und ob er aktiv ist: unter diesem Namen meldet sich die App bei anderen an."""
 

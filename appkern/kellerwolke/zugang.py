@@ -26,7 +26,7 @@ import httpx
 
 from .fehler import KellerwolkeFehler, NichtErreichbar, NichtGefunden, fehler_aus
 from .modelle import (
-    Aenderungen, Aktion, Anfrage, AppZugang, AnfrageNeu, Herkunft, Ich, ImPapierkorb, Knoten, Sperre, Text, Treffer, Version,
+    Aenderungen, Aktion, Anfrage, AppZugang, AnfrageNeu, Herkunft, Ich, ImPapierkorb, Knoten, Speicher, Sperre, Text, Treffer, Version,
     WahlSeite,
 )
 
@@ -164,6 +164,10 @@ class Kellerwolke:
 
     async def ich(self) -> Ich:
         return Ich.model_validate((await self._anfrage("GET", "/ich")).json())
+
+    async def speicher(self) -> Speicher:
+        """Freier Platz der Kellerwolke, auf den alles zählt, was die App ablegt (ab 0.98); ältere antworten mit `NichtGefunden`."""
+        return Speicher.model_validate((await self._anfrage("GET", "/speicher")).json())
 
     async def apps(self) -> list[AppZugang]:
         """Die Apps desselben Kontos (Namen seiner App-Zugänge, ab Kellerwolke 0.88), etwa für eine Auswahl in den

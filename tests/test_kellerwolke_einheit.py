@@ -221,6 +221,14 @@ async def test_apps_des_kontos():
         await wolke(lambda a: httpx.Response(404, json={"detail": "Not Found"})).apps()
 
 
+async def test_speicher_des_bestands():
+    antwort = {"verfuegbar": True, "gesamt": 24, "frei": 14, "benutzt": 5, "quota": None}
+    s = await wolke(lambda a: httpx.Response(200, json=antwort) if a.url.path == "/api/v1/ablage/speicher" else httpx.Response(404)).speicher()
+    assert (s.verfuegbar, s.gesamt, s.frei, s.benutzt, s.quota) == (True, 24, 14, 5, None)
+    with pytest.raises(NichtGefunden):                              # ältere Kellerwolke
+        await wolke(lambda a: httpx.Response(404, json={"detail": "Not Found"})).speicher()
+
+
 async def test_papierkorb_lesen_und_zurueckholen():
     ordner, bild = str(uuid4()), knoten_json("a.png")
     eintrag = {**bild, "geloescht_am": JETZT, "begleiter": [knoten_json("a.bild.json", rolle="bild", haupt_id=bild["id"])]}
