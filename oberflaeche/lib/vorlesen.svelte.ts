@@ -14,8 +14,18 @@ import { einzelton } from "./wiedergabe.svelte";
 export interface VorleseSatz {
   nr: number;
   text: string;
+  /** wie er gesprochen wird (Zahlen und Abkürzungen ausgeschrieben), wenn die Vertonung es nennt */
+  gesprochen?: string;
+  /** seine Stelle im vorgelesenen Text, wenn die Vertonung sie nennt (bei langen Texten je Teil gezählt) */
+  von?: number;
+  bis?: number;
 }
 
+/** Ein eingeplanter Satz auf der Uhr des Tons */
+interface Platz { beginn: number; dauer: number; puffer: AudioBuffer; satz: VorleseSatz }
+
+/** So oft sieht der Vorleser nach, wo der Ton gerade ist */
+const NACHSEHEN_MS = 40;
 /** Pause zwischen zwei Sätzen (wie beim Sprechen am Stück) */
 const PAUSE_S = 0.3;
 
@@ -49,6 +59,9 @@ class Vorleser {
   #steuerung: AbortController | null = null;
   #quellen: AudioBufferSourceNode[] = [];
   #lauf = 0;
+  #plaetze: Platz[] = [];
+  #platz: Platz | null = null;
+  #uhr: ReturnType<typeof setInterval> | null = null;
   #wacht = false;
   /** Vorlauf über die Läufe gemerkt: nach einem Abriss mehr, nach Läufen ohne langsam wieder weniger */
   #vorlauf = new Vorlauf();
@@ -96,11 +109,8 @@ class Vorleser {
       zeitpunkt += puffer.duration + PAUSE_S;
       offen++;
       this.#quellen.push(quelle);
-      setTimeout(() => {
-        if (lauf !== this.#lauf) return;
-        this.satz = satz;
-        this.wartet = false;
-      }, Math.max(0, (beginn - ctx.currentTime) * 1000));
+      this.#plaetze.push({ beginn, dauer: puffer.duration, puffer, satz });
+      this.#verfolgen();
       quelle.onended = () => {
         offen--;
         vorbei();
@@ -141,7 +151,7 @@ class Vorleser {
           const zeile = rest.slice(0, i).trim();
           rest = rest.slice(i + 1);
           if (!zeile) continue;
-          const z = JSON.parse(zeile) as { art: string; nr?: number; text?: string; ton?: string; meldung?: string; zeichen?: number };
+          const z = JSON.parse(zeile) as { art: string; nr?: number; text?: string; ton?: string; meldung?: string; zeichen?: number; gesprochen?: string; von_zeichen?: number; bis_zeichen?: number };
           if (z.art === "satz" && z.ton) {
             const puffer = await ctx.decodeAudioData(tonAus(z.ton));
             if (lauf !== this.#lauf) return;
@@ -152,7 +162,7 @@ class Vorleser {
               spielt = false;
               this.wartet = true;
             }
-            bereit.push({ puffer, satz: { nr: z.nr ?? 0, text: z.text ?? "" } });
+            bereit.push({ puffer, satz: { nr: z.nr ?? 0, text: z.text ?? "", gesprochen: z.gesprochen, von: z.von_zeichen, bis: z.bis_zeichen } });
             weiter();
           } else if (z.art === "plan" && typeof z.zeichen === "number") {
             vorlauf.plan(z.zeichen);         // Länge des ganzen Texts: der Vorlauf rechnet den Rest in Ton um (WIKI-104)
@@ -191,13 +201,48 @@ class Vorleser {
       }
     }
     this.#quellen = [];
+    this.#vergessen();
     Object.assign(this, { kennung: null, wartet: false, satz: null });
+  }
+
+  /** Was man jetzt hört, auf der Uhr des Tons: sie steht, wenn der Ton steht (gesperrter Schirm, Anruf, stummer Start),
+   *  und die Verzögerung bis zum Lautsprecher ist abgezogen. */
+  #gehoert(): number {
+    const ctx = this.#ctx;
+    return ctx ? ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0) : 0;
+  }
+
+  /** Stellt den laufenden Satz nach der Uhr des Tons, nie nach einem Wecker: sonst läuft die Anzeige dem Ton davon. */
+  #verfolgen(): void {
+    this.#uhr ??= setInterval(() => {
+      const t = this.#gehoert();
+      const platz = this.#plaetze.findLast((p) => p.beginn <= t) ?? null;
+      if (!platz || platz === this.#platz) return;
+      this.#platz = platz;
+      this.satz = platz.satz;
+      this.wartet = false;
+    }, NACHSEHEN_MS);
+  }
+
+  #vergessen(): void {
+    if (this.#uhr) clearInterval(this.#uhr);
+    this.#uhr = null;
+    this.#plaetze = [];
+    this.#platz = null;
+  }
+
+  /** Wie weit der laufende Satz ist, in Sekunden, samt Dauer und Ton (für die Stelle im Satz); null, wenn keiner klingt.
+   *  Nicht reaktiv: wer mitläuft, fragt im eigenen Takt. */
+  stelle(): { satz: VorleseSatz; zeit: number; dauer: number; puffer: AudioBuffer } | null {
+    const p = this.#platz;
+    return p ? { satz: p.satz, zeit: Math.max(0, Math.min(p.dauer, this.#gehoert() - p.beginn)), dauer: p.dauer, puffer: p.puffer } : null;
   }
 
   #beenden(lauf: number): void {
     if (lauf !== this.#lauf) return;
     this.#steuerung = null;
     this.#quellen = [];
+    this.#vergessen();
     Object.assign(this, { kennung: null, wartet: false, satz: null });
   }
 

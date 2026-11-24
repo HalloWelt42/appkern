@@ -730,7 +730,8 @@ Eine Spracheingabe ohne Datei nutzt dieselbe Aufnahme ohne den Rekorder: `aufneh
 `aufnahmeAbbrechen()` verwirft ohne Text.
 `einzelton.umschalten(kennung, adresse)` spielt kurze Töne im Tippen (am iPhone sonst stumm), `vorleser.umschalten(kennung,
 pfad, daten)` liest einen Strom der Vertonung vor (POST an einen Weg der App, je Zeile `satz` mit Base64-WAV,
-`ende`, `fehler`): Satz für Satz lückenlos in einem AudioContext, `vorleser.satz` zum Mitlesen, `vorleser.fehler` mit dem
+`ende`, `fehler`): Satz für Satz lückenlos in einem AudioContext, `vorleser.satz` zum Mitlesen (gestellt nach der Uhr des Tons), `vorleser.stelle()` für die
+Stelle im Satz, `vorleser.fehler` mit dem
 Grund; immer nur eines von beiden spielt. Gespielt wird mit Vorlauf (`lib/vorlauf.ts`): erst, wenn genug Ton bereitliegt
 (mindestens 1,5 Sekunden); liefert der Sprechdienst langsamer als Echtzeit (ausgelastet), entsprechend mehr, höchstens 20
 Sekunden; reißt der Ton ab, wartet der Vorleser, bis wieder genug da ist, und merkt sich den größeren Vorlauf. Muss der Text erst geladen werden, schaltet `vorleser.entsperren()` im Tippen den
