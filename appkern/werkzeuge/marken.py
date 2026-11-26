@@ -45,6 +45,8 @@ MARKEN_IM_APPKERN = Path("oberflaeche") / "stil" / "marken.css"
 VORLAGEN = Path("oberflaeche") / "stil" / "vorlagen"
 #: Marken der Instrumente (Regler, Leuchten, Anzeigen): ihre Werte, frei wie die Marken des Appkerns
 MARKEN_DER_INSTRUMENTE = Path("oberflaeche") / "stil" / "instrumente" / "marken.css"
+#: Marken des Editors, eigene Datei, die marken.css einbindet (eine App mit eigenen Marken lädt nur sie)
+MARKEN_DES_EDITORS = Path("oberflaeche") / "stil" / "editor-marken.css"
 MARKEN_IM_PAKET = Path("frontend") / "node_modules" / "appkern-oberflaeche" / "oberflaeche" / "stil" / "marken.css"
 EINSTELLUNG = "gestaltung.toml"
 Strenge = Literal["melden", "scharf"]
@@ -114,10 +116,26 @@ def marken_datei(wurzel: Path) -> Path | None:
     return None
 
 
+#: eingebundene Datei daneben: @import "./name.css";
+EINBINDUNG = re.compile(r'@import\s+"(\./[\w.-]+\.css)"\s*;')
+
+
+def marken_text(datei: Path) -> str:
+    """Der Text der Marken samt der Dateien, die sie daneben einbinden (@import "./name.css"), in deren Reihenfolge
+    angehängt; eine Einbindung ohne Datei bleibt außen vor."""
+    text = datei.read_text(encoding="utf-8")
+    teile = [EINBINDUNG.sub("", text)]
+    for m in EINBINDUNG.finditer(text):
+        ziel = datei.parent / m.group(1)
+        if ziel.is_file():
+            teile.append(ziel.read_text(encoding="utf-8"))
+    return "\n".join(teile)
+
+
 def marken_namen(datei: Path | None) -> set[str]:
     if datei is None:
         return set()
-    return {name for r in regeln(datei.read_text(encoding="utf-8")) for name, _, _ in deklarationen(r.deklarationen)
+    return {name for r in regeln(marken_text(datei)) for name, _, _ in deklarationen(r.deklarationen)
             if name.startswith("--")}
 
 
@@ -132,7 +150,7 @@ def gehoert_zum_stil(p: Path, wurzel: Path) -> bool:
         return False
     pfad = Path(*teile)
     vorlagen_marken = pfad.name == "marken.css" and pfad.parent.parent == VORLAGEN
-    return pfad not in (MARKEN_IM_APPKERN, MARKEN_DER_INSTRUMENTE) and not vorlagen_marken
+    return pfad not in (MARKEN_IM_APPKERN, MARKEN_DER_INSTRUMENTE, MARKEN_DES_EDITORS) and not vorlagen_marken
 
 
 # ----- Werte -----

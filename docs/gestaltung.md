@@ -213,6 +213,16 @@ Farben für Code in Antworten und Belegen (Assistent): wie verbreitete Editoren,
 | `--code-zahl` | `#c2410c` | `#ffb38a` | Zahlen und feste Werte |
 | `--code-titel` | `#1d64c8` | `#7cc0ff` | Namen von Funktionen und Abschnitten |
 
+### Schatten und Schleier
+
+Karten heben sich leicht ab; Schwebendes (Fenster, Menüs, Meldungen) deutlich.
+
+| Marke | hell | dunkel | Zweck |
+|---|---|---|---|
+| `--schatten` | `0 1px 2px rgba(22, 34, 46, 0.06), 0 4px 14px rgba(22, 34, 46, 0.07)` | `0 1px 0 rgba(255, 255, 255, 0.03), 0 6px 18px rgba(0, 0, 0, 0.28)` | Karten der Schale |
+| `--schatten-schwebend` | `0 16px 40px rgba(22, 34, 46, 0.16), 0 2px 6px rgba(22, 34, 46, 0.1)` | `0 16px 40px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.3)` | Fenster, Meldungen, Menüs |
+| `--schleier` | `rgba(255, 255, 255, 0.78)` | `rgba(6, 11, 18, 0.74)` | hinter Dialogen des Leitstands |
+
 ### Editor
 
 Das klassische Schema einer verbreiteten Entwicklungsumgebung (ältere Fassung) für den Editor, die Ausgabe darunter und den Debugger (appkern-oberflaeche/code, aus der Codeschmiede, WIKI-48). Der Editor liest nur diese Marken und folgt so dem Thema, ohne neu zu entstehen.
@@ -253,16 +263,6 @@ Das klassische Schema einer verbreiteten Entwicklungsumgebung (ältere Fassung) 
 | `--ed-speicher-reihe` | `#f2b84b` | `#f2b84b` | Speicherbild: Listen und Tupel als Fächerreihe |
 | `--ed-speicher-wert` | `#4f8fd6` | `#4f8fd6` | Speicherbild: einfache Werte als Kasten |
 | `--ed-geaendert` | `#9a6a00` | `#e3b341` | Speicherbild und Debugger: im Schritt geändert, gerade hier |
-
-### Schatten und Schleier
-
-Karten heben sich leicht ab; Schwebendes (Fenster, Menüs, Meldungen) deutlich.
-
-| Marke | hell | dunkel | Zweck |
-|---|---|---|---|
-| `--schatten` | `0 1px 2px rgba(22, 34, 46, 0.06), 0 4px 14px rgba(22, 34, 46, 0.07)` | `0 1px 0 rgba(255, 255, 255, 0.03), 0 6px 18px rgba(0, 0, 0, 0.28)` | Karten der Schale |
-| `--schatten-schwebend` | `0 16px 40px rgba(22, 34, 46, 0.16), 0 2px 6px rgba(22, 34, 46, 0.1)` | `0 16px 40px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.3)` | Fenster, Meldungen, Menüs |
-| `--schleier` | `rgba(255, 255, 255, 0.78)` | `rgba(6, 11, 18, 0.74)` | hinter Dialogen des Leitstands |
 
 ### Schriftstufen
 

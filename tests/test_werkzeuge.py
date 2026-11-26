@@ -698,3 +698,20 @@ def test_ausrollen_meldet_den_bau(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(a, "_lauf", kaputt)
     a.bau_melden(z, tmp_path, melder)
     assert "Warnung: Bau nicht gemeldet: kein git" in capsys.readouterr().out
+
+
+def test_marken_binden_die_des_editors_ein(tmp_path):
+    """Die Marken des Editors stehen in einer eigenen Datei; Namen und Gestaltung lesen sie über die Einbindung mit."""
+    from appkern.werkzeuge import gestaltung, marken
+    _datei(tmp_path, "oberflaeche/stil/marken.css", "\n".join([
+        "/* Kopf */", '@import "./editor-marken.css";', '@import "./fehlt.css";',
+        "/* == Flächen == Von hinten nach vorn. */", ':root, [data-theme="hell"] {', "  --hg: #e4eaf2;   /* Seitengrund */", "}"]))
+    _datei(tmp_path, "oberflaeche/stil/editor-marken.css", "\n".join([
+        "/* == Editor == Schema des Editors. */", ':root, [data-theme="hell"], [data-ed="hell"] {', "  --ed-grund: #ffffff;   /* Grund */", "}",
+        '[data-theme="dunkel"], [data-ed="dunkel"] { --ed-grund: #2b2b2b; }']))
+    datei = tmp_path / "oberflaeche/stil/marken.css"
+    assert marken.marken_namen(datei) == {"--hg", "--ed-grund"}
+    m = gestaltung.marken_lesen(marken.marken_text(datei))
+    ed = next(x for x in m.alle() if x.name == "--ed-grund")
+    assert (ed.gruppe, ed.werte) == ("Editor", {"hell": "#ffffff", "dunkel": "#2b2b2b"})
+    assert not marken.gehoert_zum_stil(tmp_path / "oberflaeche/stil/editor-marken.css", tmp_path)

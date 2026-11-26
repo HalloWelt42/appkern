@@ -20,6 +20,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .marken import marken_text
+
 MARKEN = Path("oberflaeche") / "stil" / "marken.css"
 KATALOG = Path("oberflaeche") / "gestaltung" / "katalog.json"
 DATEN = Path("oberflaeche") / "gestaltung" / "marken.json"
@@ -211,7 +213,7 @@ def seite(marken: Marken, katalog: dict) -> str:
 
 def erzeugen(wurzel: Path) -> dict[Path, str]:
     """Inhalt der erzeugten Dateien aus dem Stand der Wahrheit."""
-    marken = marken_lesen((wurzel / MARKEN).read_text(encoding="utf-8"))
+    marken = marken_lesen(marken_text(wurzel / MARKEN))
     katalog = json.loads((wurzel / KATALOG).read_text(encoding="utf-8"))
     return {DATEN: json.dumps(daten(marken, katalog), ensure_ascii=False, indent=1) + "\n",
             SEITE: seite(marken, katalog)}
