@@ -1,11 +1,13 @@
 <script lang="ts">
   // Editor für Code (CodeMirror 6, aus der Codeschmiede, WIKI-48; Ausstattung in editor/editor.ts). In beide Richtungen
   // an `code` gebunden, damit die Seite den Inhalt kennt (Prüfen, Probelauf); ändert die Seite `code` (Zurücksetzen,
-  // anderes Beispiel), folgt der Editor. Mit `mitHaltepunkten` eine Rinne für Haltepunkte des Debuggers.
-  import { onDestroy, onMount } from "svelte";
+  // anderes Beispiel), folgt der Editor. Mit `mitHaltepunkten` eine Rinne für Haltepunkte des Debuggers; auch sie ist in
+  // beide Richtungen an `haltepunkte` gebunden (gemerkte Haltepunkte setzt die Seite von außen).
+  import { onDestroy, onMount, untrack } from "svelte";
   import type { EditorView } from "@codemirror/view";
   import type { Funktionsbestand } from "./editor/aufrufe";
   import { bestandSetzen, erstelleEditor, haltepunkteSchalten } from "./editor/editor";
+  import { haltepunkteSetzen, haltepunkteVon } from "./editor/haltepunkte";
   import { werteSetzen } from "./editor/werte";
   import { setzeZeilenMarke } from "./editor/zeilenmarke";
   import type { Rahmen } from "./aufzeichnung";
@@ -18,7 +20,8 @@
     markierteZeile?: number | null;
     /** Befehle für die Vervollständigung, etwa gehe() einer Aufgabe */
     befehle?: readonly string[];
-    /** Rinne für Haltepunkte des Debuggers; die gesetzten Zeilen stehen in `haltepunkte` */
+    /** Rinne für Haltepunkte des Debuggers; die gesetzten Zeilen stehen in `haltepunkte`, von außen gesetzte übernimmt
+     *  die Rinne (Zeilen, die es nicht gibt, fallen weg) */
     mitHaltepunkten?: boolean;
     haltepunkte?: number[];
     /** Funktionen der gewählten Fassung: unbekannte Aufrufe werden markiert, die übrigen vorgeschlagen; wechselt live */
@@ -43,11 +46,23 @@
     });
   });
 
-  // Rinne für Haltepunkte folgt `mitHaltepunkten`, auch wenn es erst nach dem Aufbau des Editors feststeht
+  // Rinne für Haltepunkte folgt `mitHaltepunkten`, auch wenn es erst nach dem Aufbau des Editors feststeht; die neue
+  // Rinne beginnt leer und meldet das, darum zuvor die gewünschten Haltepunkte festhalten und danach setzen
   $effect(() => {
     if (!view) return;
+    const gewuenscht = untrack(() => haltepunkte);
     haltepunkteSchalten(view, mitHaltepunkten ? (zeilen) => (haltepunkte = zeilen) : undefined);
-    if (!mitHaltepunkten) haltepunkte = [];
+    if (mitHaltepunkten) haltepunkteSetzen(view, gewuenscht);
+    else haltepunkte = [];
+  });
+
+  // ändert die Seite `haltepunkte` von außen, übernimmt die Rinne sie; nur bei echtem Unterschied, sonst käme jede
+  // Meldung der Rinne hier noch einmal an
+  $effect(() => {
+    const gewuenscht = haltepunkte;
+    if (!view || !untrack(() => mitHaltepunkten)) return;
+    const jetzt = haltepunkteVon(view);
+    if (gewuenscht.length !== jetzt.length || gewuenscht.some((z, n) => z !== jetzt[n])) haltepunkteSetzen(view, gewuenscht);
   });
 
   // ändert die Seite `code` von außen, bekommt der Editor den neuen Inhalt; nur bei echtem Unterschied, sonst käme
