@@ -256,7 +256,12 @@ def pi_pruefen(z: Ziel) -> None:
   docker compose version >/dev/null || { echo "Docker Compose fehlt"; exit 1; }
   echo "Docker: $(docker --version)\""""))
     if z.ton:
-        print(tondienst(_ssh(z, f"curl -sf -m 15 {shlex.quote(str(z.leitstelle).rstrip('/'))}/v1/models || true")))
+        # die Leitstelle trägt ein Zertifikat der Hausstelle: mit deren Wurzel prüfen, die die App auf dem Pi schon hat
+        # (ab dem ersten Ausrollen); ohne sie scheiterte curl am Zertifikat und die Leitstelle galt als nicht lesbar
+        wurzel = shlex.quote(f"{z.wurzel}/zertifikate/rootCA.pem")
+        adresse = shlex.quote(f"{str(z.leitstelle).rstrip('/')}/v1/models")
+        print(tondienst(_ssh(z, f"if [ -f {wurzel} ]; then curl -sf -m 15 --cacert {wurzel} {adresse}; "
+                                f"else curl -sf -m 15 {adresse}; fi || true")))
 
 
 def tondienst(modelle_json: str) -> str:
