@@ -87,3 +87,116 @@ class Pegelrechner:
             self.rms += np.sqrt(np.mean(rahmen ** 2, axis=1) + 1e-12).tolist()
             self.spitzen += np.max(np.abs(rahmen), axis=1).tolist()
         self._rest = werte[ganz:]
+
+
+class Klangrechner:
+    """Klang einer Datei (Plattenschrank, PLAT-2): echte Bandbreite, Übersteuerung, Dynamik und Aussetzer, stückweise
+    gefüttert wie der Pegelrechner. Die Bitrate sagt nur, was übertragen wurde; eine hochgerechnete Datei bricht im
+    Spektrum dort ab, wo ihre Vorlage abbrach, ein Aussetzer ist digitale Stille mitten im Titel.
+
+    - Bandbreite: gemitteltes Leistungsspektrum (Fenster `fft`, Hann), höchste Frequenz, deren geglätteter Pegel nicht
+      mehr als `abstand_db` unter dem Bezug (Mittel von 1 bis 6 kHz) liegt.
+    - Übersteuerung: Anteil der Werte in Läufen von mindestens `lauf` Werten am Anschlag (`anschlag`).
+    - Dynamik: Abstand zwischen dem 95. und dem 10. Perzentil der Effektivwerte in Rahmen von `rahmen_ms`, ohne Stille.
+    - Aussetzer: Stille unter `still_db` ab `aussetzer_s`, nicht in den ersten und letzten `rand_s`.
+    """
+
+    def __init__(self, rate: int, *, fft: int = 4096, abstand_db: float = 50.0, glaettung_hz: float = 300.0,
+                 anschlag: float = 0.999, lauf: int = 3, rahmen_ms: int = 400, still_db: float = -70.0,
+                 aussetzer_s: float = 0.3, rand_s: float = 1.0) -> None:
+        self.rate, self.fft, self.abstand_db, self.glaettung_hz = rate, fft, abstand_db, glaettung_hz
+        self.anschlag, self.lauf = anschlag, lauf
+        self.rahmen = max(1, int(rate * rahmen_ms / 1000))
+        self.still = 10 ** (still_db / 20)
+        self.aussetzer_n, self.rand_n = int(rate * aussetzer_s), int(rate * rand_s)
+        self._fenster = np.hanning(fft).astype(np.float64)
+        self._spektrum = np.zeros(fft // 2 + 1)
+        self._spektren = 0
+        self._rest = np.zeros(0, dtype=np.float32)
+        self._rms: list[float] = []
+        self._am_anschlag = 0
+        self._lauf_jetzt = 0
+        self._still_seit: int | None = None
+        self._stillen: list[tuple[int, int]] = []
+        self.gezaehlt = 0
+
+    def fuettern(self, werte: np.ndarray) -> None:
+        werte = np.asarray(werte, dtype=np.float32)
+        self._anschlag_zaehlen(werte)
+        self._stille_verfolgen(werte)
+        self.gezaehlt += werte.size
+        alles = np.concatenate([self._rest, werte])
+        ganz = alles.size // self.fft * self.fft
+        if ganz:
+            stuecke = alles[:ganz].reshape(-1, self.fft).astype(np.float64)
+            self._spektrum += np.sum(np.abs(np.fft.rfft(stuecke * self._fenster, axis=1)) ** 2, axis=0)
+            self._spektren += stuecke.shape[0]
+            rahmen = alles[:ganz // self.rahmen * self.rahmen].reshape(-1, self.rahmen) if ganz >= self.rahmen else None
+            if rahmen is not None:
+                self._rms += np.sqrt(np.mean(rahmen.astype(np.float64) ** 2, axis=1) + 1e-12).tolist()
+        self._rest = alles[ganz:]
+
+    def _anschlag_zaehlen(self, werte: np.ndarray) -> None:
+        """Läufe am Anschlag zählen; ein Lauf kann über die Grenze zum vorigen Block reichen (`_lauf_jetzt`)."""
+        am = np.abs(werte) >= self.anschlag
+        kante = np.diff(np.concatenate([[0], am.astype(np.int8), [0]]))
+        anfaenge, enden = np.flatnonzero(kante == 1), np.flatnonzero(kante == -1)
+        uebertrag = self._lauf_jetzt
+        self._lauf_jetzt = 0
+        for a, e in zip(anfaenge, enden):
+            davor = uebertrag if a == 0 else 0
+            if e - a + davor >= self.lauf:
+                # der Teil aus dem vorigen Block zählt jetzt mit, wenn er dort allein zu kurz war
+                self._am_anschlag += e - a + (davor if davor < self.lauf else 0)
+            if e == werte.size:
+                self._lauf_jetzt = e - a + davor
+
+    def _stille_verfolgen(self, werte: np.ndarray) -> None:
+        """Stille Strecken als (Anfang, Ende) in Werten seit Beginn; eine Strecke kann über Blockgrenzen reichen."""
+        start = self.gezaehlt
+        laut = np.flatnonzero(np.abs(werte) >= self.still)
+        if laut.size == 0:
+            if self._still_seit is None:
+                self._still_seit = start
+            return
+        if self._still_seit is not None:
+            self._stillen.append((self._still_seit, start + int(laut[0])))
+            self._still_seit = None
+        elif laut[0] > 0:
+            self._stillen.append((start, start + int(laut[0])))
+        for i in np.flatnonzero(np.diff(laut) > self.aussetzer_n):
+            self._stillen.append((start + int(laut[i]) + 1, start + int(laut[i + 1])))
+        if laut[-1] < werte.size - 1:
+            self._still_seit = start + int(laut[-1]) + 1
+
+    def bandbreite_hz(self) -> float | None:
+        if not self._spektren:
+            return None
+        db = 10 * np.log10(self._spektrum / self._spektren + 1e-20)
+        hz = np.fft.rfftfreq(self.fft, 1 / self.rate)
+        breite = max(1, int(self.glaettung_hz / (hz[1] - hz[0])))
+        # an den Rändern mit dem Randwert fortsetzen: Nullen wären hier 0 dB, also laut, und täuschten Bandbreite vor
+        halb = breite // 2
+        glatt = np.convolve(np.pad(db, (halb, breite - 1 - halb), mode="edge"), np.ones(breite) / breite, mode="valid")
+        bezug = glatt[(hz >= 1000) & (hz <= 6000)]
+        if bezug.size == 0:
+            return None
+        ueber = np.flatnonzero(glatt >= np.mean(bezug) - self.abstand_db)
+        return float(hz[ueber[-1]]) if ueber.size else 0.0
+
+    def uebersteuert_anteil(self) -> float:
+        return self._am_anschlag / self.gezaehlt if self.gezaehlt else 0.0
+
+    def dynamik_db(self) -> float | None:
+        rms = np.asarray(self._rms)
+        laut = rms[rms > self.still]
+        if laut.size < 3:
+            return None
+        db = 20 * np.log10(laut)
+        return float(np.percentile(db, 95) - np.percentile(db, 10))
+
+    def aussetzer(self) -> list[tuple[float, float]]:
+        """Stille Stellen mitten im Titel (Sekunden); Ränder und kurze Pausen zählen nicht."""
+        ende = self.gezaehlt
+        return [(a / self.rate, b / self.rate) for a, b in self._stillen
+                if b - a >= self.aussetzer_n and a >= self.rand_n and b <= ende - self.rand_n]

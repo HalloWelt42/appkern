@@ -82,11 +82,22 @@ class LautWahl(BaseModel):
     rand_ms: float = Field(40, ge=0, le=1000)
 
 
+class KlangWahl(BaseModel):
+    """Messung des Klangs (Plattenschrank): echte Bandbreite, Übersteuerung, Dynamik, Aussetzer; in der Rate der Datei."""
+    abstand_db: float = Field(50.0, ge=10, le=100, description="so weit unter dem Bezug (1 bis 6 kHz) endet die Bandbreite")
+    anschlag: float = Field(0.999, gt=0.5, le=1.0)
+    lauf: int = Field(3, ge=1, le=100, description="so viele Werte am Anschlag hintereinander gelten als übersteuert")
+    still_db: float = Field(-70.0, ge=-120, le=-20)
+    aussetzer_s: float = Field(0.3, gt=0, le=10)
+    rand_s: float = Field(1.0, ge=0, le=30, description="Stille so nah am Anfang oder Ende ist kein Aussetzer")
+
+
 class Messen(BaseModel):
     pausen: PausenWahl | None = None
     wellenform: int | None = Field(None, ge=10, le=10000, description="so viele Punkte")
     pegel_ms: int | None = Field(None, ge=10, le=1000, description="Rahmen des Pegelverlaufs")
     laut: LautWahl | None = None
+    klang: KlangWahl | None = None
 
 
 class Aufbereiten(BaseModel):
@@ -112,12 +123,21 @@ class LauteSpanne(BaseModel):
         return self.bis_s - self.von_s
 
 
+class Klangmessung(BaseModel):
+    bandbreite_hz: float | None
+    uebersteuert_anteil: float
+    dynamik_db: float | None
+    aussetzer: list[tuple[float, float]]
+    rate: int
+
+
 class Messwerte(BaseModel):
     eigenschaften: Eigenschaften
     pausen: list[Pause] | None = None
     wellenform: list[int] | None = None
     pegel: Pegelverlauf | None = None
     laut: LauteSpanne | None = None
+    klang: Klangmessung | None = None
 
 
 class Datei(BaseModel):
@@ -224,6 +244,8 @@ class TonHier(Tonarbeit):
             werte.pegel = await self._pegel(quelle, m.pegel_ms)
         if m.laut:
             werte.laut = await self._laut(quelle, m.laut)
+        if m.klang:
+            werte.klang = await self._klang(quelle, m.klang, werte.eigenschaften.rate or 44100)
         return Aufbereitet(messwerte=werte, ausgaben=[await self._ausgabe(quelle, a, z) for a, z in zip(auftrag.ausgaben, ziele)])
 
     async def _pegel(self, quelle: Path, rahmen_ms: int) -> Pegelverlauf:
@@ -232,6 +254,18 @@ class TonHier(Tonarbeit):
         async for block in self.ton.bloecke(quelle, rate):
             r.fuettern(block)
         return Pegelverlauf(rahmen_ms=rahmen_ms, rms=[round(v, 6) for v in r.rms], spitze=[round(v, 5) for v in r.spitzen])
+
+    async def _klang(self, quelle: Path, wahl: KlangWahl, rate: int) -> Klangmessung:
+        """In der Rate der Datei, damit die Bandbreite nicht vom Wandeln abgeschnitten wird; mono gemittelt."""
+        r = rechnen.Klangrechner(rate, abstand_db=wahl.abstand_db, anschlag=wahl.anschlag, lauf=wahl.lauf,
+                                 still_db=wahl.still_db, aussetzer_s=wahl.aussetzer_s, rand_s=wahl.rand_s)
+        async for block in self.ton.bloecke(quelle, rate):
+            r.fuettern(block)
+        bandbreite, dynamik = r.bandbreite_hz(), r.dynamik_db()
+        return Klangmessung(bandbreite_hz=round(bandbreite, 1) if bandbreite is not None else None,
+                            uebersteuert_anteil=round(r.uebersteuert_anteil(), 6),
+                            dynamik_db=round(dynamik, 2) if dynamik is not None else None,
+                            aussetzer=[(round(a, 3), round(b, 3)) for a, b in r.aussetzer()], rate=rate)
 
     async def _laut(self, quelle: Path, wahl: LautWahl) -> LauteSpanne:
         werte = await self.ton.lesen(quelle, wahl.rate)

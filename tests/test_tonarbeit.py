@@ -12,8 +12,8 @@ from fastapi import FastAPI
 
 from appkern.leitstelle import Leitstelle
 from appkern.ton import (
-    ABSPIELEN, ARBEIT, HOEREN, Abspielfassungen, Aufbereiten, Ausgabe, Blenden, Lage, LautWahl, Legen, Messen, PausenWahl,
-    Stueck, Ton, TonDienst, TonFehler, TonHier, Tonformat, wav,
+    ABSPIELEN, ARBEIT, HOEREN, Abspielfassungen, Aufbereiten, Ausgabe, Blenden, KlangWahl, Lage, LautWahl, Legen, Messen,
+    PausenWahl, Stueck, Ton, TonDienst, TonFehler, TonHier, Tonformat, wav,
 )
 from appkern.ton.gegenseite import routen
 from appkern.ton import rechnen
@@ -252,3 +252,66 @@ async def test_geduldige_tonarbeit_baut_jeden_versuch_neu(tmp_path, monkeypatch)
     innen = Einmal()
     quelle = await datei(tmp_path, "q.wav", sinus(1.0))
     assert await GeduldigeTonarbeit(innen).dauer(quelle) == pytest.approx(1.0, abs=0.01) and innen.versuche == 2
+
+
+# --- Klang (Plattenschrank) ------------------------------------------------------------------------------------------
+
+def _rauschen(sekunden: float, rate: int, grenze_hz: float | None = None, pegel: float = 0.2, saat: int = 1) -> np.ndarray:
+    """Weißes Rauschen, auf Wunsch oberhalb `grenze_hz` hart abgeschnitten (wie eine Vorlage aus einer kleinen MP3)."""
+    w = np.random.default_rng(saat).standard_normal(int(sekunden * rate))
+    if grenze_hz:
+        spektrum = np.fft.rfft(w)
+        spektrum[np.fft.rfftfreq(w.size, 1 / rate) > grenze_hz] = 0
+        w = np.fft.irfft(spektrum, n=w.size)
+    return (pegel * w / np.max(np.abs(w))).astype(np.float32)
+
+
+def test_klang_bandbreite_entlarvt_hochgerechnet():
+    voll, abgeschnitten = rechnen.Klangrechner(44100), rechnen.Klangrechner(44100)
+    voll.fuettern(_rauschen(10, 44100))
+    abgeschnitten.fuettern(_rauschen(10, 44100, grenze_hz=16000))
+    assert voll.bandbreite_hz() > 21000
+    assert abgeschnitten.bandbreite_hz() == pytest.approx(16000, abs=400)
+
+
+def test_klang_uebersteuerung_dynamik_aussetzer():
+    rate = 44100
+    sauber = _rauschen(6, rate)
+    hart = np.clip(sinus(6, f=110, pegel=1.5, rate=rate), -1.0, 1.0)      # wie Musik: Läufe am Anschlag
+    r_sauber, r_hart = rechnen.Klangrechner(rate), rechnen.Klangrechner(rate)
+    r_sauber.fuettern(sauber)
+    r_hart.fuettern(hart)
+    assert r_sauber.uebersteuert_anteil() == 0.0 and r_hart.uebersteuert_anteil() > 0.01
+    # Dynamik: gleichmäßiges Rauschen ist flach, laut und leise im Wechsel nicht
+    wechsel = np.concatenate([_rauschen(3, rate, pegel=0.5), _rauschen(3, rate, pegel=0.02, saat=2)] * 2)
+    r_wechsel = rechnen.Klangrechner(rate)
+    r_wechsel.fuettern(wechsel)
+    assert r_sauber.dynamik_db() < 3 and r_wechsel.dynamik_db() > 20
+    # Aussetzer: Stille mitten im Titel zählt, am Rand nicht
+    mit_loch = np.concatenate([stille(0.5, rate), _rauschen(3, rate), stille(0.8, rate), _rauschen(3, rate, saat=3), stille(0.5, rate)])
+    r_loch = rechnen.Klangrechner(rate)
+    r_loch.fuettern(mit_loch)
+    assert [(round(a, 1), round(b, 1)) for a, b in r_loch.aussetzer()] == [(3.5, 4.3)]
+
+
+def test_klang_stueckweise_wie_am_stueck():
+    rate = 44100
+    w = np.concatenate([_rauschen(4, rate, grenze_hz=15000), stille(0.6, rate), np.clip(sinus(4, f=90, pegel=1.5, rate=rate), -1, 1)])
+    ganz, teile = rechnen.Klangrechner(rate), rechnen.Klangrechner(rate)
+    ganz.fuettern(w)
+    for i in range(0, w.size, 12345):
+        teile.fuettern(w[i:i + 12345])
+    assert teile.bandbreite_hz() == pytest.approx(ganz.bandbreite_hz(), abs=50)
+    assert teile.uebersteuert_anteil() == pytest.approx(ganz.uebersteuert_anteil(), rel=0.01)
+    assert teile.aussetzer() == ganz.aussetzer() and len(ganz.aussetzer()) == 1
+
+
+async def test_klang_ueber_die_tonarbeit(tmp_path, tondienst):
+    dienst, _ = tondienst
+    rate = 44100
+    quelle = await Ton().schreiben(_rauschen(5, rate, grenze_hz=16000), rate, tmp_path / "hochgerechnet.wav",
+                                   Tonformat(rate=rate, kanaele=1, kodierung="pcm_s16le"))
+    auftrag = Aufbereiten(messen=Messen(klang=KlangWahl()))
+    ueber, hier = await dienst.aufbereiten(quelle, auftrag, []), await TonHier().aufbereiten(quelle, auftrag, [])
+    assert ueber.messwerte.klang == hier.messwerte.klang
+    assert hier.messwerte.klang.rate == rate and hier.messwerte.klang.bandbreite_hz == pytest.approx(16000, abs=400)
