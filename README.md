@@ -845,4 +845,6 @@ den Papierkorb des Kontos; endgültig leert ihn das Konto selbst.
 
 ## Lizenz
 
-Nicht-kommerzielle Lizenz, siehe [LICENSE](LICENSE).
+Wahlweise unter der **Nicht-kommerziellen Lizenz v1.0** ([LICENSE](LICENSE)) oder unter der **GNU Affero General Public
+License, nur Version 3** ([LICENSE-AGPL-3.0](LICENSE-AGPL-3.0)); SPDX `LicenseRef-Appkern-NC-1.0 OR AGPL-3.0-only`.
+Wer den Appkern nutzt, wählt eine der beiden und hält sich an ihre Bedingungen.

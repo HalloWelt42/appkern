@@ -1,11 +1,13 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]                 # Lizenz als SPDX-Ausdruck (PEP 639)
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "appkern"
 description = "Appkern: gemeinsame Bausteine der eigenen Apps (Zugang zu Kellerwolke und Leitstelle, Aufträge, Einstellungen)"
 requires-python = ">=3.11"
+license = "LicenseRef-Appkern-NC-1.0 OR AGPL-3.0-only"   # wahlweise, siehe LICENSE
+license-files = ["LICENSE", "LICENSE-AGPL-3.0"]
 dynamic = ["version"]
 dependencies = [
   "pydantic>=2.11",

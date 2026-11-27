@@ -1,3 +1,25 @@
+Appkern - Lizenz
+
+SPDX-License-Identifier: LicenseRef-Appkern-NC-1.0 OR AGPL-3.0-only
+
+Copyright (c) 2025-2026 HalloWelt42
+
+Appkern steht wahlweise unter
+
+  a) der Nicht-kommerziellen Lizenz v1.0 (unten in dieser Datei,
+     LicenseRef-Appkern-NC-1.0) oder
+  b) der GNU Affero General Public License, Version 3, nur dieser
+     Fassung (Volltext in der Datei LICENSE-AGPL-3.0, AGPL-3.0-only).
+
+Wer Appkern nutzt, verändert oder weitergibt, wählt eine der beiden
+Lizenzen und hält sich an ihre Bedingungen. Wer die AGPL-3.0 wählt,
+für den gelten die Einschränkungen der Nicht-kommerziellen Lizenz
+nicht, sondern die Bedingungen der AGPL-3.0, etwa den Quelltext
+einer veränderten Fassung anzubieten, die anderen über ein Netz zur
+Nutzung dient.
+
+------------------------------------------------------------------------
+
 Nicht-kommerzielle Lizenz v1.0
 
 SPDX-License-Identifier: LicenseRef-Appkern-NC-1.0

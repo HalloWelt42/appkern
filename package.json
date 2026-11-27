@@ -3,8 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "description": "Gemeinsame Schale und Gestaltung der Oberflächen der eigenen Apps",
+  "license": "LicenseRef-Appkern-NC-1.0 OR AGPL-3.0-only",
   "type": "module",
   "files": [
+    "LICENSE-AGPL-3.0",
     "oberflaeche/index.ts",
     "oberflaeche/code/",
     "oberflaeche/instrumente/",
