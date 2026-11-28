@@ -57,6 +57,9 @@
 @keyframes ak-tastenlicht-blinken { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .ak-tastenlicht.blinkt { animation: none; } .ak-schriftzug { transition: none; } }
 
+/* Störung im Kopf: ein Knopf wie "Darstellung", das Tastenlicht oben mittig innen */
+.ak-kopf-meldung { position: relative; padding-top: 6px; }
+
 /* Darstellung: Tafel unter dem Knopf mit Thema und Schrift */
 .ak-kopf-darstellung { position: relative; }
 .ak-kopf-tafel { position: absolute; right: 0; top: calc(100% + var(--a2)); z-index: 30; inline-size: max-content; min-inline-size: 260px; display: grid; gap: var(--a2);

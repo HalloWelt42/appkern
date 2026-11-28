@@ -65,11 +65,16 @@
   </div></nav>
 
   <div class="ak-kopf-rechts">
+    <!-- Störungen als Taste wie alle anderen: das Tastenlicht trägt den Zustand, ein Druck tut das Naheliegende -->
     {#if !verbindung.ok}
-      <button class="pille warn" type="button" title="Erneut versuchen" onclick={() => pruefen()}><span class="punkt"></span>{verbindung.meldung}</button>
+      <button class="knopf ak-kopf-meldung" type="button" title="{verbindung.meldung}: erneut versuchen" onclick={() => pruefen()}>
+        <span class="ak-tastenlicht an blinkt" data-farbe="rot" aria-hidden="true"></span>
+        <i class="fa-solid fa-plug-circle-xmark"></i><span class="ak-kopf-knopftext">{verbindung.meldung}</span></button>
     {:else if gestoert.length}
-      <span class="pille warn" title={gestoert.map((v) => `${v.name}: ${v.meldung}`).join("\n")}><span class="punkt"></span>
-        {gestoert.length === 1 ? `${gestoert[0].name} gestört` : `${gestoert.length} gestört`}</span>
+      <button class="knopf ak-kopf-meldung" type="button" title={gestoert.map((v) => `${v.name}: ${v.meldung}`).join("\n")}
+        onclick={() => gehe("einstellungen")}>
+        <span class="ak-tastenlicht an" data-farbe="gelb" aria-hidden="true"></span>
+        <i class="fa-solid fa-triangle-exclamation"></i><span class="ak-kopf-knopftext">{gestoert.length === 1 ? `${gestoert[0].name} gestört` : `${gestoert.length} gestört`}</span></button>
     {/if}
     {@render rechts?.()}
     <div class="ak-kopf-darstellung">
