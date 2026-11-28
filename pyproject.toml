@@ -23,6 +23,8 @@ push = ["py-vapid>=1.9", "http-ece>=1.2"]
 ton = ["numpy>=1.26"]
 # Gegenseite des Tondienstes (Wirt auf dem Mac: Klangwerk); ffmpeg und ffprobe kommen vom System
 tondienst = ["fastapi>=0.110", "python-multipart>=0.0.9", "numpy>=1.26"]
+# Gegenseite der Bilderkennung (Wirt auf dem Mac: Bildwerk, Dienst bild-erkennen): Apple Vision über PyObjC
+bilderkennung = ["fastapi>=0.110", "python-multipart>=0.0.9", "pyobjc-framework-Vision>=10; sys_platform == 'darwin'", "pyobjc-framework-Quartz>=10; sys_platform == 'darwin'"]
 # Anmeldeposten vor Apps ohne eigene Anmeldung (Caddy forward_auth), etwa Vorbau am Mac und Zusage auf dem Pi
 posten = ["fastapi>=0.110", "uvicorn>=0.30", "httpx>=0.27", "pydantic-settings>=2.3", "python-multipart>=0.0.9"]
 test = ["pytest>=8", "pytest-asyncio>=0.24", "fastapi>=0.110", "python-multipart>=0.0.9", "numpy>=1.26", "py-vapid>=1.9",
