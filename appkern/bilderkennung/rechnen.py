@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 
-from .modelle import Erkannt, Erkennen, Gesicht, Rahmen, Textstelle
+from .modelle import Code, Erkannt, Erkennen, Gesicht, Rahmen, Textstelle
 
 
 class BildFehler(Exception):
@@ -43,7 +43,7 @@ class ErkennenHier:
         if ausrichtung in (5, 6, 7, 8):          # um 90 Grad gedreht: so breit und hoch, wie es angezeigt wird
             w, h = h, w
         anfragen = []
-        text = gesichter = None
+        text = gesichter = codes = None
         if auftrag.texte:
             text = Vision.VNRecognizeTextRequest.alloc().init()
             text.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate if auftrag.genau else Vision.VNRequestTextRecognitionLevelFast)
@@ -53,6 +53,9 @@ class ErkennenHier:
         if auftrag.gesichter:
             gesichter = Vision.VNDetectFaceRectanglesRequest.alloc().init()
             anfragen.append(gesichter)
+        if auftrag.codes:
+            codes = Vision.VNDetectBarcodesRequest.alloc().init()
+            anfragen.append(codes)
         handler = Vision.VNImageRequestHandler.alloc().initWithCGImage_orientation_options_(bild, ausrichtung, None)
         ok, fehler = handler.performRequests_error_(anfragen, None)
         if not ok:
@@ -69,4 +72,10 @@ class ErkennenHier:
         for beob in (gesichter.results() or []) if gesichter is not None else []:
             r = beob.boundingBox()
             gefunden.append(Gesicht(rahmen=aus_vision(r.origin.x, r.origin.y, r.size.width, r.size.height), sicherheit=max(0.0, min(1.0, float(beob.confidence())))))
-        return Erkannt(breite=int(w), hoehe=int(h), texte=texte, gesichter=gefunden, ms=(time.perf_counter() - ab) * 1000)
+        strich = []
+        for beob in (codes.results() or []) if codes is not None else []:
+            r = beob.boundingBox()
+            art = str(beob.symbology() or "").removeprefix("VNBarcodeSymbology")
+            strich.append(Code(art=art, inhalt=str(beob.payloadStringValue() or ""), rahmen=aus_vision(r.origin.x, r.origin.y, r.size.width, r.size.height),
+                               sicherheit=max(0.0, min(1.0, float(beob.confidence())))))
+        return Erkannt(breite=int(w), hoehe=int(h), texte=texte, gesichter=gefunden, codes=strich, ms=(time.perf_counter() - ab) * 1000)
