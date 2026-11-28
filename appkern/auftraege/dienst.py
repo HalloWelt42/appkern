@@ -32,7 +32,7 @@ from appkern.datenbank import Datenbank
 from appkern.leitstelle.arbeit import LAUFENDE_ARBEIT
 from appkern.protokoll import Protokoll
 
-from .modelle import OFFEN, WIEDERHOLBAR, Auftrag, Herkunft, Phase, Seite, Zahlen, Zustand
+from .modelle import OFFEN, WIEDERHOLBAR, Angabe, Auftrag, Herkunft, Phase, Seite, Zahlen, Zustand
 
 logger = logging.getLogger("appkern.auftraege")
 
@@ -122,6 +122,9 @@ class Art:
     herkunft: Callable[[dict[str, Any]], Herkunft | None] | None = None
     """Woher ein Auftrag dieser Art kommt, aus seiner Eingabe (etwa der Artikel, der übersetzt wird); gilt auch für
     Aufträge, die schon erledigt sind."""
+    beschreiben: Callable[[dict[str, Any], dict[str, Any] | None], list[Angabe]] | None = None
+    """Eingabe und Ergebnis eines Auftrags dieser Art in Worten (Angaben mit Abschnitt, Titel und Text), für die Seite
+    Aufträge; ohne Regel zeigt sie die Rohwerte. Gilt auch für Aufträge, die schon erledigt sind."""
     gegenstand: Callable[[dict[str, Any]], str] | None = None
     """Woran ein Auftrag dieser Art arbeitet, als Schlüssel aus der Eingabe (etwa die Datei, die er lädt). Mit ihm gibt
     es nie zwei offene Aufträge am selben Gegenstand: Einreihen und Wiederholen liefern dann den offenen. Ein fertiger
@@ -404,6 +407,16 @@ class Auftraege:
             logger.exception("Herkunft eines Auftrags (%s)", art.name)
             return None
 
+    @staticmethod
+    def _angaben(art: Art | None, eingabe: dict[str, Any], ergebnis: dict[str, Any] | None) -> list[Angabe]:
+        if art is None or art.beschreiben is None:
+            return []
+        try:
+            return list(art.beschreiben(eingabe, ergebnis))
+        except Exception:  # noqa: BLE001 - eine Regel der App darf die Liste nie anhalten
+            logger.exception("Beschreibung eines Auftrags (%s)", art.name)
+            return []
+
     # ----- Gegenstand (WIKI-73) ----------------------------------------------------------------------------------------
 
     @staticmethod
@@ -459,16 +472,18 @@ class Auftraege:
         art = self.arten.get(z["art"])
         zurueck = self._grund(z) if mit_grund and z["zustand"] == "wartet" else ""
         eingabe = json.loads(z["eingabe"])
+        ergebnis = json.loads(z["ergebnis"]) if z["ergebnis"] else None
         gegenstand = z.get("gegenstand") or ""
         uebernommen = (offen or {}).get((z["art"], gegenstand)) if gegenstand and z["zustand"] not in OFFEN else None
         return Auftrag(
             id=z["id"], art=z["art"], titel=z["titel"], zustand=z["zustand"], eingabe=eingabe,
-            ergebnis=json.loads(z["ergebnis"]) if z["ergebnis"] else None, fehler=z["fehler"],
+            ergebnis=ergebnis, fehler=z["fehler"],
             fortschritt=z["fortschritt"], schritt=z["schritt"], phase=z["phase"],
             phasen=list(art.phasen) if art else [], abbruch_gewuenscht=bool(z["abbruch"]),
             fortsetzbar=bool(art and art.fortsetzbar), stapel=z["stapel"], wiederholung_von=z["wiederholung_von"],
             erstellt_am=z["erstellt_am"], begonnen_am=z["begonnen_am"], beendet_am=z["beendet_am"], von=z.get("von") or "",
-            zurueckgestellt=zurueck, herkunft=self._herkunft(art, eingabe), uebernommen_von=uebernommen)
+            zurueckgestellt=zurueck, herkunft=self._herkunft(art, eingabe), uebernommen_von=uebernommen,
+            angaben=self._angaben(art, eingabe, ergebnis))
 
     async def _fortschritt(self, auftrag_id: str, anteil: float | None, schritt: str, phase: str | None) -> None:
         anteil = None if anteil is None else min(1.0, max(0.0, anteil))

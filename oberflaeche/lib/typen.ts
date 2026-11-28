@@ -46,6 +46,9 @@ export interface Phase {
   symbol: string;
 }
 
+/** Eine Zeile über Eingabe oder Ergebnis eines Auftrags in Worten. */
+export interface Angabe { abschnitt: "eingabe" | "ergebnis"; titel: string; text: string }
+
 /** Woher ein Auftrag kommt: Beschriftung ("Zum Artikel") und Weg in der App wie für `gehe`. */
 export interface Herkunft {
   titel: string;
@@ -71,6 +74,7 @@ export interface Auftrag {
   von: string;                    // wer oder was ihn angestoßen hat (Konto, App, Zeitplan); leer: unbekannt
   zurueckgestellt: string;        // wartend, aber von der App zurückgehalten, mit Grund
   herkunft?: Herkunft | null;     // woher er kommt, als Verweis in der App; leer: keiner
+  angaben?: Angabe[];             // Eingabe und Ergebnis in Worten (Regel der Art); leer: Rohwerte
   uebernommen_von?: string | null; // beendet ohne Erfolg, ein anderer offener arbeitet am selben Gegenstand (WIKI-73)
   erstellt_am: string;
   begonnen_am: string | null;

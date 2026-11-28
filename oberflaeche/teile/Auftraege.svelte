@@ -98,17 +98,28 @@
           <div class="abschnitt">Ursache</div>
           <div class="fehlertext" style="margin-top:0">{gewaehlt.fehler}</div>
         {/if}
-        {#if Object.keys(gewaehlt.eingabe).length}
-          <div class="abschnitt">Eingabe</div>
-          <dl class="werte">
-            {#each Object.entries(gewaehlt.eingabe) as [k, v] (k)}<dt>{k}</dt><dd>{typeof v === "object" ? JSON.stringify(v) : String(v)}</dd>{/each}
-          </dl>
-        {/if}
-        {#if gewaehlt.ergebnis}
-          <div class="abschnitt">Ergebnis</div>
-          <dl class="werte">
-            {#each Object.entries(gewaehlt.ergebnis) as [k, v] (k)}<dt>{k}</dt><dd>{typeof v === "object" ? JSON.stringify(v) : String(v)}</dd>{/each}
-          </dl>
+        {#if gewaehlt.angaben?.length}
+          <!-- in Worten, wie die Art sie beschreibt -->
+          {#each ["eingabe", "ergebnis"] as const as abschnitt (abschnitt)}
+            {@const zeilen = gewaehlt.angaben.filter((a) => a.abschnitt === abschnitt)}
+            {#if zeilen.length}
+              <div class="abschnitt">{abschnitt === "eingabe" ? "Auftrag" : "Ergebnis"}</div>
+              <dl class="werte">{#each zeilen as a, i (i)}<dt>{a.titel}</dt><dd>{a.text}</dd>{/each}</dl>
+            {/if}
+          {/each}
+        {:else}
+          {#if Object.keys(gewaehlt.eingabe).length}
+            <div class="abschnitt">Eingabe</div>
+            <dl class="werte">
+              {#each Object.entries(gewaehlt.eingabe) as [k, v] (k)}<dt>{k}</dt><dd>{typeof v === "object" ? JSON.stringify(v) : String(v)}</dd>{/each}
+            </dl>
+          {/if}
+          {#if gewaehlt.ergebnis}
+            <div class="abschnitt">Ergebnis</div>
+            <dl class="werte">
+              {#each Object.entries(gewaehlt.ergebnis) as [k, v] (k)}<dt>{k}</dt><dd>{typeof v === "object" ? JSON.stringify(v) : String(v)}</dd>{/each}
+            </dl>
+          {/if}
         {/if}
         <div style="display:flex; gap:8px; margin-top:20px; flex-wrap:wrap">
           {#if gewaehlt.zustand !== "laeuft" && gewaehlt.zustand !== "wartet"}

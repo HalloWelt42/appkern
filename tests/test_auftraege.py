@@ -12,7 +12,7 @@ import pytest
 from fastapi import FastAPI
 from pydantic import BaseModel, ValidationError
 
-from appkern.auftraege import (Art, AuftragAbgebrochen, AuftragFehler, Auftraege, FalscherZustand, Herkunft, Kontext, NichtGefunden, Phase,
+from appkern.auftraege import (Angabe, Art, AuftragAbgebrochen, AuftragFehler, Auftraege, FalscherZustand, Herkunft, Kontext, NichtGefunden, Phase,
                                UnbekannteArt)
 from appkern.auftraege.api import auftrags_router
 from appkern.datenbank import Datenbank
@@ -239,6 +239,31 @@ async def test_herkunft_aus_der_eingabe_auch_fuer_erledigte(db):
         assert kaputt.herkunft is None
         ohne = await bis(a, (await a.einreihen("ohne", {"texte": ["x"]})).id, "fertig")
         assert ohne.herkunft is None
+    finally:
+        await a.stoppen()
+
+
+async def test_eingabe_und_ergebnis_in_worten(db):
+    """Die Regel der Art beschreibt Eingabe und Ergebnis in Worten (auch für erledigte Aufträge); eine kaputte Regel
+    lässt die Angaben weg, die Oberfläche zeigt dann die Rohwerte."""
+    async def zaehlen(k: Kontext):
+        return {"zeichen": sum(len(t) for t in k.eingabe.texte)}
+
+    def beschreiben(eingabe, ergebnis):
+        if eingabe["texte"] == ["kaputt"]:
+            raise KeyError("texte")
+        aus = [Angabe(abschnitt="eingabe", titel="Texte", text=", ".join(eingabe["texte"]))]
+        if ergebnis:
+            aus.append(Angabe(abschnitt="ergebnis", titel="Zeichen", text=str(ergebnis["zeichen"])))
+        return aus
+
+    a = Auftraege(db, [Art("zaehlen", "Zeichen zählen", zaehlen, eingabe=Texte, beschreiben=beschreiben)])
+    await a.starten()
+    try:
+        fertig = await bis(a, (await a.einreihen("zaehlen", Texte(texte=["abc", "de"]))).id, "fertig")
+        assert [(x.abschnitt, x.titel, x.text) for x in fertig.angaben] == [("eingabe", "Texte", "abc, de"), ("ergebnis", "Zeichen", "5")]
+        kaputt = await bis(a, (await a.einreihen("zaehlen", Texte(texte=["kaputt"]))).id, "fertig")
+        assert kaputt.angaben == []
     finally:
         await a.stoppen()
 

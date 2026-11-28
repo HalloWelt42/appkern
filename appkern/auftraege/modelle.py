@@ -23,6 +23,17 @@ class Phase(BaseModel):
     symbol: str = ""
 
 
+class Angabe(BaseModel):
+    """Eine Zeile über Eingabe oder Ergebnis eines Auftrags in Worten, für Menschen: `titel` ("Regale"), `text`
+    ("Sammlung"). Die Art beschreibt sie (`Art.beschreiben`); ohne Beschreibung zeigt die Oberfläche die Rohwerte."""
+
+    model_config = ConfigDict(frozen=True)
+
+    abschnitt: Literal["eingabe", "ergebnis"]
+    titel: str
+    text: str
+
+
 class Herkunft(BaseModel):
     """Woher ein Auftrag kommt, als Verweis in der App: `titel` beschriftet ihn ("Zum Artikel"), `ziel` ist der Weg in
     der Oberfläche wie für `gehe` ("lesen/<buch>/<pfad>")."""
@@ -54,6 +65,7 @@ class Auftrag(BaseModel):
     von: str = ""                         # wer oder was ihn angestoßen hat (Konto, App, Zeitplan); leer: unbekannt
     zurueckgestellt: str = ""             # wartend, aber von der App zurückgehalten, mit Grund; leer: darf beginnen
     herkunft: Herkunft | None = None      # Verweis dorthin, woher er kommt (Regel der Art aus der Eingabe); leer: keiner
+    angaben: list[Angabe] = Field(default_factory=list)   # Eingabe und Ergebnis in Worten (Regel der Art); leer: Rohwerte
     uebernommen_von: str | None = None    # beendet ohne Erfolg, und ein anderer offener arbeitet am selben Gegenstand (WIKI-73)
     erstellt_am: datetime
     begonnen_am: datetime | None = None
