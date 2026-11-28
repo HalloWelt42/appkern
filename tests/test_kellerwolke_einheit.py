@@ -120,6 +120,37 @@ async def test_nur_neu_setzt_if_none_match():
     await wolke(handler).schreiben("Apps/Test/a.txt", b"x", nur_neu=True)
 
 
+def _abriss_beim_hochladen(vorhanden):
+    """Wie die echte Kellerwolke bei großem Inhalt: das PUT reißt ab, statt die Ablehnung (412) zu liefern."""
+    def handler(anfrage):
+        if anfrage.method == "PUT":
+            raise httpx.ReadError("")
+        if vorhanden is None:
+            return httpx.Response(404, json={"detail": "Nicht gefunden"})
+        return httpx.Response(200, json=knoten_json(**vorhanden))
+    return handler
+
+
+async def test_nur_neu_abriss_bei_vorhandener_datei_ist_die_ablehnung():
+    with pytest.raises(StandVeraltet) as fehler:
+        await wolke(_abriss_beim_hochladen({})).schreiben("Apps/Test/a.txt", b"x" * 100, nur_neu=True)
+    assert isinstance(fehler.value.__cause__, NichtErreichbar)
+
+
+async def test_abriss_ohne_verletzte_vorbedingung_bleibt_abbruch_mit_art():
+    with pytest.raises(NichtErreichbar, match=r"nicht erreichbar \(ReadError\)"):
+        await wolke(_abriss_beim_hochladen(None)).schreiben("Apps/Test/a.txt", b"x", nur_neu=True)
+    with pytest.raises(NichtErreichbar):
+        await wolke(_abriss_beim_hochladen({"etag": "v7"})).schreiben("Apps/Test/a.txt", b"x", stand="v7")
+
+
+async def test_stand_abriss_bei_geaenderter_datei_ist_die_ablehnung():
+    with pytest.raises(StandVeraltet):
+        await wolke(_abriss_beim_hochladen({"etag": "v8"})).schreiben("Apps/Test/a.txt", b"x", stand="v7")
+    with pytest.raises(StandVeraltet):
+        await wolke(_abriss_beim_hochladen({"etag": "v8"})).neue_version(uuid4(), b"x", stand="v7")
+
+
 async def test_alle_kinder_seitenweise():
     gesamt = [knoten_json(f"d{i:04}.txt") for i in range(1200)]
 

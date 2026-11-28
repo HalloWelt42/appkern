@@ -17,14 +17,14 @@ import json
 import logging
 import os
 import time
-from collections.abc import AsyncIterable, AsyncIterator
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 import httpx
 
-from .fehler import KellerwolkeFehler, NichtErreichbar, NichtGefunden, fehler_aus
+from .fehler import KellerwolkeFehler, NichtErreichbar, NichtGefunden, StandVeraltet, fehler_aus
 from .modelle import (
     Aenderungen, Aktion, Anfrage, AppZugang, AnfrageNeu, Herkunft, Ich, ImPapierkorb, Knoten, Speicher, Sperre, Text, Treffer, Version,
     WahlSeite,
@@ -77,6 +77,11 @@ GEDULD_S = 900.0
 Tests setzen APPKERN_KELLERWOLKE_GEDULD_S=0 (über appkern.testen), damit eine fehlende Kellerwolke sofort auffällt."""
 WARTEN_S = 5.0
 log = logging.getLogger("appkern.kellerwolke")
+
+
+def _nicht_erreichbar(f: httpx.TransportError) -> NichtErreichbar:
+    """Mit der Art des Abbruchs: viele Fehler von httpx haben keinen Text, ohne Art bliebe die Meldung leer."""
+    return NichtErreichbar(f"Kellerwolke nicht erreichbar ({type(f).__name__}){f': {f}' if str(f) else ''}")
 
 
 def _wiederholbar(f: httpx.TransportError, methode: str, weiter: dict[str, Any]) -> bool:
@@ -142,7 +147,7 @@ class Kellerwolke:
                 break
             except httpx.TransportError as f:
                 if not _wiederholbar(f, methode, weiter) or time.monotonic() - beginn >= self._geduld_s:
-                    raise NichtErreichbar(f"Kellerwolke nicht erreichbar: {f}") from f
+                    raise _nicht_erreichbar(f) from f
                 text = f"Kellerwolke nicht erreichbar ({type(f).__name__}); neuer Versuch in {WARTEN_S:.0f} s"
                 if text != zuletzt:
                     zuletzt = text
@@ -221,7 +226,7 @@ class Kellerwolke:
                 async for daten in antwort.aiter_bytes(self._stueck):
                     yield daten
         except httpx.TransportError as f:
-            raise NichtErreichbar(f"Kellerwolke nicht erreichbar: {f}") from f
+            raise _nicht_erreichbar(f) from f
 
     async def lesen_ganz(self, knoten_id: UUID | str) -> bytes:
         """Nur für kleine Inhalte (Texte, Einstellungen); Großes mit `lesen` oder `herunterladen`."""
@@ -272,7 +277,12 @@ class Kellerwolke:
             kopf["If-None-Match"] = "*"
         if inhaltstyp:
             kopf["Content-Type"] = inhaltstyp
-        antwort = await self._anfrage("PUT", "/datei", params={"pfad": pfad}, content=koerper, kopf=kopf)
+        try:
+            antwort = await self._anfrage("PUT", "/datei", params={"pfad": pfad}, content=koerper, kopf=kopf)
+        except NichtErreichbar as f:
+            if nur_neu or stand is not None:
+                await self._vorbedingung_nachsehen(f, lambda: self.finden(pfad), nur_neu=nur_neu, stand=stand)
+            raise
         return Knoten.model_validate(antwort.json())
 
     async def neue_version(self, knoten_id: UUID | str, inhalt: Inhalt, *, stand: str,
@@ -282,8 +292,29 @@ class Kellerwolke:
         kopf["If-Match"] = f'"{stand}"'
         if inhaltstyp:
             kopf["Content-Type"] = inhaltstyp
-        antwort = await self._anfrage("PUT", f"/knoten/{knoten_id}/inhalt", content=koerper, kopf=kopf)
+        try:
+            antwort = await self._anfrage("PUT", f"/knoten/{knoten_id}/inhalt", content=koerper, kopf=kopf)
+        except NichtErreichbar as f:
+            await self._vorbedingung_nachsehen(f, lambda: self.knoten(knoten_id), stand=stand)
+            raise
         return Knoten.model_validate(antwort.json())
+
+    async def _vorbedingung_nachsehen(self, abbruch: NichtErreichbar, nachsehen: Callable[[], Awaitable[Knoten | None]], *,
+                                      nur_neu: bool = False, stand: str | None = None) -> None:
+        """Nach einem Abbruch beim Hochladen mit Vorbedingung (`nur_neu`, `stand`) nachsehen, ob sie verletzt ist.
+
+        Die Kellerwolke lehnt eine verletzte Vorbedingung sofort ab (412) und schließt die Verbindung, während der Inhalt
+        noch unterwegs ist; bei einem großen Inhalt kommt dann nur ein abgerissener Strom an statt der Ablehnung. Ist die
+        Vorbedingung verletzt, gilt die Ablehnung (`StandVeraltet`), sonst bleibt es beim Abbruch. Ist die Kellerwolke
+        auch zum Nachsehen nicht da, bleibt es ebenfalls beim Abbruch."""
+        try:
+            vorhanden = await nachsehen()
+        except KellerwolkeFehler:
+            return
+        if nur_neu and vorhanden is not None:
+            raise StandVeraltet("Die Datei gibt es schon") from abbruch
+        if stand is not None and vorhanden is not None and vorhanden.etag != stand:
+            raise StandVeraltet("Die Datei wurde inzwischen geändert") from abbruch
 
     async def umziehen(self, knoten_id: UUID | str, ordner_id: UUID | str, name: str | None = None) -> Knoten:
         """Verschieben und auf Wunsch umbenennen (Kellerwolke ab 0.82); Begleitdateien ziehen mit, ein belegter Name
@@ -519,7 +550,7 @@ class Kellerwolke:
                         raise KellerwolkeFehler("\n".join(daten) or "Ereignisstrom beendet")
                     art, daten = "", []
         except httpx.TransportError as f:
-            raise NichtErreichbar(f"Kellerwolke nicht erreichbar: {f}") from f
+            raise _nicht_erreichbar(f) from f
 
     async def beobachten(self, ordner_id: UUID | str, seit: int = 0, *, pause_max: float = 30.0) -> AsyncIterator[Aenderungen]:
         """Wie `ereignisse`, aber dauerhaft: nach einem Abbruch neu verbinden (Wartezeit verdoppelt sich bis
