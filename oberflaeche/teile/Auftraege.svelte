@@ -9,7 +9,8 @@
   import AuftragZeile from "./AuftragZeile.svelte";
   import Leiste from "./Leiste.svelte";
 
-  let { mitLeiste = true }: { mitLeiste?: boolean } = $props();
+  // `titel`: wie die App ihre Aufträge nennt (etwa Vorgänge im Kinosaal); sonst Aufträge
+  let { mitLeiste = true, titel: seitenTitel = "Aufträge" }: { mitLeiste?: boolean; titel?: string } = $props();
   let fehler = $state("");
   let suchTakt: ReturnType<typeof setTimeout> | null = null;
   const signal = seitenSignal();
@@ -46,7 +47,7 @@
 
 <section class="seite">
   <div class="seiten-kopf">
-    <h1>Aufträge</h1>
+    <h1>{seitenTitel}</h1>
     <span class="segment">
       {#each FILTER as [f, titel] (f)}
         <button class:aktiv={auftraege.filter === f} onclick={() => filtern(f)}>{titel}{zahl(f) ? ` ${zahl(f)}` : ""}</button>
@@ -60,7 +61,7 @@
     {#each auftraege.liste as a (a.id)}
       <AuftragZeile auftrag={a} />
     {:else}
-      <div class="leer">Keine Aufträge {auftraege.filter === "alle" ? "" : `(${FILTER.find(([f]) => f === auftraege.filter)?.[1]})`}</div>
+      <div class="leer">Keine {seitenTitel} {auftraege.filter === "alle" ? "" : `(${FILTER.find(([f]) => f === auftraege.filter)?.[1]})`}</div>
     {/each}
     {#if auftraege.liste.length < auftraege.gesamt}
       <div style="text-align:center"><button class="knopf" onclick={() => mehrLaden(signal).catch((f) => (fehler = seitenFehler(f)))}>Weitere laden ({auftraege.gesamt - auftraege.liste.length})</button></div>

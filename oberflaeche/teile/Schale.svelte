@@ -13,6 +13,7 @@
   import Anmeldung from "./Anmeldung.svelte";
   import AppWeg from "./AppWeg.svelte";
   import Einrichtung from "./Einrichtung.svelte";
+  import KopfRechner from "./KopfRechner.svelte";
   import Rechner from "./Rechner.svelte";
   import MobilSchale from "./mobil/MobilSchale.svelte";
 
@@ -24,11 +25,15 @@
   // Teile der App in Kopf (rechts und Mitte, etwa eine Suche), Seitenleiste (unter den Bereichen) und Fußleiste am Rechner.
   // `auftraegeReiter`: Aufträge als eigener Reiter unten am Telefon (Vorgabe); sonst stehen sie unter Mehr, die Zahl
   // laufender Aufträge oben rechts bleibt (für Apps, deren Reiter wichtigeres tragen, WIKI-74).
+  // `form`: "leiste" (Vorgabe: Seitenleiste links) oder "kopf" (KINO-2, nach dem Vorbild der Radio-App: Schriftzug in
+  // Prägung, Pillen-Navigation im Kopf, `fuss` als Leiste über die ganze Breite, Schriftstufen über `ansicht.schrift`);
+  // dazu `schriftzug` (sonst der Name in Großbuchstaben), `unterzeile`, `praegung` und `auftraegeTitel` (etwa Vorgänge).
   let { bereiche = [], fassung, ruhig, oeffnen, einstellungen = [], ansicht = {}, kopf, kopfMitte, navigation: navZusatz, fuss,
-        auftraegeReiter = true }: {
+        auftraegeReiter = true, form = "leiste", schriftzug, unterzeile, praegung, auftraegeTitel }: {
     bereiche?: Bereich[]; fassung: string; ruhig?: () => boolean; oeffnen?: (a: Anfrage) => Promise<string> | string;
     einstellungen?: EinstellungsReiter[]; ansicht?: AnzeigeVorgabe; kopf?: Snippet; kopfMitte?: Snippet; navigation?: Snippet;
-    fuss?: Snippet; auftraegeReiter?: boolean } = $props();
+    fuss?: Snippet; auftraegeReiter?: boolean; form?: "leiste" | "kopf"; schriftzug?: string; unterzeile?: string;
+    praegung?: "silber" | "gold"; auftraegeTitel?: string } = $props();
 
   anzeigeStarten(untrack(() => ansicht));     // nur die Vorgabe beim Start; danach gilt die Wahl im Browser
   // Flächenfarbe des Symbols aus der App-Angabe (Kopf, Anmeldung)
@@ -70,6 +75,8 @@
   <Anmeldung />
 {:else if geraet.mobil}
   <MobilSchale bereiche={bereiche.filter((b) => b.geraete !== "rechner")} {oeffnen} {einstellungen} {auftraegeReiter} />
+{:else if form === "kopf"}
+  <KopfRechner bereiche={bereiche.filter((b) => b.geraete !== "telefon")} {oeffnen} {einstellungen} {kopf} {fuss} {schriftzug} {unterzeile} {praegung} {auftraegeTitel} />
 {:else}
   <Rechner bereiche={bereiche.filter((b) => b.geraete !== "telefon")} {oeffnen} {einstellungen} {kopf} {kopfMitte} navigation={navZusatz} {fuss} />
 {/if}

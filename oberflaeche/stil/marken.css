@@ -104,6 +104,23 @@
   --s6: #db2777;                  /* Sprecherfarbe 6 */
 }
 
+/* == Prägung == Schriftzug im Kopf der Schale in der Form "kopf" (KINO-2): poliertes Metall mit Lichtkante oben und
+   Horizont in der Mitte, die Kanten nach unten rechts dunkler, darunter ein weicher Schatten; Silber wie BASIC, Gold wie
+   PRO der Radio-App. Gilt in beiden Themen. */
+:root {
+  --praegung-silber: linear-gradient(180deg, #ffffff 0%, #eef1f4 16%, #c3c9d0 38%, #7d858f 50%, #a4abb4 58%, #e6eaee 82%, #f8fafb 100%); /* Fläche Silber */
+  --praegung-silber-kante-1: #8a929b;  /* erste Kante Silber */
+  --praegung-silber-kante-2: #5f666e;  /* zweite Kante Silber */
+  --praegung-silber-kante-3: #3d434a;  /* dritte Kante Silber */
+  --praegung-gold: linear-gradient(180deg, #fffbe6 0%, #ffe9a0 16%, #f2c64a 38%, #b47a16 50%, #d9a23a 58%, #ffe08a 82%, #fff4c4 100%); /* Fläche Gold */
+  --praegung-gold-kante-1: #c18a1e;    /* erste Kante Gold */
+  --praegung-gold-kante-2: #94620d;    /* zweite Kante Gold */
+  --praegung-gold-kante-3: #6a4306;    /* dritte Kante Gold */
+  --praegung-glanz: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / .75) 46%, transparent 58%); /* Glanz, der beim Zeigen darüberzieht */
+  --praegung-schatten: rgb(10 14 20 / .55); /* weicher Schatten unter der Prägung */
+  --tastenlicht-aus: #07090b;     /* Grund eines Tastenlichts, das aus ist */
+}
+
 /* == Flächen == Mildes Hell (Vorgabe): blaugrau von hinten nach vorn. Die Schale nutzt flaeche und flaeche-2, die
    Bausteine des Leitstands (Apps mit eigener Schale) bereich und karte bis karte-3. */
 :root, [data-theme="hell"] {

@@ -423,6 +423,100 @@
    ]
   },
   {
+   "name": "Prägung",
+   "text": "Schriftzug im Kopf der Schale in der Form \"kopf\" (KINO-2): poliertes Metall mit Lichtkante oben und Horizont in der Mitte, die Kanten nach unten rechts dunkler, darunter ein weicher Schatten; Silber wie BASIC, Gold wie PRO der Radio-App. Gilt in beiden Themen.",
+   "marken": [
+    {
+     "name": "--praegung-silber",
+     "art": "farbe",
+     "zweck": "Fläche Silber",
+     "werte": {
+      "alle": "linear-gradient(180deg, #ffffff 0%, #eef1f4 16%, #c3c9d0 38%, #7d858f 50%, #a4abb4 58%, #e6eaee 82%, #f8fafb 100%)"
+     }
+    },
+    {
+     "name": "--praegung-silber-kante-1",
+     "art": "farbe",
+     "zweck": "erste Kante Silber",
+     "werte": {
+      "alle": "#8a929b"
+     }
+    },
+    {
+     "name": "--praegung-silber-kante-2",
+     "art": "farbe",
+     "zweck": "zweite Kante Silber",
+     "werte": {
+      "alle": "#5f666e"
+     }
+    },
+    {
+     "name": "--praegung-silber-kante-3",
+     "art": "farbe",
+     "zweck": "dritte Kante Silber",
+     "werte": {
+      "alle": "#3d434a"
+     }
+    },
+    {
+     "name": "--praegung-gold",
+     "art": "farbe",
+     "zweck": "Fläche Gold",
+     "werte": {
+      "alle": "linear-gradient(180deg, #fffbe6 0%, #ffe9a0 16%, #f2c64a 38%, #b47a16 50%, #d9a23a 58%, #ffe08a 82%, #fff4c4 100%)"
+     }
+    },
+    {
+     "name": "--praegung-gold-kante-1",
+     "art": "farbe",
+     "zweck": "erste Kante Gold",
+     "werte": {
+      "alle": "#c18a1e"
+     }
+    },
+    {
+     "name": "--praegung-gold-kante-2",
+     "art": "farbe",
+     "zweck": "zweite Kante Gold",
+     "werte": {
+      "alle": "#94620d"
+     }
+    },
+    {
+     "name": "--praegung-gold-kante-3",
+     "art": "farbe",
+     "zweck": "dritte Kante Gold",
+     "werte": {
+      "alle": "#6a4306"
+     }
+    },
+    {
+     "name": "--praegung-glanz",
+     "art": "farbe",
+     "zweck": "Glanz, der beim Zeigen darüberzieht",
+     "werte": {
+      "alle": "linear-gradient(115deg, transparent 30%, rgb(255 255 255 / .75) 46%, transparent 58%)"
+     }
+    },
+    {
+     "name": "--praegung-schatten",
+     "art": "farbe",
+     "zweck": "weicher Schatten unter der Prägung",
+     "werte": {
+      "alle": "rgb(10 14 20 / .55)"
+     }
+    },
+    {
+     "name": "--tastenlicht-aus",
+     "art": "farbe",
+     "zweck": "Grund eines Tastenlichts, das aus ist",
+     "werte": {
+      "alle": "#07090b"
+     }
+    }
+   ]
+  },
+  {
    "name": "Flächen",
    "text": "Mildes Hell (Vorgabe): blaugrau von hinten nach vorn. Die Schale nutzt flaeche und flaeche-2, die Bausteine des Leitstands (Apps mit eigener Schale) bereich und karte bis karte-3.",
    "marken": [

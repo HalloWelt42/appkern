@@ -158,6 +158,14 @@ export interface Bereich {
   hinweis?: string;                             // wofür der Bereich da ist, ein kurzer Satz beim Überfahren in der Seitenleiste
   gruppe?: string;                              // Überschrift in der Seitenleiste am Rechner: wechselt sie von einem Bereich zum
                                                 // nächsten, steht sie darüber (etwa Lesen, Meins); ohne: der Name der App
+  licht?: () => Tastenlicht | null;             // Tastenlicht in der Pillen-Navigation (Schale form="kopf"): was dort gerade
+                                                // geschieht (etwa blau: spielt); null: aus
+}
+
+/** Licht einer Taste in der Pillen-Navigation: Farbe aus der Lichtsprache, an oder blinkend */
+export interface Tastenlicht {
+  farbe: "gruen" | "gelb" | "blau" | "rot" | "bernstein";
+  blinkt?: boolean;
 }
 
 // Ein eigener Reiter der App in den Einstellungen, neben den aus der Beschreibung erzeugten Gruppen: für Einstellungen,

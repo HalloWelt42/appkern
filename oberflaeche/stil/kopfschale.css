@@ -1,0 +1,81 @@
+/* Schale in der Form "kopf" (KINO-2, nach dem Vorbild der Radio-App): Kopf mit Schriftzug in Prägung, Pillen-Navigation,
+   die in den Inhalt ragt, Tastenlicht je Taste, Darstellung als Tafel; darunter die Seite, unten die Leiste der App.
+   Nur Marken (marken.css, Vorlage HiFi mit Rückfall auf das Grunddesign). Die Seite rollt nie, nur ihre Felder. */
+
+.ak-kopfschale { grid-template-rows: auto auto minmax(0, 1fr) auto; --ak-ueberstand: 24px; }
+.ak-kopfschale-mitte { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr); padding-top: var(--ak-ueberstand); }
+.ak-kopfschale-mitte > .seite, .ak-kopfschale-mitte > section { min-height: 0; }
+/* Seiten mit Leiste (Aufträge): die Leiste rechts daneben wie in der Form mit Seitenleiste; unter 1280 Pixeln schwebt sie */
+@media (min-width: 1280px) { .ak-kopfschale-mitte:has(> .leiste) { grid-template-columns: minmax(0, 1fr) 380px; } }
+.ak-kopfschale-fuss { position: relative; z-index: 4; }
+
+/* Kopf: Schriftzug links, Navigation mittig und in den Inhalt ragend, Bedienung rechts */
+.ak-kopfleiste { position: relative; z-index: 5; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-areas: "marke nav rechts";
+  align-items: center; gap: var(--a2) var(--a4); padding: calc(var(--a2) + env(safe-area-inset-top)) var(--a5) 0;
+  background-color: var(--leiste); background-image: var(--hifi-erhaben, none), var(--hifi-buerste, none);
+  box-shadow: var(--hifi-kante-ruhig, 0 1px 0 var(--rand)), var(--hifi-schatten-ruhig, var(--schatten)); }
+.ak-kopf-marke { grid-area: marke; justify-self: start; display: grid; gap: 2px; padding-bottom: var(--a3); min-width: 0; }
+.ak-kopf-rechts { grid-area: rechts; justify-self: end; display: flex; align-items: center; gap: var(--a2); padding-bottom: var(--a3); min-width: 0; }
+.ak-pillen { grid-area: nav; align-self: end; justify-self: center; margin-bottom: calc(-1 * var(--ak-ueberstand)); }
+
+.ak-schriftzug { display: inline-block; font-family: var(--schrift-zahl); font-weight: 600; font-size: calc(var(--appname) + 7px); letter-spacing: .06em;
+  line-height: 1; padding: 2px 1px 4px; text-decoration: none; white-space: nowrap;
+  background-image: var(--praegung-glanz), var(--praegung-silber); background-size: 250% 100%, 100% 100%; background-position: 120% 0, 0 0; background-repeat: no-repeat;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(1px 1px 0 var(--praegung-silber-kante-1)) drop-shadow(1px 1px 0 var(--praegung-silber-kante-2))
+          drop-shadow(1px 1px 0 var(--praegung-silber-kante-3)) drop-shadow(1px 3px 3px var(--praegung-schatten));
+  transition: background-position .9s ease; }
+.ak-schriftzug[data-praegung="gold"] { background-image: var(--praegung-glanz), var(--praegung-gold);
+  filter: drop-shadow(1px 1px 0 var(--praegung-gold-kante-1)) drop-shadow(1px 1px 0 var(--praegung-gold-kante-2))
+          drop-shadow(1px 1px 0 var(--praegung-gold-kante-3)) drop-shadow(1px 3px 3px var(--praegung-schatten)); }
+.ak-schriftzug:hover, .ak-schriftzug:focus-visible { background-position: -30% 0, 0 0; }
+.ak-schriftzug:focus-visible { outline: 1px solid var(--ak-fokus-rand, var(--rand-stark)); outline-offset: 3px; }
+.ak-kopf-unterzeile { font-family: var(--schrift-zahl); font-size: var(--marke); letter-spacing: .32em; text-transform: uppercase; white-space: nowrap; color: var(--text-3); }
+
+/* Pillen-Navigation: dunkle Schiene, gewählter Bereich erhaben; Tastenlicht oben mittig in jeder Taste */
+.ak-pillen-schiene { display: flex; gap: 4px; padding: 6px; border-radius: 999px; background-color: var(--ak-mulde, var(--mulde));
+  box-shadow: var(--hifi-mulde, inset 0 1px 3px var(--rand-stark)), 0 0 0 4px var(--leiste), 0 6px 16px -6px color-mix(in srgb, var(--schattenfarbe) 60%, transparent); }
+.ak-pille { position: relative; display: inline-flex; align-items: center; gap: var(--a2); min-block-size: calc(var(--knopf-hoehe) + 4px); padding: 7px 18px 0;
+  border: 0; border-radius: 999px; background: transparent; cursor: pointer; font: inherit; font-size: var(--klein); font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; white-space: nowrap; color: var(--ak-mulde-tinte, var(--text-2)); }
+.ak-pille:hover { color: var(--ak-mulde-tinte-an, var(--text)); }
+.ak-pille[aria-current="page"] { color: var(--akzent); background-color: var(--flaeche-2); background-image: var(--hifi-erhaben, none);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--licht) 14%, transparent), 0 1px 3px color-mix(in srgb, var(--schattenfarbe) 60%, transparent); }
+.ak-pille:focus-visible { outline: 1px solid var(--ak-fokus-rand, var(--rand-stark)); outline-offset: 2px; }
+.ak-pille i { display: none; }
+.ak-unsichtbar { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.ak-tastenlicht { --tl: var(--led-gruen, var(--gut)); position: absolute; top: 5px; left: 50%; translate: -50% 0; inline-size: 16px; block-size: 4px; border-radius: 2px;
+  background: color-mix(in srgb, var(--tl) 14%, var(--tastenlicht-aus)); box-shadow: inset 0 1px 1px color-mix(in srgb, var(--schattenfarbe) 70%, transparent); pointer-events: none; }
+.ak-tastenlicht[data-farbe="gelb"] { --tl: var(--led-gelb, var(--warn)); }
+.ak-tastenlicht[data-farbe="blau"] { --tl: var(--led-blau, var(--info)); }
+.ak-tastenlicht[data-farbe="rot"] { --tl: var(--led-rot, var(--gefahr)); }
+.ak-tastenlicht[data-farbe="bernstein"] { --tl: var(--led-bernstein, var(--akzent-flaeche)); }
+.ak-tastenlicht.an { background: linear-gradient(180deg, color-mix(in srgb, var(--tl) 45%, var(--licht)), var(--tl));
+  box-shadow: 0 0 calc(8px * var(--hifi-leuchten, .6)) var(--tl), 0 0 3px color-mix(in srgb, var(--tl) 70%, transparent); }
+.ak-tastenlicht.blinkt { animation: ak-tastenlicht-blinken 1.1s steps(2, jump-none) infinite; }
+@keyframes ak-tastenlicht-blinken { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .ak-tastenlicht.blinkt { animation: none; } .ak-schriftzug { transition: none; } }
+
+/* Darstellung: Tafel unter dem Knopf mit Thema und Schrift */
+.ak-kopf-darstellung { position: relative; }
+.ak-kopf-tafel { position: absolute; right: 0; top: calc(100% + var(--a2)); z-index: 30; inline-size: max-content; min-inline-size: 260px; display: grid; gap: var(--a2);
+  padding: var(--a3) var(--a4) var(--a4); border-radius: var(--r3); background-color: var(--flaeche); box-shadow: var(--schatten-schwebend); }
+.ak-kopf-tafel h3 { margin: var(--a2) 0 0; font-size: var(--marke); letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.ak-kopf-tafel .segment button { display: inline-flex; align-items: center; gap: var(--a1); }
+.ak-kopf-schrift { display: grid; grid-template-columns: auto minmax(6em, 1fr) auto; align-items: center; gap: var(--a2); }
+.ak-kopf-schrift output { text-align: center; font-weight: 600; }
+
+/* schmaler: Navigation in die zweite Zeile, unter 700 Pixeln nur Symbole, die gewählte mit Namen */
+@media (max-width: 1180px) {
+  .ak-kopfleiste { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "marke rechts" "nav nav"; }
+  .ak-kopf-marke, .ak-kopf-rechts { padding-bottom: 0; }
+}
+@media (max-width: 700px) {
+  .ak-kopf-unterzeile, .ak-kopf-knopftext { display: none; }
+  .ak-pillen { justify-self: stretch; }
+  .ak-pillen-schiene { justify-content: space-between; }
+  .ak-pille { padding-inline: 12px; }
+  .ak-pille i { display: inline; }
+  .ak-pille:not([aria-current="page"]) .ak-pille-text { display: none; }
+}
