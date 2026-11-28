@@ -14,6 +14,10 @@ in deploy/ausrollen.toml). Erzeugt in frontend/public:
   icon-maskable-192.png, icon-maskable-512.png  Grund randlos, Motiv in der sicheren Zone (purpose maskable)
   apple-touch-icon.png                          180, ohne Durchsichtigkeit auf der Hintergrundfarbe der App
 
+Zwei eigens gezeichnete Fassungen gehen vor, wenn es sie gibt (ein Entwurf mit vier Fassungen, KINO-4):
+  symbol-klein.svg                              vereinfacht für 16 bis 48 Pixel: favicon.svg, favicon.ico, favicon-32.png
+  symbol-maskierbar.svg                         Grund randlos, Motiv schon in der sicheren Zone: icon-maskable-*.png
+
 Die Bilder liegen im Repo und werden nie zur Laufzeit erzeugt. Nach einer Änderung an symbol.svg neu erzeugen:
   python3 tools/symbole.py
 Braucht cairosvg und Pillow, nur auf dem Rechner, der die Bilder erzeugt.
@@ -32,6 +36,8 @@ from PIL import Image
 
 OEFFENTLICH = Path(__file__).resolve().parent.parent / "frontend" / "public"
 QUELLE = OEFFENTLICH / "symbol.svg"
+KLEIN = OEFFENTLICH / "symbol-klein.svg"
+MASKIERBAR = OEFFENTLICH / "symbol-maskierbar.svg"
 SVG = "http://www.w3.org/2000/svg"
 # Anteil des Motivs am maskierbaren Symbol: alles bleibt im Kreis mit 80 % Durchmesser, den kein Gerät beschneidet
 SICHERE_ZONE = 0.66
@@ -80,14 +86,15 @@ def main() -> None:
 
     def startbild(bild: Image.Image) -> Image.Image:
         return bild if freigestellt else flach(bild, farbe)
-    shutil.copyfile(QUELLE, OEFFENTLICH / "favicon.svg")
+    klein = KLEIN if KLEIN.is_file() else QUELLE
+    shutil.copyfile(klein, OEFFENTLICH / "favicon.svg")
 
-    ico = [rastern(quelle, g) for g in (48, 32, 16)]
+    ico = [rastern(klein.read_bytes(), g) for g in (48, 32, 16)]
     ico[0].save(OEFFENTLICH / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)], append_images=ico[1:])
-    rastern(quelle, 32).save(OEFFENTLICH / "favicon-32.png", optimize=True)
+    ico[1].save(OEFFENTLICH / "favicon-32.png", optimize=True)
     for groesse in (192, 512):
         startbild(rastern(quelle, groesse)).save(OEFFENTLICH / f"icon-{groesse}.png", optimize=True)
-    rand = maskierbar(quelle)
+    rand = MASKIERBAR.read_bytes() if MASKIERBAR.is_file() else maskierbar(quelle)
     for groesse in (192, 512):
         rastern(rand, groesse).save(OEFFENTLICH / f"icon-maskable-{groesse}.png", optimize=True)
     startbild(rastern(quelle, 180)).save(OEFFENTLICH / "apple-touch-icon.png", optimize=True)
